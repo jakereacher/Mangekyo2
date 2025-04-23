@@ -1,0 +1,132 @@
+<%- include("../../views/user/partials/header") %>
+
+<style>
+    .video-bg {
+        filter: grayscale(100%);
+    }
+
+    .animate-glitch {
+        color: white;
+    }
+
+    .hover\:bg-accent:hover {
+        background-color: #444;
+    }
+
+    .hover\:text-inverse:hover {
+        color: #000;
+    }
+</style>
+
+<div class="video-container">
+    <video autoplay muted loop class="video-bg">
+        <source src="videos/anime-montage.mp4" type="video/mp4">
+    </video>
+
+    <!-- Hero Content -->
+    <div class="absolute inset-0 flex flex-col justify-center items-center z-0">
+        <h1 class="animate-glitch text-white">Mangekyō</h1>
+        <p class="text-2xl text-white mb-8 text-center max-w-2xl">
+            Your ultimate destination for premium manga collectibles
+        </p>
+        <a href="/shop" class="px-8 py-3 bg-white text-black font-bold rounded-lg text-lg hover:bg-gray-300 transition">
+            EXPLORE COLLECTION
+        </a>
+    </div>
+</div>
+
+<!-- Products Section -->
+<section class="py-16 px-8 bg-black">
+    <h2 class="text-4xl font-bold text-center mb-2 text-white">OUR PRODUCTS</h2>
+    <p class="text-center text-gray-400 mb-12">Explore our latest manga merchandise collection</p>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+        <% products.forEach(product => { %>
+            <a href="/shop/product/<%= product._id %>" class="block">
+                <div class="bg-gray-900 rounded-xl overflow-hidden shadow-lg hover:shadow-white transition">
+                    <div class="relative">
+                        <img src="uploads/product-images/<%= product.productImage[0] %>" alt="<%= product.productName %>" class="w-full h-64 object-cover filter grayscale">
+                        <% if (product.productOffer) { %>
+                            <div class="absolute top-2 right-2 bg-white text-black text-xs font-bold px-2 py-1 rounded">OFFER</div>
+                        <% } else if (new Date() - product.createdAt < 7 * 24 * 60 * 60 * 1000) { %>
+                            <div class="absolute top-2 right-2 bg-white text-black text-xs font-bold px-2 py-1 rounded">NEW</div>
+                        <% } %>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="text-lg font-bold text-white mb-1"><%= product.productName %></h3>
+                        <p class="text-gray-400 text-sm mb-2"><%= product.description.substring(0, 50) %>...</p>
+                        <div class="flex justify-between items-center">
+                            <span class="text-white font-bold">$<%= product.salePrice %></span>
+                            <button class="p-2 bg-white text-black rounded hover:bg-gray-300 transition">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        <% }) %>
+    </div>
+
+    <div class="text-center mt-12">
+        <a href="/shop" class="px-8 py-3 border-2 border-white text-white font-bold rounded-lg hover:bg-white hover:text-black transition">
+            View All Products
+        </a>
+    </div>
+</section>
+
+<!-- Newsletter -->
+<section class="py-16 px-8 bg-gray-900">
+    <div class="max-w-3xl mx-auto text-center">
+        <h2 class="text-3xl font-bold mb-4 text-white">JOIN OUR NEWSLETTER</h2>
+        <p class="text-gray-400 mb-8">Subscribe to get notifications about new products, exclusive offers and manga merchandise news</p>
+        <div class="flex flex-col md:flex-row gap-4 justify-center">
+            <input type="email" placeholder="Your email address" class="md:w-96 p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-white focus:outline-none">
+            <button class="px-6 py-3 bg-white text-black font-bold rounded-lg hover:bg-gray-300 transition">SUBSCRIBE</button>
+        </div>
+    </div>
+</section>
+
+<%- include("../../views/user/partials/footer") %>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const backToTopButton = document.querySelector('button.fixed');
+        if (backToTopButton) {
+            backToTopButton.addEventListener('click', function () {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+
+            window.addEventListener('scroll', function () {
+                backToTopButton.style.opacity = window.pageYOffset > 300 ? '1' : '0';
+            });
+        }
+
+        const mobileMenuButton = document.createElement('button');
+        mobileMenuButton.className = 'md:hidden text-white';
+        mobileMenuButton.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+        `;
+        const nav = document.querySelector('nav');
+        document.querySelector('header div:first-child').appendChild(mobileMenuButton);
+
+        mobileMenuButton.addEventListener('click', function () {
+            if (nav.classList.contains('hidden')) {
+                nav.classList.remove('hidden');
+                nav.classList.add('flex', 'flex-col', 'absolute', 'top-16', 'left-0', 'right-0', 'bg-black', 'bg-opacity-90', 'p-4');
+            } else {
+                nav.classList.add('hidden');
+                nav.classList.remove('flex', 'flex-col', 'absolute', 'top-16', 'left-0', 'right-0', 'bg-black', 'bg-opacity-90', 'p-4');
+            }
+        });
+
+        const glitchText = document.querySelector('.animate-glitch');
+        window.addEventListener('scroll', function () {
+            const scrollPercentage = window.scrollY / (window.innerHeight / 2);
+            glitchText.style.opacity = scrollPercentage < 1 ? 1 - scrollPercentage : 0;
+        });
+    });
+</script>

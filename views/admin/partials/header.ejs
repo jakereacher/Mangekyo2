@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - MANGEYKO</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background-color: #212529;
+            color: #fff;
+        }
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 0.8rem 1rem;
+            border-radius: 5px;
+            margin-bottom: 5px;
+        }
+        .sidebar .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+        .sidebar .nav-link.active {
+            background-color: #0d6efd;
+            color: #fff;
+        }
+        .main-content {
+            padding: 20px;
+        }
+        .stat-card {
+            border-radius: 10px;
+            border: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        .navbar-brand {
+            font-weight: bold;
+        }
+        .navbar {
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .card-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 sidebar d-flex flex-column p-3">
+                <a href="/admin/dashboard" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-decoration-none text-white">
+                    <span class="fs-4">Admin Panel</span>
+                </a>
+                <hr>
+                <ul class="nav nav-pills flex-column mb-auto">
+                    <li class="nav-item">
+                        <a href="/admin/dashboard" class="nav-link <%= activePage === 'dashboard' ? 'active' : '' %>" aria-current="page">
+                            <i class="fas fa-tachometer-alt me-2"></i>
+                            Dashboard
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/admin/users" class="nav-link <%= activePage === 'customers' ? 'active' : '' %>">
+                            <i class="fas fa-users me-2"></i>
+                            Customers
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/admin/category" class="nav-link <%= activePage === 'category' ? 'active' : '' %>">
+                            <i class="fas fa-th-large me-2"></i>
+                            Category
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/admin/add-products" class="nav-link <%= activePage === 'add-products' ? 'active' : '' %>">
+                            <i class="fas fa-plus-circle me-2"></i>
+                            Add Products
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/admin/products" class="nav-link <%= activePage === 'products' ? 'active' : '' %>">
+                            <i class="fas fa-box me-2"></i>
+                            Products
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/admin/coupon" class="nav-link <%= activePage === 'coupon' ? 'active' : '' %>">
+                            <i class="fas fa-ticket-alt me-2"></i>
+                            Coupon
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/admin/orders" class="nav-link <%= activePage === 'orders' ? 'active' : '' %>">
+                            <i class="fas fa-shopping-cart me-2"></i>
+                            Orders
+                        </a>
+                    </li>
+                </ul>
+                <hr>
+                <div class="dropdown">
+                    <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle text-white" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
+                        <img src="/images/keychain1.webp" alt="" width="32" height="32" class="rounded-circle me-2">
+                        <strong>Admin</strong>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-dark text-small shadow" aria-labelledby="dropdownUser1">
+                        <li><a class="dropdown-item" href="#">Profile</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="/admin/logout">Sign out</a></li>
+                    </ul>
+                </div>
+            </div>
+            <!-- Main Content Area (to be filled by including page) -->
+            <div class="col-md-9 col-lg-10 main-content">

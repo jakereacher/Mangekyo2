@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login | Mangeyko</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Background Animation */
+        body {
+            background: radial-gradient(circle, rgba(10, 10, 30, 0.9), rgba(0, 0, 0, 1));
+            overflow: hidden;
+        }
+        .floating-glow {
+            position: absolute;
+            width: 250px;
+            height: 250px;
+            background: rgba(0, 255, 255, 0.2);
+            border-radius: 50%;
+            filter: blur(80px);
+            animation: moveGlow 6s infinite alternate ease-in-out;
+        }
+        @keyframes moveGlow {
+            from { transform: translate(-50%, -50%); }
+            to { transform: translate(50%, 50%); }
+        }
+        /* Input Focus Effect */
+        .input-field:focus {
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+            border-color: cyan;
+        }
+    </style>
+</head>
+<body class="h-screen flex items-center justify-center relative text-white">
+
+    <!-- Floating Glow Effect -->
+    <div class="floating-glow"></div>
+
+    <div class="bg-gray-900 bg-opacity-80 p-8 rounded-2xl shadow-2xl w-96 backdrop-blur-md border border-gray-700">
+        <h2 class="text-3xl font-bold text-center mb-6 text-cyan-400">Admin Login</h2>
+
+        <% if (message) { %>
+            <p class="text-red-500 text-center mb-4"><%= message %></p>
+        <% } %>
+
+        <form action="/admin/login" method="POST" class="space-y-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-300">Email</label>
+                <input type="email" name="email" required 
+                       class="input-field w-full px-4 py-2 mt-1 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-cyan-400 outline-none text-white transition">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-300">Password</label>
+                <input type="password" name="password" required 
+                       class="input-field w-full px-4 py-2 mt-1 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-cyan-400 outline-none text-white transition">
+            </div>
+
+            <button type="submit" 
+                    class="w-full bg-cyan-500 hover:bg-cyan-400 transition py-2 rounded-lg font-semibold text-black shadow-lg">
+                Login
+            </button>
+        </form>
+
+        <div class="text-center mt-4">
+            <!-- <a href="#" class="text-sm text-gray-400 hover:text-cyan-300 transition">Forgot Password?</a> -->
+        </div>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Error</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f8f9fa;
+            color: #212529;
+            text-align: center;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+        .error-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { 
+            color: #dc3545;
+            margin-bottom: 1rem;
+        }
+        .btn {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <h1>Error</h1>
+        <p><%= message %></p>
+        <% if (typeof error !== 'undefined') { %>
+            <details style="margin: 1rem 0; text-align: left;">
+                <summary>Technical Details</summary>
+                <pre style="background: #f1f1f1; padding: 1rem; border-radius: 4px; overflow-x: auto;"><%= error.stack %></pre>
+            </details>
+        <% } %>
+        <a href="/" class="btn">Return Home</a>
+    </div>
+</body>
+</html>

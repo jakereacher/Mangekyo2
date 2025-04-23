@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Mangeyko</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: black;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .video-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            z-index: -1;
+        }
+
+        .video-bg {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            opacity: 0.7;
+            filter: grayscale(100%);
+        }
+
+        @keyframes glitch {
+            0% { text-shadow: 2px 2px #ff0000, -2px -2px #00ffff; }
+            25% { text-shadow: -2px -2px #ff0000, 2px 2px #00ffff; }
+            50% { text-shadow: 2px -2px #ff0000, -2px 2px #00ffff; }
+            75% { text-shadow: -2px 2px #ff0000, 2px -2px #00ffff; }
+            100% { text-shadow: 2px 2px #ff0000, -2px -2px #00ffff; }
+        }
+
+        .animate-glitch {
+            font-size: 8rem;
+            font-weight: bold;
+            color: #00ffff;
+            animation: glitch 0.2s infinite;
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            margin: 0;
+            padding: 0;
+            text-align: center;
+            width: 100%;
+        }
+
+        .login-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+            text-align: center;
+        }
+
+        .demo-btn {
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+        
+        .demo-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 255, 255, 0.4);
+        }
+
+        .demo-user {
+            background: linear-gradient(135deg, #6b21a8 0%, #9333ea 100%);
+        }
+
+        .demo-admin {
+            background: linear-gradient(135deg, #b45309 0%, #f59e0b 100%);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 1rem;
+            background: rgba(30, 30, 30, 0.8);
+            border: 1px solid #00ffff;
+            border-radius: 5px;
+            color: #00ffff;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background: black;
+            color: white;
+            border: 1px solid #00ffff;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .login-btn:hover {
+            background: #00ffff;
+            color: black;
+        }
+
+        .divider {
+            border-top: 1px solid rgba(0, 255, 255, 0.3);
+            margin: 1.5rem 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Video Background -->
+    <div class="video-container">
+        <video class="video-bg" autoplay muted loop>
+            <source src="videos/4K Beautiful Anime Scenery.mp4" type="video/mp4">
+        </video>
+    </div>
+
+    <!-- Glitch Text -->
+    <h1 class="animate-glitch">ショップ</h1>
+
+    <!-- Login Container -->
+    <div class="login-container">
+        <h2 class="text-3xl font-bold text-[#00ffff] mb-6">Welcome Back</h2>
+        
+        <!-- Demo Login Section -->
+        <div class="demo-login-section mb-6 p-4 bg-gray-900 rounded-lg border border-[#00ffff]">
+            <p class="text-gray-300 mb-3 text-center text-sm">Try demo accounts:</p>
+            <div class="flex gap-3 justify-center">
+                <button 
+                    type="button" 
+                    onclick="demoLogin('user')" 
+                    class="demo-btn demo-user px-4 py-2 text-white rounded-lg text-sm font-medium"
+                >
+                    <i class="fas fa-user mr-2"></i> Demo User
+                </button>
+                
+            </div>
+        </div>
+
+        <form action="/login" method="POST" id="loginform">
+            <input type="hidden" name="isDemo" id="isDemo">
+            
+            <input 
+                type="email" 
+                name="email" 
+                placeholder="Enter your email" 
+                class="form-input"
+                id="email" 
+                oninput="emailValidateChecking()"
+            />
+            <div id="error1" class="text-red-500 text-sm mb-2" style="display: none;"></div>
+            
+            <input 
+                type="password" 
+                name="password" 
+                placeholder="Enter your password" 
+                class="form-input"
+                id="password" 
+                oninput="passValidateChecking()"
+            />
+            <div id="error2" class="text-red-500 text-sm mb-2" style="display: none;"></div>
+
+            <% if(locals.message && message.length>0){ %>
+            <div class="text-red-500 text-center mb-4">
+                <%= message %>
+            </div>
+            <% } %>
+
+            <div class="flex items-center mb-4">
+                <input type="checkbox" id="show-password" class="mr-2">
+                <label for="show-password" class="text-sm text-white">Show Password</label>
+            </div>
+            
+            <button type="submit" class="login-btn">
+                Login
+            </button>
+        </form>
+        
+        <div class="divider"></div>
+        
+        <div class="flex flex-col space-y-4">
+            <a href="/auth/google" class="w-full flex items-center justify-center p-3 bg-gray-800 rounded-lg hover:bg-gray-700 transition">
+                <img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png" class="w-5 h-5 mr-2" alt="Google Logo"> 
+                Login with Google
+            </a>
+            
+            <a href="/forgot-password" class="text-sm text-[#00ffff] hover:underline">Forgot Password?</a>
+            
+            <p class="text-gray-400 text-sm">
+                Don't have an account? 
+                <a href="/signup" class="text-[#00ffff] hover:underline font-medium">Sign up</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const emailid = document.getElementById("email");
+        const passid = document.getElementById("password");
+        const error1 = document.getElementById("error1");
+        const error2 = document.getElementById("error2");
+        const loginform = document.getElementById("loginform");
+
+        function demoLogin(type) {
+            const demoAccounts = {
+                user: {
+                    email: "demo_user@example.com",
+                    password: "demoUser123"
+                },
+                admin: {
+                    email: "demo_admin@example.com",
+                    password: "demoAdmin123"
+                }
+            };
+            
+            document.querySelector('[name="email"]').value = demoAccounts[type].email;
+            document.querySelector('[name="password"]').value = demoAccounts[type].password;
+            document.getElementById('isDemo').value = 'true';
+            
+            setTimeout(() => {
+                loginform.submit();
+            }, 300);
+        }
+
+        function emailValidateChecking() {
+            const emailval = emailid.value.trim();
+            const emailpattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+            if (emailval === "") {
+                error1.style.display = "block";
+                error1.innerHTML = "Please enter a valid email";
+            } else if (!emailpattern.test(emailval)) {
+                error1.style.display = "block";
+                error1.innerHTML = "Not a valid email";
+            } else {
+                error1.style.display = "none";
+                error1.innerHTML = "";
+            }
+        }
+
+        function passValidateChecking() {
+            const passval = passid.value.trim();
+
+            if (passval === "") {
+                error2.style.display = "block";
+                error2.innerHTML = "Please enter a password";
+            } else if (passval.length < 8) {
+                error2.style.display = "block";
+                error2.innerHTML = "Password should contain at least 8 characters";
+            } else {
+                error2.style.display = "none";
+                error2.innerHTML = "";
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            loginform.addEventListener("submit", function (e) {
+                emailValidateChecking();
+                passValidateChecking();
+
+                if (error1.style.display === "block" || error2.style.display === "block") {
+                    e.preventDefault();
+                }
+            });
+
+            document.getElementById("show-password").addEventListener("change", function () {
+                passid.type = this.checked ? "text" : "password";
+            });
+        });
+    </script>
+</body>
+</html>

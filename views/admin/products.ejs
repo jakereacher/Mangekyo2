@@ -1,0 +1,122 @@
+<%- include("./partials/header", { activePage: 'products' }) %>
+
+<style>
+    .content-main {
+        padding: 20px;
+    }
+    .product-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+    .product-table th, .product-table td {
+        padding: 10px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+    .product-table th {
+        background-color: #f4f4f4;
+    }
+    .product-image {
+        width: 50px;
+        height: 50px;
+        object-fit: cover;
+        border-radius: 4px;
+    }
+    .btn-edit, .btn-delete, .btn-block, .btn-unblock {
+        padding: 5px 10px;
+        margin-right: 5px;
+        text-decoration: none;
+        color: white;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+    }
+    .btn-edit {
+        background-color: #007bff;
+    }
+    .btn-delete {
+        background-color: #dc3545;
+    }
+    .btn-block {
+        background-color: #ff9800; /* Orange for block */
+    }
+    .btn-unblock {
+        background-color: #28a745; /* Green for unblock */
+    }
+    .error-message {
+        color: red;
+        margin-bottom: 10px;
+    }
+</style>
+
+<section class="content-main">
+    <div class="row">
+        <div class="col-9">
+            <div class="content-header">
+                <h2 class="content-title">Product List</h2>
+            </div>
+        </div>
+        <div class="col-lg-12">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <% if (error) { %>
+                        <div class="error-message"><%= error %></div>
+                    <% } %>
+                    <% if (products && products.length > 0) { %>
+                        <table class="product-table">
+                            <thead>
+                                <tr>
+                                    <th>Image</th>
+                                    <th>Name</th>
+                                    <th>Category</th>
+                                    <th>Regular Price</th>
+                                    <th>Sale Price</th>
+                                    <th>Quantity</th>
+                                    <th>Status</th>
+                                    <th>Blocked</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% products.forEach(product => { %>
+                                    <tr>
+                                        <td>
+                                            <% if (product.productImage && product.productImage.length > 0) { %>
+                                                <img src="/uploads/product-images/<%= product.productImage[0] %>" class="product-image" alt="<%= product.productName %>">
+                                            <% } else { %>
+                                                <span>No Image</span>
+                                            <% } %>
+                                        </td>
+                                        <td><%= product.productName %></td>
+                                        <td><%= product.category.name %></td>
+                                        <td>$<%= product.regularPrice.toFixed(2) %></td>
+                                        <td>$<%= product.salePrice.toFixed(2) %></td>
+                                        <td><%= product.quantity %></td>
+                                        <td><%= product.status %></td>
+                                        <td><%= product.isBlocked ? 'Yes' : 'No' %></td>
+                                        <td>
+                                            <a href="/admin/edit-product/<%= product._id %>" class="btn-edit">Edit</a>
+                                            <form action="/admin/delete-product/<%= product._id %>" method="POST" style="display:inline;">
+                                                <button type="submit" class="btn-delete" onclick="return confirm('Are you sure you want to delete <%= product.productName %>?')">Delete</button>
+                                            </form>
+                                            <form action="/admin/toggle-block-product/<%= product._id %>" method="POST" style="display:inline;">
+                                                <button type="submit" class="<%= product.isBlocked ? 'btn-unblock' : 'btn-block' %>">
+                                                    <%= product.isBlocked ? 'Unblock' : 'Block' %>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    <% } else { %>
+                        <p>No products found.</p>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<%- include("./partials/footer", { activePage: 'products' }) %>

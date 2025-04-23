@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MANGEYKO - Manga Merchandise</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: black;
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            overflow-x: hidden;
+        }
+        
+        @keyframes glitch {
+            0% { text-shadow: 2px 2px #fff, -2px -2px #000; }
+            25% { text-shadow: -2px -2px #fff, 2px 2px #000; }
+            50% { text-shadow: 2px -2px #fff, -2px 2px #000; }
+            75% { text-shadow: -2px 2px #fff, 2px -2px #000; }
+            100% { text-shadow: 2px 2px #fff, -2px -2px #000; }
+        }
+        
+        .animate-glitch {
+            font-size: 8rem;
+            font-weight: bold;
+            color: white;
+            animation: glitch 0.2s infinite;
+        }
+        
+        .video-container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .video-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.7;
+        }
+        
+        .category-card {
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .category-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 0 30px #fff;
+        }
+        
+        .category-card img {
+            transition: all 0.5s ease;
+        }
+        
+        .category-card:hover img {
+            transform: scale(1.1);
+        }
+        
+        .header-link {
+            position: relative;
+            color: white;
+            text-decoration: none;
+        }
+        
+        .header-link::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: white;
+            transition: width 0.3s ease;
+        }
+        
+        .header-link:hover::after {
+            width: 100%;
+        }
+        
+        .search-input {
+            background: transparent;
+            border: 2px solid white;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            outline: none;
+        }
+        
+        .search-input::placeholder {
+            color: #aaa;
+        }
+        
+        .search-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+        }
+        
+        .glowing-border {
+            border: 2px solid transparent;
+            border-image: linear-gradient(to right, white, #888);
+            border-image-slice: 1;
+            animation: border-glow 2s infinite alternate;
+        }
+        
+        @keyframes border-glow {
+            from {
+                box-shadow: 0 0 5px white;
+            }
+            to {
+                box-shadow: 0 0 20px white;
+            }
+        }
+
+        .dropdown { 
+            position: relative;
+            display: inline-block;
+            border-radius: 20px;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: white;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            right: 0;
+            border-radius: 20px;
+            text-align: center;
+        }
+
+        .dropdown-content a,
+        .dropdown-content button {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            width: 100%;
+            border: none;
+            background: none;
+            cursor: pointer;
+        }
+
+        .dropdown-content a:hover,
+        .dropdown-content button:hover {
+            background-color: #f6f6f9;
+        }
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+        .header {
+            position: relative;
+            z-index: 500;
+        }
+    </style>
+</head>
+<body>
+   
+    <!-- Navigation -->
+    <header class="absolute w-full flex justify-between items-center px-8 py-4 bg-black bg-opacity-50 z-10">
+        <div class="flex items-center">
+            <a href="/home" class="text-2xl font-bold text-white mr-12">MANGEYKO</a>
+            <nav class="hidden md:flex space-x-8">
+                <a href="/home" class="header-link">Home</a>
+                <a href="/shop" class="header-link">Shop</a>
+            </nav>
+        </div>
+        
+        <div class="flex items-center space-x-4">
+            <!-- Search Bar (matches shop functionality) -->
+            <form action="/shop" method="GET" class="relative hidden md:block">
+                <input 
+                    type="text" 
+                    name="search" 
+                    value="<%= locals.query ? query.search || '' : '' %>"
+                    placeholder="Search products..." 
+                    class="search-input pr-10 w-64"
+                >
+                <button type="submit" class="search-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </button>
+                <% if (locals.query && query.search) { %>
+                    <a href="/shop" class="absolute right-10 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                        </svg>
+                    </a>
+                <% } %>
+            </form>
+    
+            <% if (locals.user) { %>
+            <div class="dropdown">
+                <a href="#" class="sign-in-link"><%= locals.user.name %></a>
+                <div class="dropdown-content">
+                    <a href="/profile/profile">Profile</a>
+                    <form action="/logout" method="POST">
+                        <button type="submit">Logout</button>
+                    </form>
+                </div>
+            </div>
+            <% } else { %>
+            <a href="/login" class="header-link">Login</a>
+            <a href="/signup" class="px-4 py-2 bg-white text-black rounded-lg hover:bg-gray-200 transition">Sign Up</a>
+            <% } %>
+            <a href="#" class="relative">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <span class="absolute -top-2 -right-2 bg-white text-black text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">0</span>
+            </a>
+        </div>
+    </header>
+</body>
+</html>

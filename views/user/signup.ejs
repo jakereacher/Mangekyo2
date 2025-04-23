@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Signup - Mangeyko</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: black;
+    }
+
+    @keyframes glitch {
+      0% { text-shadow: 2px 2px #ff0000, -2px -2px #00ffff; }
+      25% { text-shadow: -2px -2px #ff0000, 2px 2px #00ffff; }
+      50% { text-shadow: 2px -2px #ff0000, -2px 2px #00ffff; }
+      75% { text-shadow: -2px 2px #ff0000, 2px -2px #00ffff; }
+      100% { text-shadow: 2px 2px #ff0000, -2px -2px #00ffff; }
+    }
+
+    .animate-glitch {
+      font-size: 8rem;
+      font-weight: bold;
+      color: #00ffff;
+      animation: glitch 0.2s infinite;
+    }
+
+    .error-message {
+      color: red;
+      font-size: 0.75rem;
+      display: none;
+      margin: 0 !important;
+    }
+  </style>
+</head>
+<body class="flex justify-center items-center h-screen text-white relative">
+
+  <!-- Glitch Background Title -->
+  <div class="absolute inset-0 flex justify-center items-center pointer-events-none">
+    <h1 class="animate-glitch">ショップ</h1>
+  </div>
+
+  <!-- Signup Form -->
+  <div class="bg-gray-900 bg-opacity-70 p-8 rounded-2xl shadow-lg w-96 text-center z-10">
+    <h2 class="text-3xl font-bold text-[#00ffff] mb-4">Join Mangeyko</h2>
+
+    <% if (typeof message !== 'undefined' && message.length > 0) { %>
+      <p class="bg-red-900 text-red-300 text-sm px-4 py-2 rounded mb-4"><%= message %></p>
+    <% } %>
+
+    <form id="signform" action="/signup" method="POST" class="space-y-4">
+      <input type="text" id="name" name="name" placeholder="Full Name"
+        class="w-full p-3 rounded-xl bg-gray-800 text-[#00ffff] focus:ring-2 focus:ring-[#00ffff]" />
+      <div id="error1" class="error-message"></div>
+
+      <input type="email" id="email" name="email" placeholder="Email"
+        class="w-full p-3 rounded-xl bg-gray-800 text-[#00ffff] focus:ring-2 focus:ring-[#00ffff]" />
+      <div id="error2" class="error-message"></div>
+
+      <input type="password" id="password" name="password" placeholder="Password"
+        class="w-full p-3 rounded-xl bg-gray-800 text-[#00ffff] focus:ring-2 focus:ring-[#00ffff]" />
+      <div id="error3" class="error-message"></div>
+
+      <input type="password" id="confirm-password" name="cPassword" placeholder="Confirm Password"
+        class="w-full p-3 rounded-xl bg-gray-800 text-[#00ffff] focus:ring-2 focus:ring-[#00ffff]" />
+      <div id="error4" class="error-message"></div>
+
+      <div class="flex items-center mt-2">
+        <input type="checkbox" id="show-password" class="mr-2">
+        <label for="show-password" class="text-sm text-gray-400">Show Password</label>
+      </div>
+
+      <button type="submit"
+        class="w-full p-3 bg-[#00ffff] rounded-xl font-bold text-black hover:bg-[#0088ff] transition">Sign Up</button>
+    </form>
+
+    <div class="my-4 border-b border-gray-700"></div>
+
+    <a href="/auth/google"
+      class="w-full flex items-center justify-center p-3 bg-gray-800 rounded-xl hover:bg-gray-700 transition">
+      <img src="https://cdn-icons-png.flaticon.com/512/2702/2702602.png" class="w-6 h-6 mr-2" alt="Google Logo" />
+      Sign up with Google
+    </a>
+
+    <p class="mt-4 text-gray-400 text-sm">
+      Already have an account?
+      <a href="/login" class="text-[#00ffff] hover:underline">Log in</a>
+    </p>
+  </div>
+
+  <!-- JS Script -->
+  <script>
+    window.onload = () => {
+      const nameid = document.getElementById("name");
+      const emailid = document.getElementById("email");
+      const passid = document.getElementById("password");
+      const cpassid = document.getElementById("confirm-password");
+
+      const error1 = document.getElementById("error1");
+      const error2 = document.getElementById("error2");
+      const error3 = document.getElementById("error3");
+      const error4 = document.getElementById("error4");
+
+      const signform = document.getElementById("signform");
+
+      function nameValidate() {
+        const name = nameid.value.trim();
+        const pattern = /^[A-Za-z ]+$/;
+        if (name === "") {
+          error1.innerText = "Please enter your name";
+          error1.style.display = "block";
+        } else if (!pattern.test(name)) {
+          error1.innerText = "Name can only contain alphabets and spaces";
+          error1.style.display = "block";
+        } else {
+          error1.style.display = "none";
+        }
+      }
+
+      function emailValidate() {
+        const email = emailid.value.trim();
+        const pattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (email === "") {
+          error2.innerText = "Please enter your email";
+          error2.style.display = "block";
+        } else if (!pattern.test(email)) {
+          error2.innerText = "Enter a valid email";
+          error2.style.display = "block";
+        } else {
+          error2.style.display = "none";
+        }
+      }
+
+      function passwordValidate() {
+        const pass = passid.value.trim();
+        const cpass = cpassid.value.trim();
+        const pattern = /^(?=.*[A-Za-z])(?=.*\d).+$/;
+
+        if (pass.length < 8) {
+          error3.innerText = "Password must be at least 8 characters";
+          error3.style.display = "block";
+        } else if (!pattern.test(pass)) {
+          error3.innerText = "Password must contain letters and numbers";
+          error3.style.display = "block";
+        } else {
+          error3.style.display = "none";
+        }
+
+        if (cpass !== pass) {
+          error4.innerText = "Passwords do not match";
+          error4.style.display = "block";
+        } else {
+          error4.style.display = "none";
+        }
+      }
+
+      signform.addEventListener("submit", (e) => {
+        nameValidate();
+        emailValidate();
+        passwordValidate();
+
+        if (
+          error1.style.display === "block" ||
+          error2.style.display === "block" ||
+          error3.style.display === "block" ||
+          error4.style.display === "block"
+        ) {
+          e.preventDefault();
+        }
+      });
+
+      nameid.addEventListener("input", nameValidate);
+      emailid.addEventListener("input", emailValidate);
+      passid.addEventListener("input", passwordValidate);
+      cpassid.addEventListener("input", passwordValidate);
+
+      document.getElementById("show-password").addEventListener("change", function () {
+        const type = this.checked ? "text" : "password";
+        passid.type = type;
+        cpassid.type = type;
+      });
+    };
+  </script>
+</body>
+</html>

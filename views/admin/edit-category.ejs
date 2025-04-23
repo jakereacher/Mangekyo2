@@ -1,0 +1,73 @@
+<%- include("../../views/admin/partials/header", { activePage: 'edit-category' }) %>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6 mt-60">
+            <% if (typeof error !== 'undefined') { %>
+            <div class="alert alert-danger"><%= error %></div>
+            <% } %>
+            <form id="editCategoryForm" method="post" action="/admin/editCategory/<%=category._id%>">
+                <div class="d-grid text-end mt-30 col-md-5">
+                    <button class="btn btn-primary" type="submit">Update category</button>
+                </div>
+                <div class="mb-4 mt-30">
+                    <label for="product_name" class="form-label">Name</label>
+                    <input type="text" name="categoryName" value="<%=category.name%>" class="form-control border" />
+                </div>
+                
+                <div class="mb-4">
+                    <label class="form-label">Description</label>
+                    <textarea name="description" class="form-control border"><%=category.description%></textarea>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.min.js"></script>
+<script>
+document.getElementById('editCategoryForm').addEventListener('submit', async function(e) {
+    e.preventDefault(); // Prevent default form submission
+
+    const form = this;
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+
+    try {
+        const response = await fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.error || 'Failed to update category');
+        }
+
+        // Success alert
+        Swal.fire({
+            icon: 'success',
+            title: 'Success!',
+            text: result.message || 'Category updated successfully',
+            showConfirmButton: false,
+            timer: 1500
+        }).then(() => {
+            window.location.href = '/admin/category'; // Redirect after success
+        });
+
+    } catch (error) {
+        // Error alert
+        Swal.fire({
+            icon: 'error',
+            title: 'Oops...',
+            text: error.message || 'Something went wrong while updating the category',
+        });
+    }
+});
+</script>
+
+<%- include("../../views/admin/partials/footer", { activePage: 'edit-category' }) %>

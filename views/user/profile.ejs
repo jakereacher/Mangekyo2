@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile | Mangeyko</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        #imageUpload { display: none; }
+        .profile-pic { cursor: pointer; transition: all 0.3s ease; }
+        .profile-pic:hover { transform: scale(1.05); }
+        .order-card { transition: all 0.3s ease; }
+        .order-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .address-card { transition: all 0.3s ease; }
+        .address-card:hover { transform: translateY(-2px); }
+        .address-card.default { border-left: 4px solid black; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900 font-sans">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- Profile Header Section -->
+        <div class="profile-header flex flex-col md:flex-row items-start md:items-center gap-6 mb-8 pb-6 border-b border-gray-200">
+            <form id="profileImageForm" enctype="multipart/form-data">
+                <label for="imageUpload" class="relative">
+                    <img 
+                        src="<%= user.profileImage || '/images/default-avatar.png' %>" 
+                        class="profile-pic w-24 h-24 md:w-32 md:h-32 rounded-full object-cover border-2 border-black"
+                        id="previewImage">
+                    <div class="absolute bottom-0 right-0 bg-black text-white rounded-full p-2">
+                        <i class="fas fa-camera text-xs"></i>
+                    </div>
+                </label>
+                <input type="file" id="imageUpload" name="profileImage" accept="image/*">
+                <input type="hidden" name="existingImage" value="<%= user.profileImage %>">
+            </form>
+
+            <div class="profile-info flex-1">
+                <form id="editProfileForm" class="space-y-2">
+                    <input type="text" name="name" id="nameInput" 
+                           value="<%= user.name %>" 
+                           class="w-full md:w-80 px-4 py-2 text-xl font-bold border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black"
+                           required>
+                    
+                    <p class="text-gray-600"><%= user.email %></p>
+                    
+                    <% if (isDemo) { %>
+                        <span class="inline-block bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-medium">
+                            DEMO ACCOUNT
+                        </span>
+                    <% } %>
+                    
+                    <button type="submit" class="mt-3 bg-black text-white px-4 py-2 rounded hover:bg-gray-800 transition">
+                        Save Changes
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Status Message Box -->
+        <div id="updateStatus" class="hidden mb-6 p-3 rounded"></div>
+
+        <!-- Addresses Section -->
+        <div class="section mb-10">
+            <h2 class="text-2xl font-bold mb-4 pb-2 border-b border-gray-200">
+                <i class="fas fa-map-marker-alt mr-2"></i>My Addresses
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6" id="addressesContainer">
+                <% if (user.address && user.address.length > 0) { %>
+                    <% user.address.forEach(address => { %>
+                        <% if (address && address._id) { %>
+                            <div class="address-card bg-white p-4 rounded shadow-sm border border-gray-200 <%= address.isDefault ? 'default' : '' %>">
+                                <h3 class="font-bold text-lg"><%= address.fullName || 'N/A' %></h3>
+                                <p class="text-gray-700">
+                                    <%= address.addressLine || '' %><%= address.landmark ? ', ' + address.landmark : '' %>
+                                </p>
+                                <p class="text-gray-700">
+                                    <%= address.city || '' %><%= address.state ? ', ' + address.state : '' %><%= address.pinCode ? ' - ' + address.pinCode : '' %>
+                                </p>
+                                <p class="text-gray-700">Mobile: <%= address.mobile || 'N/A' %></p>
+                                
+                                <div class="address-actions mt-3 space-x-2">
+                                    <% if (!address.isDefault) { %>
+                                        <button onclick="setDefaultAddress('<%= address._id %>')" 
+                                                class="bg-gray-800 text-white px-3 py-1 rounded text-sm hover:bg-gray-700">
+                                            Set Default
+                                        </button>
+                                    <% } else { %>
+                                        <span class="inline-block bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
+                                            Default Address
+                                        </span>
+                                    <% } %>
+                                    <button onclick="editAddress('<%= address._id %>')" 
+                                            class="bg-gray-200 text-gray-800 px-3 py-1 rounded text-sm hover:bg-gray-300">
+                                        Edit
+                                    </button>
+                                    <button onclick="deleteAddress('<%= address._id %>')" 
+                                            class="bg-red-100 text-red-800 px-3 py-1 rounded text-sm hover:bg-red-200">
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        <% } %>
+                    <% }) %>
+                <% } else { %>
+                    <p class="text-gray-500 col-span-full">No addresses saved yet.</p>
+                <% } %>
+            </div>
+            
+            <button onclick="showAddressModal('add')" 
+                    class="bg-black text-white px-4 py-2 rounded hover:bg-gray-800 transition flex items-center">
+                <i class="fas fa-plus mr-2"></i> Add New Address
+            </button>
+        </div>
+
+        <!-- Order History Section -->
+        <div class="section mb-10">
+            <h2 class="text-2xl font-bold mb-4 pb-2 border-b border-gray-200">
+                <i class="fas fa-history mr-2"></i>Order History
+            </h2>
+            
+            <% if (user.orderHistory && user.orderHistory.length > 0) { %>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <% user.orderHistory.forEach(order => { %>
+                        <div class="order-card bg-white p-4 rounded shadow-sm border border-gray-200">
+                            <h3 class="font-bold text-lg mb-2">
+                                Order #<%= order._id.toString().slice(-6) %>
+                            </h3>
+                            
+                            <div class="flex items-center mb-1">
+                                <span class="inline-block w-2 h-2 rounded-full 
+                                    <%= order.status === 'Delivered' ? 'bg-green-500' : '' %>
+                                    <%= order.status === 'Shipped' ? 'bg-blue-500' : '' %>
+                                    <%= order.status === 'Processing' ? 'bg-yellow-500' : '' %>
+                                    <%= order.status === 'Cancelled' ? 'bg-red-500' : '' %> mr-2">
+                                </span>
+                                <span>Status: <%= order.status %></span>
+                            </div>
+                            
+                            <p class="text-gray-700">Amount: ₹<%= order.totalAmount %></p>
+                            <p class="text-gray-700">Date: <%= new Date(order.createdAt).toLocaleDateString() %></p>
+                            
+                            <button class="mt-3 text-sm text-blue-600 hover:text-blue-800 hover:underline">
+                                View Details
+                            </button>
+                        </div>
+                    <% }) %>
+                </div>
+            <% } else { %>
+                <p class="text-gray-500">No orders yet.</p>
+                <a href="/products" class="inline-block mt-4 bg-black text-white px-4 py-2 rounded hover:bg-gray-800 transition">
+                    Start Shopping
+                </a>
+            <% } %>
+        </div>
+
+        <!-- Wallet Section -->
+        <div class="section mb-10">
+            <h2 class="text-2xl font-bold mb-4 pb-2 border-b border-gray-200">
+                <i class="fas fa-wallet mr-2"></i>My Wallet
+            </h2>
+            
+            <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 max-w-md">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <p class="text-gray-500">Available Balance</p>
+                        <p class="text-3xl font-bold">₹<%= user.wallet || '0' %></p>
+                    </div>
+                    <div class="bg-green-100 text-green-800 p-3 rounded-full">
+                        <i class="fas fa-rupee-sign text-2xl"></i>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <button class="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-700 transition">
+                        Add Money
+                    </button>
+                    <button class="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300 transition">
+                        Withdraw
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Address Modal -->
+    <div id="addressModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div class="p-6">
+                <h2 id="addressModalTitle" class="text-xl font-bold mb-4">
+                    <i class="fas fa-map-marker-alt mr-2"></i>Add New Address
+                </h2>
+                
+                <form id="addressForm" class="space-y-4">
+                    <input type="hidden" id="addressId" name="addressId">
+                    
+                    <div>
+                        <label for="fullName" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                        <input type="text" id="fullName" name="fullName" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="mobile" class="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
+                            <input type="tel" id="mobile" name="mobile" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black">
+                        </div>
+                        <div>
+                            <label for="pinCode" class="block text-sm font-medium text-gray-700 mb-1">PIN Code</label>
+                            <input type="text" id="pinCode" name="pinCode" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label for="addressLine" class="block text-sm font-medium text-gray-700 mb-1">Address Line</label>
+                        <textarea id="addressLine" name="addressLine" rows="3" required
+                                  class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black"></textarea>
+                    </div>
+                    
+                    <div>
+                        <label for="landmark" class="block text-sm font-medium text-gray-700 mb-1">Landmark</label>
+                        <input type="text" id="landmark" name="landmark"
+                               class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="city" class="block text-sm font-medium text-gray-700 mb-1">City</label>
+                            <input type="text" id="city" name="city" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black">
+                        </div>
+                        <div>
+                            <label for="state" class="block text-sm font-medium text-gray-700 mb-1">State</label>
+                            <input type="text" id="state" name="state" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black">
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center">
+                        <input type="checkbox" id="isDefault" name="isDefault"
+                               class="h-4 w-4 text-black focus:ring-black border-gray-300 rounded">
+                        <label for="isDefault" class="ml-2 block text-sm text-gray-700">Set as default address</label>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" onclick="hideAddressModal()"
+                                class="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 transition">
+                            Cancel
+                        </button>
+                        <button type="submit"
+                                class="px-4 py-2 bg-black text-white rounded hover:bg-gray-800 transition">
+                            Save Address
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Profile Image Upload
+        document.getElementById('imageUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    document.getElementById('previewImage').src = event.target.result;
+                    
+                    // Submit the form immediately after image selection
+                    const formData = new FormData(document.getElementById('profileImageForm'));
+                    
+                    fetch('/profile/update-image', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showAlert('Profile image updated successfully', 'success');
+                            document.querySelector('input[name="existingImage"]').value = data.data.profileImage;
+                        } else {
+                            showAlert(data.message || 'Failed to update image', 'error');
+                        }
+                    })
+                    .catch(err => {
+                        showAlert('Error uploading image', 'error');
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Update Profile Info
+        document.getElementById('editProfileForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('nameInput').value;
+            const existingImage = document.querySelector('input[name="existingImage"]').value;
+            
+            try {
+                const res = await fetch('/profile/update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        name, 
+                        existingImage 
+                    })
+                });
+                
+                const result = await res.json();
+                
+                if (result.success) {
+                    showAlert('Profile updated successfully', 'success');
+                } else {
+                    showAlert(result.message || 'Update failed', 'error');
+                }
+            } catch (err) {
+                showAlert('Something went wrong', 'error');
+            }
+        });
+
+        // Address Management Functions
+        function showAddressModal(action, addressId = null) {
+            const modal = document.getElementById('addressModal');
+            const title = document.getElementById('addressModalTitle');
+            const form = document.getElementById('addressForm');
+            
+            if (action === 'add') {
+                title.innerHTML = '<i class="fas fa-map-marker-alt mr-2"></i>Add New Address';
+                form.reset();
+                document.getElementById('addressId').value = '';
+            } else if (action === 'edit' && addressId) {
+                title.innerHTML = '<i class="fas fa-map-marker-alt mr-2"></i>Edit Address';
+                // Here you would fetch the address data and populate the form
+                // For now we'll just set the ID
+                document.getElementById('addressId').value = addressId;
+            }
+            
+            modal.classList.remove('hidden');
+        }
+
+        function hideAddressModal() {
+            document.getElementById('addressModal').classList.add('hidden');
+        }
+
+        async function setDefaultAddress(addressId) {
+            try {
+                const res = await fetch('/profile/addresses', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'SET_DEFAULT',
+                        addressId
+                    })
+                });
+                
+                const result = await res.json();
+                
+                if (result.success) {
+                    window.location.reload();
+                } else {
+                    showAlert(result.message || 'Failed to set default address', 'error');
+                }
+            } catch (err) {
+                showAlert('Something went wrong', 'error');
+            }
+        }
+
+        async function editAddress(addressId) {
+            try {
+                // Fetch address data first
+                const res = await fetch(`/profile/addresses/${addressId}`);
+                const result = await res.json();
+                
+                if (result.success) {
+                    const address = result.data;
+                    showAddressModal('edit', addressId);
+                    
+                    // Populate form fields
+                    document.getElementById('fullName').value = address.fullName || '';
+                    document.getElementById('mobile').value = address.mobile || '';
+                    document.getElementById('pinCode').value = address.pinCode || '';
+                    document.getElementById('addressLine').value = address.addressLine || '';
+                    document.getElementById('landmark').value = address.landmark || '';
+                    document.getElementById('city').value = address.city || '';
+                    document.getElementById('state').value = address.state || '';
+                    document.getElementById('isDefault').checked = address.isDefault || false;
+                } else {
+                    showAlert(result.message || 'Failed to load address', 'error');
+                }
+            } catch (err) {
+                showAlert('Something went wrong', 'error');
+            }
+        }
+
+        async function deleteAddress(addressId) {
+            if (confirm('Are you sure you want to delete this address?')) {
+                try {
+                    const res = await fetch('/profile/addresses', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            action: 'DELETE',
+                            addressId
+                        })
+                    });
+                    
+                    const result = await res.json();
+                    
+                    if (result.success) {
+                        window.location.reload();
+                    } else {
+                        showAlert(result.message || 'Failed to delete address', 'error');
+                    }
+                } catch (err) {
+                    showAlert('Something went wrong', 'error');
+                }
+            }
+        }
+
+        // Handle address form submission
+        document.getElementById('addressForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const addressId = document.getElementById('addressId').value;
+            const action = addressId ? 'UPDATE' : 'ADD';
+            
+            const addressData = {
+                fullName: document.getElementById('fullName').value,
+                mobile: document.getElementById('mobile').value,
+                pinCode: document.getElementById('pinCode').value,
+                addressLine: document.getElementById('addressLine').value,
+                landmark: document.getElementById('landmark').value,
+                city: document.getElementById('city').value,
+                state: document.getElementById('state').value,
+                isDefault: document.getElementById('isDefault').checked
+            };
+            
+            try {
+                const res = await fetch('/profile/addresses', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action,
+                        addressId,
+                        addressData
+                    })
+                });
+                
+                const result = await res.json();
+                
+                if (result.success) {
+                    window.location.reload();
+                } else {
+                    showAlert(result.message || 'Failed to save address', 'error');
+                }
+            } catch (err) {
+                showAlert('Something went wrong', 'error');
+            }
+        });
+
+        // Helper function to show alerts
+        function showAlert(message, type) {
+            const statusEl = document.getElementById('updateStatus');
+            statusEl.textContent = message;
+            statusEl.className = `mb-4 p-3 rounded ${type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+            statusEl.classList.remove('hidden');
+            
+            setTimeout(() => {
+                statusEl.classList.add('hidden');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

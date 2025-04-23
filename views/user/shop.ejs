@@ -1,0 +1,405 @@
+<%- include("../../views/user/partials/header") %>
+
+<!-- Hero Section -->
+<div class="bg-black py-20 px-8">
+    <div class="max-w-7xl mx-auto text-center">
+        <h1 class="text-5xl font-bold mb-4 text-white">Our Collection</h1>
+        <p class="text-xl text-gray-300 mb-8 max-w-3xl mx-auto">Discover premium manga collectibles that bring your favorite characters to life</p>
+    </div>
+</div>
+
+<!-- Search and Filter Section -->
+<section class="bg-gray-900 py-10 px-8">
+    <div class="max-w-7xl mx-auto">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <!-- Filters Sidebar -->
+            <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                <h3 class="text-2xl font-bold mb-6 text-white">Filters</h3>
+                
+                <form id="filterForm" action="/shop" method="GET" class="space-y-8">
+                    <!-- Search -->
+                    <div>
+                        <label for="search" class="block mb-2 font-medium text-gray-300">Search</label>
+                        <div class="relative">
+                            <input 
+                                type="text" 
+                                id="search" 
+                                name="search" 
+                                value="<%= locals.query ? query.search || '' : '' %>"
+                                placeholder="Search products..." 
+                                class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-white focus:outline-none"
+                            >
+                            <button 
+                                type="button" 
+                                id="clearSearch" 
+                                class="absolute right-3 top-3 text-gray-400 hover:text-white"
+                                <%= !locals.query || !query.search ? 'style="display: none;"' : '' %>
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Sort -->
+                    <div>
+                        <label for="sort" class="block mb-2 font-medium text-gray-300">Sort By</label>
+                        <select 
+                            id="sort" 
+                            name="sort" 
+                            class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-white focus:outline-none"
+                        >
+                            <option value="default" <%= locals.query && query.sort === 'default' ? 'selected' : '' %>>Featured</option>
+                            <option value="price_asc" <%= locals.query && query.sort === 'price_asc' ? 'selected' : '' %>>Price: Low to High</option>
+                            <option value="price_desc" <%= locals.query && query.sort === 'price_desc' ? 'selected' : '' %>>Price: High to Low</option>
+                            <option value="name_asc" <%= locals.query && query.sort === 'name_asc' ? 'selected' : '' %>>Name: A to Z</option>
+                            <option value="name_desc" <%= locals.query && query.sort === 'name_desc' ? 'selected' : '' %>>Name: Z to A</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Category Filter -->
+                    <div>
+                        <h4 class="font-medium mb-2 text-gray-300">Categories</h4>
+                        <div class="space-y-2">
+                            <div class="flex items-center">
+                                <input 
+                                    type="checkbox" 
+                                    id="category_all" 
+                                    name="category" 
+                                    value="all" 
+                                    class="mr-2 accent-gray-400"
+                                    <%= !locals.query || !query.category || query.category === 'all' ? 'checked' : '' %>
+                                >
+                                <label for="category_all" class="text-gray-300">All Categories</label>
+                            </div>
+                            <% if (locals.categories && categories.length > 0) { %>
+                                <% categories.forEach(cat => { %>
+                                    <div class="flex items-center">
+                                        <input 
+                                            type="checkbox" 
+                                            id="category_<%= cat.name.toLowerCase() %>" 
+                                            name="category" 
+                                            value="<%= cat.name.toLowerCase() %>" 
+                                            class="mr-2 accent-gray-400"
+                                            <%= locals.query && query.category && query.category.includes(cat.name.toLowerCase()) ? 'checked' : '' %>
+                                        >
+                                        <label for="category_<%= cat.name.toLowerCase() %>" class="text-gray-300"><%= cat.name %></label>
+                                    </div>
+                                <% }); %>
+                            <% } %>
+                        </div>
+                    </div>
+                    
+                    <!-- Price Range Filter -->
+                    <div>
+                        <h4 class="font-medium mb-2 text-gray-300">Price Range</h4>
+                        <div class="flex flex-col space-y-4">
+                            <div>
+                                <label for="min_price" class="text-sm text-gray-400">Min Price ($)</label>
+                                <input 
+                                    type="number" 
+                                    id="min_price" 
+                                    name="min_price" 
+                                    min="0" 
+                                    value="<%= locals.query && query.min_price ? query.min_price : '0' %>"
+                                    class="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-white focus:outline-none"
+                                >
+                            </div>
+                            
+                            <div>
+                                <label for="max_price" class="text-sm text-gray-400">Max Price ($)</label>
+                                <input 
+                                    type="number" 
+                                    id="max_price" 
+                                    name="max_price" 
+                                    min="0" 
+                                    value="<%= locals.query && query.max_price ? query.max_price : '2000' %>"
+                                    class="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-white focus:outline-none"
+                                >
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Apply Filters Button -->
+                    <div class="flex space-x-3">
+                        <button 
+                            type="submit" 
+                            class="px-6 py-3 bg-white text-black font-bold rounded-lg hover:bg-gray-300 transition w-full"
+                        >
+                            Apply Filters
+                        </button>
+                        
+                        <button 
+                            type="button" 
+                            id="resetFilters"
+                            class="px-6 py-3 border border-white text-white font-bold rounded-lg hover:bg-gray-700 transition"
+                        >
+                            Reset
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Products Grid -->
+            <div class="lg:col-span-3">
+                <!-- Results Summary -->
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-white">
+                        <% if (locals.products) { %>
+                            <span id="resultsCount"><%= products.length %></span> Products
+                        <% } else { %>
+                            All Products
+                        <% } %>
+                    </h2>
+                    
+                    <% if (locals.query && Object.keys(query).length > 0 && query.search) { %>
+                        <div class="flex items-center bg-gray-800 py-1 px-3 rounded-full border border-gray-700">
+                            <span class="text-sm text-gray-300 mr-2">Search: "<%= query.search %>"</span>
+                            <a href="/shop" class="text-white hover:text-gray-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </a>
+                        </div>
+                    <% } %>
+                </div>
+                
+                <!-- No Results Message -->
+                <% if (locals.products && products.length === 0) { %>
+                    <div class="bg-gray-800 rounded-lg p-8 text-center border border-gray-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <h3 class="text-xl font-bold mb-2 text-white">No Products Found</h3>
+                        <p class="text-gray-400 mb-6">We couldn't find any products matching your current filters.</p>
+                        <a href="/shop" class="px-6 py-3 bg-white text-black font-bold rounded-lg hover:bg-gray-300 transition">
+                            Clear All Filters
+                        </a>
+                    </div>
+                <% } else { %>
+                    <!-- Products Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <% if (locals.products) { %>
+                            <% products.forEach(product => { %>
+                                <a href="/shop/product/<%= product._id %>" class="block">
+                                    <div class="bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-white transition border border-gray-700">
+                                        <div class="relative">
+                                            <img src="<%= product.image %>" alt="<%= product.name %>" class="w-full h-64 object-cover">
+                                            <% if (product.isNew) { %>
+                                                <div class="absolute top-2 right-2 bg-white text-black text-xs font-bold px-2 py-1 rounded">NEW</div>
+                                            <% } %>
+                                            <% if (product.discount > 0) { %>
+                                                <div class="absolute top-2 left-2 bg-gray-700 text-white text-xs font-bold px-2 py-1 rounded border border-white">-<%= product.discount %>%</div>
+                                            <% } %>
+                                        </div>
+                                        <div class="p-4">
+                                            <h3 class="text-lg font-bold mb-1 text-white"><%= product.name %></h3>
+                                            <p class="text-gray-400 text-sm mb-2"><%= product.category %></p>
+                                            <div class="flex justify-between items-center">
+                                                <div>
+                                                    <% if (product.originalPrice && product.originalPrice > product.price) { %>
+                                                        <span class="text-gray-400 line-through text-sm mr-2">$<%= product.originalPrice.toFixed(2) %></span>
+                                                    <% } %>
+                                                    <span class="text-white font-bold">$<%= product.price.toFixed(2) %></span>
+                                                </div>
+                                                <button class="p-2 bg-white text-black rounded hover:bg-gray-300 transition">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </a>
+                            <% }); %>
+                        <% } else { %>
+                            <!-- Placeholder Product Cards for Demo -->
+                            <% for (let i = 0; i < 9; i++) { %>
+                                <div class="bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-white transition border border-gray-700">
+                                    <div class="relative">
+                                        <img src="/images/<%= ['figurine', 'necklace', 'keychain', 'mug'][i % 4] %>1.webp" alt="Product" class="w-full h-64 object-cover">
+                                        <% if (i % 3 === 0) { %>
+                                            <div class="absolute top-2 right-2 bg-white text-black text-xs font-bold px-2 py-1 rounded">NEW</div>
+                                        <% } %>
+                                        <% if (i % 4 === 0) { %>
+                                            <div class="absolute top-2 left-2 bg-gray-700 text-white text-xs font-bold px-2 py-1 rounded border border-white">-15%</div>
+                                        <% } %>
+                                    </div>
+                                    <div class="p-4">
+                                        <h3 class="text-lg font-bold mb-1 text-white">Manga <%= ['Figurine', 'Necklace', 'Keychain', 'Mug'][i % 4] %> <%= i + 1 %></h3>
+                                        <p class="text-gray-400 text-sm mb-2"><%= ['Figurines', 'Necklaces', 'Keychains', 'Mugs'][i % 4] %></p>
+                                        <div class="flex justify-between items-center">
+                                            <div>
+                                                <% if (i % 4 === 0) { %>
+                                                    <span class="text-gray-400 line-through text-sm mr-2">$<%= (Math.floor(Math.random() * 50) + 30).toFixed(2) %></span>
+                                                <% } %>
+                                                <span class="text-white font-bold">$<%= (Math.floor(Math.random() * 40) + 15).toFixed(2) %></span>
+                                            </div>
+                                            <button class="p-2 bg-white text-black rounded hover:bg-gray-300 transition">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            <% } %>
+                        <% } %>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <div class="mt-12 flex justify-center items-center space-x-2">
+                        <% if (currentPage > 1) { %>
+                            <a href="/shop?page=<%= currentPage - 1 %>&<% Object.entries(query).filter(([key]) => key !== 'page').forEach(([key, value]) => { %><%= key %>=<%= value %>&<% }) %>" class="w-10 h-10 flex items-center justify-center bg-gray-800 rounded-lg text-gray-400 hover:bg-gray-700 hover:text-white transition border border-gray-700">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                                </svg>
+                            </a>
+                        <% } %>
+                    
+                        <% for (let i = 1; i <= totalPages; i++) { %>
+                            <a href="/shop?page=<%= i %>&<% Object.entries(query).filter(([key]) => key !== 'page').forEach(([key, value]) => { %><%= key %>=<%= value %>&<% }) %>" class="w-10 h-10 flex items-center justify-center <%= currentPage === i ? 'bg-white text-black' : 'bg-gray-800 text-white hover:bg-gray-700' %> rounded-lg font-bold transition border border-gray-700">
+                                <%= i %>
+                            </a>
+                        <% } %>
+                    
+                        <% if (currentPage < totalPages) { %>
+                            <a href="/shop?page=<%= currentPage + 1 %>&<% Object.entries(query).filter(([key]) => key !== 'page').forEach(([key, value]) => { %><%= key %>=<%= value %>&<% }) %>" class="w-10 h-10 flex items-center justify-center bg-gray-800 rounded-lg text-gray-400 hover:bg-gray-700 hover:text-white transition border border-gray-700">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </a>
+                        <% } %>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Recommended Products -->
+<section class="py-16 px-8 bg-black">
+    <div class="max-w-7xl mx-auto">
+        <h2 class="text-3xl font-bold mb-8 text-white">You May Also Like</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <% if (locals.recommendedProducts && recommendedProducts.length > 0) { %>
+                <% recommendedProducts.forEach(product => { %>
+                    <a href="/shop/product/<%= product._id %>" class="block">
+                        <div class="bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-white transition border border-gray-700">
+                            <div class="relative">
+                                <img src="<%= product.image %>" alt="<%= product.name %>" class="w-full h-64 object-cover">
+                                <% if (product.isNew) { %>
+                                    <div class="absolute top-2 right-2 bg-white text-black text-xs font-bold px-2 py-1 rounded">NEW</div>
+                                <% } %>
+                                <% if (product.discount > 0) { %>
+                                    <div class="absolute top-2 left-2 bg-gray-700 text-white text-xs font-bold px-2 py-1 rounded border border-white">-<%= product.discount %>%</div>
+                                <% } %>
+                            </div>
+                            <div class="p-4">
+                                <h3 class="text-lg font-bold mb-1 text-white"><%= product.name %></h3>
+                                <p class="text-gray-400 text-sm mb-2"><%= product.category %></p>
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <% if (product.originalPrice && product.originalPrice > product.price) { %>
+                                            <span class="text-gray-400 line-through text-sm mr-2">$<%= product.originalPrice.toFixed(2) %></span>
+                                        <% } %>
+                                        <span class="text-white font-bold">$<%= product.price.toFixed(2) %></span>
+                                    </div>
+                                    <button class="p-2 bg-white text-black rounded hover:bg-gray-300 transition">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                <% }); %>
+            <% } else { %>
+                <p class="text-gray-400">No recommended products available.</p>
+            <% } %>
+        </div>
+    </div>
+</section>
+
+<%- include("../../views/user/partials/footer") %>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Clear search button
+        const searchInput = document.getElementById('search');
+        const clearSearchBtn = document.getElementById('clearSearch');
+        
+        if (searchInput && clearSearchBtn) {
+            searchInput.addEventListener('input', function() {
+                clearSearchBtn.style.display = this.value ? 'block' : 'none';
+            });
+            
+            clearSearchBtn.addEventListener('click', function() {
+                searchInput.value = '';
+                this.style.display = 'none';
+            });
+        }
+        
+        // Reset filters button
+        const resetBtn = document.getElementById('resetFilters');
+        const filterForm = document.getElementById('filterForm');
+        
+        if (resetBtn && filterForm) {
+            resetBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                filterForm.reset();
+                searchInput.value = '';
+                clearSearchBtn.style.display = 'none';
+                minPrice.value = '0';
+                maxPrice.value = '2000';
+                window.location.href = '/shop';
+            });
+        }
+        
+        // Category checkboxes logic
+        const allCategoriesCheckbox = document.getElementById('category_all');
+        const categoryCheckboxes = document.querySelectorAll('input[name="category"]:not([value="all"])');
+        
+        if (allCategoriesCheckbox) {
+            allCategoriesCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    categoryCheckboxes.forEach(checkbox => {
+                        checkbox.checked = false;
+                    });
+                }
+            });
+            
+            categoryCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        allCategoriesCheckbox.checked = false;
+                    }
+                    
+                    const anyChecked = Array.from(categoryCheckboxes).some(cb => cb.checked);
+                    if (!anyChecked) {
+                        allCategoriesCheckbox.checked = true;
+                    }
+                });
+            });
+        }
+
+        // Handle multiple category selections on form submit
+        document.getElementById('filterForm').addEventListener('submit', function(e) {
+            const categoryCheckboxes = document.querySelectorAll('input[name="category"]:checked');
+            const selectedCategories = Array.from(categoryCheckboxes)
+                .map(cb => cb.value)
+                .filter(val => val !== 'all');
+            
+            if (selectedCategories.length > 0) {
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'category';
+                hiddenInput.value = selectedCategories.join(',');
+                this.appendChild(hiddenInput);
+            }
+        });
+    });
+</script>
