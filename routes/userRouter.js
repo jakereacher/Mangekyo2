@@ -22,7 +22,9 @@ const {
   newPassword,
   googleCallbackHandler,
   addToCart,
-  renderCartPage
+  renderCartPage,
+  removeFromCart,
+  validateCart
 } = require("../controllers/user"); 
 
 // Page Routes
@@ -36,8 +38,16 @@ router.get("/newPassword", loadNewPassword);
 router.get("/shop", loadShop);
 router.get("/shop/product/:id", loadProductDetail);
 
+// Cart Routes
 router.post("/add-to-cart",addToCart)
 router.get("/cart", renderCartPage)
+router.patch("/remove-from-cart", removeFromCart);
+router.post("/validate-cart", validateCart);
+router.get("/checkout",(req,res)=>{
+  res.render("checkout")
+}
+)
+
 // Auth & User Management
 router.post("/signup", signup);
 router.post("/verify-otp", verifyOtp);

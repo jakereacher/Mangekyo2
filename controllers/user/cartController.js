@@ -146,4 +146,130 @@ exports.renderCartPage = async (req, res) => {
       res.status(500).send("Internal Server Error");
     }
   };
+
+  exports.removeFromCart = async (req, res) => {
+    try {
+      const { productId } = req.body;
+      const userId = req.session?.user;
+  
+      if (!userId) {
+        return res.status(StatusCodes.UNAUTHORIZED).json({
+          success: false,
+          message: "User not logged in",
+        });
+      }
+  
+      const cart = await Cart.findOne({ userId });
+      if (!cart) {
+        return res.status(StatusCodes.NOT_FOUND).json({
+          success: false,
+          message: "Cart not found",
+        });
+      }
+  
+      const productIndex = cart.products.findIndex(
+        (item) => item.productId.toString() === productId
+      );
+  
+      if (productIndex === -1) {
+        return res.status(StatusCodes.NOT_FOUND).json({
+          success: false,
+          message: "Product not found in cart",
+        });
+      }
+  
+      cart.products.splice(productIndex, 1); // Remove product
+      await cart.save();
+  
+      return res.status(StatusCodes.OK).json({
+        success: true,
+        message: "Product removed from cart",
+        cartCount: cart.products.length,
+      });
+  
+    } catch (error) {
+      console.error("Remove from Cart Error:", error);
+      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Something went wrong",
+      });
+    }
+  };
+
+
+
+
+
+
+
+  exports.validateCart = async (req, res) => {
+    try {
+      const userId = req.session?.user;
+  
+      if (!userId) {
+        return res.status(StatusCodes.UNAUTHORIZED).json({
+          success: false,
+          message: "Not authenticated",
+        });
+      }
+  
+      const cart = await Cart.findOne({ userId }).lean();
+  
+      if (!cart || !cart.products || cart.products.length === 0) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          success: false,
+          message: "Your cart is empty",
+        });
+      }
+  
+      const validationErrors = [];
+  
+      for (const item of cart.products) {
+        const product = await Product.findById(item.productId).lean();
+  
+        if (!product) {
+          validationErrors.push({
+            productId: item.productId,
+            message: `This product is no longer available.`,
+          });
+          continue;
+        }
+  
+        if (product.isDeleted || product.status !== "Available") {
+          validationErrors.push({
+            productId: product._id,
+            message: `"${product.productName}" is not currently available.`,
+          });
+          continue;
+        }
+  
+        if (product.quantity < item.quantity) {
+          validationErrors.push({
+            productId: product._id,
+            message: `Only ${product.quantity} "${product.productName}" left in stock. You have ${item.quantity} in cart.`,
+          });
+        }
+      }
+  
+      if (validationErrors.length > 0) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          success: false,
+          message: "Cart validation failed",
+          errors: validationErrors,
+        });
+      }
+  
+      return res.status(StatusCodes.OK).json({
+        success: true,
+        message: "Cart is valid",
+        redirectUrl: "/checkout",
+      });
+    } catch (error) {
+      console.error("Cart validation error:", error);
+      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Error validating cart",
+      });
+    }
+  };
   

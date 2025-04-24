@@ -10,6 +10,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+    <!-- Place this in your HTML head or before the closing body tag -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <style>
         :where([class^="ri-"])::before { content: "\f3c2"; }
         
@@ -101,6 +104,19 @@
                 position: static;
             }
         }
+
+        .checkout-status-loader {
+        border: 2px solid #f3f3f3;
+        border-top: 2px solid #3498db;
+        border-radius: 50%;
+        width: 16px;
+        height: 16px;
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
     </style>
 </head>
 <body class="bg-white min-h-screen">
@@ -168,7 +184,7 @@
                                             </div>
                                         </button>
                                     </div>
-                                    
+                                    <span class="font-medium text-gray-700 mx-4 product-total-price">$<%= item.totalPrice.toFixed(2) %></span>
                                     <button class="remove-item-btn text-sm text-gray-600 hover:text-primary flex items-center gap-1">
                                         <div class="w-4 h-4 flex items-center justify-center">
                                             <i class="ri-delete-bin-line"></i>
@@ -233,6 +249,14 @@
                             </div>
                             <div class="loader ml-2"></div>
                         </a>
+
+                        <div id="checkout-status" class="hidden mt-2 text-sm">
+                            <div class="flex items-center text-blue-600">
+                                <div class="checkout-status-loader mr-2"></div>
+                                <span class="checkout-status-text"></span>
+                            </div>
+                        </div>
+                        
                         
                         <div class="mt-4 mb-3">
                             <div class="flex items-center justify-center gap-2 text-sm text-gray-500">
@@ -336,10 +360,10 @@
                     if (data.success) {
                         // Update the cart count if returned
                         if (data.cartCount !== undefined) {
-                            const cartCountElement = document.querySelector('.cart-count');
-                            if (cartCountElement) {
-                                cartCountElement.textContent = data.cartCount;
-                            }
+                            const cartCountElements = document.querySelectorAll('.cart-count');
+                            cartCountElements.forEach(element => {
+                                element.textContent = data.cartCount;
+                            });
                         }
                         
                         // Reload the page to update totals
@@ -385,8 +409,8 @@
                     if (loaderElement) loaderElement.style.display = 'block';
                     
                     // Send AJAX request to remove item
-                    fetch('/add-to-cart', {
-                        method: 'POST',
+                    fetch('/remove-from-cart', {
+                        method: 'PATCH',
                         headers: {
                             'Content-Type': 'application/json',
                             'X-Requested-With': 'XMLHttpRequest'
@@ -395,33 +419,64 @@
                             productId: currentProductId
                         })
                     })
-                    .then(response => response.json())
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
                     .then(data => {
                         if (loaderElement) loaderElement.style.display = 'none';
                         
                         if (data.success) {
+                            // Remove the item from UI
                             currentItemToRemove.remove();
                             removeModal.style.display = 'none';
                             
-                            // Check if cart is empty
+                            // Update cart count in header
+                            if (data.cartCount !== undefined) {
+                                const cartCountElements = document.querySelectorAll('.cart-count');
+                                cartCountElements.forEach(element => {
+                                    element.textContent = data.cartCount;
+                                });
+                                
+                                // Update the cart items count in the title
+                                const cartTitle = document.querySelector('.cart-items-container h2');
+                                if (cartTitle) {
+                                    const itemText = data.cartCount === 1 ? 'item' : 'items';
+                                    cartTitle.textContent = `Your Cart (${data.cartCount} ${itemText})`;
+                                }
+                            }
+                            
+                            // Check if cart is now empty
                             const cartItems = document.querySelectorAll('.cart-item');
                             if (cartItems.length === 0) {
                                 document.querySelector('.cart-layout').style.display = 'none';
                                 document.querySelector('.empty-cart-container').style.display = 'flex';
-                            }
-                            
-                            // Update cart count in header
-                            if (data.cartCount !== undefined) {
-                                const cartCountElement = document.querySelector('.cart-count');
-                                if (cartCountElement) {
-                                    cartCountElement.textContent = data.cartCount;
-                                }
                                 
-                                // If cart is empty, update UI
-                                if (data.cartCount === 0) {
-                                    document.querySelector('.cart-layout').style.display = 'none';
-                                    document.querySelector('.empty-cart-container').style.display = 'flex';
-                                }
+                                // Update the order summary to show empty values
+                                document.querySelector('.price-summary').innerHTML = `
+                                    <div class="flex justify-between mb-3">
+                                        <span class="text-gray-600">Subtotal</span>
+                                        <span class="font-medium">$0.00</span>
+                                    </div>
+                                    <div class="flex justify-between mb-3">
+                                        <span class="text-gray-600">Shipping</span>
+                                        <span class="font-medium">$0.00</span>
+                                    </div>
+                                    <div class="flex justify-between mb-3">
+                                        <span class="text-gray-600">Tax (8%)</span>
+                                        <span class="font-medium">$0.00</span>
+                                    </div>
+                                    <div class="h-px bg-gray-200 my-4"></div>
+                                    <div class="flex justify-between font-bold text-lg">
+                                        <span>Total</span>
+                                        <span>$0.00</span>
+                                    </div>
+                                `;
+                            } else {
+                                // If cart still has items, we should reload to update totals
+                                window.location.reload();
                             }
                         } else {
                             alert(data.message || 'Failed to remove item');
@@ -444,6 +499,73 @@
                 }
             });
         });
+
+        document.querySelector('a[href="/checkout"]').addEventListener('click', async function(e) {
+    e.preventDefault();
+    
+    const checkoutBtn = this;
+    const originalText = checkoutBtn.innerHTML;
+    checkoutBtn.innerHTML = 'Validating... <div class="checkout-status-loader"></div>';
+    checkoutBtn.style.pointerEvents = 'none';
+
+    try {
+        const response = await fetch('/validate-cart', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) throw new Error(data.message || 'Validation failed');
+
+        if (data.success) {
+            window.location.href = data.redirectUrl || '/checkout';
+        } else {
+            const errorList = data.errors.map(error => `• ${error.message}`).join('<br>');
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Checkout Blocked',
+                html: `
+                    <p style="text-align:left">We found some issues with your cart:</p>
+                    <div style="text-align:left">${errorList}</div>
+                `,
+                confirmButtonText: 'Review Cart',
+                customClass: {
+                    popup: 'swal2-border-radius'
+                }
+            });
+
+            // Highlight problematic items
+            data.errors.forEach(error => {
+                const itemElement = document.querySelector(`.cart-item[data-product-id="${error.productId}"]`);
+                if (itemElement) {
+                    itemElement.style.border = '2px solid #ef4444';
+                    itemElement.style.animation = 'shake 0.5s';
+                    itemElement.addEventListener('animationend', () => {
+                        itemElement.style.animation = '';
+                    }, { once: true });
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Checkout error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Validation Error',
+            text: error.message || 'Something went wrong during validation.',
+            confirmButtonText: 'Try Again'
+        });
+    } finally {
+        checkoutBtn.innerHTML = originalText;
+        checkoutBtn.style.pointerEvents = 'auto';
+    }
+});
+
     </script>
 </body>
 </html>

@@ -41,5 +41,7 @@ module.exports = {
 
   // Cart related
   addToCart: cartController.addToCart,
-  renderCartPage: cartController.renderCartPage
+  renderCartPage: cartController.renderCartPage,
+  removeFromCart: cartController.removeFromCart,
+  validateCart: cartController.validateCart,
 };
