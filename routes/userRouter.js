@@ -20,7 +20,9 @@ const {
   logout,
   resetPassword,
   newPassword,
-  googleCallbackHandler
+  googleCallbackHandler,
+  addToCart,
+  renderCartPage
 } = require("../controllers/user"); 
 
 // Page Routes
@@ -34,6 +36,8 @@ router.get("/newPassword", loadNewPassword);
 router.get("/shop", loadShop);
 router.get("/shop/product/:id", loadProductDetail);
 
+router.post("/add-to-cart",addToCart)
+router.get("/cart", renderCartPage)
 // Auth & User Management
 router.post("/signup", signup);
 router.post("/verify-otp", verifyOtp);

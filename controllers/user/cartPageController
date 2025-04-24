@@ -1,0 +1,58 @@
+// const Cart = require("../../models/cartSchema");
+// const Product = require("../../models/productSchema");
+
+
+// // ========================================================================================
+// // RENDER CART PAGE (using CommonJS and session-based cart)
+// // ========================================================================================
+// exports.renderCartPage = async (req, res) => {
+//   try {
+//     const user = req.session.user;
+//     const { brands, categories } = req;
+
+//     if (!user || !user._id) {
+//       return res.redirect("/login"); // Redirect to login if user not in session
+//     }
+
+//     // Fetch cart using user ID from session
+//     const cart = await Cart.findOne({ userId: user._id });
+//     const allProducts = await Product.find({ isDeleted: false });
+//     let cartProducts = [];
+
+//     if (cart && cart.products && cart.products.length > 0) {
+//       const sortedCartProducts = cart.products.sort(
+//         (a, b) => new Date(b.added_at) - new Date(a.added_at)
+//       );
+
+//       cartProducts = await Promise.all(
+//         sortedCartProducts.map(async (item) => {
+//           const productDetails = await Product.findById(item.productId);
+//           if (!productDetails) return null;
+
+//           return {
+//             product: productDetails,
+//             quantity: item.quantity,
+//             added_at: item.added_at,
+//           };
+//         })
+//       );
+
+//       cartProducts = cartProducts.filter((item) => item !== null);
+//     }
+
+//     const cartCount = cart ? cart.products.length : 0;
+
+//     return res.render("cart", {
+//       name: user.name || "",
+//       user,
+//       cartProducts,
+//       products: allProducts,
+//       brands,
+//       categories,
+//       cartCount,
+//     });
+//   } catch (error) {
+//     console.error("Error occurred while rendering the cart page:", error);
+//     return res.redirect("/page-404");
+//   }
+// };

@@ -10,6 +10,7 @@ const adminRouter = require("./routes/adminRouter");
 const profileRoutes = require('./routes/profileRoutes');
 
 
+
 db();
 
 app.use(express.json({ limit: '50mb' }));

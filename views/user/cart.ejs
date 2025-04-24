@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Cart - <%= name || 'Your Account' %></title>
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    <script>tailwind.config={theme:{extend:{colors:{primary:'#000000',secondary:'#ffffff'},borderRadius:{'none':'0px','sm':'4px',DEFAULT:'8px','md':'12px','lg':'16px','xl':'20px','2xl':'24px','3xl':'32px','full':'9999px','button':'8px'}}}}</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        :where([class^="ri-"])::before { content: "\f3c2"; }
+        
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        
+        .custom-checkbox {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #000;
+            border-radius: 4px;
+            position: relative;
+            cursor: pointer;
+            background-color: #fff;
+        }
+        
+        .custom-checkbox:checked {
+            background-color: #000;
+        }
+        
+        .custom-checkbox:checked::after {
+            content: "";
+            position: absolute;
+            top: 2px;
+            left: 6px;
+            width: 6px;
+            height: 10px;
+            border: solid #fff;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+        
+        .quantity-input:focus {
+            outline: none;
+        }
+        
+        .loader {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid #000;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .empty-cart-container {
+            display: none;
+        }
+        
+        .remove-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 50;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @media (max-width: 768px) {
+            .cart-layout {
+                flex-direction: column;
+            }
+            .cart-items-container {
+                width: 100%;
+                padding-right: 0;
+                margin-bottom: 1rem;
+            }
+            .checkout-container {
+                width: 100%;
+                margin-top: 1rem;
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body class="bg-white min-h-screen">
+    <!-- Header -->
+    <header class="bg-primary text-white py-4 px-6 sticky top-0 z-40">
+        <div class="container mx-auto flex items-center justify-between">
+            <button onclick="window.history.back()" class="flex items-center gap-1 text-sm">
+                <div class="w-6 h-6 flex items-center justify-center">
+                    <i class="ri-arrow-left-line"></i>
+                </div>
+                Back
+            </button>
+            
+            <h1 class="text-xl font-bold">Shopping Cart</h1>
+            
+            <div class="flex items-center">
+                <a href="/cart" class="w-6 h-6 flex items-center justify-center relative">
+                    <i class="ri-shopping-cart-line"></i>
+                    <% if (cartCount > 0) { %>
+                        <span class="absolute -top-1 -right-1 bg-white text-primary text-xs w-4 h-4 rounded-full flex items-center justify-center font-bold"><%= cartCount %></span>
+                    <% } %>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content with Side-by-Side Layout -->
+    <main class="container mx-auto px-4 py-6">
+        <% if (cartProducts && cartProducts.length > 0) { %>
+            <!-- Side-by-side layout for cart items and checkout summary -->
+            <div class="cart-layout flex flex-col md:flex-row gap-6">
+                <!-- Cart Items (Left Side) -->
+                <div class="cart-items-container md:w-2/3 md:pr-4">
+                    <h2 class="text-xl font-bold mb-4">Your Cart (<%= cartProducts.length %> items)</h2>
+                    
+                    <% cartProducts.forEach((item, index) => { %>
+                        <div class="cart-item bg-white border border-gray-100 rounded p-4 mb-4 flex flex-col md:flex-row gap-4 shadow-sm" data-product-id="<%= item.product._id %>">
+                            <div class="flex-shrink-0">
+                                <img src="uploads/product-images/<%= item.product.productImage && item.product.productImage[0] || '/images/placeholder-product.jpg' %>" alt="<%= item.product.productName %>" class="w-24 h-24 object-cover object-top rounded">
+                            </div>
+                            
+                            <div class="flex-grow">
+                                <div class="flex justify-between mb-1">
+                                    <h3 class="font-bold text-lg"><%= item.product.productName %></h3>
+                                    <span class="font-bold text-lg">$<%= item.price.toFixed(2) %></span>
+                                </div>
+                                
+                                <% if (item.product.status !== "Available") { %>
+                                    <p class="text-red-500 text-sm mb-2"><%= item.product.status %></p>
+                                <% } %>
+                                
+                                <div class="flex items-center justify-between mt-4">
+                                    <div class="flex items-center border border-gray-300 rounded-button overflow-hidden">
+                                        <button class="quantity-btn decrease w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-700">
+                                            <div class="w-4 h-4 flex items-center justify-center">
+                                                <i class="ri-subtract-line"></i>
+                                            </div>
+                                        </button>
+                                        
+                                        <input type="number" value="<%= item.quantity %>" min="1" max="6" class="quantity-input w-10 h-8 text-center border-none text-sm" readonly>
+                                        
+                                        <button class="quantity-btn increase w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-700">
+                                            <div class="w-4 h-4 flex items-center justify-center">
+                                                <i class="ri-add-line"></i>
+                                            </div>
+                                        </button>
+                                    </div>
+                                    
+                                    <button class="remove-item-btn text-sm text-gray-600 hover:text-primary flex items-center gap-1">
+                                        <div class="w-4 h-4 flex items-center justify-center">
+                                            <i class="ri-delete-bin-line"></i>
+                                        </div>
+                                        Remove
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    <% }); %>
+                    
+                    <div class="mt-6 mb-12 hidden md:block">
+                        <a href="/products" class="text-primary flex items-center gap-1 hover:underline">
+                            <div class="w-5 h-5 flex items-center justify-center">
+                                <i class="ri-arrow-left-line"></i>
+                            </div>
+                            Continue Shopping
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Checkout Summary (Right Side) -->
+                <div class="checkout-container md:w-1/3 md:sticky md:top-24 h-fit">
+                    <div class="bg-white border border-gray-100 rounded p-6 shadow">
+                        <h2 class="text-xl font-bold mb-4">Order Summary</h2>
+                        
+                        <div class="price-summary mb-6">
+                            <div class="flex justify-between mb-3">
+                                <span class="text-gray-600">Subtotal</span>
+                                <span class="font-medium">$<%= cartProducts.reduce((total, item) => total + item.totalPrice, 0).toFixed(2) %></span>
+                            </div>
+                            
+                            <div class="flex justify-between mb-3">
+                                <span class="text-gray-600">Shipping</span>
+                                <span class="font-medium">$5.99</span>
+                            </div>
+                            
+                            <div class="flex justify-between mb-3">
+                                <span class="text-gray-600">Tax (8%)</span>
+                                <%
+                                    const subtotal = cartProducts.reduce((total, item) => total + item.totalPrice, 0);
+                                    const tax = subtotal * 0.08;
+                                %>
+                                <span class="font-medium">$<%= tax.toFixed(2) %></span>
+                            </div>
+                            
+                            <div class="h-px bg-gray-200 my-4"></div>
+                            
+                            <div class="flex justify-between font-bold text-lg">
+                                <span>Total</span>
+                                <%
+                                    const total = subtotal + 5.99 + tax;
+                                %>
+                                <span>$<%= total.toFixed(2) %></span>
+                            </div>
+                        </div>
+                        
+                        <a href="/checkout" class="bg-primary text-white py-3 px-4 rounded-button font-bold hover:bg-gray-800 transition flex items-center justify-center w-full mb-3">
+                            Proceed to Checkout
+                            <div class="w-5 h-5 flex items-center justify-center ml-2">
+                                <i class="ri-arrow-right-line"></i>
+                            </div>
+                            <div class="loader ml-2"></div>
+                        </a>
+                        
+                        <div class="mt-4 mb-3">
+                            <div class="flex items-center justify-center gap-2 text-sm text-gray-500">
+                                <div class="w-5 h-5 flex items-center justify-center">
+                                    <i class="ri-shield-check-line"></i>
+                                </div>
+                                Secure Checkout
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Mobile continue shopping link -->
+                    <div class="mt-4 md:hidden text-center">
+                        <a href="/products" class="text-primary hover:underline">
+                            Continue Shopping
+                        </a>
+                    </div>
+                </div>
+            </div>
+        <% } else { %>
+            <!-- Empty Cart State -->
+            <div class="empty-cart-container flex flex-col items-center justify-center py-16" style="display: flex;">
+                <div class="w-32 h-32 flex items-center justify-center mb-6">
+                    <i class="ri-shopping-cart-line ri-5x text-gray-300"></i>
+                </div>
+                
+                <h2 class="text-2xl font-bold mb-2">Your cart is empty</h2>
+                
+                <p class="text-gray-600 mb-8">Looks like you haven't added any items yet</p>
+                
+                <a href="/products" class="bg-primary text-white py-3 px-6 rounded-button hover:bg-gray-800 transition whitespace-nowrap">
+                    Browse Products
+                </a>
+            </div>
+        <% } %>
+    </main>
+
+    <!-- Remove Item Confirmation Modal -->
+    <div class="remove-modal">
+        <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
+            <h3 class="text-xl font-bold mb-4">Remove Item?</h3>
+            <p class="text-gray-600 mb-6">Are you sure you want to remove this item from your cart?</p>
+            
+            <div class="flex gap-3">
+                <button class="flex-1 bg-gray-200 text-gray-800 py-2 rounded-button hover:bg-gray-300 transition !rounded-button whitespace-nowrap modal-cancel">
+                    Cancel
+                </button>
+                <button class="flex-1 bg-primary text-white py-2 rounded-button hover:bg-gray-800 transition !rounded-button whitespace-nowrap modal-confirm">
+                    Remove
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Quantity buttons functionality
+            const quantityBtns = document.querySelectorAll('.quantity-btn');
+            quantityBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const input = this.parentElement.querySelector('.quantity-input');
+                    const currentValue = parseInt(input.value);
+                    const maxValue = parseInt(input.max) || 6;
+                    const cartItem = this.closest('.cart-item');
+                    const productId = cartItem.dataset.productId;
+                    
+                    if (this.classList.contains('increase')) {
+                        if (currentValue < maxValue) {
+                            input.value = currentValue + 1;
+                            updateCartItem(productId, input.value);
+                        }
+                    } else if (this.classList.contains('decrease')) {
+                        if (currentValue > 1) {
+                            input.value = currentValue - 1;
+                            updateCartItem(productId, input.value);
+                        }
+                    }
+                });
+            });
+            
+            // Function to update cart item via AJAX
+            function updateCartItem(productId, quantity) {
+                const loaderElement = document.querySelector('.loader');
+                if (loaderElement) loaderElement.style.display = 'block';
+                
+                fetch('/add-to-cart', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        productId,
+                        quantity: parseInt(quantity)
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (loaderElement) loaderElement.style.display = 'none';
+                    
+                    if (data.success) {
+                        // Update the cart count if returned
+                        if (data.cartCount !== undefined) {
+                            const cartCountElement = document.querySelector('.cart-count');
+                            if (cartCountElement) {
+                                cartCountElement.textContent = data.cartCount;
+                            }
+                        }
+                        
+                        // Reload the page to update totals
+                        window.location.reload();
+                    } else {
+                        // Display error message
+                        alert(data.message || 'Failed to update cart');
+                    }
+                })
+                .catch(error => {
+                    if (loaderElement) loaderElement.style.display = 'none';
+                    console.error('Error updating cart:', error);
+                    alert('An error occurred. Please try again.');
+                });
+            }
+            
+            // Remove item modal functionality
+            const removeButtons = document.querySelectorAll('.remove-item-btn');
+            const removeModal = document.querySelector('.remove-modal');
+            const modalCancel = document.querySelector('.modal-cancel');
+            const modalConfirm = document.querySelector('.modal-confirm');
+            
+            let currentItemToRemove = null;
+            let currentProductId = null;
+            
+            removeButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    currentItemToRemove = this.closest('.cart-item');
+                    currentProductId = currentItemToRemove.dataset.productId;
+                    removeModal.style.display = 'flex';
+                });
+            });
+            
+            modalCancel.addEventListener('click', function() {
+                removeModal.style.display = 'none';
+                currentItemToRemove = null;
+                currentProductId = null;
+            });
+            
+            modalConfirm.addEventListener('click', function() {
+                if (currentItemToRemove && currentProductId) {
+                    const loaderElement = document.querySelector('.loader');
+                    if (loaderElement) loaderElement.style.display = 'block';
+                    
+                    // Send AJAX request to remove item
+                    fetch('/add-to-cart', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({
+                            productId: currentProductId
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (loaderElement) loaderElement.style.display = 'none';
+                        
+                        if (data.success) {
+                            currentItemToRemove.remove();
+                            removeModal.style.display = 'none';
+                            
+                            // Check if cart is empty
+                            const cartItems = document.querySelectorAll('.cart-item');
+                            if (cartItems.length === 0) {
+                                document.querySelector('.cart-layout').style.display = 'none';
+                                document.querySelector('.empty-cart-container').style.display = 'flex';
+                            }
+                            
+                            // Update cart count in header
+                            if (data.cartCount !== undefined) {
+                                const cartCountElement = document.querySelector('.cart-count');
+                                if (cartCountElement) {
+                                    cartCountElement.textContent = data.cartCount;
+                                }
+                                
+                                // If cart is empty, update UI
+                                if (data.cartCount === 0) {
+                                    document.querySelector('.cart-layout').style.display = 'none';
+                                    document.querySelector('.empty-cart-container').style.display = 'flex';
+                                }
+                            }
+                        } else {
+                            alert(data.message || 'Failed to remove item');
+                        }
+                    })
+                    .catch(error => {
+                        if (loaderElement) loaderElement.style.display = 'none';
+                        console.error('Error removing item:', error);
+                        alert('An error occurred. Please try again.');
+                    });
+                }
+            });
+            
+            // Close modal when clicking outside
+            removeModal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.style.display = 'none';
+                    currentItemToRemove = null;
+                    currentProductId = null;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

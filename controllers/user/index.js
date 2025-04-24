@@ -3,6 +3,9 @@ const otpController = require('./otpController');
 const pageController = require('./pageController');
 const passwordController = require('./passwordController');
 const userController = require('./userController');
+const cartController =  require('./cartController');
+
+
 
 
 module.exports = {
@@ -34,5 +37,9 @@ module.exports = {
   newPassword: passwordController.newPassword,
 
   // User registration
-  signup: userController.signup
+  signup: userController.signup,
+
+  // Cart related
+  addToCart: cartController.addToCart,
+  renderCartPage: cartController.renderCartPage
 };

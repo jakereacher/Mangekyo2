@@ -90,6 +90,7 @@ const login = async (req, res) => {
 
     req.session.user = user._id;
     req.session.isDemo = false;
+    console.log(user._id)
     res.redirect("/home");
   } catch (error) {
     console.error("Login error:", error);
