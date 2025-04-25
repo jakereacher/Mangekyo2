@@ -4,15 +4,16 @@ const app = express();
 const path = require("path");
 const passport = require("./config/passport");
 const session = require("express-session");
+const flash = require('connect-flash');
 const db = require("./config/db");
 const userRouter = require("./routes/userRouter");
 const adminRouter = require("./routes/adminRouter");
-const profileRoutes = require('./routes/profileRoutes');
+
 
 
 
 db();
-
+app.use(flash());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -53,7 +54,7 @@ app.use((req, res, next) => {
 
 app.use("/admin", adminRouter);
 app.use("/", userRouter);
-app.use('/profile', profileRoutes);
+
 
 
 app.set("view engine", "ejs");

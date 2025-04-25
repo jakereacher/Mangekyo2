@@ -502,7 +502,7 @@
 
         document.querySelector('a[href="/checkout"]').addEventListener('click', async function(e) {
     e.preventDefault();
-    
+
     const checkoutBtn = this;
     const originalText = checkoutBtn.innerHTML;
     checkoutBtn.innerHTML = 'Validating... <div class="checkout-status-loader"></div>';
@@ -520,45 +520,31 @@
 
         const data = await response.json();
 
-        if (!response.ok) throw new Error(data.message || 'Validation failed');
+        if (!response.ok) throw data; // Throw the entire error response
 
+        // If successful, redirect
         if (data.success) {
             window.location.href = data.redirectUrl || '/checkout';
         } else {
-            const errorList = data.errors.map(error => `• ${error.message}`).join('<br>');
-
+            // Display the exact response from the server
             Swal.fire({
-                icon: 'error',
-                title: 'Checkout Blocked',
-                html: `
-                    <p style="text-align:left">We found some issues with your cart:</p>
-                    <div style="text-align:left">${errorList}</div>
-                `,
-                confirmButtonText: 'Review Cart',
-                customClass: {
-                    popup: 'swal2-border-radius'
-                }
-            });
-
-            // Highlight problematic items
-            data.errors.forEach(error => {
-                const itemElement = document.querySelector(`.cart-item[data-product-id="${error.productId}"]`);
-                if (itemElement) {
-                    itemElement.style.border = '2px solid #ef4444';
-                    itemElement.style.animation = 'shake 0.5s';
-                    itemElement.addEventListener('animationend', () => {
-                        itemElement.style.animation = '';
-                    }, { once: true });
-                }
+                icon: data.success ? 'success' : 'error',
+                title: data.message || (data.success ? 'Success' : 'Error'),
+                html: data.errors ? 
+                    `<div style="text-align:left">${data.errors.map(error => `• ${error.message}`).join('<br>')}</div>` : 
+                    data.message,
+                confirmButtonText: 'OK'
             });
         }
     } catch (error) {
         console.error('Checkout error:', error);
         Swal.fire({
             icon: 'error',
-            title: 'Validation Error',
-            text: error.message || 'Something went wrong during validation.',
-            confirmButtonText: 'Try Again'
+            title: error.message || 'Error',
+            html: error.errors ? 
+                `<div style="text-align:left">${error.errors.map(err => `• ${err.message}`).join('<br>')}</div>` : 
+                'An unexpected error occurred',
+            confirmButtonText: 'OK'
         });
     } finally {
         checkoutBtn.innerHTML = originalText;

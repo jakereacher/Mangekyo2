@@ -3,65 +3,122 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Profile | Mangeyko</title>
+    <title><%= title || 'User Profile | Mangeyko' %></title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
         #imageUpload { display: none; }
-        .profile-pic { cursor: pointer; transition: all 0.3s ease; }
+        .profile-pic { 
+            cursor: pointer; 
+            transition: all 0.3s ease; 
+        }
         .profile-pic:hover { transform: scale(1.05); }
         .order-card { transition: all 0.3s ease; }
-        .order-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .order-card:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); 
+        }
         .address-card { transition: all 0.3s ease; }
         .address-card:hover { transform: translateY(-2px); }
         .address-card.default { border-left: 4px solid black; }
+        .form-label {
+            font-weight: 600;
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #374151;
+        }
+        #otpModal {
+            transition: all 0.3s ease;
+        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-900 font-sans">
     <div class="container mx-auto px-4 py-8 max-w-6xl">
-        <!-- Profile Header Section -->
-        <div class="profile-header flex flex-col md:flex-row items-start md:items-center gap-6 mb-8 pb-6 border-b border-gray-200">
-            <form id="profileImageForm" enctype="multipart/form-data">
-                <label for="imageUpload" class="relative">
-                    <img 
-                        src="<%= user.profileImage || '/images/default-avatar.png' %>" 
-                        class="profile-pic w-24 h-24 md:w-32 md:h-32 rounded-full object-cover border-2 border-black"
-                        id="previewImage">
-                    <div class="absolute bottom-0 right-0 bg-black text-white rounded-full p-2">
-                        <i class="fas fa-camera text-xs"></i>
-                    </div>
-                </label>
-                <input type="file" id="imageUpload" name="profileImage" accept="image/*">
-                <input type="hidden" name="existingImage" value="<%= user.profileImage %>">
-            </form>
-
-            <div class="profile-info flex-1">
-                <form id="editProfileForm" class="space-y-2">
-                    <input type="text" name="name" id="nameInput" 
-                           value="<%= user.name %>" 
-                           class="w-full md:w-80 px-4 py-2 text-xl font-bold border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black"
-                           required>
-                    
-                    <p class="text-gray-600"><%= user.email %></p>
-                    
-                    <% if (isDemo) { %>
-                        <span class="inline-block bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-medium">
-                            DEMO ACCOUNT
-                        </span>
-                    <% } %>
-                    
-                    <button type="submit" class="mt-3 bg-black text-white px-4 py-2 rounded hover:bg-gray-800 transition">
-                        Save Changes
-                    </button>
-                </form>
+        <% if (locals.success) { %>
+            <div class="mb-6 p-3 bg-green-100 text-green-800 rounded">
+                <%= success %>
             </div>
-        </div>
+        <% } %>
+        <% if (locals.error) { %>
+            <div class="mb-6 p-3 bg-red-100 text-red-800 rounded">
+                <%= error %>
+            </div>
+        <% } %>
 
         <!-- Status Message Box -->
         <div id="updateStatus" class="hidden mb-6 p-3 rounded"></div>
 
-        <!-- Addresses Section -->
-        <div class="section mb-10">
+        <!-- Profile Header Section -->
+        <div class="profile-header bg-white p-6 rounded-lg shadow-sm mb-8">
+            <h1 class="text-2xl font-bold mb-6 pb-2 border-b border-gray-200">
+                <i class="fas fa-user-circle mr-2"></i>My Profile
+            </h1>
+            
+            <div class="flex flex-col md:flex-row items-start md:items-center gap-6">
+                <!-- Profile Image Upload -->
+                <div class="profile-image-section text-center">
+                    <h2 class="form-label text-center mb-2">Profile Photo</h2>
+                    <form id="profileImageForm">
+                        <label for="imageUpload" class="relative inline-block">
+                            <img 
+                                src="<%= user.profileImage || '/images/default-avatar.png' %>" 
+                                class="profile-pic w-32 h-32 rounded-full object-cover border-2 border-gray-200"
+                                id="previewImage"
+                                alt="Profile Picture">
+                            <div class="absolute bottom-0 right-0 bg-black text-white rounded-full p-2 shadow-md">
+                                <i class="fas fa-camera"></i>
+                            </div>
+                        </label>
+                        <input type="file" id="imageUpload" name="profileImage" accept="image/*">
+                        <p class="text-xs text-gray-500 mt-2">Click to update photo</p>
+                    </form>
+                </div>
+
+                <!-- Profile Information Form -->
+                <div class="profile-info flex-1 w-full">
+                    <form id="editProfileForm" class="space-y-4">
+                        <input type="hidden" id="currentEmail" value="<%= user.email %>">
+                        
+                        <div class="form-group">
+                            <label for="nameInput" class="form-label">
+                                <i class="fas fa-user mr-2"></i>Full Name
+                            </label>
+                            <input type="text" name="name" id="nameInput" 
+                                value="<%= user.name %>" 
+                                class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black"
+                                required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="emailInput" class="form-label">
+                                <i class="fas fa-envelope mr-2"></i>Email Address
+                            </label>
+                            <input type="email" name="email" id="emailInput" value="<%= user.email %>" 
+                                class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black"
+                                required>
+                            <% if (!user.isEmailVerified) { %>
+                                <p class="text-red-500 text-sm mt-1">
+                                    <i class="fas fa-exclamation-circle mr-1"></i>Email not verified
+                                </p>
+                            <% } %>
+                        </div>
+                        
+                        <% if (isDemo) { %>
+                            <span class="inline-block bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-medium">
+                                DEMO ACCOUNT
+                            </span>
+                        <% } %>
+                        
+                        <button type="submit" class="mt-3 bg-black text-white px-4 py-2 rounded hover:bg-gray-800 transition">
+                            <i class="fas fa-save mr-2"></i>Save Profile Changes
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Addresses Section (Mobile kept here) -->
+        <div class="section bg-white p-6 rounded-lg shadow-sm mb-8">
             <h2 class="text-2xl font-bold mb-4 pb-2 border-b border-gray-200">
                 <i class="fas fa-map-marker-alt mr-2"></i>My Addresses
             </h2>
@@ -69,42 +126,49 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6" id="addressesContainer">
                 <% if (user.address && user.address.length > 0) { %>
                     <% user.address.forEach(address => { %>
-                        <% if (address && address._id) { %>
+                        <% if (address && address.id) { %>
                             <div class="address-card bg-white p-4 rounded shadow-sm border border-gray-200 <%= address.isDefault ? 'default' : '' %>">
-                                <h3 class="font-bold text-lg"><%= address.fullName || 'N/A' %></h3>
-                                <p class="text-gray-700">
+                                <h3 class="font-bold text-lg mb-1"><%= address.fullName || 'N/A' %></h3>
+                                <p class="text-gray-700 mb-1">
+                                    <i class="fas fa-map-pin mr-1 text-gray-500"></i>
                                     <%= address.addressLine || '' %><%= address.landmark ? ', ' + address.landmark : '' %>
                                 </p>
-                                <p class="text-gray-700">
+                                <p class="text-gray-700 mb-1">
+                                    <i class="fas fa-city mr-1 text-gray-500"></i>
                                     <%= address.city || '' %><%= address.state ? ', ' + address.state : '' %><%= address.pinCode ? ' - ' + address.pinCode : '' %>
                                 </p>
-                                <p class="text-gray-700">Mobile: <%= address.mobile || 'N/A' %></p>
+                                <p class="text-gray-700 mb-3">
+                                    <i class="fas fa-phone-alt mr-1 text-gray-500"></i>
+                                    <%= address.mobile || 'N/A' %>
+                                </p>
                                 
-                                <div class="address-actions mt-3 space-x-2">
+                                <div class="address-actions mt-4 flex flex-wrap gap-2">
                                     <% if (!address.isDefault) { %>
-                                        <button onclick="setDefaultAddress('<%= address._id %>')" 
-                                                class="bg-gray-800 text-white px-3 py-1 rounded text-sm hover:bg-gray-700">
-                                            Set Default
+                                        <button onclick="setDefaultAddress('<%= address.id %>')" 
+                                                class="bg-gray-800 text-white px-3 py-1 rounded text-sm hover:bg-gray-700 flex items-center">
+                                            <i class="fas fa-check-circle mr-1"></i> Set Default
                                         </button>
                                     <% } else { %>
-                                        <span class="inline-block bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
-                                            Default Address
+                                        <span class="inline-block bg-green-100 text-green-800 px-3 py-1 rounded text-sm font-medium flex items-center">
+                                            <i class="fas fa-star mr-1"></i> Default Address
                                         </span>
                                     <% } %>
-                                    <button onclick="editAddress('<%= address._id %>')" 
-                                            class="bg-gray-200 text-gray-800 px-3 py-1 rounded text-sm hover:bg-gray-300">
-                                        Edit
+                                    <button onclick="editAddress('<%= address.id %>')" 
+                                            class="bg-gray-200 text-gray-800 px-3 py-1 rounded text-sm hover:bg-gray-300 flex items-center">
+                                        <i class="fas fa-edit mr-1"></i> Edit
                                     </button>
-                                    <button onclick="deleteAddress('<%= address._id %>')" 
-                                            class="bg-red-100 text-red-800 px-3 py-1 rounded text-sm hover:bg-red-200">
-                                        Delete
+                                    <button onclick="deleteAddress('<%= address.id %>')" 
+                                            class="bg-red-100 text-red-800 px-3 py-1 rounded text-sm hover:bg-red-200 flex items-center">
+                                        <i class="fas fa-trash-alt mr-1"></i> Delete
                                     </button>
                                 </div>
                             </div>
                         <% } %>
                     <% }) %>
                 <% } else { %>
-                    <p class="text-gray-500 col-span-full">No addresses saved yet.</p>
+                    <p class="text-gray-500 col-span-full p-4 bg-gray-50 rounded border border-gray-200">
+                        <i class="fas fa-info-circle mr-2"></i>No addresses saved yet. Please add a delivery address.
+                    </p>
                 <% } %>
             </div>
             
@@ -115,7 +179,7 @@
         </div>
 
         <!-- Order History Section -->
-        <div class="section mb-10">
+        <div class="section bg-white p-6 rounded-lg shadow-sm mb-8">
             <h2 class="text-2xl font-bold mb-4 pb-2 border-b border-gray-200">
                 <i class="fas fa-history mr-2"></i>Order History
             </h2>
@@ -124,135 +188,171 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <% user.orderHistory.forEach(order => { %>
                         <div class="order-card bg-white p-4 rounded shadow-sm border border-gray-200">
-                            <h3 class="font-bold text-lg mb-2">
+                            <h3 class="font-bold text-lg mb-2 flex items-center">
+                                <i class="fas fa-shopping-bag mr-2 text-gray-700"></i>
                                 Order #<%= order._id.toString().slice(-6) %>
                             </h3>
                             
-                            <div class="flex items-center mb-1">
-                                <span class="inline-block w-2 h-2 rounded-full 
+                            <div class="flex items-center mb-2">
+                                <span class="inline-block w-3 h-3 rounded-full 
                                     <%= order.status === 'Delivered' ? 'bg-green-500' : '' %>
                                     <%= order.status === 'Shipped' ? 'bg-blue-500' : '' %>
                                     <%= order.status === 'Processing' ? 'bg-yellow-500' : '' %>
                                     <%= order.status === 'Cancelled' ? 'bg-red-500' : '' %> mr-2">
                                 </span>
-                                <span>Status: <%= order.status %></span>
+                                <span class="font-medium">Status: <%= order.status %></span>
                             </div>
                             
-                            <p class="text-gray-700">Amount: ₹<%= order.totalAmount %></p>
-                            <p class="text-gray-700">Date: <%= new Date(order.createdAt).toLocaleDateString() %></p>
+                            <div class="text-gray-700 mb-1">
+                                <span class="font-medium">Amount:</span> 
+                                <span class="text-black">₹<%= order.totalAmount.toLocaleString('en-IN') %></span>
+                            </div>
+                            <div class="text-gray-700 mb-3">
+                                <span class="font-medium">Date:</span> 
+                                <span><%= new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) %></span>
+                            </div>
                             
-                            <button class="mt-3 text-sm text-blue-600 hover:text-blue-800 hover:underline">
-                                View Details
-                            </button>
+                            <a href="/orders/<%= order._id %>" class="mt-3 inline-flex items-center px-3 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded transition">
+                                <i class="fas fa-eye mr-2"></i> View Details
+                            </a>
                         </div>
                     <% }) %>
                 </div>
             <% } else { %>
-                <p class="text-gray-500">No orders yet.</p>
-                <a href="/products" class="inline-block mt-4 bg-black text-white px-4 py-2 rounded hover:bg-gray-800 transition">
-                    Start Shopping
-                </a>
+                <div class="bg-gray-50 border border-gray-200 rounded p-6 text-center">
+                    <div class="text-gray-400 mb-3">
+                        <i class="fas fa-shopping-cart text-4xl"></i>
+                    </div>
+                    <p class="text-gray-600 mb-4">You haven't placed any orders yet.</p>
+                    <a href="/products" class="inline-block bg-black text-white px-4 py-2 rounded hover:bg-gray-800 transition">
+                        <i class="fas fa-shopping-bag mr-2"></i> Start Shopping
+                    </a>
+                </div>
             <% } %>
         </div>
 
         <!-- Wallet Section -->
-        <div class="section mb-10">
+        <div class="section bg-white p-6 rounded-lg shadow-sm mb-8">
             <h2 class="text-2xl font-bold mb-4 pb-2 border-b border-gray-200">
                 <i class="fas fa-wallet mr-2"></i>My Wallet
             </h2>
             
             <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 max-w-md">
-                <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center justify-between mb-6">
                     <div>
-                        <p class="text-gray-500">Available Balance</p>
-                        <p class="text-3xl font-bold">₹<%= user.wallet || '0' %></p>
+                        <p class="text-gray-500 mb-1">Available Balance</p>
+                        <p class="text-3xl font-bold">₹<%= (user.wallet || 0).toLocaleString('en-IN') %></p>
                     </div>
-                    <div class="bg-green-100 text-green-800 p-3 rounded-full">
+                    <div class="bg-green-100 text-green-800 p-4 rounded-full">
                         <i class="fas fa-rupee-sign text-2xl"></i>
                     </div>
                 </div>
                 
                 <div class="grid grid-cols-2 gap-4">
-                    <button class="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-700 transition">
-                        Add Money
+                    <button class="bg-gray-800 text-white px-4 py-3 rounded hover:bg-gray-700 transition flex items-center justify-center">
+                        <i class="fas fa-plus-circle mr-2"></i> Add Money
                     </button>
-                    <button class="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300 transition">
-                        Withdraw
+                    <button class="bg-gray-200 text-gray-800 px-4 py-3 rounded hover:bg-gray-300 transition flex items-center justify-center">
+                        <i class="fas fa-arrow-right mr-2"></i> Withdraw
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Address Modal -->
+    <!-- Address Modal (Keep mobile field here) -->
     <div id="addressModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
             <div class="p-6">
-                <h2 id="addressModalTitle" class="text-xl font-bold mb-4">
+                <h2 id="addressModalTitle" class="text-xl font-bold mb-4 flex items-center">
                     <i class="fas fa-map-marker-alt mr-2"></i>Add New Address
                 </h2>
                 
                 <form id="addressForm" class="space-y-4">
                     <input type="hidden" id="addressId" name="addressId">
+                    <input type="hidden" id="addressAction" name="action" value="ADD">
                     
                     <div>
-                        <label for="fullName" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                        <label for="fullName" class="form-label">
+                            <i class="fas fa-user mr-2"></i>Full Name
+                        </label>
                         <input type="text" id="fullName" name="fullName" required
-                               class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black">
+                               class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black"
+                               placeholder="Enter recipient's full name">
                     </div>
                     
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label for="mobile" class="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
+                            <label for="mobile" class="form-label">
+                                <i class="fas fa-phone-alt mr-2"></i>Mobile Number
+                            </label>
                             <input type="tel" id="mobile" name="mobile" required
-                                   class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black">
+                                   class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black"
+                                   placeholder="10-digit mobile number">
                         </div>
                         <div>
-                            <label for="pinCode" class="block text-sm font-medium text-gray-700 mb-1">PIN Code</label>
+                            <label for="pinCode" class="form-label">
+                                <i class="fas fa-map-pin mr-2"></i>PIN Code
+                            </label>
                             <input type="text" id="pinCode" name="pinCode" required
-                                   class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black">
+                                   class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black"
+                                   placeholder="6-digit PIN code">
                         </div>
                     </div>
                     
                     <div>
-                        <label for="addressLine" class="block text-sm font-medium text-gray-700 mb-1">Address Line</label>
+                        <label for="addressLine" class="form-label">
+                            <i class="fas fa-home mr-2"></i>Address Line
+                        </label>
                         <textarea id="addressLine" name="addressLine" rows="3" required
-                                  class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black"></textarea>
+                                  class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black"
+                                  placeholder="House No., Building, Street, Area"></textarea>
                     </div>
                     
                     <div>
-                        <label for="landmark" class="block text-sm font-medium text-gray-700 mb-1">Landmark</label>
+                        <label for="landmark" class="form-label">
+                            <i class="fas fa-landmark mr-2"></i>Landmark (Optional)
+                        </label>
                         <input type="text" id="landmark" name="landmark"
-                               class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black">
+                               class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black"
+                               placeholder="Nearby location for easier navigation">
                     </div>
                     
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label for="city" class="block text-sm font-medium text-gray-700 mb-1">City</label>
+                            <label for="city" class="form-label">
+                                <i class="fas fa-city mr-2"></i>City
+                            </label>
                             <input type="text" id="city" name="city" required
-                                   class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black">
+                                   class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black"
+                                   placeholder="Your city">
                         </div>
                         <div>
-                            <label for="state" class="block text-sm font-medium text-gray-700 mb-1">State</label>
+                            <label for="state" class="form-label">
+                                <i class="fas fa-map mr-2"></i>State
+                            </label>
                             <input type="text" id="state" name="state" required
-                                   class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black">
+                                   class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black"
+                                   placeholder="Your state">
                         </div>
                     </div>
                     
-                    <div class="flex items-center">
+                    <div class="flex items-center mt-2">
                         <input type="checkbox" id="isDefault" name="isDefault"
                                class="h-4 w-4 text-black focus:ring-black border-gray-300 rounded">
-                        <label for="isDefault" class="ml-2 block text-sm text-gray-700">Set as default address</label>
+                        <label for="isDefault" class="ml-2 block text-sm text-gray-700">
+                            Set as default delivery address
+                        </label>
                     </div>
                     
                     <div class="flex justify-end space-x-3 pt-4">
                         <button type="button" onclick="hideAddressModal()"
-                                class="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 transition">
-                            Cancel
+                                class="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 transition flex items-center">
+                            <i class="fas fa-times mr-2"></i> Cancel
                         </button>
                         <button type="submit"
-                                class="px-4 py-2 bg-black text-white rounded hover:bg-gray-800 transition">
-                            Save Address
+                                class="px-4 py-2 bg-black text-white rounded hover:bg-gray-800 transition flex items-center">
+                            <i class="fas fa-save mr-2"></i> Save Address
                         </button>
                     </div>
                 </form>
@@ -260,85 +360,182 @@
         </div>
     </div>
 
+    <!-- OTP Verification Modal -->
+    <div id="otpModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md">
+            <h2 class="text-xl font-bold mb-4">Verify Your Email</h2>
+            <p class="mb-4">We've sent a 6-digit OTP to your new email address. Please enter it below:</p>
+            
+            <form id="otpForm">
+                <div class="mb-4">
+                    <input type="text" id="otpInput" placeholder="Enter OTP" 
+                           class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-black"
+                           maxlength="6" required>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="hideOtpModal()"
+                            class="px-4 py-2 border rounded text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            class="px-4 py-2 bg-black text-white rounded hover:bg-gray-800">
+                        Verify
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
-        // Profile Image Upload
+        // Profile Image Upload with preview
         document.getElementById('imageUpload').addEventListener('change', function(e) {
-            const file = e.target.files[0];
+            const file = this.files[0];
             if (file) {
                 const reader = new FileReader();
-                reader.onload = function(event) {
-                    document.getElementById('previewImage').src = event.target.result;
-                    
-                    // Submit the form immediately after image selection
-                    const formData = new FormData(document.getElementById('profileImageForm'));
-                    
-                    fetch('/profile/update-image', {
-                        method: 'POST',
-                        body: formData
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            showAlert('Profile image updated successfully', 'success');
-                            document.querySelector('input[name="existingImage"]').value = data.data.profileImage;
-                        } else {
-                            showAlert(data.message || 'Failed to update image', 'error');
-                        }
-                    })
-                    .catch(err => {
-                        showAlert('Error uploading image', 'error');
-                    });
-                };
+                reader.onload = function(e) {
+                    document.getElementById('previewImage').src = e.target.result;
+                }
                 reader.readAsDataURL(file);
+                
+                const formData = new FormData();
+                formData.append('profileImage', file);
+                formData.append('name', document.getElementById('nameInput').value);
+                formData.append('email', document.getElementById('emailInput').value);
+                
+                fetch('/profile/update', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (response.redirected) {
+                        window.location.href = response.url;
+                        return;
+                    }
+                    return response.json();
+                })
+                .then(result => {
+                    if (result?.success) {
+                        showAlert('Profile image updated!', 'success');
+                    } else {
+                        showAlert(result?.message || 'Upload failed', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Upload error:', error);
+                    showAlert('Upload failed', 'error');
+                });
             }
         });
 
-        // Update Profile Info
-        document.getElementById('editProfileForm').addEventListener('submit', async function(e) {
+        // Show OTP modal
+        function showOtpModal() {
+            document.getElementById('otpModal').classList.remove('hidden');
+        }
+
+        // Hide OTP modal
+        function hideOtpModal() {
+            document.getElementById('otpModal').classList.add('hidden');
+        }
+
+        // Handle OTP submission
+        document.getElementById('otpForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
-            const name = document.getElementById('nameInput').value;
-            const existingImage = document.querySelector('input[name="existingImage"]').value;
-            
+            const otp = document.getElementById('otpInput').value;
+            const email = document.getElementById('emailInput').value;
+
             try {
-                const res = await fetch('/profile/update', {
+                const response = await fetch('/profile/verify-email', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ 
-                        name, 
-                        existingImage 
-                    })
+                    body: JSON.stringify({ email, otp })
                 });
-                
-                const result = await res.json();
-                
+
+                const result = await response.json();
+
                 if (result.success) {
-                    showAlert('Profile updated successfully', 'success');
+                    showAlert('Email verified successfully!', 'success');
+                    hideOtpModal();
+                    window.location.reload();
                 } else {
-                    showAlert(result.message || 'Update failed', 'error');
+                    showAlert(result.message || 'Verification failed', 'error');
                 }
-            } catch (err) {
-                showAlert('Something went wrong', 'error');
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('Verification failed', 'error');
             }
         });
 
-        // Address Management Functions
+        // Handle profile form submission
+        document.getElementById('editProfileForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const currentEmail = document.getElementById('currentEmail').value;
+            formData.append('currentEmail', currentEmail);
+
+            try {
+                const response = await fetch('/profile/update', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    if (result.requiresVerification) {
+                        showOtpModal();
+                    } else {
+                        showAlert('Profile updated successfully!', 'success');
+                    }
+                } else {
+                    showAlert(result.message || 'Update failed', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('Update failed', 'error');
+            }
+        });
+
+        // Helper function to show alert messages
+        function showAlert(message, type) {
+            const statusBox = document.getElementById('updateStatus');
+            statusBox.classList.remove('hidden');
+            statusBox.textContent = message;
+            statusBox.className = '';
+            
+            if (type === 'success') {
+                statusBox.classList.add('bg-green-100', 'text-green-800', 'p-3', 'rounded', 'mb-6');
+            } else if (type === 'error') {
+                statusBox.classList.add('bg-red-100', 'text-red-800', 'p-3', 'rounded', 'mb-6');
+            } else {
+                statusBox.classList.add('bg-blue-100', 'text-blue-800', 'p-3', 'rounded', 'mb-6');
+            }
+            
+            setTimeout(() => {
+                statusBox.classList.add('hidden');
+            }, 5000);
+        }
+
+        // Address management functions
         function showAddressModal(action, addressId = null) {
             const modal = document.getElementById('addressModal');
             const title = document.getElementById('addressModalTitle');
             const form = document.getElementById('addressForm');
+            const actionInput = document.getElementById('addressAction');
+            
+            form.reset();
             
             if (action === 'add') {
                 title.innerHTML = '<i class="fas fa-map-marker-alt mr-2"></i>Add New Address';
-                form.reset();
                 document.getElementById('addressId').value = '';
+                actionInput.value = 'ADD';
             } else if (action === 'edit' && addressId) {
                 title.innerHTML = '<i class="fas fa-map-marker-alt mr-2"></i>Edit Address';
-                // Here you would fetch the address data and populate the form
-                // For now we'll just set the ID
                 document.getElementById('addressId').value = addressId;
+                actionInput.value = 'UPDATE';
+                fetchAddressData(addressId);
             }
             
             modal.classList.remove('hidden');
@@ -348,42 +545,13 @@
             document.getElementById('addressModal').classList.add('hidden');
         }
 
-        async function setDefaultAddress(addressId) {
+        async function fetchAddressData(addressId) {
             try {
-                const res = await fetch('/profile/addresses', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        action: 'SET_DEFAULT',
-                        addressId
-                    })
-                });
-                
-                const result = await res.json();
-                
-                if (result.success) {
-                    window.location.reload();
-                } else {
-                    showAlert(result.message || 'Failed to set default address', 'error');
-                }
-            } catch (err) {
-                showAlert('Something went wrong', 'error');
-            }
-        }
-
-        async function editAddress(addressId) {
-            try {
-                // Fetch address data first
                 const res = await fetch(`/profile/addresses/${addressId}`);
                 const result = await res.json();
                 
                 if (result.success) {
                     const address = result.data;
-                    showAddressModal('edit', addressId);
-                    
-                    // Populate form fields
                     document.getElementById('fullName').value = address.fullName || '';
                     document.getElementById('mobile').value = address.mobile || '';
                     document.getElementById('pinCode').value = address.pinCode || '';
@@ -396,8 +564,35 @@
                     showAlert(result.message || 'Failed to load address', 'error');
                 }
             } catch (err) {
-                showAlert('Something went wrong', 'error');
+                console.error('Error fetching address:', err);
+                showAlert('Failed to load address data', 'error');
             }
+        }
+
+        async function setDefaultAddress(addressId) {
+            try {
+                const res = await fetch('/profile/addresses', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'SET_DEFAULT', addressId })
+                });
+                
+                const result = await res.json();
+                
+                if (result.success) {
+                    showAlert('Default address updated successfully', 'success');
+                    refreshAddresses(result.data);
+                } else {
+                    showAlert(result.message || 'Failed to set default address', 'error');
+                }
+            } catch (err) {
+                console.error('Error setting default address:', err);
+                showAlert('Failed to update address', 'error');
+            }
+        }
+
+        function editAddress(addressId) {
+            showAddressModal('edit', addressId);
         }
 
         async function deleteAddress(addressId) {
@@ -405,24 +600,21 @@
                 try {
                     const res = await fetch('/profile/addresses', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            action: 'DELETE',
-                            addressId
-                        })
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'DELETE', addressId })
                     });
                     
                     const result = await res.json();
                     
                     if (result.success) {
-                        window.location.reload();
+                        showAlert('Address deleted successfully', 'success');
+                        refreshAddresses(result.data);
                     } else {
                         showAlert(result.message || 'Failed to delete address', 'error');
                     }
                 } catch (err) {
-                    showAlert('Something went wrong', 'error');
+                    console.error('Error deleting address:', err);
+                    showAlert('Failed to delete address', 'error');
                 }
             }
         }
@@ -432,9 +624,10 @@
             e.preventDefault();
             
             const addressId = document.getElementById('addressId').value;
-            const action = addressId ? 'UPDATE' : 'ADD';
+            const action = document.getElementById('addressAction').value;
             
             const addressData = {
+                id: addressId || undefined,
                 fullName: document.getElementById('fullName').value,
                 mobile: document.getElementById('mobile').value,
                 pinCode: document.getElementById('pinCode').value,
@@ -448,38 +641,77 @@
             try {
                 const res = await fetch('/profile/addresses', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        action,
-                        addressId,
-                        addressData
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action, addressId, addressData })
                 });
                 
                 const result = await res.json();
                 
                 if (result.success) {
-                    window.location.reload();
+                    hideAddressModal();
+                    showAlert(action === 'ADD' ? 'Address added successfully' : 'Address updated successfully', 'success');
+                    refreshAddresses(result.data);
                 } else {
                     showAlert(result.message || 'Failed to save address', 'error');
                 }
             } catch (err) {
-                showAlert('Something went wrong', 'error');
+                console.error('Error saving address:', err);
+                showAlert('Failed to save address', 'error');
             }
         });
 
-        // Helper function to show alerts
-        function showAlert(message, type) {
-            const statusEl = document.getElementById('updateStatus');
-            statusEl.textContent = message;
-            statusEl.className = `mb-4 p-3 rounded ${type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
-            statusEl.classList.remove('hidden');
+        // Function to refresh the addresses section with new data
+        function refreshAddresses(addressesData) {
+            const container = document.getElementById('addressesContainer');
             
-            setTimeout(() => {
-                statusEl.classList.add('hidden');
-            }, 3000);
+            if (!addressesData || addressesData.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 col-span-full p-4 bg-gray-50 rounded border border-gray-200"><i class="fas fa-info-circle mr-2"></i>No addresses saved yet. Please add a delivery address.</p>';
+                return;
+            }
+            
+            let html = '';
+            
+            addressesData.forEach(address => {
+                if (address && address.id) {
+                    html += `
+                        <div class="address-card bg-white p-4 rounded shadow-sm border border-gray-200 ${address.isDefault ? 'default' : ''}">
+                            <h3 class="font-bold text-lg mb-1">${address.fullName || 'N/A'}</h3>
+                            <p class="text-gray-700 mb-1">
+                                <i class="fas fa-map-pin mr-1 text-gray-500"></i>
+                                ${address.addressLine || ''}${address.landmark ? ', ' + address.landmark : ''}
+                            </p>
+                            <p class="text-gray-700 mb-1">
+                                <i class="fas fa-city mr-1 text-gray-500"></i>
+                                ${address.city || ''}${address.state ? ', ' + address.state : ''}${address.pinCode ? ' - ' + address.pinCode : ''}
+                            </p>
+                            <p class="text-gray-700 mb-3">
+                                <i class="fas fa-phone-alt mr-1 text-gray-500"></i>
+                                ${address.mobile || 'N/A'}
+                            </p>
+                            
+                            <div class="address-actions mt-4 flex flex-wrap gap-2">
+                                ${!address.isDefault ? 
+                                    `<button onclick="setDefaultAddress('${address.id}')" 
+                                            class="bg-gray-800 text-white px-3 py-1 rounded text-sm hover:bg-gray-700 flex items-center">
+                                        <i class="fas fa-check-circle mr-1"></i> Set Default
+                                    </button>` : 
+                                    `<span class="inline-block bg-green-100 text-green-800 px-3 py-1 rounded text-sm font-medium flex items-center">
+                                        <i class="fas fa-star mr-1"></i> Default Address
+                                    </span>`}
+                                <button onclick="editAddress('${address.id}')" 
+                                        class="bg-gray-200 text-gray-800 px-3 py-1 rounded text-sm hover:bg-gray-300 flex items-center">
+                                    <i class="fas fa-edit mr-1"></i> Edit
+                                </button>
+                                <button onclick="deleteAddress('${address.id}')" 
+                                        class="bg-red-100 text-red-800 px-3 py-1 rounded text-sm hover:bg-red-200 flex items-center">
+                                    <i class="fas fa-trash-alt mr-1"></i> Delete
+                                </button>
+                            </div>
+                        </div>`;
+                }
+            });
+            
+            container.innerHTML = html;
         }
     </script>
 </body>

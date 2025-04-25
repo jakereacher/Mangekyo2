@@ -45,10 +45,11 @@ const uploadProfileImage = multer({
     if (file.fieldname === "profileImage") {
       checkFileType(file, cb);
     } else {
-      cb(new Error("Unexpected field"));
+      // Allow non-file fields to pass through
+      cb(null, false);
     }
   }
-}).single("profileImage");
+}).single("profileImage")
 
 const uploadsFields = multer({
   storage: storage,

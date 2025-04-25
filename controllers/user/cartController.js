@@ -201,75 +201,88 @@ exports.renderCartPage = async (req, res) => {
 
 
 
-
   exports.validateCart = async (req, res) => {
     try {
-      const userId = req.session?.user;
-  
-      if (!userId) {
-        return res.status(StatusCodes.UNAUTHORIZED).json({
-          success: false,
-          message: "Not authenticated",
-        });
-      }
-  
-      const cart = await Cart.findOne({ userId }).lean();
-  
-      if (!cart || !cart.products || cart.products.length === 0) {
-        return res.status(StatusCodes.BAD_REQUEST).json({
-          success: false,
-          message: "Your cart is empty",
-        });
-      }
-  
-      const validationErrors = [];
-  
-      for (const item of cart.products) {
-        const product = await Product.findById(item.productId).lean();
-  
-        if (!product) {
-          validationErrors.push({
-            productId: item.productId,
-            message: `This product is no longer available.`,
-          });
-          continue;
+        const userId = req.session?.user;
+
+        if (!userId) {
+            console.log('User not authenticated');
+            return res.status(StatusCodes.UNAUTHORIZED).json({
+                success: false,
+                message: "Not authenticated",
+            });
         }
-  
-        if (product.isDeleted || product.status !== "Available") {
-          validationErrors.push({
-            productId: product._id,
-            message: `"${product.productName}" is not currently available.`,
-          });
-          continue;
+
+        console.log(`User ${userId} authenticated. Fetching cart...`);
+        const cart = await Cart.findOne({ userId }).lean();
+
+        if (!cart || !cart.products || cart.products.length === 0) {
+            console.log('Cart is empty');
+            return res.status(StatusCodes.BAD_REQUEST).json({
+                success: false,
+                errors: [{
+                    type: 'empty_cart',
+                    message: "Your cart is empty"
+                }]
+            });
         }
-  
-        if (product.quantity < item.quantity) {
-          validationErrors.push({
-            productId: product._id,
-            message: `Only ${product.quantity} "${product.productName}" left in stock. You have ${item.quantity} in cart.`,
-          });
+
+        const validationErrors = [];
+        for (const item of cart.products) {
+            const product = await Product.findById(item.productId).lean();
+            console.log(`Checking product ${item.productId}`);
+
+            if (!product) {
+                validationErrors.push({
+                    productId: item.productId,
+                    type: 'unavailable',
+                    message: `This product is no longer available.`
+                });
+                continue;
+            }
+
+            if (product.isBlocked || product.status !== "Available") {
+                validationErrors.push({
+                    productId: product._id,
+                    type: 'unavailable',
+                    productName: product.productName,
+                    message: `"${product.productName}" is not currently available.`
+                });
+                continue;
+            }
+
+            if (product.quantity < item.quantity) {
+                validationErrors.push({
+                    productId: product._id,
+                    type: 'quantity',
+                    productName: product.productName,
+                    available: product.quantity,
+                    requested: item.quantity,
+                    message: `Only ${product.quantity} of "${product.productName}" left. You requested ${item.quantity}.`
+                });
+            }
         }
-      }
-  
-      if (validationErrors.length > 0) {
-        return res.status(StatusCodes.BAD_REQUEST).json({
-          success: false,
-          message: "Cart validation failed",
-          errors: validationErrors,
+
+        if (validationErrors.length > 0) {
+            console.log('Cart validation failed:', validationErrors);
+            return res.status(StatusCodes.BAD_REQUEST).json({
+                success: false,
+                message: "Cart validation failed",
+                errors: validationErrors,
+            });
+        }
+
+        console.log('Cart validated successfully');
+        return res.status(StatusCodes.OK).json({
+            success: true,
+            message: "Cart is valid",
+            redirectUrl: "/checkout",
         });
-      }
-  
-      return res.status(StatusCodes.OK).json({
-        success: true,
-        message: "Cart is valid",
-        redirectUrl: "/checkout",
-      });
     } catch (error) {
-      console.error("Cart validation error:", error);
-      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Error validating cart",
-      });
+        console.error("Cart validation error:", error);
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            message: "Error validating cart",
+        });
     }
-  };
-  
+};

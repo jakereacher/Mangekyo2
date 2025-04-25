@@ -4,6 +4,9 @@ const { Schema } = mongoose;
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
+  isEmailVerified: { type: Boolean, default: false },
+  emailVerificationOtp: String,
+  emailVerificationOtpExpires: Date,
   googleId: { type: String, index: { unique: true, sparse: true } },
   password: { type: String, required: false },
 

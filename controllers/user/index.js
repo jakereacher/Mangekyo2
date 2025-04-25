@@ -4,6 +4,8 @@ const pageController = require('./pageController');
 const passwordController = require('./passwordController');
 const userController = require('./userController');
 const cartController =  require('./cartController');
+const profileController = require('./profileController');
+const { uploadProfileImage } = require('../../helpers/multer');
 
 
 
@@ -44,4 +46,15 @@ module.exports = {
   renderCartPage: cartController.renderCartPage,
   removeFromCart: cartController.removeFromCart,
   validateCart: cartController.validateCart,
+
+// Profile related
+
+  uploadProfileImage: uploadProfileImage, // Middleware for uploading profile images
+  renderProfilePage: profileController.renderProfilePage, // Render profile page
+  handleProfileUpdate: profileController.handleProfileUpdate, // Handle profile updates
+  verifyEmailOtp:profileController.verifyEmailOTP,
+
+  // Address related
+  handleAddress: profileController.handleAddress, // Handle address operations (add, update, delete, set default)
+  getAddress: profileController.getAddress, // Get a specific address by ID
 };

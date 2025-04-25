@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const passport = require("passport");
+const { uploadProfileImage } = require("../helpers/multer");
 
 
 const {
@@ -24,8 +25,14 @@ const {
   addToCart,
   renderCartPage,
   removeFromCart,
-  validateCart
+  validateCart,
+  handleProfileUpdate,
+  renderProfilePage,
+  handleAddress,
+  getAddress,
+  verifyEmailOtp,
 } = require("../controllers/user"); 
+
 
 // Page Routes
 router.get("/", loadLandingpage);
@@ -47,6 +54,16 @@ router.get("/checkout",(req,res)=>{
   res.render("checkout")
 }
 )
+
+
+router.get("/profile", renderProfilePage);
+router.post("/profile/update", uploadProfileImage, handleProfileUpdate);
+router.post("/profile/verify-email", verifyEmailOtp);
+
+// Address routes
+router.post("/profile/addresses", handleAddress);
+router.get("/profile/addresses/:addressId", getAddress);
+
 
 // Auth & User Management
 router.post("/signup", signup);
