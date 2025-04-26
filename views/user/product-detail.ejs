@@ -212,29 +212,6 @@
         </div>
         <% } %>
 
-        <!-- Add to Cart
-        <div class="flex flex-wrap space-y-4 md:space-y-0 md:space-x-4 mb-8">
-          <div class="w-full md:w-auto flex items-center bg-gray-800 rounded-lg">
-            <button class="px-4 py-3 text-white" onclick="decrementQuantity()" <%=product.stock <=0 ? 'disabled' : '' %>>
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
-              </svg>
-            </button>
-            <input type="number" id="quantity" name="quantity" value="1" min="1" max="<%= product.stock %>" class="w-12 text-center bg-transparent text-white focus:outline-none" <%=product.stock <=0 ? 'disabled' : '' %>>
-            <button class="px-4 py-3 text-white" onclick="incrementQuantity(<%= product.stock %>)" <%=product.stock <=0
-                                                ? 'disabled' : '' %>>
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-            </button>
-          </div> -->
-
-          
-          <!-- <form action="/add-to-cart" method="POST" class="cart-form" data-product-id="<%= product._id %>" >
-                                                <button type="submit" class="add-to-cart-btn w-full md:w-auto px-6 py-3 bg-[#00ffff] text-black font-bold rounded-lg hover:bg-[#0088ff] flex items-center justify-center transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>Add to Bag</button>
-                                              </form> -->
 
                                               <form action="/add-to-cart" method="POST" class="cart-form" data-product-id="<%= product._id %>">
                                                 <input type="hidden" name="quantity" id="form-quantity" value="1">
@@ -261,12 +238,18 @@
                                                 </div>
                                               </div>
                                               
-
-          <button class="w-full md:w-auto px-4 py-3 border border-[#00ffff] text-[#00ffff] font-bold rounded-lg hover:bg-gray-800 transition" onclick="addToWishlist('<%= product._id %>')">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-            </svg>
-          </button>
+<!-- Replace the existing wishlist button with this -->
+<button 
+  class="wishlist-btn w-full md:w-auto px-4 py-3 border border-[#00ffff] text-[#00ffff] font-bold rounded-lg hover:bg-gray-800 transition flex items-center justify-center"
+  onclick="toggleWishlist('<%= product._id %>')"
+  data-product-id="<%= product._id %>"
+  id="wishlistButton"
+>
+  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+  </svg>
+  <span class="ml-2">Add to Wishlist</span>
+</button>
         </div>
 
         <!-- Product Highlights -->
@@ -599,6 +582,7 @@
       behavior: 'smooth'
     });
   });
+  
   // Image zoom functionality
   document.addEventListener('DOMContentLoaded', function() {
     const zoomContainer = document.getElementById('productZoomContainer');
@@ -716,170 +700,7 @@
     });
   });
 
-//   // Add to cart functionality
-//   function addToCart(productId) {
-//     const quantity = document.getElementById('quantity').value;
-
-//     // Show loading state
-//     const addToCartBtn = document.getElementById('addToCartBtn');
-//     const originalBtnText = addToCartBtn.innerHTML;
-//     addToCartBtn.innerHTML = '<svg class="animate-spin h-5 w-5 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
-
-//     // Make AJAX request to add to cart
-//     fetch('/api/cart/add', {
-//         method: 'POST',
-//         headers: {
-//           'Content-Type': 'application/json',
-//         },
-//         body: JSON.stringify({
-//           productId,
-//           quantity
-//         }),
-//       })
-//       .then(response => response.json())
-//       .then(data => {
-//         // Reset button state
-//         addToCartBtn.innerHTML = originalBtnText;
-
-//         if (data.success) {
-//           // Show success message
-//           const notification = document.createElement('div');
-//           notification.innerHTML = `<div class="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg">
-//                     Item added to cart!
-//                 </div>`;
-//           document.body.appendChild(notification);
-
-//           // Update cart count in header if it exists
-//           if (window.updateCartCount) {
-//             window.updateCartCount(data.cartCount);
-//           }
-
-//           // Remove notification after 2 seconds
-//           setTimeout(() => {
-//             notification.remove();
-//           }, 2000);
-//         } else {
-//           // Show error message
-//           const notification = document.createElement('div');
-//           notification.innerHTML = `<div class="fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg">
-//                     ${data.message || 'Failed to add item to cart'}
-//                 </div>`;
-//           document.body.appendChild(notification);
-
-//           // Remove notification after 2 seconds
-//           setTimeout(() => {
-//             notification.remove();
-//           }, 2000);
-
-//           // If product is no longer available, redirect to shop
-//           if (data.redirect) {
-//             setTimeout(() => {
-//               window.location.href = data.redirect;
-//             }, 2000);
-//           }
-//         }
-//       })
-//       .catch(error => {
-//         // Reset button state
-//         addToCartBtn.innerHTML = originalBtnText;
-
-//         // Show error message
-//         const notification = document.createElement('div');
-//         notification.innerHTML = `<div class="fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg">
-//                 An error occurred. Please try again.
-//             </div>`;
-//         document.body.appendChild(notification);
-
-//         // Remove notification after 2 seconds
-//         setTimeout(() => {
-//           notification.remove();
-//         }, 2000);
-//       });
-//   }
-
-//   // Quick add to cart for related products
-//   function quickAddToCart(productId) {
-//     fetch('/api/cart/add', {
-//         method: 'POST',
-//         headers: {
-//           'Content-Type': 'application/json',
-//         },
-//         body: JSON.stringify({
-//           productId,
-//           quantity: 1
-//         }),
-//       })
-//       .then(response => response.json())
-//       .then(data => {
-//         if (data.success) {
-//           // Show success message
-//           const notification = document.createElement('div');
-//           notification.innerHTML = `<div class="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg">
-//                     Item added to cart!
-//                 </div>`;
-//           document.body.appendChild(notification);
-
-//           // Update cart count in header if it exists
-//           if (window.updateCartCount) {
-//             window.updateCartCount(data.cartCount);
-//           }
-
-//           setTimeout(() => {
-//             notification.remove();
-//           }, 2000);
-//         } else {
-//           // Show error message and redirect if needed
-//           const notification = document.createElement('div');
-//           notification.innerHTML = `<div class="fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg">
-//                     ${data.message || 'Failed to add item to cart'}
-//                 </div>`;
-//           document.body.appendChild(notification);
-
-//           setTimeout(() => {
-//             notification.remove();
-//             if (data.redirect) {
-//               window.location.href = data.redirect;
-//             }
-//           }, 2000);
-//         }
-//       });
-//   }
-
-
-
-//   // Add to wishlist functionality
-//   function addToWishlist(productId) {
-//     fetch('/api/wishlist/add', {
-//         method: 'POST',
-//         headers: {
-//           'Content-Type': 'application/json',
-//         },
-//         body: JSON.stringify({
-//           productId
-//         }),
-//       })
-//       .then(response => response.json())
-//       .then(data => {
-//         const notification = document.createElement('div');
-
-//         if (data.success) {
-//           notification.innerHTML = `<div class="fixed bottom-4 right-4 bg-[#00ffff] text-black px-4 py-2 rounded-lg shadow-lg">
-//                     ${data.message || 'Item added to wishlist!'}
-//                 </div>`;
-//         } else {
-//           notification.innerHTML = `<div class="fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg">
-//                     ${data.message || 'Failed to add item to wishlist'}
-//                 </div>`;
-//         }
-
-//         document.body.appendChild(notification);
-//         setTimeout(() => {
-//           notification.remove();
-//         }, 2000);
-//       });
-
-//   }
-function incrementQuantity(max) {
+  function incrementQuantity(max) {
     const quantityInput = document.getElementById('quantity');
     const currentValue = parseInt(quantityInput.value);
     if (currentValue < max) {
@@ -949,4 +770,115 @@ function incrementQuantity(max) {
       }
     });
   });
+
+  // Enhanced Wishlist Functionality
+  async function toggleWishlist(productId) {
+    const wishlistButton = document.getElementById('wishlistButton');
+    const originalContent = wishlistButton.innerHTML;
+    
+    // Show loading state
+    wishlistButton.innerHTML = '<svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+    wishlistButton.disabled = true;
+    
+    try {
+      const response = await fetch('/wishlist/toggle', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ productId: productId })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        // Update button appearance based on current state
+        if (data.action === 'added') {
+          wishlistButton.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500" fill="red" viewBox="0 0 24 24" stroke="red">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+            <span class="ml-2 text-red-500">In Wishlist</span>
+          `;
+          showNotification('Added to wishlist!', 'success');
+        } else {
+          wishlistButton.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-[#00ffff]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+            <span class="ml-2">Add to Wishlist</span>
+          `;
+          showNotification('Removed from wishlist', 'info');
+        }
+        
+        // Update wishlist count in navbar
+        updateWishlistCount();
+      } else {
+        wishlistButton.innerHTML = originalContent;
+        showNotification(data.error || 'Failed to update wishlist', 'error');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      wishlistButton.innerHTML = originalContent;
+      showNotification('An error occurred', 'error');
+    } finally {
+      wishlistButton.disabled = false;
+    }
+  }
+
+  // Function to update wishlist count in navbar
+  async function updateWishlistCount() {
+    try {
+      const response = await fetch('/wishlist/count');
+      if (response.ok) {
+        const data = await response.json();
+        const wishlistCountElement = document.getElementById('wishlist-count');
+        if (wishlistCountElement) {
+          wishlistCountElement.textContent = data.count;
+        }
+      }
+    } catch (error) {
+      console.error('Error updating wishlist count:', error);
+    }
+  }
+
+  // Check wishlist status on page load
+  document.addEventListener('DOMContentLoaded', async function() {
+    const productId = '<%= product._id %>';
+    const wishlistButton = document.getElementById('wishlistButton');
+    
+    if (!wishlistButton) return;
+    
+    try {
+      const response = await fetch(`/wishlist/status/${productId}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.isInWishlist) {
+          wishlistButton.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500" fill="red" viewBox="0 0 24 24" stroke="red">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+            <span class="ml-2 text-red-500">In Wishlist</span>
+          `;
+        }
+      }
+    } catch (error) {
+      console.error('Error checking wishlist status:', error);
+    }
+  });
+
+  // Helper function to show notifications
+  function showNotification(message, type = 'success') {
+    const notification = document.createElement('div');
+    notification.className = `fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg z-50 ${
+      type === 'success' ? 'bg-[#00ffff] text-black' : 'bg-red-500 text-white'
+    }`;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    // Remove notification after 3 seconds
+    setTimeout(() => {
+      notification.remove();
+    }, 3000);
+  }
 </script>

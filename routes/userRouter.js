@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const passport = require("passport");
 const { uploadProfileImage } = require("../helpers/multer");
+const wishlistController = require("../controllers/user/wishlistController");
 
 
 const {
@@ -64,6 +65,14 @@ router.post("/profile/verify-email", verifyEmailOtp);
 router.post("/profile/addresses", handleAddress);
 router.get("/profile/addresses/:addressId", getAddress);
 
+
+
+
+router.get('/wishlist', wishlistController.getWishlist);
+router.post('/wishlist/toggle', wishlistController.toggleWishlist);
+router.delete('/wishlist/remove/:productId', wishlistController.removeFromWishlist);
+router.get('/wishlist/status/:productId', wishlistController.getWishlistStatus);
+router.get('/wishlist/count', wishlistController.getWishlistCount);
 
 // Auth & User Management
 router.post("/signup", signup);

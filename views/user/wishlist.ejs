@@ -1,629 +1,236 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wishlist | Anime Merchandise</title>
-    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
-    <script>tailwind.config={theme:{extend:{colors:{primary:'#FFFFFF',secondary:'#E0E0E0'},borderRadius:{'none':'0px','sm':'4px',DEFAULT:'8px','md':'12px','lg':'16px','xl':'20px','2xl':'24px','3xl':'32px','full':'9999px','button':'8px'}}}}</script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
-    <style>
-        :where([class^="ri-"])::before { content: "\f3c2"; }
-        body {
-            background-color: #000000;
-            color: #FFFFFF;
-            font-family: 'Poppins', sans-serif;
-        }
-        input[type="number"]::-webkit-inner-spin-button,
-        input[type="number"]::-webkit-outer-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-        .custom-checkbox {
-            position: relative;
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 1px solid #FFFFFF;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .custom-checkbox.checked::after {
-            content: "";
-            position: absolute;
-            top: 3px;
-            left: 7px;
-            width: 6px;
-            height: 10px;
-            border: solid #000000;
-            border-width: 0 2px 2px 0;
-            transform: rotate(45deg);
-        }
-        .custom-checkbox.checked {
-            background-color: #FFFFFF;
-        }
-        .card-hover:hover {
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
-        }
-        .scrollbar::-webkit-scrollbar {
-            width: 6px;
-        }
-        .scrollbar::-webkit-scrollbar-track {
-            background: #1A1A1A;
-        }
-        .scrollbar::-webkit-scrollbar-thumb {
-            background: #666666;
-            border-radius: 8px;
-        }
-        .scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #999999;
-        }
-    </style>
-</head>
-<body class="min-h-screen scrollbar">
-    <!-- Header -->
-    <header class="bg-black border-b border-[#333333] sticky top-0 z-50">
-        <div class="container mx-auto px-4 py-4 flex items-center justify-between">
-            <div class="flex items-center">
-                <h1 class="font-['Pacifico'] text-2xl text-white">logo</h1>
-            </div>
-            <div class="flex items-center space-x-6">
-                <div class="w-10 h-10 flex items-center justify-center relative">
-                    <i class="ri-search-line text-white ri-lg"></i>
-                </div>
-                <div class="w-10 h-10 flex items-center justify-center relative">
-                    <i class="ri-user-line text-white ri-lg"></i>
-                </div>
-                <div class="w-10 h-10 flex items-center justify-center relative">
-                    <i class="ri-heart-line text-white ri-lg"></i>
-                    <span class="absolute -top-1 -right-1 bg-white text-black text-xs w-5 h-5 flex items-center justify-center rounded-full">8</span>
-                </div>
-                <div class="w-10 h-10 flex items-center justify-center relative">
-                    <i class="ri-shopping-cart-line text-white ri-lg"></i>
-                    <span class="absolute -top-1 -right-1 bg-white text-black text-xs w-5 h-5 flex items-center justify-center rounded-full">3</span>
-                </div>
-            </div>
+<%- include("../../views/user/partials/header") %>
+
+<section class="bg-black py-12 px-8">
+  <div class="max-w-7xl mx-auto">
+    <!-- Breadcrumbs -->
+    <div class="py-4">
+      <nav class="bg-gray-900 py-5 px-8">
+        <div class="max-w-7xl mx-auto">
+          <ol class="flex items-center text-sm">
+            <li>
+              <a href="/" class="text-gray-400 hover:text-[#00ffff]">Home</a>
+            </li>
+            <li class="mx-2 text-gray-600">/</li>
+            <li class="text-[#00ffff]">
+              My Wishlist
+            </li>
+          </ol>
         </div>
-    </header>
+      </nav>
+    </div>
 
-    <!-- Main Content -->
-    <main class="container mx-auto px-4 py-8">
-        <!-- Wishlist Header -->
-        <div class="mb-8">
-            <div class="flex items-center justify-between mb-4">
-                <div>
-                    <h1 class="text-3xl font-semibold text-white">Wishlist</h1>
-                    <p class="text-[#E0E0E0] mt-1">8 items saved</p>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <button class="border border-white px-4 py-2 rounded-button text-white hover:bg-white hover:text-black transition-colors whitespace-nowrap flex items-center">
-                        <span class="w-5 h-5 flex items-center justify-center mr-2">
-                            <i class="ri-delete-bin-line"></i>
-                        </span>
-                        Clear All
-                    </button>
-                    <div class="relative">
-                        <button class="border border-white px-4 py-2 rounded-button text-white hover:bg-white hover:text-black transition-colors whitespace-nowrap flex items-center" id="sortButton">
-                            <span class="w-5 h-5 flex items-center justify-center mr-2">
-                                <i class="ri-sort-desc"></i>
-                            </span>
-                            Sort By
-                        </button>
-                        <div id="sortDropdown" class="hidden absolute right-0 mt-2 w-48 bg-[#1A1A1A] border border-[#333333] rounded shadow-lg z-10">
-                            <ul>
-                                <li class="px-4 py-2 hover:bg-[#333333] cursor-pointer">Newest First</li>
-                                <li class="px-4 py-2 hover:bg-[#333333] cursor-pointer">Oldest First</li>
-                                <li class="px-4 py-2 hover:bg-[#333333] cursor-pointer">Price: High to Low</li>
-                                <li class="px-4 py-2 hover:bg-[#333333] cursor-pointer">Price: Low to High</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="h-px bg-[#333333] w-full"></div>
-        </div>
-
-        <!-- Wishlist Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Item 1 -->
-            <div class="bg-[#1A1A1A] border border-[#333333] rounded overflow-hidden card-hover transition-all">
-                <div class="flex flex-col md:flex-row">
-                    <div class="w-full md:w-1/3 h-[200px] md:h-auto relative">
-                        <div class="absolute top-2 left-2 z-10">
-                            <div class="custom-checkbox" id="checkbox1"></div>
-                        </div>
-                        <img src="https://readdy.ai/api/search-image?query=High-quality%20anime%20figure%20of%20Naruto%20character%2C%20detailed%2C%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20sharp%20details%2C%20studio%20lighting%2C%20clean%20background&width=300&height=300&seq=1&orientation=squarish" alt="Naruto Figure" class="w-full h-full object-cover object-top">
-                    </div>
-                    <div class="w-full md:w-2/3 p-4 flex flex-col justify-between">
-                        <div>
-                            <h3 class="text-white font-semibold text-lg">Naruto Uzumaki Action Figure</h3>
-                            <p class="text-[#E0E0E0] text-sm mt-1">Limited Edition Sage Mode Statue</p>
-                            <div class="flex items-center mt-2">
-                                <div class="flex">
-                                    <i class="ri-star-fill text-white"></i>
-                                    <i class="ri-star-fill text-white"></i>
-                                    <i class="ri-star-fill text-white"></i>
-                                    <i class="ri-star-fill text-white"></i>
-                                    <i class="ri-star-half-fill text-white"></i>
-                                </div>
-                                <span class="text-[#E0E0E0] text-xs ml-2">(128)</span>
-                            </div>
-                        </div>
-                        <div class="mt-4 flex items-center justify-between">
-                            <span class="text-white font-bold text-xl">$89.99</span>
-                            <div class="flex space-x-2">
-                                <button class="bg-black border border-white text-white px-4 py-2 rounded-button hover:bg-white hover:text-black transition-colors whitespace-nowrap">
-                                    Add to Cart
-                                </button>
-                                <button class="w-10 h-10 flex items-center justify-center border border-white rounded-button hover:bg-white hover:text-black transition-colors">
-                                    <i class="ri-heart-fill text-white"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Item 2 -->
-            <div class="bg-[#1A1A1A] border border-[#333333] rounded overflow-hidden card-hover transition-all">
-                <div class="flex flex-col md:flex-row">
-                    <div class="w-full md:w-1/3 h-[200px] md:h-auto relative">
-                        <div class="absolute top-2 left-2 z-10">
-                            <div class="custom-checkbox" id="checkbox2"></div>
-                        </div>
-                        <img src="https://readdy.ai/api/search-image?query=High-quality%20anime%20figure%20of%20Demon%20Slayer%20character%2C%20detailed%2C%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20sharp%20details%2C%20studio%20lighting%2C%20clean%20background&width=300&height=300&seq=2&orientation=squarish" alt="Demon Slayer Figure" class="w-full h-full object-cover object-top">
-                    </div>
-                    <div class="w-full md:w-2/3 p-4 flex flex-col justify-between">
-                        <div>
-                            <h3 class="text-white font-semibold text-lg">Tanjiro Kamado Figure</h3>
-                            <p class="text-[#E0E0E0] text-sm mt-1">Demon Slayer: Kimetsu no Yaiba Collection</p>
-                            <div class="flex items-center mt-2">
-                                <div class="flex">
-                                    <i class="ri-star-fill text-white"></i>
-                                    <i class="ri-star-fill text-white"></i>
-                                    <i class="ri-star-fill text-white"></i>
-                                    <i class="ri-star-fill text-white"></i>
-                                    <i class="ri-star-fill text-white"></i>
-                                </div>
-                                <span class="text-[#E0E0E0] text-xs ml-2">(94)</span>
-                            </div>
-                        </div>
-                        <div class="mt-4 flex items-center justify-between">
-                            <span class="text-white font-bold text-xl">$74.99</span>
-                            <div class="flex space-x-2">
-                                <button class="bg-black border border-white text-white px-4 py-2 rounded-button hover:bg-white hover:text-black transition-colors whitespace-nowrap">
-                                    Add to Cart
-                                </button>
-                                <button class="w-10 h-10 flex items-center justify-center border border-white rounded-button hover:bg-white hover:text-black transition-colors">
-                                    <i class="ri-heart-fill text-white"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Item 3 -->
-            <div class="bg-[#1A1A1A] border border-[#333333] rounded overflow-hidden card-hover transition-all">
-                <div class="flex flex-col md:flex-row">
-                    <div class="w-full md:w-1/3 h-[200px] md:h-auto relative">
-                        <div class="absolute top-2 left-2 z-10">
-                            <div class="custom-checkbox" id="checkbox3"></div>
-                        </div>
-                        <img src="https://readdy.ai/api/search-image?query=High-quality%20anime%20t-shirt%20with%20Attack%20on%20Titan%20design%2C%20detailed%2C%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20sharp%20details%2C%20studio%20lighting%2C%20clean%20background&width=300&height=300&seq=3&orientation=squarish" alt="Attack on Titan T-Shirt" class="w-full h-full object-cover object-top">
-                    </div>
-                    <div class="w-full md:w-2/3 p-4 flex flex-col justify-between">
-                        <div>
-                            <h3 class="text-white font-semibold text-lg">Attack on Titan T-Shirt</h3>
-                            <p class="text-[#E0E0E0] text-sm mt-1">Scout Regiment Logo Design</p>
-                            <div class="flex items-center mt-2">
-                                <div class="flex">
-                                    <i class="ri-star-fill text-white"></i>
-                                    <i class="ri-star-fill text-white"></i>
-                                    <i class="ri-star-fill text-white"></i>
-                                    <i class="ri-star-fill text-white"></i>
-                                    <i class="ri-star-line text-white"></i>
-                                </div>
-                                <span class="text-[#E0E0E0] text-xs ml-2">(76)</span>
-                            </div>
-                        </div>
-                        <div class="mt-4 flex items-center justify-between">
-                            <span class="text-white font-bold text-xl">$29.99</span>
-                            <div class="flex space-x-2">
-                                <button class="bg-black border border-white text-white px-4 py-2 rounded-button hover:bg-white hover:text-black transition-colors whitespace-nowrap">
-                                    Add to Cart
-                                </button>
-                                <button class="w-10 h-10 flex items-center justify-center border border-white rounded-button hover:bg-white hover:text-black transition-colors">
-                                    <i class="ri-heart-fill text-white"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Item 4 -->
-            <div class="bg-[#1A1A1A] border border-[#333333] rounded overflow-hidden card-hover transition-all">
-                <div class="flex flex-col md:flex-row">
-                    <div class="w-full md:w-1/3 h-[200px] md:h-auto relative">
-                        <div class="absolute top-2 left-2 z-10">
-                            <div class="custom-checkbox" id="checkbox4"></div>
-                        </div>
-                        <img src="https://readdy.ai/api/search-image?query=High-quality%20anime%20poster%20of%20My%20Hero%20Academia%2C%20detailed%2C%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20sharp%20details%2C%20studio%20lighting%2C%20clean%20background&width=300&height=300&seq=4&orientation=squarish" alt="My Hero Academia Poster" class="w-full h-full object-cover object-top">
-                    </div>
-                    <div class="w-full md:w-2/3 p-4 flex flex-col justify-between">
-                        <div>
-                            <h3 class="text-white font-semibold text-lg">My Hero Academia Poster</h3>
-                            <p class="text-[#E0E0E0] text-sm mt-1">Class 1-A Premium Art Print</p>
-                            <div class="flex items-center mt-2">
-                                <div class="flex">
-                                    <i class="ri-star-fill text-white"></i>
-                                    <i class="ri-star-fill text-white"></i>
-                                    <i class="ri-star-fill text-white"></i>
-                                    <i class="ri-star-fill text-white"></i>
-                                    <i class="ri-star-half-fill text-white"></i>
-                                </div>
-                                <span class="text-[#E0E0E0] text-xs ml-2">(52)</span>
-                            </div>
-                        </div>
-                        <div class="mt-4 flex items-center justify-between">
-                            <span class="text-white font-bold text-xl">$19.99</span>
-                            <div class="flex space-x-2">
-                                <button class="bg-black border border-white text-white px-4 py-2 rounded-button hover:bg-white hover:text-black transition-colors whitespace-nowrap">
-                                    Add to Cart
-                                </button>
-                                <button class="w-10 h-10 flex items-center justify-center border border-white rounded-button hover:bg-white hover:text-black transition-colors">
-                                    <i class="ri-heart-fill text-white"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Item 5 -->
-            <div class="bg-[#1A1A1A] border border-[#333333] rounded overflow-hidden card-hover transition-all">
-                <div class="flex flex-col md:flex-row">
-                    <div class="w-full md:w-1/3 h-[200px] md:h-auto relative">
-                        <div class="absolute top-2 left-2 z-10">
-                            <div class="custom-checkbox" id="checkbox5"></div>
-                        </div>
-                        <img src="https://readdy.ai/api/search-image?query=High-quality%20anime%20hoodie%20with%20One%20Piece%20design%2C%20detailed%2C%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20sharp%20details%2C%20studio%20lighting%2C%20clean%20background&width=300&height=300&seq=5&orientation=squarish" alt="One Piece Hoodie" class="w-full h-full object-cover object-top">
-                    </div>
-                    <div class="w-full md:w-2/3 p-4 flex flex-col justify-between">
-                        <div>
-                            <h3 class="text-white font-semibold text-lg">One Piece Hoodie</h3>
-                            <p class="text-[#E0E0E0] text-sm mt-1">Straw Hat Pirates Premium Hoodie</p>
-                            <div class="flex items-center mt-2">
-                                <div class="flex">
-                                    <i class="ri-star-fill text-white"></i>
-                                    <i class="ri-star-fill text-white"></i>
-                                    <i class="ri-star-fill text-white"></i>
-                                    <i class="ri-star-fill text-white"></i>
-                                    <i class="ri-star-line text-white"></i>
-                                </div>
-                                <span class="text-[#E0E0E0] text-xs ml-2">(87)</span>
-                            </div>
-                        </div>
-                        <div class="mt-4 flex items-center justify-between">
-                            <span class="text-white font-bold text-xl">$59.99</span>
-                            <div class="flex space-x-2">
-                                <button class="bg-black border border-white text-white px-4 py-2 rounded-button hover:bg-white hover:text-black transition-colors whitespace-nowrap">
-                                    Add to Cart
-                                </button>
-                                <button class="w-10 h-10 flex items-center justify-center border border-white rounded-button hover:bg-white hover:text-black transition-colors">
-                                    <i class="ri-heart-fill text-white"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Item 6 -->
-            <div class="bg-[#1A1A1A] border border-[#333333] rounded overflow-hidden card-hover transition-all">
-                <div class="flex flex-col md:flex-row">
-                    <div class="w-full md:w-1/3 h-[200px] md:h-auto relative">
-                        <div class="absolute top-2 left-2 z-10">
-                            <div class="custom-checkbox" id="checkbox6"></div>
-                        </div>
-                        <img src="https://readdy.ai/api/search-image?query=High-quality%20anime%20plush%20toy%20of%20Totoro%2C%20detailed%2C%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20sharp%20details%2C%20studio%20lighting%2C%20clean%20background&width=300&height=300&seq=6&orientation=squarish" alt="Totoro Plush" class="w-full h-full object-cover object-top">
-                    </div>
-                    <div class="w-full md:w-2/3 p-4 flex flex-col justify-between">
-                        <div>
-                            <h3 class="text-white font-semibold text-lg">Totoro Plush Toy</h3>
-                            <p class="text-[#E0E0E0] text-sm mt-1">Studio Ghibli Official Merchandise</p>
-                            <div class="flex items-center mt-2">
-                                <div class="flex">
-                                    <i class="ri-star-fill text-white"></i>
-                                    <i class="ri-star-fill text-white"></i>
-                                    <i class="ri-star-fill text-white"></i>
-                                    <i class="ri-star-fill text-white"></i>
-                                    <i class="ri-star-fill text-white"></i>
-                                </div>
-                                <span class="text-[#E0E0E0] text-xs ml-2">(143)</span>
-                            </div>
-                        </div>
-                        <div class="mt-4 flex items-center justify-between">
-                            <span class="text-white font-bold text-xl">$34.99</span>
-                            <div class="flex space-x-2">
-                                <button class="bg-black border border-white text-white px-4 py-2 rounded-button hover:bg-white hover:text-black transition-colors whitespace-nowrap">
-                                    Add to Cart
-                                </button>
-                                <button class="w-10 h-10 flex items-center justify-center border border-white rounded-button hover:bg-white hover:text-black transition-colors">
-                                    <i class="ri-heart-fill text-white"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Item 7 -->
-            <div class="bg-[#1A1A1A] border border-[#333333] rounded overflow-hidden card-hover transition-all">
-                <div class="flex flex-col md:flex-row">
-                    <div class="w-full md:w-1/3 h-[200px] md:h-auto relative">
-                        <div class="absolute top-2 left-2 z-10">
-                            <div class="custom-checkbox" id="checkbox7"></div>
-                        </div>
-                        <img src="https://readdy.ai/api/search-image?query=High-quality%20anime%20keychain%20of%20Dragon%20Ball%20Z%20character%2C%20detailed%2C%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20sharp%20details%2C%20studio%20lighting%2C%20clean%20background&width=300&height=300&seq=7&orientation=squarish" alt="Dragon Ball Keychain" class="w-full h-full object-cover object-top">
-                    </div>
-                    <div class="w-full md:w-2/3 p-4 flex flex-col justify-between">
-                        <div>
-                            <h3 class="text-white font-semibold text-lg">Dragon Ball Z Keychain Set</h3>
-                            <p class="text-[#E0E0E0] text-sm mt-1">Collectible Character Keychains</p>
-                            <div class="flex items-center mt-2">
-                                <div class="flex">
-                                    <i class="ri-star-fill text-white"></i>
-                                    <i class="ri-star-fill text-white"></i>
-                                    <i class="ri-star-fill text-white"></i>
-                                    <i class="ri-star-fill text-white"></i>
-                                    <i class="ri-star-line text-white"></i>
-                                </div>
-                                <span class="text-[#E0E0E0] text-xs ml-2">(62)</span>
-                            </div>
-                        </div>
-                        <div class="mt-4 flex items-center justify-between">
-                            <span class="text-white font-bold text-xl">$14.99</span>
-                            <div class="flex space-x-2">
-                                <button class="bg-black border border-white text-white px-4 py-2 rounded-button hover:bg-white hover:text-black transition-colors whitespace-nowrap">
-                                    Add to Cart
-                                </button>
-                                <button class="w-10 h-10 flex items-center justify-center border border-white rounded-button hover:bg-white hover:text-black transition-colors">
-                                    <i class="ri-heart-fill text-white"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Item 8 -->
-            <div class="bg-[#1A1A1A] border border-[#333333] rounded overflow-hidden card-hover transition-all">
-                <div class="flex flex-col md:flex-row">
-                    <div class="w-full md:w-1/3 h-[200px] md:h-auto relative">
-                        <div class="absolute top-2 left-2 z-10">
-                            <div class="custom-checkbox" id="checkbox8"></div>
-                        </div>
-                        <img src="https://readdy.ai/api/search-image?query=High-quality%20anime%20mug%20with%20Tokyo%20Ghoul%20design%2C%20detailed%2C%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20sharp%20details%2C%20studio%20lighting%2C%20clean%20background&width=300&height=300&seq=8&orientation=squarish" alt="Tokyo Ghoul Mug" class="w-full h-full object-cover object-top">
-                    </div>
-                    <div class="w-full md:w-2/3 p-4 flex flex-col justify-between">
-                        <div>
-                            <h3 class="text-white font-semibold text-lg">Tokyo Ghoul Coffee Mug</h3>
-                            <p class="text-[#E0E0E0] text-sm mt-1">Heat-Changing Kaneki Ken Design</p>
-                            <div class="flex items-center mt-2">
-                                <div class="flex">
-                                    <i class="ri-star-fill text-white"></i>
-                                    <i class="ri-star-fill text-white"></i>
-                                    <i class="ri-star-fill text-white"></i>
-                                    <i class="ri-star-half-fill text-white"></i>
-                                    <i class="ri-star-line text-white"></i>
-                                </div>
-                                <span class="text-[#E0E0E0] text-xs ml-2">(41)</span>
-                            </div>
-                        </div>
-                        <div class="mt-4 flex items-center justify-between">
-                            <span class="text-white font-bold text-xl">$24.99</span>
-                            <div class="flex space-x-2">
-                                <button class="bg-black border border-white text-white px-4 py-2 rounded-button hover:bg-white hover:text-black transition-colors whitespace-nowrap">
-                                    Add to Cart
-                                </button>
-                                <button class="w-10 h-10 flex items-center justify-center border border-white rounded-button hover:bg-white hover:text-black transition-colors">
-                                    <i class="ri-heart-fill text-white"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Pagination -->
-        <div class="mt-10 flex justify-center">
-            <div class="flex space-x-2">
-                <button class="w-10 h-10 flex items-center justify-center border border-[#333333] rounded text-[#E0E0E0] hover:border-white">
-                    <i class="ri-arrow-left-s-line"></i>
+    <div class="bg-gray-900 rounded-xl p-6">
+      <h1 class="text-3xl font-bold mb-6">My Wishlist</h1>
+      
+      <% if (wishlist && wishlist.length > 0) { %>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <% wishlist.forEach(item => { %>
+            <div class="bg-gray-800 rounded-lg overflow-hidden transition transform hover:-translate-y-1">
+              <div class="relative">
+                <a href="/shop/product/<%= item.id %>">
+                  <img src="<%= item.image %>" alt="<%= item.name %>" class="w-full h-48 object-cover">
+                </a>
+                
+                <!-- Remove from wishlist button -->
+                <button 
+                  class="absolute top-2 right-2 p-2 bg-gray-900/80 rounded-full hover:bg-red-500 transition"
+                  onclick="removeFromWishlist('<%= item.id %>', this)"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
                 </button>
-                <button class="w-10 h-10 flex items-center justify-center border border-white rounded bg-white text-black">1</button>
-                <button class="w-10 h-10 flex items-center justify-center border border-[#333333] rounded text-[#E0E0E0] hover:border-white">2</button>
-                <button class="w-10 h-10 flex items-center justify-center border border-[#333333] rounded text-[#E0E0E0] hover:border-white">3</button>
-                <button class="w-10 h-10 flex items-center justify-center border border-[#333333] rounded text-[#E0E0E0] hover:border-white">
-                    <i class="ri-arrow-right-s-line"></i>
-                </button>
+                
+                <% if (item.isOnOffer) { %>
+                  <div class="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                    <%= item.badge %>
+                  </div>
+                <% } %>
+              </div>
+              
+              <div class="p-4">
+                <div class="flex justify-between items-start mb-2">
+                  <a href="/shop/product/<%= item.id %>" class="hover:text-[#00ffff]">
+                    <h3 class="font-bold truncate"><%= item.name %></h3>
+                  </a>
+                  <span class="text-xs text-gray-400"><%= item.category %></span>
+                </div>
+                
+                <div class="flex items-center justify-between mt-4">
+                  <div>
+                    <% if (item.isOnOffer) { %>
+                      <span class="text-gray-400 line-through text-sm mr-1">
+                        $<%= item.regularPrice ? item.regularPrice.toFixed(2) : '0.00' %>
+                      </span>
+                    <% } %>
+                    <span class="text-lg font-bold text-[#00ffff]">
+                      $<%= item.salePrice ? item.salePrice.toFixed(2) : '0.00' %>
+                    </span>
+                  </div>
+                  
+                  <button 
+                    class="add-to-cart-btn px-3 py-2 bg-[#00ffff] text-black font-bold rounded-lg hover:bg-[#0088ff] transition flex items-center"
+                    data-product-id="<%= item.id %>"
+                    <%= item.inCart ? 'disabled' : '' %>
+                  >
+                    <% if (item.inCart) { %>
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                      </svg>
+                      In Cart
+                    <% } else { %>
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                      Add to Cart
+                    <% } %>
+                  </button>
+                </div>
+              </div>
             </div>
+          <% }); %>
         </div>
-
-        <!-- Recommended Section -->
-        <div class="mt-16">
-            <h2 class="text-2xl font-semibold text-white mb-6">You Might Also Like</h2>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <!-- Recommended Item 1 -->
-                <div class="bg-[#1A1A1A] border border-[#333333] rounded overflow-hidden card-hover transition-all">
-                    <div class="h-48 relative">
-                        <img src="https://readdy.ai/api/search-image?query=High-quality%20anime%20figure%20of%20Jujutsu%20Kaisen%20character%2C%20detailed%2C%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20sharp%20details%2C%20studio%20lighting%2C%20clean%20background&width=300&height=300&seq=9&orientation=squarish" alt="Jujutsu Kaisen Figure" class="w-full h-full object-cover object-top">
-                    </div>
-                    <div class="p-3">
-                        <h3 class="text-white font-medium text-sm">Gojo Satoru Figure</h3>
-                        <div class="flex items-center justify-between mt-2">
-                            <span class="text-white font-bold">$79.99</span>
-                            <button class="w-8 h-8 flex items-center justify-center border border-white rounded-full hover:bg-white hover:text-black transition-colors">
-                                <i class="ri-heart-line text-white text-sm"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Recommended Item 2 -->
-                <div class="bg-[#1A1A1A] border border-[#333333] rounded overflow-hidden card-hover transition-all">
-                    <div class="h-48 relative">
-                        <img src="https://readdy.ai/api/search-image?query=High-quality%20anime%20backpack%20with%20Haikyuu%20design%2C%20detailed%2C%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20sharp%20details%2C%20studio%20lighting%2C%20clean%20background&width=300&height=300&seq=10&orientation=squarish" alt="Haikyuu Backpack" class="w-full h-full object-cover object-top">
-                    </div>
-                    <div class="p-3">
-                        <h3 class="text-white font-medium text-sm">Haikyuu Backpack</h3>
-                        <div class="flex items-center justify-between mt-2">
-                            <span class="text-white font-bold">$49.99</span>
-                            <button class="w-8 h-8 flex items-center justify-center border border-white rounded-full hover:bg-white hover:text-black transition-colors">
-                                <i class="ri-heart-line text-white text-sm"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Recommended Item 3 -->
-                <div class="bg-[#1A1A1A] border border-[#333333] rounded overflow-hidden card-hover transition-all">
-                    <div class="h-48 relative">
-                        <img src="https://readdy.ai/api/search-image?query=High-quality%20anime%20phone%20case%20with%20Death%20Note%20design%2C%20detailed%2C%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20sharp%20details%2C%20studio%20lighting%2C%20clean%20background&width=300&height=300&seq=11&orientation=squarish" alt="Death Note Phone Case" class="w-full h-full object-cover object-top">
-                    </div>
-                    <div class="p-3">
-                        <h3 class="text-white font-medium text-sm">Death Note Phone Case</h3>
-                        <div class="flex items-center justify-between mt-2">
-                            <span class="text-white font-bold">$19.99</span>
-                            <button class="w-8 h-8 flex items-center justify-center border border-white rounded-full hover:bg-white hover:text-black transition-colors">
-                                <i class="ri-heart-line text-white text-sm"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Recommended Item 4 -->
-                <div class="bg-[#1A1A1A] border border-[#333333] rounded overflow-hidden card-hover transition-all">
-                    <div class="h-48 relative">
-                        <img src="https://readdy.ai/api/search-image?query=High-quality%20anime%20wallet%20with%20Hunter%20x%20Hunter%20design%2C%20detailed%2C%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20sharp%20details%2C%20studio%20lighting%2C%20clean%20background&width=300&height=300&seq=12&orientation=squarish" alt="Hunter x Hunter Wallet" class="w-full h-full object-cover object-top">
-                    </div>
-                    <div class="p-3">
-                        <h3 class="text-white font-medium text-sm">Hunter x Hunter Wallet</h3>
-                        <div class="flex items-center justify-between mt-2">
-                            <span class="text-white font-bold">$24.99</span>
-                            <button class="w-8 h-8 flex items-center justify-center border border-white rounded-full hover:bg-white hover:text-black transition-colors">
-                                <i class="ri-heart-line text-white text-sm"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+      <% } else { %>
+        <div class="text-center py-12">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+          </svg>
+          <h3 class="text-xl font-bold mb-2">Your wishlist is empty</h3>
+          <p class="text-gray-400 mb-6">Explore our collection and add items you love!</p>
+          <a href="/shop" class="px-6 py-3 bg-[#00ffff] text-black font-bold rounded-lg hover:bg-[#0088ff] transition">
+            Start Shopping
+          </a>
         </div>
-    </main>
+      <% } %>
+    </div>
+  </div>
+</section>
 
-    <!-- Footer -->
-    <footer class="bg-[#1A1A1A] mt-20 border-t border-[#333333]">
-        <div class="container mx-auto px-4 py-12">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-                <div>
-                    <h3 class="font-['Pacifico'] text-2xl text-white mb-4">logo</h3>
-                    <p class="text-[#E0E0E0] text-sm">Your ultimate destination for premium anime merchandise and collectibles.</p>
-                    <div class="flex space-x-4 mt-4">
-                        <a href="#" class="w-8 h-8 flex items-center justify-center border border-[#333333] rounded-full hover:border-white">
-                            <i class="ri-instagram-line text-white"></i>
-                        </a>
-                        <a href="#" class="w-8 h-8 flex items-center justify-center border border-[#333333] rounded-full hover:border-white">
-                            <i class="ri-twitter-x-line text-white"></i>
-                        </a>
-                        <a href="#" class="w-8 h-8 flex items-center justify-center border border-[#333333] rounded-full hover:border-white">
-                            <i class="ri-facebook-fill text-white"></i>
-                        </a>
-                        <a href="#" class="w-8 h-8 flex items-center justify-center border border-[#333333] rounded-full hover:border-white">
-                            <i class="ri-discord-line text-white"></i>
-                        </a>
-                    </div>
-                </div>
-                <div>
-                    <h4 class="text-white font-semibold mb-4">Shop</h4>
-                    <ul class="space-y-2">
-                        <li><a href="#" class="text-[#E0E0E0] hover:text-white text-sm">New Arrivals</a></li>
-                        <li><a href="#" class="text-[#E0E0E0] hover:text-white text-sm">Best Sellers</a></li>
-                        <li><a href="#" class="text-[#E0E0E0] hover:text-white text-sm">Figures & Statues</a></li>
-                        <li><a href="#" class="text-[#E0E0E0] hover:text-white text-sm">Apparel</a></li>
-                        <li><a href="#" class="text-[#E0E0E0] hover:text-white text-sm">Accessories</a></li>
-                        <li><a href="#" class="text-[#E0E0E0] hover:text-white text-sm">Home & Decor</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 class="text-white font-semibold mb-4">Help</h4>
-                    <ul class="space-y-2">
-                        <li><a href="#" class="text-[#E0E0E0] hover:text-white text-sm">FAQs</a></li>
-                        <li><a href="#" class="text-[#E0E0E0] hover:text-white text-sm">Shipping</a></li>
-                        <li><a href="#" class="text-[#E0E0E0] hover:text-white text-sm">Returns</a></li>
-                        <li><a href="#" class="text-[#E0E0E0] hover:text-white text-sm">Track Order</a></li>
-                        <li><a href="#" class="text-[#E0E0E0] hover:text-white text-sm">Contact Us</a></li>
-                        <li><a href="#" class="text-[#E0E0E0] hover:text-white text-sm">Privacy Policy</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 class="text-white font-semibold mb-4">Newsletter</h4>
-                    <p class="text-[#E0E0E0] text-sm mb-4">Subscribe to get special offers and early access to new releases.</p>
-                    <div class="flex">
-                        <input type="email" placeholder="Your email" class="bg-black border border-[#333333] text-white px-4 py-2 rounded-l-button w-full focus:outline-none focus:border-white">
-                        <button class="bg-white text-black px-4 py-2 rounded-r-button whitespace-nowrap hover:bg-[#E0E0E0] transition-colors">Subscribe</button>
-                    </div>
-                    <div class="flex items-center space-x-2 mt-4">
-                        <span class="text-[#E0E0E0] text-sm">We accept:</span>
-                        <div class="flex space-x-2">
-                            <i class="ri-visa-fill text-white text-lg"></i>
-                            <i class="ri-mastercard-fill text-white text-lg"></i>
-                            <i class="ri-paypal-fill text-white text-lg"></i>
-                            <i class="ri-amazon-pay-fill text-white text-lg"></i>
-                        </div>
-                    </div>
-                </div>
+<%- include("../../views/user/partials/footer") %>
+
+<script>
+  // Function to remove item from wishlist
+  async function removeFromWishlist(productId, button) {
+    const card = button.closest('.bg-gray-800');
+    const originalContent = card.innerHTML;
+    
+    // Show loading state
+    card.innerHTML = '<div class="p-8 text-center"><svg class="animate-spin h-8 w-8 mx-auto text-[#00ffff]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>';
+    
+    try {
+      const response = await fetch(`/wishlist/remove/${productId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (response.ok) {
+        // Remove the card from UI
+        card.remove();
+        showNotification('Item removed from wishlist', 'success');
+        
+        // Update wishlist count in navbar
+        updateWishlistCount();
+        
+        // If no items left, show empty state
+        if (document.querySelectorAll('.bg-gray-800').length === 0) {
+          document.querySelector('.bg-gray-900').innerHTML = `
+            <div class="text-center py-12">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+              <h3 class="text-xl font-bold mb-2">Your wishlist is empty</h3>
+              <p class="text-gray-400 mb-6">Explore our collection and add items you love!</p>
+              <a href="/shop" class="px-6 py-3 bg-[#00ffff] text-black font-bold rounded-lg hover:bg-[#0088ff] transition">
+                Start Shopping
+              </a>
             </div>
-            <div class="mt-8 pt-8 border-t border-[#333333] text-center">
-                <p class="text-[#E0E0E0] text-sm">© 2025 Anime Merchandise Store. All rights reserved.</p>
-            </div>
-        </div>
-    </footer>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Sort dropdown toggle
-            const sortButton = document.getElementById('sortButton');
-            const sortDropdown = document.getElementById('sortDropdown');
+          `;
+        }
+      } else {
+        card.innerHTML = originalContent;
+        showNotification('Failed to remove item', 'error');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      card.innerHTML = originalContent;
+      showNotification('An error occurred', 'error');
+    }
+  }
+  
+  // Function to update wishlist count in navbar
+  async function updateWishlistCount() {
+    try {
+      const response = await fetch('/wishlist/count');
+      if (response.ok) {
+        const data = await response.json();
+        const wishlistCountElement = document.getElementById('wishlist-count');
+        if (wishlistCountElement) {
+          wishlistCountElement.textContent = data.count;
+        }
+      }
+    } catch (error) {
+      console.error('Error updating wishlist count:', error);
+    }
+  }
+  
+  // Add to cart functionality
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.add-to-cart-btn').forEach(button => {
+      button.addEventListener('click', async function(e) {
+        e.preventDefault();
+        const productId = this.getAttribute('data-product-id');
+        const originalContent = this.innerHTML;
+        
+        // Show loading state
+        this.innerHTML = '<svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+        this.disabled = true;
+        
+        try {
+          const response = await fetch('/add-to-cart', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              productId: productId,
+              quantity: 1
+            })
+          });
+          
+          const data = await response.json();
+          
+          if (response.ok) {
+            // Update button state
+            this.innerHTML = `
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              In Cart
+            `;
+            this.disabled = true;
+            showNotification('Added to cart!', 'success');
             
-            sortButton.addEventListener('click', function() {
-                sortDropdown.classList.toggle('hidden');
-            });
-            
-            // Close dropdown when clicking outside
-            document.addEventListener('click', function(event) {
-                if (!sortButton.contains(event.target) && !sortDropdown.contains(event.target)) {
-                    sortDropdown.classList.add('hidden');
-                }
-            });
-        });
-
-        document.addEventListener('DOMContentLoaded', function() {
-            // Custom checkbox functionality
-            const checkboxes = document.querySelectorAll('.custom-checkbox');
-            
-            checkboxes.forEach(checkbox => {
-                checkbox.addEventListener('click', function() {
-                    this.classList.toggle('checked');
-                });
-            });
-        });
-    </script>
-</body>
-</html>
+            // Update cart count in navbar
+            if (data.cartCount) {
+              const cartCountElement = document.getElementById('cart-count');
+              if (cartCountElement) {
+                cartCountElement.textContent = data.cartCount;
+              }
+            }
+          } else {
+            this.innerHTML = originalContent;
+            this.disabled = false;
+            showNotification(data.message || 'Failed to add to cart', 'error');
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          this.innerHTML = originalContent;
+          this.disabled = false;
+          showNotification('An error occurred', 'error');
+        }
+      });
+    });
+  });
+</script>
