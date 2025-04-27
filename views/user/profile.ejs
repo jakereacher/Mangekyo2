@@ -399,8 +399,6 @@
                 
                 const formData = new FormData();
                 formData.append('profileImage', file);
-                formData.append('name', document.getElementById('nameInput').value);
-                formData.append('email', document.getElementById('emailInput').value);
                 
                 fetch('/profile/update', {
                     method: 'POST',
@@ -484,6 +482,7 @@
                 const result = await response.json();
                 
                 if (result.success) {
+                    
                     if (result.requiresVerification) {
                         showOtpModal();
                     } else {

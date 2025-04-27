@@ -41,6 +41,39 @@ const orderSchema = new Schema({
         ],
         default: "Processing",
       },
+      order_place_date: {
+        type: Date,
+        default: Date.now,
+      },
+      order_processing_date: {
+        type: Date,
+        default: null,
+      },
+      order_shipped_date: {
+        type: Date,
+        default: null,
+      },
+      order_delivered_date: {
+        type: Date,
+        default: null,
+      },
+      order_cancelled_date: {
+        type: Date,
+        default: null,
+      },
+      order_returned_date: {
+        type: Date,
+        default: null,
+      },
+      order_return_request_date: {
+        type: Date,
+        default: null,
+      },
+      order_return_status: {
+        type: String,
+        enum: ["Pending", "Approved", "Rejected"],
+        default: "Pending",
+      },
       returnReason: {
         type: String,
         default: null,
@@ -99,8 +132,17 @@ const orderSchema = new Schema({
   },
   paymentMethod: {
     type: String,
-    enum: ["debitCredit", "bank", "upi", "wallet", "cod", "razorpay"],
+    enum: [ "wallet", "cod", "razorpay"],
     required: true,
+  },
+  paymentStatus: {
+    type: String,
+    enum: ["Pending", "Paid", "Failed"],
+    default: "Pending",
+  },
+  razorpayOrderId: {
+    type: String,
+    default: null,
   },
   paymentGateway: {
     type: String,

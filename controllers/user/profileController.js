@@ -56,15 +56,15 @@ exports.handleProfileUpdate = async (req, res) => {
   try {
     const userId = req.session.user;
     if (!userId) {
-      return res.status(StatusCodes.UNAUTHORIZED).json({ 
-        success: false, 
-        message: 'Not authenticated' 
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: 'Not authenticated'
       });
     }
 
     const { name, email, currentEmail } = req.body;
     const user = await User.findById(userId);
-
+    console.log(req.body, 'req.body');
     // Handle file upload
     let profileImagePath;
     if (req.file) {
@@ -75,15 +75,22 @@ exports.handleProfileUpdate = async (req, res) => {
         }
       }
       profileImagePath = `/uploads/profile-pics/${req.file.filename}`;
+      await User.findByIdAndUpdate(userId, { profileImage: profileImagePath });
+      return res.json({
+        success: true,
+        message: 'Profile image updated successfully',
+        profileImage: profileImagePath
+      });
     }
-
+console.log(email,currentEmail,'email,currentEmail')
     // Check if email is being changed
     if (email && email !== currentEmail) {
+
       if (!validateEmail(email)) {
         if (req.file) fs.unlinkSync(req.file.path);
-        return res.status(StatusCodes.BAD_REQUEST).json({ 
-          success: false, 
-          message: 'Invalid email format' 
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          success: false,
+          message: 'Invalid email format'
         });
       }
 
@@ -120,15 +127,14 @@ exports.handleProfileUpdate = async (req, res) => {
 
     // If no email change or after verification, update profile
     const updatedData = { name };
-    if (profileImagePath) updatedData.profileImage = profileImagePath;
-
+    console.log(updatedData, 'updatedData');
     const updatedUser = await User.findByIdAndUpdate(
-      userId, 
-      updatedData, 
+      userId,
+      updatedData,
       { new: true }
     ).select('-password');
 
-    return res.json({ 
+    return res.json({
       success: true,
       message: 'Profile updated successfully',
       user: updatedUser
@@ -137,9 +143,9 @@ exports.handleProfileUpdate = async (req, res) => {
   } catch (error) {
     console.error("Error in update profile:", error);
     if (req.file) fs.unlinkSync(req.file.path);
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
-      success: false, 
-      message: error.message || 'Failed to update profile' 
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: error.message || 'Failed to update profile'
     });
   }
 };
@@ -177,9 +183,9 @@ exports.verifyEmailOTP = async (req, res) => {
 
   } catch (error) {
     console.error("Error verifying email OTP:", error);
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
-      success: false, 
-      message: error.message || 'Failed to verify email' 
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: error.message || 'Failed to verify email'
     });
   }
 };

@@ -1,11 +1,15 @@
 const Wishlist = require('../../models/wishlistSchema');
 const Product = require('../../models/productSchema');
 const Cart = require('../../models/cartSchema');
+const User = require('../../models/userSchema');
 
 
+// wishlistController.js
 exports.getWishlist = async (req, res) => {
   try {
     const userId = req.session.user;
+
+        const userData = await User.findById(userId);
     
     if (!userId) {
       return res.redirect('/login?message=Please+login+to+view+your+wishlist');
@@ -23,14 +27,15 @@ exports.getWishlist = async (req, res) => {
       .exec();
       
     const cart = await Cart.findOne({ userId });
-    const cartProductIds = cart && cart.items ? cart.items.map(item => item.productId.toString()) : [];
+    const cartProductIds = cart ? cart.products.map(item => item.productId.toString()) : [];
     
     if (!wishlist) {
       const newWishlist = new Wishlist({ userId, products: [] });
       await newWishlist.save();
       return res.render('wishlist', { 
         wishlist: [],
-        cartItems: cartProductIds
+        cartItems: cartProductIds,
+        user: req.user // Add this line to pass user data
       });
     }
     
@@ -38,35 +43,36 @@ exports.getWishlist = async (req, res) => {
       const product = item.productId;
       if (!product) return null;
       
-      // Ensure prices are numbers and have proper fallbacks
-      const regularPrice = Number(product.originalPrice || product.price) || 0;
-      const salePrice = Number(product.price) || 0;
-      const discount = Number(product.discount) || 0;
-      
+      // Ensure image URLs are properly formatted
+      const mainImage = product.productImage && product.productImage.length > 0 
+        ? product.productImage[0]
+        : null;
+    
       return {
         id: product._id.toString(),
-        name: product.productName || product.name,
+        name: product.productName,
         description: product.description,
-        category: product.category ? product.category.name : 'General',
-        regularPrice: regularPrice,
-        salePrice: discount > 0 ? regularPrice * (1 - discount/100) : salePrice,
-        image: product.productImage || product.image || '/default-product-image.jpg',
+        category: product.category?.name || 'General',
+        regularPrice: product.regularPrice,
+        salePrice: product.salePrice,
+        image: mainImage, // Just store the image filename
         status: product.status,
         addedOn: item.addedOn,
-        isOnOffer: discount > 0,
-        offerPercentage: discount,
-        badge: discount > 0 ? `${discount}% OFF` : null,
+        isOnOffer: product.productOffer,
+        offerPercentage: product.offerPercentage,
+        badge: product.productOffer ? `${product.offerPercentage}% OFF` : null,
         inCart: cartProductIds.includes(product._id.toString())
       };
     }).filter(Boolean);
-    
+
     res.render('wishlist', { 
       wishlist: wishlistItems,
-      cartItems: cartProductIds
+      cartItems: cartProductIds,
+      user:userData, 
     });
   } catch (error) {
     console.error('Error fetching wishlist:', error);
-    res.status(500).render('error', { message: 'Failed to load wishlist' });
+    res.status(500).render('error', { message: 'Failed to load wishlist', user: req.user });
   }
 };
 
