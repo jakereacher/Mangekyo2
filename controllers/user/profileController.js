@@ -30,7 +30,13 @@ exports.renderProfilePage = async (req, res) => {
     const user = await User.findById(userId)
       .select('-password -googleId -forgotPasswordOtp -otpExpires -resetPasswordOtp')
       .populate('wishlist')
-      .populate('orderHistory');
+      .populate({
+        path: 'orderHistory',
+        populate: {
+          path: 'orderedItems.product',
+          model: 'Product'
+        }
+      });
 
     if (!user) {
       return res.status(StatusCodes.NOT_FOUND).render('page-404');
