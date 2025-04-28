@@ -3,7 +3,7 @@ const router = express.Router();
 const passport = require("passport");
 const { uploadProfileImage } = require("../helpers/multer");
 const wishlistController = require("../controllers/user/wishlistController");
-
+const checkoutController = require("../controllers/user/checkoutController");
 
 
 const {
@@ -52,12 +52,13 @@ router.post("/add-to-cart",addToCart)
 router.get("/cart", renderCartPage)
 router.patch("/remove-from-cart", removeFromCart);
 router.post("/validate-cart", validateCart);
-router.get("/checkout",(req,res)=>{
-  res.render("checkout")
-}
-)
 
 
+router.get("/checkout",  checkoutController.renderCheckoutPage);
+router.post("/address",  checkoutController.handleAddressSelection);
+
+
+//profile routes
 router.get("/profile", renderProfilePage);
 router.post("/profile/update", uploadProfileImage, handleProfileUpdate);
 router.post("/profile/verify-email", verifyEmailOtp);
@@ -68,7 +69,7 @@ router.get("/profile/addresses/:addressId", getAddress);
 
 
 
-
+//wishlist routes
 router.get('/wishlist', wishlistController.getWishlist);
 router.post('/wishlist/toggle', wishlistController.toggleWishlist);
 router.delete('/wishlist/remove/:productId', wishlistController.removeFromWishlist);

@@ -202,6 +202,13 @@ exports.handleAddress = async (req, res) => {
 
     switch (action) {
       case 'ADD':
+        // Ensure addressData is not null
+        if (!addressData) {
+          return res.status(StatusCodes.BAD_REQUEST).json({ 
+            success: false, 
+            message: 'Invalid address data' 
+          });
+        }
         user.address.push(addressData);
         break;
       case 'UPDATE':
@@ -222,6 +229,9 @@ exports.handleAddress = async (req, res) => {
       default:
         return res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: 'Invalid action' });
     }
+
+    // Ensure we don't have any null addresses
+    user.address = user.address.filter(addr => addr !== null);
 
     await user.save();
     res.json({ success: true, data: user.address });
@@ -253,4 +263,4 @@ exports.getAddress = async (req, res) => {
     console.error("Error getting address:", error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Server error' });
   }
-};
+}
