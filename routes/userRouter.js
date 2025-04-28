@@ -33,6 +33,10 @@ const {
   handleAddress,
   getAddress,
   verifyEmailOtp,
+  updateAddress,
+  deleteAddress,
+  setDefaultAddress
+
 } = require("../controllers/user"); 
 
 
@@ -58,6 +62,12 @@ router.get("/checkout",  checkoutController.renderCheckoutPage);
 router.post("/address",  checkoutController.handleAddressSelection);
 
 
+
+// Place order
+router.post('/place-order', checkoutController.placeOrder);
+
+
+
 //profile routes
 router.get("/profile", renderProfilePage);
 router.post("/profile/update", uploadProfileImage, handleProfileUpdate);
@@ -66,6 +76,9 @@ router.post("/profile/verify-email", verifyEmailOtp);
 // Address routes
 router.post("/profile/addresses", handleAddress);
 router.get("/profile/addresses/:addressId", getAddress);
+router.put('/addresses/:addressId', updateAddress); // Update address
+router.delete('/addresses/:addressId', deleteAddress); // Delete address
+router.patch('/addresses/:addressId/set-default', setDefaultAddress); // Set default address
 
 
 

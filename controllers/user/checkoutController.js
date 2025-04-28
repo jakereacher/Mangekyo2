@@ -117,3 +117,87 @@ exports.handleAddressSelection = async (req, res) => {
     });
   }
 };
+
+exports.placeOrder = async (req, res) => {
+  try {
+    const userId = req.session.user;
+
+    if (!userId) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: 'User not authenticated'
+      });
+    }
+
+    // Validate cart
+    const cart = await Cart.findOne({ userId });
+    if (!cart || !cart.products || cart.products.length === 0) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'Your cart is empty'
+      });
+    }
+
+    // Validate user and address
+    const user = await User.findById(userId);
+    const defaultAddress = user.address.find(addr => addr.isDefault);
+    if (!defaultAddress) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'No default address selected'
+      });
+    }
+
+    // Calculate totals
+    const cartItems = await Promise.all(
+      cart.products.map(async (item) => {
+        const product = await Product.findById(item.productId);
+        if (!product) return null;
+
+        return {
+          ...item,
+          product
+        };
+      })
+    );
+
+    const validCartItems = cartItems.filter(item => item !== null);
+    const subtotal = validCartItems.reduce((sum, item) => sum + item.totalPrice, 0);
+    const shipping = 5.99; // Fixed shipping
+    const tax = subtotal * 0.09; // Example 9% tax
+    const total = subtotal + shipping + tax;
+
+    // Create order
+    const order = {
+      userId,
+      address: defaultAddress,
+      products: validCartItems,
+      paymentMethod: 'cod', // Default to COD for now
+      subtotal,
+      shipping,
+      tax,
+      total,
+      status: 'Pending',
+      createdAt: new Date()
+    };
+
+    // Save order (assuming an Order model exists)
+    const newOrder = await Order.create(order);
+
+    // Clear cart
+    await Cart.deleteOne({ userId });
+
+    res.json({
+      success: true,
+      message: 'Order placed successfully',
+      orderId: newOrder._id
+    });
+
+  } catch (error) {
+    console.error('Error placing order:', error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Error placing order'
+    });
+  }
+};

@@ -189,59 +189,195 @@ exports.verifyEmailOTP = async (req, res) => {
     });
   }
 };
+
 // Add these new methods for address handling
 exports.handleAddress = async (req, res) => {
   try {
     const userId = req.session.user;
-    const { action, addressId, addressData } = req.body;
+    const { action, addressId, ...addressData } = req.body;
 
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(StatusCodes.NOT_FOUND).json({ success: false, message: 'User not found' });
+    if (!userId) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({ 
+        success: false, 
+        message: 'Not authenticated' 
+      });
     }
 
+    let updatedUser;
+    
     switch (action) {
-      case 'ADD':
-        // Ensure addressData is not null
-        if (!addressData) {
-          return res.status(StatusCodes.BAD_REQUEST).json({ 
+      case 'GET':
+        // Get a specific address
+        const user = await User.findOne(
+          { _id: userId, 'address._id': addressId },
+          { 'address.$': 1 }
+        );
+        
+        if (!user || !user.address || user.address.length === 0) {
+          return res.status(StatusCodes.NOT_FOUND).json({ 
             success: false, 
-            message: 'Invalid address data' 
+            message: 'Address not found' 
           });
         }
-        user.address.push(addressData);
-        break;
-      case 'UPDATE':
-        const addressIndex = user.address.findIndex(addr => addr._id.toString() === addressId);
-        if (addressIndex === -1) {
-          return res.status(StatusCodes.NOT_FOUND).json({ success: false, message: 'Address not found' });
-        }
-        user.address[addressIndex] = { ...user.address[addressIndex], ...addressData };
-        break;
-      case 'DELETE':
-        user.address = user.address.filter(addr => addr._id.toString() !== addressId);
-        break;
-      case 'SET_DEFAULT':
-        user.address.forEach(addr => {
-          addr.isDefault = addr._id.toString() === addressId;
+        
+        return res.json({ 
+          success: true, 
+          data: user.address[0] 
         });
+
+      case 'ADD':
+        // Validate required fields
+        if (!addressData.fullName || !addressData.mobile || !addressData.addressLine || 
+            !addressData.city || !addressData.state || !addressData.pinCode) {
+          return res.status(StatusCodes.BAD_REQUEST).json({ 
+            success: false, 
+            message: 'Missing required address fields' 
+          });
+        }
+
+        // If this is the first address, set as default
+        const userDoc = await User.findById(userId);
+        if (userDoc.address.length === 0) {
+          addressData.isDefault = true;
+        }
+
+        // Add new address using $push
+        updatedUser = await User.findByIdAndUpdate(
+          userId,
+          { $push: { address: addressData } },
+          { new: true }
+        );
         break;
+
+      case 'UPDATE':
+        if (!addressId) {
+          return res.status(StatusCodes.BAD_REQUEST).json({ 
+            success: false, 
+            message: 'Address ID is required for update' 
+          });
+        }
+
+        // Prepare update object
+        const updateObj = {};
+        Object.keys(addressData).forEach(key => {
+          if (key !== '_id' && addressData[key] !== undefined) {
+            updateObj[`address.$.${key}`] = addressData[key];
+          }
+        });
+
+        // If setting as default, first unset all other defaults
+        if (addressData.isDefault) {
+          await User.updateOne(
+            { _id: userId },
+            { $set: { 'address.$[].isDefault': false } }
+          );
+        }
+
+        // Update the specific address
+        updatedUser = await User.findOneAndUpdate(
+          { _id: userId, 'address._id': addressId },
+          { $set: updateObj },
+          { new: true }
+        );
+        break;
+
+      case 'DELETE':
+        if (!addressId) {
+          return res.status(StatusCodes.BAD_REQUEST).json({ 
+            success: false, 
+            message: 'Address ID is required for deletion' 
+          });
+        }
+
+        // First find the address to check if it's default
+        const userWithAddress = await User.findOne(
+          { _id: userId, 'address._id': addressId },
+          { 'address.$': 1 }
+        );
+
+        if (!userWithAddress || !userWithAddress.address || userWithAddress.address.length === 0) {
+          return res.status(StatusCodes.NOT_FOUND).json({ 
+            success: false, 
+            message: 'Address not found' 
+          });
+        }
+
+        const wasDefault = userWithAddress.address[0].isDefault;
+
+        // Remove the address using $pull
+        updatedUser = await User.findByIdAndUpdate(
+          userId,
+          { $pull: { address: { _id: addressId } } },
+          { new: true }
+        );
+
+        // If deleted address was default and there are other addresses, set the first one as default
+        if (wasDefault && updatedUser.address.length > 0) {
+          updatedUser = await User.findOneAndUpdate(
+            { _id: userId, 'address._id': updatedUser.address[0]._id },
+            { $set: { 'address.$.isDefault': true } },
+            { new: true }
+          );
+        }
+        break;
+
+      case 'SET_DEFAULT':
+        if (!addressId) {
+          return res.status(StatusCodes.BAD_REQUEST).json({ 
+            success: false, 
+            message: 'Address ID is required to set default' 
+          });
+        }
+
+        // First unset all defaults
+        await User.updateOne(
+          { _id: userId },
+          { $set: { 'address.$[].isDefault': false } }
+        );
+
+        // Then set the specified address as default
+        updatedUser = await User.findOneAndUpdate(
+          { _id: userId, 'address._id': addressId },
+          { $set: { 'address.$.isDefault': true } },
+          { new: true }
+        );
+        break;
+
       default:
-        return res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: 'Invalid action' });
+        return res.status(StatusCodes.BAD_REQUEST).json({ 
+          success: false, 
+          message: 'Invalid action' 
+        });
     }
 
-    // Ensure we don't have any null addresses
-    user.address = user.address.filter(addr => addr !== null);
+    // Return the updated addresses
+    const addressesForFrontend = updatedUser.address.map(addr => ({
+      _id: addr._id.toString(),
+      fullName: addr.fullName,
+      mobile: addr.mobile,
+      pinCode: addr.pinCode,
+      addressLine: addr.addressLine,
+      landmark: addr.landmark,
+      city: addr.city,
+      state: addr.state,
+      isDefault: addr.isDefault
+    }));
 
-    await user.save();
-    res.json({ success: true, data: user.address });
+    res.json({ 
+      success: true, 
+      data: addressesForFrontend 
+    });
 
   } catch (error) {
     console.error("Error in address operation:", error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Server error' });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
+      success: false, 
+      message: 'Server error' 
+    });
   }
 };
 
+// Get single address
 exports.getAddress = async (req, res) => {
   try {
     const userId = req.session.user;
@@ -249,18 +385,186 @@ exports.getAddress = async (req, res) => {
 
     const user = await User.findById(userId);
     if (!user) {
-      return res.status(StatusCodes.NOT_FOUND).json({ success: false, message: 'User not found' });
+      return res.status(StatusCodes.NOT_FOUND).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
     }
 
-    const address = user.address.find(addr => addr._id.toString() === addressId);
+    const address = user.address.id(addressId);
     if (!address) {
-      return res.status(StatusCodes.NOT_FOUND).json({ success: false, message: 'Address not found' });
+      return res.status(StatusCodes.NOT_FOUND).json({ 
+        success: false, 
+        message: 'Address not found' 
+      });
     }
 
-    res.json({ success: true, data: address });
-
+    res.json({ 
+      success: true, 
+      data: address 
+    });
   } catch (error) {
     console.error("Error getting address:", error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Server error' });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
+      success: false, 
+      message: 'Server error' 
+    });
   }
-}
+};
+
+// Update address
+exports.updateAddress = async (req, res) => {
+  try {
+    const userId = req.session.user;
+    const { addressId } = req.params;
+    const addressData = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(StatusCodes.NOT_FOUND).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
+    }
+
+    const address = user.address.id(addressId);
+    if (!address) {
+      return res.status(StatusCodes.NOT_FOUND).json({ 
+        success: false, 
+        message: 'Address not found' 
+      });
+    }
+
+    // Update address fields
+    Object.keys(addressData).forEach(key => {
+      if (key !== '_id' && addressData[key] !== undefined) {
+        address[key] = addressData[key];
+      }
+    });
+
+    // If setting as default, unset all others
+    if (addressData.isDefault) {
+      user.address.forEach(addr => {
+        if (addr._id.toString() !== addressId) {
+          addr.isDefault = false;
+        }
+      });
+    }
+
+    await user.save();
+
+    res.json({ 
+      success: true, 
+      message: 'Address updated successfully',
+      data: user.address
+    });
+  } catch (error) {
+    console.error("Error updating address:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
+      success: false, 
+      message: 'Server error' 
+    });
+  }
+};
+
+// Delete address
+exports.deleteAddress = async (req, res) => {
+  try {
+    const userId = req.session.user;
+    const { addressId } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(StatusCodes.NOT_FOUND).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
+    }
+
+    // Find the address first to check if it's default
+    const addressToDelete = user.address.find(addr => addr._id.toString() === addressId);
+    if (!addressToDelete) {
+      return res.status(StatusCodes.NOT_FOUND).json({ 
+        success: false, 
+        message: 'Address not found' 
+      });
+    }
+
+    const wasDefault = addressToDelete.isDefault;
+    
+    // Use pull to remove the address
+    await User.updateOne(
+      { _id: userId },
+      { $pull: { address: { _id: addressId } } }
+    );
+
+    // If deleted address was default and there are other addresses
+    if (wasDefault) {
+      const updatedUser = await User.findById(userId);
+      if (updatedUser.address.length > 0) {
+        updatedUser.address[0].isDefault = true;
+        await updatedUser.save();
+      }
+    }
+
+    const updatedUser = await User.findById(userId);
+
+    res.json({ 
+      success: true, 
+      message: 'Address deleted successfully',
+      data: updatedUser.address
+    });
+  } catch (error) {
+    console.error("Error deleting address:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
+      success: false, 
+      message: 'Server error' 
+    });
+  }
+};
+
+// Set default address
+exports.setDefaultAddress = async (req, res) => {
+  try {
+    const userId = req.session.user;
+    const { addressId } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(StatusCodes.NOT_FOUND).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
+    }
+
+    const address = user.address.id(addressId);
+    if (!address) {
+      return res.status(StatusCodes.NOT_FOUND).json({ 
+        success: false, 
+        message: 'Address not found' 
+      });
+    }
+
+    // Set all addresses to non-default
+    user.address.forEach(addr => {
+      addr.isDefault = false;
+    });
+
+    // Set the specified address as default
+    address.isDefault = true;
+
+    await user.save();
+
+    res.json({ 
+      success: true, 
+      message: 'Default address updated successfully',
+      data: user.address
+    });
+  } catch (error) {
+    console.error("Error setting default address:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
+      success: false, 
+      message: 'Server error' 
+    });
+  }
+};

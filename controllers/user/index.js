@@ -57,4 +57,7 @@ module.exports = {
   // Address related
   handleAddress: profileController.handleAddress, // Handle address operations (add, update, delete, set default)
   getAddress: profileController.getAddress, // Get a specific address by ID
+  updateAddress: profileController.updateAddress, // Update a specific address by ID
+  deleteAddress: profileController.deleteAddress, // Delete a specific address by ID
+  setDefaultAddress: profileController.setDefaultAddress, // Set a specific address as default
 };

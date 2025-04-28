@@ -15,8 +15,6 @@ const userSchema = new mongoose.Schema({
 
   address: [
     {
-      _id: false,
-      id: { type: mongoose.Types.ObjectId, default: new mongoose.Types.ObjectId() },
       fullName: { type: String, required: true },
       mobile: { type: String, required: true },
       pinCode: { type: String, required: true },
@@ -27,7 +25,7 @@ const userSchema = new mongoose.Schema({
       isDefault: { type: Boolean, default: false },
     },
   ],
-
+  
   isBlocked: { type: Boolean, default: false },
   isAdmin: { type: Boolean, default: false },
   isDemo: { type: Boolean, default: false },

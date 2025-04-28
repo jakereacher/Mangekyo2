@@ -43,7 +43,22 @@
     input[type="radio"]:checked + .custom-radio::after {
       background-color: #4f46e5;
     }
+    .sticky-summary {
+      position: sticky;
+      top: 2rem;
+    }
   </style>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#4f46e5'
+          }
+        }
+      }
+    }
+  </script>
 </head>
 <body class="bg-white min-h-screen">
   <header class="bg-white/90 backdrop-blur-sm shadow-sm">
@@ -57,9 +72,9 @@
     </div>
   </header>
 
-  <main class="container mx-auto px-4 py-8 max-w-4xl space-y-8">
+  <main class="container mx-auto px-4 py-8 max-w-6xl">
     <!-- Progress Steps -->
-    <div class="flex items-center mb-6">
+    <div class="flex items-center mb-8">
       <div class="w-8 h-8 flex items-center justify-center rounded-full bg-primary text-white">1</div>
       <div class="h-1 w-16 bg-primary mx-2"></div>
       <div class="w-8 h-8 flex items-center justify-center rounded-full bg-primary text-white">2</div>
@@ -68,132 +83,166 @@
       <div class="ml-4 text-sm text-gray-600">Delivery & Payment</div>
     </div>
 
-    <!-- Cart Items Summary -->
-    <div class="bg-white/90 backdrop-blur-sm rounded shadow-sm p-6">
-      <h2 class="text-xl font-bold mb-4">Order Summary (<%= cartItems.length %> items)</h2>
-      <div class="space-y-4">
-        <% cartItems.forEach(item => { %>
-          <div class="flex items-center justify-between pb-4 border-b">
-            <div class="flex items-center space-x-4">
-              <div class="w-24 h-24 bg-gray-100 rounded-lg overflow-hidden">
-                <img src="<%= item.product.mainImage %>" alt="<%= item.product.productName %>" class="w-full h-full object-cover">
+    <!-- Two Column Layout -->
+    <div class="flex flex-col md:flex-row gap-8">
+      <!-- Left Column: Delivery & Payment -->
+      <div class="w-full md:w-3/5 space-y-8">
+        <!-- Delivery Address Section -->
+        <div>
+          <h1 class="text-2xl font-bold mb-6">Delivery Address</h1>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <% addresses.forEach(address => { %>
+              <div class="relative">
+                <input type="radio" name="address" id="address-<%= address.id %>" 
+                      class="address-radio hidden" 
+                      <%= address.isDefault ? 'checked' : '' %> 
+                      data-address-id="<%= address.id %>">
+                <label for="address-<%= address.id %>" class="address-card block p-4 border rounded cursor-pointer hover:border-primary transition-all">
+                  <div class="flex justify-between items-start mb-2">
+                    <div class="flex items-center">
+                      <span class="font-medium"><%= address.fullName %></span>
+                      <% if (address.isDefault) { %>
+                        <span class="ml-2 px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded">Default</span>
+                      <% } %>
+                    </div>
+                    <div class="flex items-center">
+                      <div class="custom-radio"></div>
+                    </div>
+                  </div>
+                  <div class="text-gray-600 text-sm mb-1"><%= address.mobile %></div>
+                  <div class="text-gray-600 text-sm">
+                    <%= address.addressLine %><br>
+                    <%= address.city %>, <%= address.state %> <%= address.pinCode %><br>
+                    <% if (address.landmark) { %>
+                      Landmark: <%= address.landmark %><br>
+                    <% } %>
+                  </div>
+                </label>
               </div>
-              <div>
-                <h3 class="font-medium"><%= item.product.productName %></h3>
-                <p class="text-sm text-gray-500">Quantity: <%= item.quantity %></p>
-                <p class="text-sm text-gray-500">Price: $<%= item.price.toFixed(2) %></p>
-              </div>
-            </div>
-            <div class="text-right">
-              <p class="font-medium">$<%= item.totalPrice.toFixed(2) %></p>
+            <% }); %>
+            
+            <div class="relative">
+              <button id="addNewAddressBtn" class="h-full w-full p-4 border border-dashed rounded flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-all">
+                <div class="w-12 h-12 flex items-center justify-center rounded-full bg-primary/10 text-primary mb-2">
+                  <i class="ri-add-line ri-xl"></i>
+                </div>
+                <span class="font-medium text-gray-800">Add New Address</span>
+              </button>
             </div>
           </div>
-        <% }); %>
-      </div>
-      
-      <div class="mt-6">
-        <div class="flex justify-between pt-2 border-t">
-          <span class="text-gray-600">Subtotal</span>
-          <span class="font-medium">$<%= subtotal %></span>
         </div>
-        <div class="flex justify-between pt-2">
-          <span class="text-gray-600">Shipping</span>
-          <span class="font-medium">$<%= shipping %></span>
-        </div>
-        <div class="flex justify-between pt-2">
-          <span class="text-gray-600">Tax</span>
-          <span class="font-medium">$<%= tax %></span>
-        </div>
-        <div class="flex justify-between pt-2 border-t font-bold mt-2">
-          <span>Total</span>
-          <span>$<%= total %></span>
-        </div>
-      </div>
-    </div>
 
-    <!-- Delivery Address Section -->
-    <h1 class="text-2xl font-bold mb-6">Delivery Address</h1>
-    <div class="mb-8">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <% addresses.forEach(address => { %>
-          <div class="relative">
-            <input type="radio" name="address" id="address-<%= address.id %>" 
-                   class="address-radio hidden" 
-                   <%= address.isDefault ? 'checked' : '' %> 
-                   data-address-id="<%= address.id %>">
-            <label for="address-<%= address.id %>" class="address-card block p-4 border rounded cursor-pointer hover:border-primary transition-all">
-              <div class="flex justify-between items-start mb-2">
-                <div class="flex items-center">
-                  <span class="font-medium"><%= address.fullName %></span>
-                  <% if (address.isDefault) { %>
-                    <span class="ml-2 px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded">Default</span>
-                  <% } %>
-                </div>
-                <div class="flex items-center">
+        <!-- Payment Method Section -->
+        <div>
+          <h2 class="text-2xl font-bold mb-6">Payment Method</h2>
+          <div class="space-y-3">
+            <div class="relative">
+              <input type="radio" name="payment" id="cod" class="payment-radio hidden" checked>
+              <label for="cod" class="payment-method block p-4 border rounded cursor-pointer hover:border-primary transition-all">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center">
+                    <div class="w-10 h-10 flex items-center justify-center rounded-full bg-black/10 mr-3">
+                      <i class="ri-cash-line text-black"></i>
+                    </div>
+                    <div>
+                      <div class="font-medium">Cash on Delivery</div>
+                      <div class="text-sm text-gray-500">Pay when your order arrives</div>
+                    </div>
+                  </div>
                   <div class="custom-radio"></div>
                 </div>
-              </div>
-              <div class="text-gray-600 text-sm mb-1"><%= address.mobile %></div>
-              <div class="text-gray-600 text-sm">
-                <%= address.addressLine %><br>
-                <%= address.city %>, <%= address.state %> <%= address.pinCode %><br>
-                <% if (address.landmark) { %>
-                  Landmark: <%= address.landmark %><br>
-                <% } %>
-              </div>
-            </label>
-          </div>
-        <% }); %>
-        
-        <div class="relative">
-          <button id="addNewAddressBtn" class="h-full w-full p-4 border border-dashed rounded flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-all">
-            <div class="w-12 h-12 flex items-center justify-center rounded-full bg-primary/10 text-primary mb-2">
-              <i class="ri-add-line ri-xl"></i>
+              </label>
             </div>
-            <span class="font-medium text-gray-800">Add New Address</span>
-          </button>
+            <div class="relative">
+              <input type="radio" name="payment" id="card" class="payment-radio hidden">
+              <label for="card" class="payment-method block p-4 border rounded cursor-pointer hover:border-primary transition-all">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center">
+                    <div class="w-10 h-10 flex items-center justify-center rounded-full bg-black/10 mr-3">
+                      <i class="ri-bank-card-line text-black"></i>
+                    </div>
+                    <div>
+                      <div class="font-medium">Credit/Debit Card</div>
+                      <div class="text-sm text-gray-500">Pay securely with your card</div>
+                    </div>
+                  </div>
+                  <div class="custom-radio"></div>
+                </div>
+              </label>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-
-    <!-- Payment Method Section -->
-    <h2 class="text-2xl font-bold mb-6">Payment Method</h2>
-    <div class="mb-8">
-      <div class="relative">
-        <input type="radio" name="payment" id="cod" class="payment-radio hidden" checked>
-        <label for="cod" class="payment-method block p-4 border rounded cursor-pointer hover:border-primary transition-all">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center">
-              <div class="w-10 h-10 flex items-center justify-center rounded-full bg-black/10 mr-3">
-                <i class="ri-cash-line text-black"></i>
+      
+      <!-- Right Column: Order Summary -->
+      <div class="w-full md:w-2/5">
+        <div class="sticky-summary">
+          <div class="bg-white/90 backdrop-blur-sm rounded shadow-sm p-6">
+            <h2 class="text-xl font-bold mb-4">Order Summary (<%= cartItems.length %> items)</h2>
+            <div class="max-h-80 overflow-y-auto space-y-4">
+              <% cartItems.forEach(item => { %>
+                <div class="flex items-center justify-between pb-4 border-b">
+                  <div class="flex items-center space-x-4">
+                    <div class="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden">
+                      <img src="<%= item.product.mainImage %>" alt="<%= item.product.productName %>" class="w-full h-full object-cover">
+                    </div>
+                    <div>
+                      <h3 class="font-medium"><%= item.product.productName %></h3>
+                      <p class="text-sm text-gray-500">Qty: <%= item.quantity %> × $<%= item.price.toFixed(2) %></p>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <p class="font-medium">$<%= item.totalPrice.toFixed(2) %></p>
+                  </div>
+                </div>
+              <% }); %>
+            </div>
+            
+            <div class="mt-6 space-y-2">
+              <div class="flex justify-between pt-2">
+                <span class="text-gray-600">Subtotal</span>
+                <span class="font-medium">$<%= subtotal %></span>
               </div>
-              <div>
-                <div class="font-medium">Cash on Delivery</div>
-                <div class="text-sm text-gray-500">Pay when your order arrives</div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">Shipping</span>
+                <span class="font-medium">$<%= shipping %></span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">Tax</span>
+                <span class="font-medium">$<%= tax %></span>
+              </div>
+              <div class="flex justify-between pt-2 border-t font-bold mt-2">
+                <span>Total</span>
+                <span>$<%= total %></span>
               </div>
             </div>
-            <div class="custom-radio"></div>
           </div>
-        </label>
+          
+          <!-- Checkout Button (on desktop) -->
+          <div class="mt-4 hidden md:block">
+            <button id="placeOrderBtnDesktop" class="w-full bg-primary text-white px-8 py-3 font-medium rounded-lg whitespace-nowrap">
+              Place Order
+            </button>
+            <div class="flex items-center justify-center mt-4 text-sm text-gray-600">
+              <i class="ri-shield-check-line text-green-600 mr-2"></i>
+              <span>Secure Checkout</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </main>
 
-  <footer class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-sm shadow-[0_-2px_10px_rgba(0,0,0,0.1)] p-4">
-    <div class="container mx-auto max-w-4xl flex items-center justify-between">
-      <div class="flex items-center space-x-4">
-        <div class="flex items-center space-x-2">
-          <i class="ri-shield-check-line text-green-600"></i>
-          <span class="text-sm text-gray-600">Secure Checkout</span>
-        </div>
+  <!-- Mobile Checkout Button (fixed at bottom) -->
+  <footer class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-sm shadow-[0_-2px_10px_rgba(0,0,0,0.1)] p-4 md:hidden">
+    <div class="container mx-auto flex items-center justify-between">
+      <div>
+        <div class="text-sm text-gray-600">Total Amount</div>
+        <div class="text-xl font-bold">$<%= total %></div>
       </div>
-      <div class="flex items-center space-x-6">
-        <div>
-          <div class="text-sm text-gray-600">Total Amount</div>
-          <div class="text-xl font-bold">$<%= total %></div>
-        </div>
-        <button id="placeOrderBtn" class="bg-primary text-white px-8 py-3 font-medium rounded-lg whitespace-nowrap">Place Order</button>
-      </div>
+      <button id="placeOrderBtnMobile" class="bg-primary text-white px-6 py-3 font-medium rounded-lg whitespace-nowrap">
+        Place Order
+      </button>
     </div>
   </footer>
 
@@ -347,12 +396,22 @@
         }
       });
 
-      // Place Order Button
-      const placeOrderBtn = document.getElementById('placeOrderBtn');
-      placeOrderBtn.addEventListener('click', function() {
+      // Place Order Button (both desktop and mobile)
+      const placeOrderBtnDesktop = document.getElementById('placeOrderBtnDesktop');
+      const placeOrderBtnMobile = document.getElementById('placeOrderBtnMobile');
+      
+      function placeOrder() {
         // Add your order placement logic here
         alert('Order placed successfully!');
-      });
+      }
+      
+      if (placeOrderBtnDesktop) {
+        placeOrderBtnDesktop.addEventListener('click', placeOrder);
+      }
+      
+      if (placeOrderBtnMobile) {
+        placeOrderBtnMobile.addEventListener('click', placeOrder);
+      }
     });
   </script>
 </body>

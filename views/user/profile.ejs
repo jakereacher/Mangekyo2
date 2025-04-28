@@ -126,44 +126,42 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6" id="addressesContainer">
                 <% if (user.address && user.address.length > 0) { %>
                     <% user.address.forEach(address => { %>
-                        <% if (address && address.id) { %>
-                            <div class="address-card bg-white p-4 rounded shadow-sm border border-gray-200 <%= address.isDefault ? 'default' : '' %>">
-                                <h3 class="font-bold text-lg mb-1"><%= address.fullName || 'N/A' %></h3>
-                                <p class="text-gray-700 mb-1">
-                                    <i class="fas fa-map-pin mr-1 text-gray-500"></i>
-                                    <%= address.addressLine || '' %><%= address.landmark ? ', ' + address.landmark : '' %>
-                                </p>
-                                <p class="text-gray-700 mb-1">
-                                    <i class="fas fa-city mr-1 text-gray-500"></i>
-                                    <%= address.city || '' %><%= address.state ? ', ' + address.state : '' %><%= address.pinCode ? ' - ' + address.pinCode : '' %>
-                                </p>
-                                <p class="text-gray-700 mb-3">
-                                    <i class="fas fa-phone-alt mr-1 text-gray-500"></i>
-                                    <%= address.mobile || 'N/A' %>
-                                </p>
-                                
-                                <div class="address-actions mt-4 flex flex-wrap gap-2">
-                                    <% if (!address.isDefault) { %>
-                                        <button onclick="setDefaultAddress('<%= address.id %>')" 
-                                                class="bg-gray-800 text-white px-3 py-1 rounded text-sm hover:bg-gray-700 flex items-center">
-                                            <i class="fas fa-check-circle mr-1"></i> Set Default
-                                        </button>
-                                    <% } else { %>
-                                        <span class="inline-block bg-green-100 text-green-800 px-3 py-1 rounded text-sm font-medium flex items-center">
-                                            <i class="fas fa-star mr-1"></i> Default Address
-                                        </span>
-                                    <% } %>
-                                    <button onclick="editAddress('<%= address.id %>')" 
-                                            class="bg-gray-200 text-gray-800 px-3 py-1 rounded text-sm hover:bg-gray-300 flex items-center">
-                                        <i class="fas fa-edit mr-1"></i> Edit
+                        <div class="address-card bg-white p-4 rounded shadow-sm border border-gray-200 <%= address.isDefault ? 'default' : '' %>">
+                            <h3 class="font-bold text-lg mb-1"><%= address.fullName || 'N/A' %></h3>
+                            <p class="text-gray-700 mb-1">
+                                <i class="fas fa-map-pin mr-1 text-gray-500"></i>
+                                <%= address.addressLine || '' %><%= address.landmark ? ', ' + address.landmark : '' %>
+                            </p>
+                            <p class="text-gray-700 mb-1">
+                                <i class="fas fa-city mr-1 text-gray-500"></i>
+                                <%= address.city || '' %><%= address.state ? ', ' + address.state : '' %><%= address.pinCode ? ' - ' + address.pinCode : '' %>
+                            </p>
+                            <p class="text-gray-700 mb-3">
+                                <i class="fas fa-phone-alt mr-1 text-gray-500"></i>
+                                <%= address.mobile || 'N/A' %>
+                            </p>
+                            
+                            <div class="address-actions mt-4 flex flex-wrap gap-2">
+                                <% if (!address.isDefault) { %>
+                                    <button onclick="setDefaultAddress('<%= address._id %>')" 
+                                            class="bg-gray-800 text-white px-3 py-1 rounded text-sm hover:bg-gray-700 flex items-center">
+                                        <i class="fas fa-check-circle mr-1"></i> Set Default
                                     </button>
-                                    <button onclick="deleteAddress('<%= address.id %>')" 
-                                            class="bg-red-100 text-red-800 px-3 py-1 rounded text-sm hover:bg-red-200 flex items-center">
-                                        <i class="fas fa-trash-alt mr-1"></i> Delete
-                                    </button>
-                                </div>
+                                <% } else { %>
+                                    <span class="inline-block bg-green-100 text-green-800 px-3 py-1 rounded text-sm font-medium flex items-center">
+                                        <i class="fas fa-star mr-1"></i> Default Address
+                                    </span>
+                                <% } %>
+                                <button onclick="editAddress('<%= address._id %>')" 
+                                        class="bg-gray-200 text-gray-800 px-3 py-1 rounded text-sm hover:bg-gray-300 flex items-center">
+                                    <i class="fas fa-edit mr-1"></i> Edit
+                                </button>
+                                <button onclick="deleteAddress('<%= address._id %>')" 
+                                        class="bg-red-100 text-red-800 px-3 py-1 rounded text-sm hover:bg-red-200 flex items-center">
+                                    <i class="fas fa-trash-alt mr-1"></i> Delete
+                                </button>
                             </div>
-                        <% } %>
+                        </div>
                     <% }) %>
                 <% } else { %>
                     <p class="text-gray-500 col-span-full p-4 bg-gray-50 rounded border border-gray-200">
@@ -265,12 +263,11 @@
         <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
             <div class="p-6">
                 <h2 id="addressModalTitle" class="text-xl font-bold mb-4 flex items-center">
-                    <i class="fas fa-map-marker-alt mr-2"></i>Add New Address
+                    <i class="fas fa-map-marker-alt mr-2"></i>Edit Address
                 </h2>
                 
                 <form id="addressForm" class="space-y-4">
                     <input type="hidden" id="addressId" name="addressId">
-                    <input type="hidden" id="addressAction" name="action" value="ADD">
                     
                     <div>
                         <label for="fullName" class="form-label">
@@ -518,23 +515,52 @@
         }
 
         // Address management functions
-        function showAddressModal(action, addressId = null) {
+        async function showAddressModal(action, addressId = null) {
             const modal = document.getElementById('addressModal');
             const title = document.getElementById('addressModalTitle');
             const form = document.getElementById('addressForm');
-            const actionInput = document.getElementById('addressAction');
             
             form.reset();
             
             if (action === 'add') {
                 title.innerHTML = '<i class="fas fa-map-marker-alt mr-2"></i>Add New Address';
                 document.getElementById('addressId').value = '';
-                actionInput.value = 'ADD';
+                document.getElementById('isDefault').checked = false;
             } else if (action === 'edit' && addressId) {
                 title.innerHTML = '<i class="fas fa-map-marker-alt mr-2"></i>Edit Address';
                 document.getElementById('addressId').value = addressId;
-                actionInput.value = 'UPDATE';
-                fetchAddressData(addressId);
+                
+                try {
+                    const response = await fetch('/profile/addresses', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            action: 'GET',
+                            addressId: addressId
+                        })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        const address = result.data;
+                        document.getElementById('fullName').value = address.fullName || '';
+                        document.getElementById('mobile').value = address.mobile || '';
+                        document.getElementById('pinCode').value = address.pinCode || '';
+                        document.getElementById('addressLine').value = address.addressLine || '';
+                        document.getElementById('landmark').value = address.landmark || '';
+                        document.getElementById('city').value = address.city || '';
+                        document.getElementById('state').value = address.state || '';
+                        document.getElementById('isDefault').checked = address.isDefault || false;
+                    } else {
+                        showAlert(result.message || 'Failed to load address', 'error');
+                    }
+                } catch (err) {
+                    console.error('Error fetching address:', err);
+                    showAlert('Failed to load address data', 'error');
+                }
             }
             
             modal.classList.remove('hidden');
@@ -544,66 +570,21 @@
             document.getElementById('addressModal').classList.add('hidden');
         }
 
-        async function fetchAddressData(addressId) {
-            try {
-                const res = await fetch(`/profile/addresses/${addressId}`);
-                const result = await res.json();
-                
-                if (result.success) {
-                    const address = result.data;
-                    document.getElementById('fullName').value = address.fullName || '';
-                    document.getElementById('mobile').value = address.mobile || '';
-                    document.getElementById('pinCode').value = address.pinCode || '';
-                    document.getElementById('addressLine').value = address.addressLine || '';
-                    document.getElementById('landmark').value = address.landmark || '';
-                    document.getElementById('city').value = address.city || '';
-                    document.getElementById('state').value = address.state || '';
-                    document.getElementById('isDefault').checked = address.isDefault || false;
-                } else {
-                    showAlert(result.message || 'Failed to load address', 'error');
-                }
-            } catch (err) {
-                console.error('Error fetching address:', err);
-                showAlert('Failed to load address data', 'error');
-            }
-        }
-
-        async function setDefaultAddress(addressId) {
-            try {
-                const res = await fetch('/profile/addresses', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'SET_DEFAULT', addressId })
-                });
-                
-                const result = await res.json();
-                
-                if (result.success) {
-                    showAlert('Default address updated successfully', 'success');
-                    refreshAddresses(result.data);
-                } else {
-                    showAlert(result.message || 'Failed to set default address', 'error');
-                }
-            } catch (err) {
-                console.error('Error setting default address:', err);
-                showAlert('Failed to update address', 'error');
-            }
-        }
-
-        function editAddress(addressId) {
-            showAddressModal('edit', addressId);
-        }
-
         async function deleteAddress(addressId) {
             if (confirm('Are you sure you want to delete this address?')) {
                 try {
-                    const res = await fetch('/profile/addresses', {
+                    const response = await fetch('/profile/addresses', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ action: 'DELETE', addressId })
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            action: 'DELETE',
+                            addressId: addressId
+                        })
                     });
                     
-                    const result = await res.json();
+                    const result = await response.json();
                     
                     if (result.success) {
                         showAlert('Address deleted successfully', 'success');
@@ -618,15 +599,40 @@
             }
         }
 
-        // Handle address form submission
+        async function setDefaultAddress(addressId) {
+            try {
+                const response = await fetch('/profile/addresses', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'SET_DEFAULT',
+                        addressId: addressId
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('Default address updated successfully', 'success');
+                    refreshAddresses(result.data);
+                } else {
+                    showAlert(result.message || 'Failed to set default address', 'error');
+                }
+            } catch (err) {
+                console.error('Error setting default address:', err);
+                showAlert('Failed to update address', 'error');
+            }
+        }
+
         document.getElementById('addressForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const addressId = document.getElementById('addressId').value;
-            const action = document.getElementById('addressAction').value;
+            const isEdit = !!addressId;
             
             const addressData = {
-                id: addressId || undefined,
                 fullName: document.getElementById('fullName').value,
                 mobile: document.getElementById('mobile').value,
                 pinCode: document.getElementById('pinCode').value,
@@ -638,17 +644,23 @@
             };
             
             try {
-                const res = await fetch('/profile/addresses', {
+                const response = await fetch('/profile/addresses', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action, addressId, addressData })
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: isEdit ? 'UPDATE' : 'ADD',
+                        addressId: isEdit ? addressId : undefined,
+                        ...addressData
+                    })
                 });
                 
-                const result = await res.json();
+                const result = await response.json();
                 
                 if (result.success) {
                     hideAddressModal();
-                    showAlert(action === 'ADD' ? 'Address added successfully' : 'Address updated successfully', 'success');
+                    showAlert(isEdit ? 'Address updated successfully' : 'Address added successfully', 'success');
                     refreshAddresses(result.data);
                 } else {
                     showAlert(result.message || 'Failed to save address', 'error');
@@ -659,55 +671,55 @@
             }
         });
 
-        // Function to refresh the addresses section with new data
         function refreshAddresses(addressesData) {
             const container = document.getElementById('addressesContainer');
             
             if (!addressesData || addressesData.length === 0) {
-                container.innerHTML = '<p class="text-gray-500 col-span-full p-4 bg-gray-50 rounded border border-gray-200"><i class="fas fa-info-circle mr-2"></i>No addresses saved yet. Please add a delivery address.</p>';
+                container.innerHTML = `
+                    <p class="text-gray-500 col-span-full p-4 bg-gray-50 rounded border border-gray-200">
+                        <i class="fas fa-info-circle mr-2"></i>No addresses saved yet. Please add a delivery address.
+                    </p>`;
                 return;
             }
             
             let html = '';
             
             addressesData.forEach(address => {
-                if (address && address.id) {
-                    html += `
-                        <div class="address-card bg-white p-4 rounded shadow-sm border border-gray-200 ${address.isDefault ? 'default' : ''}">
-                            <h3 class="font-bold text-lg mb-1">${address.fullName || 'N/A'}</h3>
-                            <p class="text-gray-700 mb-1">
-                                <i class="fas fa-map-pin mr-1 text-gray-500"></i>
-                                ${address.addressLine || ''}${address.landmark ? ', ' + address.landmark : ''}
-                            </p>
-                            <p class="text-gray-700 mb-1">
-                                <i class="fas fa-city mr-1 text-gray-500"></i>
-                                ${address.city || ''}${address.state ? ', ' + address.state : ''}${address.pinCode ? ' - ' + address.pinCode : ''}
-                            </p>
-                            <p class="text-gray-700 mb-3">
-                                <i class="fas fa-phone-alt mr-1 text-gray-500"></i>
-                                ${address.mobile || 'N/A'}
-                            </p>
-                            
-                            <div class="address-actions mt-4 flex flex-wrap gap-2">
-                                ${!address.isDefault ? 
-                                    `<button onclick="setDefaultAddress('${address.id}')" 
-                                            class="bg-gray-800 text-white px-3 py-1 rounded text-sm hover:bg-gray-700 flex items-center">
-                                        <i class="fas fa-check-circle mr-1"></i> Set Default
-                                    </button>` : 
-                                    `<span class="inline-block bg-green-100 text-green-800 px-3 py-1 rounded text-sm font-medium flex items-center">
-                                        <i class="fas fa-star mr-1"></i> Default Address
-                                    </span>`}
-                                <button onclick="editAddress('${address.id}')" 
-                                        class="bg-gray-200 text-gray-800 px-3 py-1 rounded text-sm hover:bg-gray-300 flex items-center">
-                                    <i class="fas fa-edit mr-1"></i> Edit
-                                </button>
-                                <button onclick="deleteAddress('${address.id}')" 
-                                        class="bg-red-100 text-red-800 px-3 py-1 rounded text-sm hover:bg-red-200 flex items-center">
-                                    <i class="fas fa-trash-alt mr-1"></i> Delete
-                                </button>
-                            </div>
-                        </div>`;
-                }
+                html += `
+                    <div class="address-card bg-white p-4 rounded shadow-sm border border-gray-200 ${address.isDefault ? 'default' : ''}">
+                        <h3 class="font-bold text-lg mb-1">${address.fullName || 'N/A'}</h3>
+                        <p class="text-gray-700 mb-1">
+                            <i class="fas fa-map-pin mr-1 text-gray-500"></i>
+                            ${address.addressLine || ''}${address.landmark ? ', ' + address.landmark : ''}
+                        </p>
+                        <p class="text-gray-700 mb-1">
+                            <i class="fas fa-city mr-1 text-gray-500"></i>
+                            ${address.city || ''}${address.state ? ', ' + address.state : ''}${address.pinCode ? ' - ' + address.pinCode : ''}
+                        </p>
+                        <p class="text-gray-700 mb-3">
+                            <i class="fas fa-phone-alt mr-1 text-gray-500"></i>
+                            ${address.mobile || 'N/A'}
+                        </p>
+                        
+                        <div class="address-actions mt-4 flex flex-wrap gap-2">
+                            ${!address.isDefault ? 
+                                `<button onclick="setDefaultAddress('${address._id}')" 
+                                        class="bg-gray-800 text-white px-3 py-1 rounded text-sm hover:bg-gray-700 flex items-center">
+                                    <i class="fas fa-check-circle mr-1"></i> Set Default
+                                </button>` : 
+                                `<span class="inline-block bg-green-100 text-green-800 px-3 py-1 rounded text-sm font-medium flex items-center">
+                                    <i class="fas fa-star mr-1"></i> Default Address
+                                </span>`}
+                            <button onclick="showAddressModal('edit', '${address._id}')" 
+                                    class="bg-gray-200 text-gray-800 px-3 py-1 rounded text-sm hover:bg-gray-300 flex items-center">
+                                <i class="fas fa-edit mr-1"></i> Edit
+                            </button>
+                            <button onclick="deleteAddress('${address._id}')" 
+                                    class="bg-red-100 text-red-800 px-3 py-1 rounded text-sm hover:bg-red-200 flex items-center">
+                                <i class="fas fa-trash-alt mr-1"></i> Delete
+                            </button>
+                        </div>
+                    </div>`;
             });
             
             container.innerHTML = html;
