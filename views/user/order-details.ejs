@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Details | Mangeyko</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        .status-processing { @apply bg-yellow-100 text-yellow-800; }
+        .status-shipped { @apply bg-blue-100 text-blue-800; }
+        .status-delivered { @apply bg-green-100 text-green-800; }
+        .status-cancelled { @apply bg-red-100 text-red-800; }
+        .order-item { @apply border-b border-gray-200 last:border-0; }
+        .order-card { @apply transition-all duration-300 hover:shadow-md; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- Header -->
+        <div class="bg-white p-6 rounded-lg shadow-sm mb-8">
+            <h1 class="text-2xl font-bold flex items-center">
+                <i class="fas fa-receipt mr-2"></i> Order Details
+            </h1>
+            <p class="text-gray-600 mt-2">Order ID: <%= order._id %></p>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex flex-col lg:flex-row gap-6">
+            <!-- Left Column: Order Items and Status -->
+            <div class="lg:w-2/3">
+                <!-- Order Status -->
+                <div class="bg-white p-6 rounded-lg shadow-sm mb-6 order-card">
+                    <h2 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-info-circle mr-2"></i> Order Status
+                    </h2>
+                    <div class="flex items-center">
+                        <span class="px-3 py-1 rounded text-sm font-medium status-<%= order.status.toLowerCase() %>">
+                            <%= order.status %>
+                        </span>
+                        <p class="ml-4 text-gray-600">
+                            Ordered on <%= order.formattedOrderDate %> | 
+                            Estimated Delivery: <%= order.formattedDeliveryDate %>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Order Items -->
+                <div class="bg-white p-6 rounded-lg shadow-sm mb-6 order-card">
+                    <h2 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-shopping-bag mr-2"></i> Items Ordered
+                    </h2>
+                    <div class="space-y-4">
+                        <% order.items.forEach(item => { %>
+                            <div class="flex items-start py-4 order-item">
+                                <div class="w-16 h-16 bg-gray-100 rounded overflow-hidden mr-4">
+                                    <img src="<%= item.product.mainImage %>" alt="<%= item.product.productName %>" class="w-full h-full object-cover">
+                                </div>
+                                <div class="flex-1">
+                                    <h3 class="font-medium"><%= item.product.productName %></h3>
+                                    <p class="text-sm text-gray-600">Quantity: <%= item.quantity %></p>
+                                    <p class="text-sm text-gray-600">Price: ₹<%= item.price.toFixed(2) %></p>
+                                    <p class="text-sm text-gray-600">Status: <%= item.status %></p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-medium">₹<%= item.totalPrice %></p>
+                                </div>
+                            </div>
+                        <% }); %>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Order Summary and Shipping -->
+            <div class="lg:w-1/3">
+                <!-- Order Summary -->
+                <div class="bg-white p-6 rounded-lg shadow-sm sticky top-4 order-card">
+                    <h2 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-receipt mr-2"></i> Order Summary
+                    </h2>
+                    <div class="space-y-3 mb-4">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Subtotal (<%= order.items.length %> items)</span>
+                            <span>₹<%= order.subtotal %></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Shipping</span>
+                            <span>₹<%= order.shipping %></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Tax</span>
+                            <span>₹<%= order.tax %></span>
+                        </div>
+                        <% if (order.discount > 0) { %>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Discount</span>
+                                <span>-₹<%= order.discount.toFixed(2) %></span>
+                            </div>
+                        <% } %>
+                    </div>
+                    <div class="border-t border-gray-200 pt-4">
+                        <div class="flex justify-between font-bold text-lg">
+                            <span>Total</span>
+                            <span>₹<%= order.total %></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Shipping Address -->
+                <div class="bg-white p-6 rounded-lg shadow-sm mt-6 order-card">
+                    <h2 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-map-marker-alt mr-2"></i> Shipping Address
+                    </h2>
+                    <p class="text-gray-700 font-medium"><%= order.shippingAddress.fullName %></p>
+                    <p class="text-gray-600"><%= order.shippingAddress.addressType %></p>
+                    <p class="text-gray-600">
+                        <%= order.shippingAddress.landmark ? order.shippingAddress.landmark + ', ' : '' %>
+                        <%= order.shippingAddress.city %>, <%= order.shippingAddress.state %> - <%= order.shippingAddress.pincode %>
+                    </p>
+                    <p class="text-gray-600">Phone: <%= order.shippingAddress.phone %></p>
+                </div>
+
+                <!-- Payment Information -->
+                <div class="bg-white p-6 rounded-lg shadow-sm mt-6 order-card">
+                    <h2 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-credit-card mr-2"></i> Payment Information
+                    </h2>
+                    <p class="text-gray-600">Method: <%= order.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Wallet' %></p>
+                    <p class="text-gray-600">Status: <%= order.paymentStatus %></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="bg-white p-6 rounded-lg shadow-sm mt-6 flex justify-between order-card">
+            <a href="/profile" class="bg-gray-200 text-gray-800 px-6 py-2 rounded hover:bg-gray-300 transition flex items-center">
+                <i class="fas fa-arrow-left mr-2"></i> Back to Profile
+            </a>
+            <% if (order.status === 'Processing') { %>
+                <button onclick="cancelOrder('<%= order._id %>')"
+                        class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition flex items-center">
+                    <i class="fas fa-times-circle mr-2"></i> Cancel Order
+                </button>
+            <% } %>
+        </div>
+    </div>
+
+    <script>
+        async function cancelOrder(orderId) {
+            if (!confirm('Are you sure you want to cancel this order?')) return;
+
+            try {
+                const response = await fetch(`/orders/${orderId}/cancel`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('Order cancelled successfully');
+                    window.location.reload();
+                } else {
+                    alert(result.message || 'Failed to cancel order');
+                }
+            } catch (error) {
+                console.error('Error cancelling order:', error);
+                alert('Failed to cancel order');
+            }
+        }
+    </script>
+</body>
+</html>

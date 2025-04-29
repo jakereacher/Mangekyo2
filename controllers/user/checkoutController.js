@@ -1,9 +1,11 @@
 const Cart = require("../../models/cartSchema");
 const Product = require("../../models/productSchema");
+const Order = require("../../models/orderSchema");
 const User = require("../../models/userSchema");
 const StatusCodes = require("../../utils/httpStatusCodes");
+const mongoose = require("mongoose");
 
-exports.renderCheckoutPage = async (req, res) => {
+exports.renderCheckoutPage= async (req, res) => {
   try {
     const userId = req.session.user;
 
@@ -118,86 +120,314 @@ exports.handleAddressSelection = async (req, res) => {
   }
 };
 
+
 exports.placeOrder = async (req, res) => {
   try {
     const userId = req.session.user;
+    const { paymentMethod, addressId } = req.body;
 
+    // Validate user session
     if (!userId) {
       return res.status(StatusCodes.UNAUTHORIZED).json({
         success: false,
-        message: 'User not authenticated'
+        message: "User not authenticated",
+      });
+    }
+
+    // Validate payment method
+    if (!["cod", "wallet"].includes(paymentMethod)) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Invalid payment method",
       });
     }
 
     // Validate cart
-    const cart = await Cart.findOne({ userId });
+    const cart = await Cart.findOne({ userId }).lean();
     if (!cart || !cart.products || cart.products.length === 0) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
-        message: 'Your cart is empty'
+        message: "Your cart is empty",
+        redirect: "/cart",
       });
     }
 
     // Validate user and address
     const user = await User.findById(userId);
-    const defaultAddress = user.address.find(addr => addr.isDefault);
-    if (!defaultAddress) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
+    if (!user) {
+      return res.status(StatusCodes.NOT_FOUND).json({
         success: false,
-        message: 'No default address selected'
+        message: "User not found",
       });
     }
 
-    // Calculate totals
-    const cartItems = await Promise.all(
+    const selectedAddress = user.address.id(addressId);
+    if (!selectedAddress) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Selected address not found",
+      });
+    }
+
+    // Validate products and stock
+    const orderedItems = await Promise.all(
       cart.products.map(async (item) => {
         const product = await Product.findById(item.productId);
-        if (!product) return null;
+        if (!product || product.isBlocked || product.status !== "Available") {
+          return null;
+        }
+
+        if (product.quantity < item.quantity) {
+          return {
+            product: item.productId,
+            quantity: product.quantity,
+            price: item.price,
+            status: "Processing",
+            stockIssue: true,
+          };
+        }
 
         return {
-          ...item,
-          product
+          product: item.productId,
+          quantity: item.quantity,
+          price: item.price,
+          status: "Processing",
         };
       })
     );
 
-    const validCartItems = cartItems.filter(item => item !== null);
-    const subtotal = validCartItems.reduce((sum, item) => sum + item.totalPrice, 0);
-    const shipping = 5.99; // Fixed shipping
-    const tax = subtotal * 0.09; // Example 9% tax
+    // Filter out invalid products and check for stock issues
+    const validItems = orderedItems.filter((item) => item !== null);
+    const stockIssues = validItems.filter((item) => item.stockIssue);
+
+    if (validItems.length === 0) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "No valid products in your cart",
+        redirect: "/cart",
+      });
+    }
+
+    if (stockIssues.length > 0) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Some items have insufficient stock",
+        items: stockIssues,
+        redirect: "/cart",
+      });
+    }
+
+    // Calculate order totals
+    const subtotal = validItems.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
+    const shipping = 5.99;
+    const tax = subtotal * 0.09;
     const total = subtotal + shipping + tax;
 
-    // Create order
-    const order = {
+    // Check wallet balance for wallet payments
+    if (paymentMethod === "wallet" && user.wallet < total) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Insufficient wallet balance",
+      });
+    }
+
+    // Create the order document
+    const order = new Order({
       userId,
-      address: defaultAddress,
-      products: validCartItems,
-      paymentMethod: 'cod', // Default to COD for now
-      subtotal,
-      shipping,
-      tax,
-      total,
-      status: 'Pending',
-      createdAt: new Date()
-    };
-
-    // Save order (assuming an Order model exists)
-    const newOrder = await Order.create(order);
-
-    // Clear cart
-    await Cart.deleteOne({ userId });
-
-    res.json({
-      success: true,
-      message: 'Order placed successfully',
-      orderId: newOrder._id
+      orderedItems: validItems,
+      totalPrice: subtotal,
+      shippingCharge: shipping,
+      taxAmount: tax,
+      discount: 0,
+      finalAmount: total,
+      shippingAddress: {
+        fullName: selectedAddress.fullName,
+        addressType: selectedAddress.addressType || "Home",
+        landmark: selectedAddress.landmark || "",
+        city: selectedAddress.city,
+        state: selectedAddress.state,
+        pincode: selectedAddress.pinCode,
+        phone: selectedAddress.mobile,
+      },
+      paymentMethod,
+      paymentStatus: paymentMethod === "cod" ? "Pending" : "Paid",
+      orderDate: new Date(),
+      deliveryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     });
 
+    // Save the order
+    const newOrder = await order.save();
+
+    // Update product quantities
+    try {
+      await Promise.all(
+        validItems.map(async (item) => {
+          const product = await Product.findById(item.product);
+          if (product.quantity >= item.quantity) {
+            product.quantity -= item.quantity;
+            await product.save();
+          } else {
+            throw new Error(`Insufficient stock for product ${item.product}`);
+          }
+        })
+      );
+    } catch (error) {
+      // Rollback: Delete the order if product update fails
+      await Order.deleteOne({ _id: newOrder._id });
+      throw new Error("Failed to update product quantities: " + error.message);
+    }
+
+    // Update user (order history and wallet)
+    try {
+      const updateUser = {
+        $push: { orderHistory: newOrder._id },
+      };
+
+      if (paymentMethod === "wallet") {
+        updateUser.$inc = { wallet: -total };
+      }
+
+      await User.findByIdAndUpdate(userId, updateUser);
+    } catch (error) {
+      // Rollback: Delete order and restore product quantities
+      await Order.deleteOne({ _id: newOrder._id });
+      await Promise.all(
+        validItems.map(async (item) => {
+          await Product.findByIdAndUpdate(item.product, {
+            $inc: { quantity: item.quantity },
+          });
+        })
+      );
+      throw new Error("Failed to update user: " + error.message);
+    }
+
+    // Clear the cart
+    try {
+      await Cart.deleteOne({ userId });
+    } catch (error) {
+      // Partial rollback: Order is saved, but cart clearing failed
+      console.error("Failed to clear cart:", error);
+      // Notify admin or log for manual intervention
+    }
+
+    // Return success response
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: "Order placed successfully",
+      orderId: newOrder._id,
+    });
   } catch (error) {
-    console.error('Error placing order:', error);
+    console.error("Error placing order:", error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
-      message: 'Error placing order'
+      message: "Failed to place order",
+      error: error.message,
     });
   }
 };
+
+// exports.placeOrder = async (req, res) => {
+//   try {
+//     const userId = req.session.user;
+
+//     if (!userId) {
+//       return res.status(StatusCodes.UNAUTHORIZED).json({
+//         success: false,
+//         message: 'User not authenticated'
+//       });
+//     }
+
+//     // Validate cart
+//     const cart = await Cart.findOne({ userId });
+//     if (!cart || !cart.products || cart.products.length === 0) {
+//       return res.status(StatusCodes.BAD_REQUEST).json({
+//         success: false,
+//         message: 'Your cart is empty'
+//       });
+//     }
+
+//     // Validate user and address
+//     const user = await User.findById(userId);
+//     const defaultAddress = user.address.find(addr => addr.isDefault);
+//     if (!defaultAddress) {
+//       return res.status(StatusCodes.BAD_REQUEST).json({
+//         success: false,
+//         message: 'No default address selected'
+//       });
+//     }
+
+//     // Get selected payment method
+//     const paymentMethod = req.body.paymentMethod || 'cod';
+
+//     // Calculate totals
+//     const cartItems = await Promise.all(
+//       cart.products.map(async (item) => {
+//         const product = await Product.findById(item.productId);
+//         if (!product) return null;
+
+//         return {
+//           product: item.productId,
+//           quantity: item.quantity,
+//           price: item.price,
+//           status: 'Processing'
+//         };
+//       })
+//     );
+
+//     const validCartItems = cartItems.filter(item => item !== null);
+//     const subtotal = validCartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+//     const shipping = 5.99; // Fixed shipping
+//     const tax = subtotal * 0.09; // Example 9% tax
+//     const total = subtotal + shipping + tax;
+
+//     // Create order
+//     const order = new Order({
+//       userId,
+//       orderedItems: validCartItems,
+//       totalPrice: subtotal,
+//       shippingCharge: shipping,
+//       discount: 0, // You can add coupon logic here
+//       finalAmount: total,
+//       shippingAddress: {
+//         fullName: defaultAddress.fullName,
+//         addressType: 'Home', // You can make this dynamic
+//         landmark: defaultAddress.landmark || '',
+//         city: defaultAddress.city,
+//         state: defaultAddress.state,
+//         pincode: defaultAddress.pinCode,
+//         phone: defaultAddress.mobile
+//       },
+//       paymentMethod,
+//       paymentStatus: paymentMethod === 'cod' ? 'Pending' : 'Paid',
+//       orderDate: new Date(),
+//       deliveryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
+//     });
+
+//     // Save order
+//     const newOrder = await order.save();
+
+//     // Add order to user's order history
+//     user.orderHistory.push(newOrder._id);
+//     await user.save();
+
+//     // Clear cart
+//     await Cart.deleteOne({ userId });
+
+//     res.json({
+//       success: true,
+//       message: 'Order placed successfully',
+//       orderId: newOrder._id
+//     });
+
+//   } catch (error) {
+//     console.error('Error placing order:', error);
+//     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+//       success: false,
+//       message: 'Error placing order'
+//     });
+//   }
+// };
+

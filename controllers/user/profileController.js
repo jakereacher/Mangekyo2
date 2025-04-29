@@ -32,6 +32,7 @@ exports.renderProfilePage = async (req, res) => {
       .populate('wishlist')
       .populate({
         path: 'orderHistory',
+        options: { sort: { createdOn: -1 } }, // Sort by newest first
         populate: {
           path: 'orderedItems.product',
           model: 'Product'
@@ -42,8 +43,23 @@ exports.renderProfilePage = async (req, res) => {
       return res.status(StatusCodes.NOT_FOUND).render('page-404');
     }
 
+    // Format order history for the view
+    const formattedOrders = user.orderHistory.map(order => ({
+      _id: order._id,
+      status: getOverallOrderStatus(order.orderedItems),
+      totalAmount: order.finalAmount,
+      createdAt: order.createdOn,
+      items: order.orderedItems.map(item => ({
+        product: item.product,
+        quantity: item.quantity,
+        status: item.status,
+        price: item.price
+      }))
+    }));
+
     res.render('profile', {
       user,
+      orders: formattedOrders,
       title: 'My Profile',
       currentPage: 'profile',
       success: req.flash('success'),
@@ -56,6 +72,23 @@ exports.renderProfilePage = async (req, res) => {
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).render('page-404');
   }
 };
+
+// Helper function to determine overall order status
+function getOverallOrderStatus(orderedItems) {
+  if (orderedItems.every(item => item.status === 'Delivered')) {
+    return 'Delivered';
+  }
+  if (orderedItems.some(item => item.status === 'Shipped')) {
+    return 'Shipped';
+  }
+  if (orderedItems.some(item => item.status === 'Processing')) {
+    return 'Processing';
+  }
+  if (orderedItems.some(item => item.status === 'Cancelled')) {
+    return 'Cancelled';
+  }
+  return 'Processing';
+}
 
 // Handle profile update with email verification
 exports.handleProfileUpdate = async (req, res) => {

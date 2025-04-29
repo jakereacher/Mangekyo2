@@ -1,477 +1,697 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Checkout - <%= user.name %></title>
-  <script src="https://cdn.tailwindcss.com/3.4.16"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
-  <style>
-    .address-radio:checked + .address-card {
-      border-color: #1a1a1a;
-      background-color: rgba(255, 255, 255, 0.9);
-    }
-    .payment-radio:checked + .payment-method {
-      border-color: #1a1a1a;
-      background-color: rgba(255, 255, 255, 0.9);
-    }
-    .custom-radio {
-      position: relative;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      border: 2px solid #d1d5db;
-      display: inline-block;
-    }
-    .custom-radio::after {
-      content: "";
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background-color: transparent;
-    }
-    input[type="radio"]:checked + .custom-radio {
-      border-color: #4f46e5;
-    }
-    input[type="radio"]:checked + .custom-radio::after {
-      background-color: #4f46e5;
-    }
-    .sticky-summary {
-      position: sticky;
-      top: 2rem;
-    }
-  </style>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            primary: '#4f46e5'
-          }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout | Mangeyko</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        .checkout-step {
+            @apply relative pb-8;
         }
-      }
-    }
-  </script>
+        .checkout-step:not(:last-child):after {
+            content: '';
+            @apply absolute left-4 top-4 h-full w-0.5 bg-gray-300;
+        }
+        .checkout-step.completed .step-number {
+            @apply bg-green-500 text-white;
+        }
+        .checkout-step.active .step-number {
+            @apply bg-black text-white;
+        }
+        .checkout-step.inactive .step-number {
+            @apply bg-gray-200 text-gray-600;
+        }
+        .address-card {
+            transition: all 0.3s ease;
+        }
+        .address-card:hover {
+            transform: translateY(-2px);
+        }
+        .address-card.selected {
+            border-left: 4px solid black;
+        }
+        .payment-method:hover {
+            background-color: #f9fafb;
+        }
+        .payment-method.selected {
+            border-color: black;
+            background-color: #f3f4f6;
+        }
+        #loadingOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
 </head>
-<body class="bg-white min-h-screen">
-  <header class="bg-white/90 backdrop-blur-sm shadow-sm">
-    <div class="container mx-auto px-4 py-4 flex items-center justify-between">
-      <a href="/" class="text-2xl font-['Pacifico'] text-primary">Mangeyko</a>
-      <div class="flex items-center space-x-4">
-        <div class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100">
-          <i class="ri-user-line text-gray-600"></i>
+<body class="bg-gray-50">
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay">
+        <div class="bg-white p-6 rounded-lg shadow-lg flex flex-col items-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black mb-4"></div>
+            <p class="text-lg font-medium">Processing your order...</p>
         </div>
-      </div>
-    </div>
-  </header>
-
-  <main class="container mx-auto px-4 py-8 max-w-6xl">
-    <!-- Progress Steps -->
-    <div class="flex items-center mb-8">
-      <div class="w-8 h-8 flex items-center justify-center rounded-full bg-primary text-white">1</div>
-      <div class="h-1 w-16 bg-primary mx-2"></div>
-      <div class="w-8 h-8 flex items-center justify-center rounded-full bg-primary text-white">2</div>
-      <div class="h-1 w-16 bg-primary mx-2"></div>
-      <div class="w-8 h-8 flex items-center justify-center rounded-full bg-primary text-white font-bold">3</div>
-      <div class="ml-4 text-sm text-gray-600">Delivery & Payment</div>
     </div>
 
-    <!-- Two Column Layout -->
-    <div class="flex flex-col md:flex-row gap-8">
-      <!-- Left Column: Delivery & Payment -->
-      <div class="w-full md:w-3/5 space-y-8">
-        <!-- Delivery Address Section -->
-        <div>
-          <h1 class="text-2xl font-bold mb-6">Delivery Address</h1>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <% addresses.forEach(address => { %>
-              <div class="relative">
-                <input type="radio" name="address" id="address-<%= address.id %>" 
-                      class="address-radio hidden" 
-                      <%= address.isDefault ? 'checked' : '' %> 
-                      data-address-id="<%= address.id %>">
-                <label for="address-<%= address.id %>" class="address-card block p-4 border rounded cursor-pointer hover:border-primary transition-all">
-                  <div class="flex justify-between items-start mb-2">
-                    <div class="flex items-center">
-                      <span class="font-medium"><%= address.fullName %></span>
-                      <% if (address.isDefault) { %>
-                        <span class="ml-2 px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded">Default</span>
-                      <% } %>
-                    </div>
-                    <div class="flex items-center">
-                      <div class="custom-radio"></div>
-                    </div>
-                  </div>
-                  <div class="text-gray-600 text-sm mb-1"><%= address.mobile %></div>
-                  <div class="text-gray-600 text-sm">
-                    <%= address.addressLine %><br>
-                    <%= address.city %>, <%= address.state %> <%= address.pinCode %><br>
-                    <% if (address.landmark) { %>
-                      Landmark: <%= address.landmark %><br>
-                    <% } %>
-                  </div>
-                </label>
-              </div>
-            <% }); %>
-            
-            <div class="relative">
-              <button id="addNewAddressBtn" class="h-full w-full p-4 border border-dashed rounded flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-all">
-                <div class="w-12 h-12 flex items-center justify-center rounded-full bg-primary/10 text-primary mb-2">
-                  <i class="ri-add-line ri-xl"></i>
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- Checkout Progress Steps -->
+        <div class="bg-white p-6 rounded-lg shadow-sm mb-8">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-2xl font-bold">
+                    <i class="fas fa-shopping-cart mr-2"></i>Checkout
+                </h1>
+                <div class="text-sm text-gray-500">
+                    <span id="cartCount"><%= cartCount %></span> item(s)
                 </div>
-                <span class="font-medium text-gray-800">Add New Address</span>
-              </button>
             </div>
-          </div>
+
+            <div class="flex justify-center mb-8">
+                <div class="w-full max-w-3xl">
+                    <div class="flex justify-between relative">
+                        <!-- Step 1: Address -->
+                        <div class="checkout-step <%= currentStep === 1 ? 'active' : (currentStep > 1 ? 'completed' : 'inactive') %> flex flex-col items-center" style="width: 33.33%">
+                            <div class="step-number w-8 h-8 rounded-full flex items-center justify-center mb-2 font-medium">
+                                <% if (currentStep > 1) { %>
+                                    <i class="fas fa-check text-xs"></i>
+                                <% } else { %>
+                                    1
+                                <% } %>
+                            </div>
+                            <span class="text-sm font-medium text-center">Delivery Address</span>
+                        </div>
+                        
+                        <!-- Step 2: Payment -->
+                        <div class="checkout-step <%= currentStep === 2 ? 'active' : (currentStep > 2 ? 'completed' : 'inactive') %> flex flex-col items-center" style="width: 33.33%">
+                            <div class="step-number w-8 h-8 rounded-full flex items-center justify-center mb-2 font-medium">
+                                <% if (currentStep > 2) { %>
+                                    <i class="fas fa-check text-xs"></i>
+                                <% } else { %>
+                                    2
+                                <% } %>
+                            </div>
+                            <span class="text-sm font-medium text-center">Payment Method</span>
+                        </div>
+                        
+                        <!-- Step 3: Review -->
+                        <div class="checkout-step <%= currentStep === 3 ? 'active' : 'inactive' %> flex flex-col items-center" style="width: 33.33%">
+                            <div class="step-number w-8 h-8 rounded-full flex items-center justify-center mb-2 font-medium">
+                                3
+                            </div>
+                            <span class="text-sm font-medium text-center">Review Order</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- Payment Method Section -->
-        <div>
-          <h2 class="text-2xl font-bold mb-6">Payment Method</h2>
-          <div class="space-y-3">
-            <div class="relative">
-              <input type="radio" name="payment" id="cod" class="payment-radio hidden" checked value="cod">
-              <label for="cod" class="payment-method block p-4 border rounded cursor-pointer hover:border-primary transition-all">
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center">
-                    <div class="w-10 h-10 flex items-center justify-center rounded-full bg-black/10 mr-3">
-                      <i class="ri-cash-line text-black"></i>
+        <!-- Main Checkout Content -->
+        <div class="flex flex-col lg:flex-row gap-6">
+            <!-- Left Column - Checkout Steps -->
+            <div class="lg:w-2/3">
+                <!-- Step 1: Address Selection -->
+                <div id="addressStep" class="bg-white p-6 rounded-lg shadow-sm mb-6 <%= currentStep !== 1 ? 'hidden' : '' %>">
+                    <h2 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-map-marker-alt mr-2"></i>Select Delivery Address
+                    </h2>
+                    
+                    <!-- Address Selection -->
+                    <div class="space-y-4 mb-6" id="addressSelection">
+                        <% if (addresses && addresses.length > 0) { %>
+                            <% addresses.forEach(address => { %>
+                                <div class="address-card bg-white p-4 rounded border border-gray-200 cursor-pointer <%= address.isDefault ? 'selected' : '' %>"
+                                     onclick="selectAddress('<%= address._id %>')"
+                                     data-address-id="<%= address._id %>">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h3 class="font-bold"><%= address.fullName %></h3>
+                                            <p class="text-gray-700"><%= address.addressLine %><%= address.landmark ? ', ' + address.landmark : '' %></p>
+                                            <p class="text-gray-700"><%= address.city %>, <%= address.state %> - <%= address.pinCode %></p>
+                                            <p class="text-gray-700">Mobile: <%= address.mobile %></p>
+                                        </div>
+                                        <% if (address.isDefault) { %>
+                                            <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">
+                                                Default
+                                            </span>
+                                        <% } %>
+                                    </div>
+                                </div>
+                            <% }); %>
+                        <% } else { %>
+                            <div class="bg-yellow-50 border border-yellow-200 rounded p-4 text-center">
+                                <p class="text-yellow-800">
+                                    <i class="fas fa-exclamation-circle mr-1"></i>
+                                    No addresses found. Please add an address in your profile.
+                                </p>
+                                <a href="/profile" class="inline-block mt-2 text-blue-600 hover:underline">
+                                    Go to Profile to Add Address
+                                </a>
+                            </div>
+                        <% } %>
                     </div>
+                    
+                    <!-- Add New Address Button -->
+                    <button onclick="showAddressModal()" 
+                            class="bg-gray-100 text-gray-800 px-4 py-2 rounded hover:bg-gray-200 transition flex items-center mb-6">
+                        <i class="fas fa-plus mr-2"></i> Add New Address
+                    </button>
+                    
+                    <!-- Continue to Payment Button -->
+                    <div class="flex justify-end">
+                        <button id="continueToPayment" 
+                                class="bg-black text-white px-6 py-2 rounded hover:bg-gray-800 transition <%= addresses && addresses.length > 0 ? '' : 'opacity-50 cursor-not-allowed' %>"
+                                <%= addresses && addresses.length > 0 ? '' : 'disabled' %>>
+                            Continue to Payment
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Payment Method -->
+                <div id="paymentStep" class="bg-white p-6 rounded-lg shadow-sm mb-6 <%= currentStep !== 2 ? 'hidden' : '' %>">
+                    <h2 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-credit-card mr-2"></i>Select Payment Method
+                    </h2>
+                    
+                    <div class="space-y-3 mb-6">
+                        <!-- Cash on Delivery -->
+                        <div class="payment-method p-4 border rounded cursor-pointer"
+                             onclick="selectPaymentMethod('cod')"
+                             data-method="cod">
+                            <div class="flex items-center">
+                                <div class="mr-4">
+                                    <input type="radio" name="paymentMethod" id="cod" class="h-4 w-4 text-black focus:ring-black">
+                                </div>
+                                <div>
+                                    <label for="cod" class="font-medium">Cash on Delivery (COD)</label>
+                                    <p class="text-sm text-gray-600 mt-1">Pay when you receive your order</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Razorpay -->
+                        <div class="payment-method p-4 border rounded cursor-pointer"
+                             onclick="selectPaymentMethod('razorpay')"
+                             data-method="razorpay">
+                            <div class="flex items-center">
+                                <div class="mr-4">
+                                    <input type="radio" name="paymentMethod" id="razorpay" class="h-4 w-4 text-black focus:ring-black">
+                                </div>
+                                <div>
+                                    <label for="razorpay" class="font-medium">Razorpay</label>
+                                    <p class="text-sm text-gray-600 mt-1">Pay securely with Razorpay</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Wallet -->
+                        <div class="payment-method p-4 border rounded cursor-pointer"
+                             onclick="selectPaymentMethod('wallet')"
+                             data-method="wallet">
+                            <div class="flex items-center">
+                                <div class="mr-4">
+                                    <input type="radio" name="paymentMethod" id="wallet" class="h-4 w-4 text-black focus:ring-black">
+                                </div>
+                                <div>
+                                    <label for="wallet" class="font-medium">Wallet Balance</label>
+                                    <p class="text-sm text-gray-600 mt-1">Use your wallet balance (₹<%= user.wallet ? user.wallet.toFixed(2) : '0.00' %> available)</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Back and Continue Buttons -->
+                    <div class="flex justify-between">
+                        <button onclick="goToStep(1)" 
+                                class="bg-gray-200 text-gray-800 px-6 py-2 rounded hover:bg-gray-300 transition">
+                            <i class="fas fa-arrow-left mr-2"></i> Back
+                        </button>
+                        <button id="continueToReview" 
+                                class="bg-black text-white px-6 py-2 rounded hover:bg-gray-800 transition">
+                            Review Order
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Review Order -->
+                <div id="reviewStep" class="bg-white p-6 rounded-lg shadow-sm <%= currentStep !== 3 ? 'hidden' : '' %>">
+                    <h2 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-clipboard-check mr-2"></i>Review Your Order
+                    </h2>
+                    
+                    <!-- Selected Address -->
+                    <div class="mb-6">
+                        <h3 class="font-bold text-lg mb-2 flex items-center">
+                            <i class="fas fa-truck mr-2"></i>Delivery Address
+                        </h3>
+                        <div id="selectedAddressDisplay" class="bg-gray-50 p-4 rounded border border-gray-200">
+                            <!-- Address will be populated here by JavaScript -->
+                        </div>
+                    </div>
+                    
+                    <!-- Payment Method -->
+                    <div class="mb-6">
+                        <h3 class="font-bold text-lg mb-2 flex items-center">
+                            <i class="fas fa-credit-card mr-2"></i>Payment Method
+                        </h3>
+                        <div id="selectedPaymentDisplay" class="bg-gray-50 p-4 rounded border border-gray-200">
+                            <!-- Payment method will be populated here by JavaScript -->
+                        </div>
+                    </div>
+                    
+                    <!-- Order Summary -->
                     <div>
-                      <div class="font-medium">Cash on Delivery</div>
-                      <div class="text-sm text-gray-500">Pay when your order arrives</div>
+                        <h3 class="font-bold text-lg mb-2 flex items-center">
+                            <i class="fas fa-shopping-bag mr-2"></i>Order Summary
+                        </h3>
+                        <div class="bg-gray-50 p-4 rounded border border-gray-200">
+                            <div class="space-y-4">
+                                <% cartItems.forEach(item => { %>
+                                    <div class="flex items-start pb-4 border-b border-gray-200 last:border-0">
+                                        <div class="w-16 h-16 bg-gray-100 rounded overflow-hidden mr-4">
+                                            <img src="<%= item.product.mainImage %>" alt="<%= item.product.productName %>" class="w-full h-full object-cover">
+                                        </div>
+                                        <div class="flex-1">
+                                            <h4 class="font-medium"><%= item.product.productName %></h4>
+                                            <p class="text-sm text-gray-600">Quantity: <%= item.quantity %></p>
+                                            <p class="text-sm text-gray-600">Price: ₹<%= item.price.toFixed(2) %></p>
+                                        </div>
+                                        <div class="text-right">
+                                            <p class="font-medium">₹<%= item.totalPrice.toFixed(2) %></p>
+                                        </div>
+                                    </div>
+                                <% }); %>
+                            </div>
+                        </div>
                     </div>
-                  </div>
-                  <div class="custom-radio"></div>
+                    
+                    <!-- Back and Place Order Buttons -->
+                    <div class="flex justify-between mt-6">
+                        <button onclick="goToStep(2)" 
+                                class="bg-gray-200 text-gray-800 px-6 py-2 rounded hover:bg-gray-300 transition">
+                            <i class="fas fa-arrow-left mr-2"></i> Back
+                        </button>
+                        <button id="placeOrderBtn" 
+                                class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition flex items-center">
+                            <i class="fas fa-check-circle mr-2"></i> Place Order
+                        </button>
+                    </div>
                 </div>
-              </label>
             </div>
-            <div class="relative">
-              <input type="radio" name="payment" id="card" class="payment-radio hidden" value="card">
-              <label for="card" class="payment-method block p-4 border rounded cursor-pointer hover:border-primary transition-all">
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center">
-                    <div class="w-10 h-10 flex items-center justify-center rounded-full bg-black/10 mr-3">
-                      <i class="ri-bank-card-line text-black"></i>
+
+            <!-- Right Column - Order Summary -->
+            <div class="lg:w-1/3">
+                <div class="bg-white p-6 rounded-lg shadow-sm sticky top-4">
+                    <h2 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-receipt mr-2"></i>Order Summary
+                    </h2>
+                    
+                    <div class="space-y-3 mb-4">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Subtotal (<%= cartCount %> items)</span>
+                            <span>₹<%= subtotal %></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Shipping</span>
+                            <span>₹<%= shipping %></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Tax</span>
+                            <span>₹<%= tax %></span>
+                        </div>
                     </div>
-                    <div>
-                      <div class="font-medium">Credit/Debit Card</div>
-                      <div class="text-sm text-gray-500">Pay securely with your card</div>
+                    
+                    <div class="border-t border-gray-200 pt-4 mb-4">
+                        <div class="flex justify-between font-bold text-lg">
+                            <span>Total</span>
+                            <span>₹<%= total %></span>
+                        </div>
                     </div>
-                  </div>
-                  <div class="custom-radio"></div>
+                    
+                    <!-- Order Summary Items (for mobile) -->
+                    <div class="lg:hidden border-t border-gray-200 pt-4 mt-4">
+                        <h3 class="font-bold mb-2">Your Items</h3>
+                        <div class="space-y-3 max-h-60 overflow-y-auto">
+                            <% cartItems.forEach(item => { %>
+                                <div class="flex items-center">
+                                    <div class="w-12 h-12 bg-gray-100 rounded overflow-hidden mr-3">
+                                        <img src="<%= item.product.mainImage %>" alt="<%= item.product.productName %>" class="w-full h-full object-cover">
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-sm font-medium"><%= item.product.productName %></p>
+                                        <p class="text-xs text-gray-600">Qty: <%= item.quantity %></p>
+                                    </div>
+                                    <div class="text-sm font-medium">
+                                        ₹<%= item.totalPrice.toFixed(2) %>
+                                    </div>
+                                </div>
+                            <% }); %>
+                        </div>
+                    </div>
                 </div>
-              </label>
             </div>
-          </div>
         </div>
-      </div>
-      
-      <!-- Right Column: Order Summary -->
-      <div class="w-full md:w-2/5">
-        <div class="sticky-summary">
-          <div class="bg-white/90 backdrop-blur-sm rounded shadow-sm p-6">
-            <h2 class="text-xl font-bold mb-4">Order Summary (<%= cartItems.length %> items)</h2>
-            <div class="max-h-80 overflow-y-auto space-y-4">
-              <% cartItems.forEach(item => { %>
-                <div class="flex items-center justify-between pb-4 border-b">
-                  <div class="flex items-center space-x-4">
-                    <div class="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden">
-                      <img src="<%= item.product.mainImage %>" alt="<%= item.product.productName %>" class="w-full h-full object-cover">
-                    </div>
+    </div>
+
+    <!-- Address Modal -->
+    <div id="addressModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div class="p-6">
+                <h2 class="text-xl font-bold mb-4 flex items-center">
+                    <i class="fas fa-map-marker-alt mr-2"></i>Add New Address
+                </h2>
+                
+                <form id="addressForm" class="space-y-4">
                     <div>
-                      <h3 class="font-medium"><%= item.product.productName %></h3>
-                      <p class="text-sm text-gray-500">Qty: <%= item.quantity %> × $<%= item.price.toFixed(2) %></p>
+                        <label for="fullName" class="form-label">
+                            <i class="fas fa-user mr-2"></i>Full Name
+                        </label>
+                        <input type="text" id="fullName" name="fullName" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black"
+                               placeholder="Enter recipient's full name">
                     </div>
-                  </div>
-                  <div class="text-right">
-                    <p class="font-medium">$<%= item.totalPrice.toFixed(2) %></p>
-                  </div>
-                </div>
-              <% }); %>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="mobile" class="form-label">
+                                <i class="fas fa-phone-alt mr-2"></i>Mobile Number
+                            </label>
+                            <input type="tel" id="mobile" name="mobile" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black"
+                                   placeholder="10-digit mobile number">
+                        </div>
+                        <div>
+                            <label for="pinCode" class="form-label">
+                                <i class="fas fa-map-pin mr-2"></i>PIN Code
+                            </label>
+                            <input type="text" id="pinCode" name="pinCode" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black"
+                                   placeholder="6-digit PIN code">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label for="addressLine" class="form-label">
+                            <i class="fas fa-home mr-2"></i>Address Line
+                        </label>
+                        <textarea id="addressLine" name="addressLine" rows="3" required
+                                  class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black"
+                                  placeholder="House No., Building, Street, Area"></textarea>
+                    </div>
+                    
+                    <div>
+                        <label for="landmark" class="form-label">
+                            <i class="fas fa-landmark mr-2"></i>Landmark (Optional)
+                        </label>
+                        <input type="text" id="landmark" name="landmark"
+                               class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black"
+                               placeholder="Nearby location for easier navigation">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="city" class="form-label">
+                                <i class="fas fa-city mr-2"></i>City
+                            </label>
+                            <input type="text" id="city" name="city" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black"
+                                   placeholder="Your city">
+                        </div>
+                        <div>
+                            <label for="state" class="form-label">
+                                <i class="fas fa-map mr-2"></i>State
+                            </label>
+                            <input type="text" id="state" name="state" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black"
+                                   placeholder="Your state">
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center mt-2">
+                        <input type="checkbox" id="isDefault" name="isDefault"
+                               class="h-4 w-4 text-black focus:ring-black border-gray-300 rounded">
+                        <label for="isDefault" class="ml-2 block text-sm text-gray-700">
+                            Set as default delivery address
+                        </label>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" onclick="hideAddressModal()"
+                                class="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 transition flex items-center">
+                            <i class="fas fa-times mr-2"></i> Cancel
+                        </button>
+                        <button type="submit"
+                                class="px-4 py-2 bg-black text-white rounded hover:bg-gray-800 transition flex items-center">
+                            <i class="fas fa-save mr-2"></i> Save Address
+                        </button>
+                    </div>
+                </form>
             </div>
-            
-            <div class="mt-6 space-y-2">
-              <div class="flex justify-between pt-2">
-                <span class="text-gray-600">Subtotal</span>
-                <span class="font-medium">$<%= subtotal %></span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-600">Shipping</span>
-                <span class="font-medium">$<%= shipping %></span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-600">Tax</span>
-                <span class="font-medium">$<%= tax %></span>
-              </div>
-              <div class="flex justify-between pt-2 border-t font-bold mt-2">
-                <span>Total</span>
-                <span>$<%= total %></span>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Checkout Button (on desktop) -->
-          <div class="mt-4 hidden md:block">
-            <button id="placeOrderBtnDesktop" class="w-full bg-primary text-white px-8 py-3 font-medium rounded-lg whitespace-nowrap flex items-center justify-center">
-              <span id="desktopBtnText">Place Order</span>
-              <svg id="desktopLoading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-            </button>
-            <div class="flex items-center justify-center mt-4 text-sm text-gray-600">
-              <i class="ri-shield-check-line text-green-600 mr-2"></i>
-              <span>Secure Checkout</span>
-            </div>
-          </div>
         </div>
-      </div>
     </div>
-  </main>
 
-  <!-- Mobile Checkout Button (fixed at bottom) -->
-  <footer class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-sm shadow-[0_-2px_10px_rgba(0,0,0,0.1)] p-4 md:hidden">
-    <div class="container mx-auto flex items-center justify-between">
-      <div>
-        <div class="text-sm text-gray-600">Total Amount</div>
-        <div class="text-xl font-bold">$<%= total %></div>
-      </div>
-      <button id="placeOrderBtnMobile" class="bg-primary text-white px-6 py-3 font-medium rounded-lg whitespace-nowrap flex items-center justify-center">
-        <span id="mobileBtnText">Place Order</span>
-        <svg id="mobileLoading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-      </button>
-    </div>
-  </footer>
-
-  <!-- Add New Address Modal -->
-  <div id="addressModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-    <div class="bg-white/95 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-md mx-4 relative">
-      <div class="p-5 border-b flex justify-between items-center">
-        <h3 class="text-xl font-bold">Add New Address</h3>
-        <button id="closeAddressModal" class="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-700">
-          <i class="ri-close-line ri-lg"></i>
-        </button>
-      </div>
-      <div class="p-5">
-        <form id="addressForm" class="space-y-4">
-          <div>
-            <label for="fullName" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-            <input type="text" id="fullName" class="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-primary focus:outline-none" required>
-          </div>
-          <div>
-            <label for="phoneNumber" class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-            <input type="tel" id="phoneNumber" class="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-primary focus:outline-none" required>
-          </div>
-          <div>
-            <label for="addressLine" class="block text-sm font-medium text-gray-700 mb-1">Address Line</label>
-            <input type="text" id="addressLine" class="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-primary focus:outline-none" required>
-          </div>
-          <div>
-            <label for="landmark" class="block text-sm font-medium text-gray-700 mb-1">Landmark (Optional)</label>
-            <input type="text" id="landmark" class="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-primary focus:outline-none">
-          </div>
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label for="city" class="block text-sm font-medium text-gray-700 mb-1">City</label>
-              <input type="text" id="city" class="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-primary focus:outline-none" required>
-            </div>
-            <div>
-              <label for="state" class="block text-sm font-medium text-gray-700 mb-1">State</label>
-              <input type="text" id="state" class="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-primary focus:outline-none" required>
-            </div>
-          </div>
-          <div>
-            <label for="pinCode" class="block text-sm font-medium text-gray-700 mb-1">PIN Code</label>
-            <input type="text" id="pinCode" class="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-primary focus:outline-none" required>
-          </div>
-          <div class="flex items-center mt-2">
-            <input type="checkbox" id="defaultAddress" class="hidden">
-            <label for="defaultAddress" class="flex items-center cursor-pointer">
-              <div class="w-5 h-5 border rounded mr-2 flex items-center justify-center">
-                <div class="w-3 h-3 bg-primary hidden" id="defaultAddressCheck"></div>
-              </div>
-              <span class="text-sm">Set as default address</span>
-            </label>
-          </div>
-        </form>
-      </div>
-      <div class="p-5 border-t">
-        <button id="saveAddressBtn" class="w-full bg-primary text-white py-2 font-medium rounded-lg whitespace-nowrap">Save Address</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      // Address selection
-      document.querySelectorAll('.address-radio').forEach(radio => {
-        radio.addEventListener('change', async function() {
-          if (this.checked) {
-            const addressId = this.dataset.addressId;
-            try {
-              const response = await fetch('/checkout/address', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ addressId })
-              });
-              
-              const data = await response.json();
-              if (!data.success) {
-                alert('Failed to update address');
-              } else {
-                window.location.reload();
-              }
-            } catch (error) {
-              console.error('Error:', error);
-              alert('Error updating address');
-            }
-          }
-        });
-      });
-
-      // Add New Address Modal
-      const addressModal = document.getElementById('addressModal');
-      const addNewAddressBtn = document.getElementById('addNewAddressBtn');
-      const closeAddressModal = document.getElementById('closeAddressModal');
-      const saveAddressBtn = document.getElementById('saveAddressBtn');
-
-      addNewAddressBtn.addEventListener('click', function() {
-        addressModal.classList.remove('hidden');
-      });
-
-      closeAddressModal.addEventListener('click', function() {
-        addressModal.classList.add('hidden');
-      });
-
-      // Default Address Checkbox
-      const defaultAddress = document.getElementById('defaultAddress');
-      const defaultAddressCheck = document.getElementById('defaultAddressCheck');
-      defaultAddress.addEventListener('change', function() {
-        if (this.checked) {
-          defaultAddressCheck.classList.remove('hidden');
-        } else {
-          defaultAddressCheck.classList.add('hidden');
-        }
-      });
-
-      // Save New Address
-      saveAddressBtn.addEventListener('click', async function() {
-        const formData = {
-          fullName: document.getElementById('fullName').value,
-          mobile: document.getElementById('phoneNumber').value,
-          addressLine: document.getElementById('addressLine').value,
-          landmark: document.getElementById('landmark').value,
-          city: document.getElementById('city').value,
-          state: document.getElementById('state').value,
-          pinCode: document.getElementById('pinCode').value,
-          isDefault: document.getElementById('defaultAddress').checked
+    <script>
+        // Global variables to store checkout data
+        let selectedAddressId = '<%= defaultAddress ? defaultAddress._id : "" %>';
+        let selectedPaymentMethod = '';
+        let checkoutData = {
+            addressId: selectedAddressId,
+            paymentMethod: ''
         };
 
-        try {
-          const response = await fetch('/profile/address', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ 
-              action: 'ADD',
-              addressData: formData
-            })
-          });
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            // If we have a default address, select it
+            if (selectedAddressId) {
+                const addressCard = document.querySelector(`[data-address-id="${selectedAddressId}"]`);
+                if (addressCard) {
+                    addressCard.classList.add('selected');
+                }
+            }
 
-          const data = await response.json();
-          if (data.success) {
-            window.location.reload();
-          } else {
-            alert('Failed to save address: ' + (data.message || 'Unknown error'));
-          }
-        } catch (error) {
-          console.error('Error:', error);
-          alert('Error saving address');
-        }
-      });
+            // Set up event listeners
+            document.getElementById('continueToPayment').addEventListener('click', function() {
+                if (!selectedAddressId) {
+                    alert('Please select a delivery address');
+                    return;
+                }
+                goToStep(2);
+            });
 
-      // Place Order Button (both desktop and mobile)
-      const placeOrderBtnDesktop = document.getElementById('placeOrderBtnDesktop');
-      const placeOrderBtnMobile = document.getElementById('placeOrderBtnMobile');
-      
-      async function placeOrder() {
-        try {
-          // Get selected payment method
-          const paymentMethod = document.querySelector('input[name="payment"]:checked').id;
-          
-          // Get selected address
-          const selectedAddress = document.querySelector('input[name="address"]:checked');
-          if (!selectedAddress) {
-            alert('Please select a delivery address');
-            return;
-          }
-          
-          // Show loading state
-          toggleLoading(true);
-          
-          const response = await fetch('/checkout/place-order', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              paymentMethod: paymentMethod,
-              addressId: selectedAddress.dataset.addressId
-            })
-          });
-          
-          const data = await response.json();
-          
-          if (data.success) {
-            // Redirect to order confirmation page
-            window.location.href = `/order-confirmation/${data.orderId}`;
-          } else {
-            alert(data.message || 'Failed to place order');
-          }
-        } catch (error) {
-          console.error('Error placing order:', error);
-          alert('Error placing order');
-        } finally {
-          toggleLoading(false);
-        }
-      }
+            document.getElementById('continueToReview').addEventListener('click', function() {
+                if (!selectedPaymentMethod) {
+                    alert('Please select a payment method');
+                    return;
+                }
+                checkoutData.paymentMethod = selectedPaymentMethod;
+                updateReviewStep();
+                goToStep(3);
+            });
 
-      function toggleLoading(isLoading) {
-        if (placeOrderBtnDesktop) {
-          placeOrderBtnDesktop.disabled = isLoading;
-          document.getElementById('desktopBtnText').classList.toggle('hidden', isLoading);
-          document.getElementById('desktopLoading').classList.toggle('hidden', !isLoading);
-        }
-        
-        if (placeOrderBtnMobile) {
-          placeOrderBtnMobile.disabled = isLoading;
-          document.getElementById('mobileBtnText').classList.toggle('hidden', isLoading);
-          document.getElementById('mobileLoading').classList.toggle('hidden', !isLoading);
-        }
-      }
+            document.getElementById('placeOrderBtn').addEventListener('click', placeOrder);
 
-      if (placeOrderBtnDesktop) {
-        placeOrderBtnDesktop.addEventListener('click', placeOrder);
-      }
-      
-      if (placeOrderBtnMobile) {
-        placeOrderBtnMobile.addEventListener('click', placeOrder);
-      }
-    });
-  </script>
+            // Address form submission
+            document.getElementById('addressForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const formData = {
+                    fullName: document.getElementById('fullName').value,
+                    mobile: document.getElementById('mobile').value,
+                    pinCode: document.getElementById('pinCode').value,
+                    addressLine: document.getElementById('addressLine').value,
+                    landmark: document.getElementById('landmark').value,
+                    city: document.getElementById('city').value,
+                    state: document.getElementById('state').value,
+                    isDefault: document.getElementById('isDefault').checked,
+                    action: 'ADD'
+                };
+
+                try {
+                    const response = await fetch('/profile/addresses', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(formData)
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        hideAddressModal();
+                        // Refresh addresses
+                        const addressesContainer = document.getElementById('addressSelection');
+                        if (result.data.length > 0) {
+                            let html = '';
+                            result.data.forEach(address => {
+                                html += `
+                                    <div class="address-card bg-white p-4 rounded border border-gray-200 cursor-pointer ${address.isDefault ? 'selected' : ''}"
+                                         onclick="selectAddress('${address._id}')"
+                                         data-address-id="${address._id}">
+                                        <div class="flex justify-between items-start">
+                                            <div>
+                                                <h3 class="font-bold">${address.fullName}</h3>
+                                                <p class="text-gray-700">${address.addressLine}${address.landmark ? ', ' + address.landmark : ''}</p>
+                                                <p class="text-gray-700">${address.city}, ${address.state} - ${address.pinCode}</p>
+                                                <p class="text-gray-700">Mobile: ${address.mobile}</p>
+                                            </div>
+                                            ${address.isDefault ? `
+                                                <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">
+                                                    Default
+                                                </span>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                `;
+                            });
+                            addressesContainer.innerHTML = html;
+                            
+                            // Select the new address if it's default
+                            if (formData.isDefault) {
+                                const newAddressId = result.data.find(addr => addr.isDefault)?._id;
+                                if (newAddressId) {
+                                    selectAddress(newAddressId);
+                                }
+                            }
+                        }
+                    } else {
+                        alert(result.message || 'Failed to add address');
+                    }
+                } catch (error) {
+                    console.error('Error adding address:', error);
+                    alert('Failed to add address');
+                }
+            });
+        });
+
+        // Function to select an address
+        function selectAddress(addressId) {
+            // Remove selected class from all address cards
+            document.querySelectorAll('.address-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+
+            // Add selected class to the clicked card
+            const selectedCard = document.querySelector(`[data-address-id="${addressId}"]`);
+            if (selectedCard) {
+                selectedCard.classList.add('selected');
+                selectedAddressId = addressId;
+                checkoutData.addressId = addressId;
+            }
+        }
+
+        // Function to select a payment method
+        function selectPaymentMethod(method) {
+            // Remove selected class from all payment methods
+            document.querySelectorAll('.payment-method').forEach(method => {
+                method.classList.remove('selected');
+            });
+
+            // Add selected class to the clicked method
+            const selectedMethod = document.querySelector(`[data-method="${method}"]`);
+            if (selectedMethod) {
+                selectedMethod.classList.add('selected');
+                document.getElementById(method).checked = true;
+                selectedPaymentMethod = method;
+            }
+        }
+
+        // Function to navigate between steps
+        function goToStep(step) {
+            document.getElementById('addressStep').classList.add('hidden');
+            document.getElementById('paymentStep').classList.add('hidden');
+            document.getElementById('reviewStep').classList.add('hidden');
+
+            if (step === 1) {
+                document.getElementById('addressStep').classList.remove('hidden');
+            } else if (step === 2) {
+                document.getElementById('paymentStep').classList.remove('hidden');
+            } else if (step === 3) {
+                document.getElementById('reviewStep').classList.remove('hidden');
+            }
+        }
+
+        // Function to update the review step with selected options
+        function updateReviewStep() {
+            // Update selected address display
+            const selectedAddressCard = document.querySelector(`[data-address-id="${selectedAddressId}"]`);
+            if (selectedAddressCard) {
+                document.getElementById('selectedAddressDisplay').innerHTML = selectedAddressCard.innerHTML;
+            }
+
+            // Update payment method display
+            let paymentMethodText = '';
+            if (selectedPaymentMethod === 'cod') {
+                paymentMethodText = 'Cash on Delivery (Pay when you receive your order)';
+            } else if (selectedPaymentMethod === 'razorpay') {
+                paymentMethodText = 'Razorpay (Secure online payment)';
+            } else if (selectedPaymentMethod === 'wallet') {
+                paymentMethodText = `Wallet Balance (₹<%= user.wallet ? user.wallet.toFixed(2) : '0.00' %> available)`;
+            }
+            document.getElementById('selectedPaymentDisplay').innerHTML = `
+                <p class="font-medium">${paymentMethodText}</p>
+            `;
+        }
+
+        // Function to show address modal
+        function showAddressModal() {
+            document.getElementById('addressModal').classList.remove('hidden');
+        }
+
+        // Function to hide address modal
+        function hideAddressModal() {
+            document.getElementById('addressModal').classList.add('hidden');
+        }
+
+        // Function to place the order
+        async function placeOrder() {
+            if (!selectedAddressId || !selectedPaymentMethod) {
+                alert('Please complete all checkout steps');
+                return;
+            }
+
+            // Show loading overlay
+            document.getElementById('loadingOverlay').style.display = 'flex';
+
+            try {
+                const response = await fetch('/checkout/place-order', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        paymentMethod: selectedPaymentMethod,
+                        addressId: selectedAddressId
+                    })
+                });
+
+                const result = await response.json();
+
+                document.getElementById('loadingOverlay').style.display = 'none';
+
+                if (result.success) {
+                    // Redirect to order confirmation page
+                    window.location.href = `/orders/${result.orderId}`;
+                } else {
+                    if (result.redirect) {
+                        window.location.href = result.redirect;
+                    } else {
+                        alert(result.message || 'Failed to place order');
+                    }
+                }
+            } catch (error) {
+                console.error('Error placing order:', error);
+                document.getElementById('loadingOverlay').style.display = 'none';
+                alert('Failed to place order');
+            }
+        }
+    </script>
 </body>
 </html>

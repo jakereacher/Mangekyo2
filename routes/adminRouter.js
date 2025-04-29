@@ -6,6 +6,8 @@ const adminController = require("../controllers/admin/adminController");
 const customerController = require("../controllers/admin/customerController");
 const categoryController = require("../controllers/admin/categoryController");
 const productController = require("../controllers/admin/productController");
+const orderController = require("../controllers/admin/orderController");
+
 const { userAuth, adminAuth } = require("../middlewares/auth");
 
 
@@ -31,6 +33,10 @@ router.post("/add-products", adminAuth, uploadsArray, productController.addProdu
 router.get("/products", adminAuth, productController.getProductList);
 router.post("/delete-product/:id", adminAuth, productController.deleteProduct);
 router.post("/toggle-block-product/:id", adminAuth, productController.toggleBlockProduct);
+
+router.get("/orders", adminAuth, orderController.getAllOrders);
+router.get("/orders/:orderId", adminAuth, orderController.getAdminOrderDetails);
+router.post("/orders/:orderId/status", adminAuth, orderController.updateOrderItemStatus);
 
 router.get("/edit-product/:id", adminAuth, productController.getEditProductPage);
 router.post(

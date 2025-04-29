@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Orders | Mangeyko</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <h1 class="text-2xl font-bold mb-6 flex items-center">
+            <i class="fas fa-receipt mr-2"></i> All Orders
+        </h1>
+        <div class="bg-white p-6 rounded-lg shadow-sm">
+            <table class="w-full">
+                <thead>
+                    <tr class="border-b">
+                        <th class="py-2 text-left">Order ID</th>
+                        <th class="py-2 text-left">Customer</th>
+                        <th class="py-2 text-left">Date</th>
+                        <th class="py-2 text-left">Status</th>
+                        <th class="py-2 text-left">Total</th>
+                        <th class="py-2 text-left">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% orders.forEach(order => { %>
+                        <tr class="border-b">
+                            <td class="py-2"><%= order._id %></td>
+                            <td class="py-2"><%= order.customerName %> (<%= order.customerEmail %>)</td>
+                            <td class="py-2"><%= order.formattedOrderDate %></td>
+                            <td class="py-2">
+                                <span class="px-3 py-1 rounded text-sm font-medium status-<%= order.status.toLowerCase() %>">
+                                    <%= order.status %>
+                                </span>
+                            </td>
+                            <td class="py-2">₹<%= order.finalAmount.toFixed(2) %></td>
+                            <td class="py-2">
+                                <a href="/admin/orders/<%= order._id %>" class="text-blue-600 hover:underline">View Details</a>
+                            </td>
+                        </tr>
+                    <% }); %>
+                </tbody>
+            </table>
+            <!-- Pagination -->
+            <div class="mt-4 flex justify-between">
+                <p>Page <%= pagination.currentPage %> of <%= pagination.totalPages %></p>
+                <div>
+                    <% if (pagination.currentPage > 1) { %>
+                        <a href="?page=<%= pagination.currentPage - 1 %>&limit=<%= limit %>" class="px-4 py-2 bg-gray-200 rounded">Previous</a>
+                    <% } %>
+                    <% if (pagination.currentPage < pagination.totalPages) { %>
+                        <a href="?page=<%= pagination.currentPage + 1 %>&limit=<%= limit %>" class="px-4 py-2 bg-gray-200 rounded">Next</a>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

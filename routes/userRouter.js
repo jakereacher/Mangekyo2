@@ -4,7 +4,7 @@ const passport = require("passport");
 const { uploadProfileImage } = require("../helpers/multer");
 const wishlistController = require("../controllers/user/wishlistController");
 const checkoutController = require("../controllers/user/checkoutController");
-
+const orderController = require("../controllers/user/orderController");
 
 const {
   loadLandingpage,
@@ -61,12 +61,8 @@ router.post("/validate-cart", validateCart);
 router.get("/checkout",  checkoutController.renderCheckoutPage);
 router.post("/address",  checkoutController.handleAddressSelection);
 
-
-
-// Place order
-router.post('/place-order', checkoutController.placeOrder);
-
-
+router.post("/checkout/place-order", checkoutController.placeOrder);
+router.get("/orders/:orderId", orderController.getOrderDetails);
 
 //profile routes
 router.get("/profile", renderProfilePage);
