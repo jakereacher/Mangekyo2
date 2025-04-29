@@ -1,7 +1,10 @@
+const mongoose = require("mongoose");
 const Order = require("../../models/orderSchema");
 const User = require("../../models/userSchema");
 const Cart = require("../../models/cartSchema");
 const Product = require("../../models/productSchema");
+const Wallet = require("../../models/walletSchema");
+const Log = require("../../models/logSchema");
 const StatusCodes = require("../../utils/httpStatusCodes");
 
 // Place a new order
@@ -112,11 +115,18 @@ exports.placeOrder = async (req, res) => {
     const total = subtotal + shipping + tax;
 
     // 5. Check wallet balance if paying with wallet
-    if (paymentMethod === "wallet" && user.wallet < total) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        success: false,
-        message: "Insufficient wallet balance",
-      });
+    if (paymentMethod === "wallet") {
+      let wallet = await Wallet.findOne({ user: userId });
+      if (!wallet) {
+        wallet = new Wallet({ user: userId, balance: 0, transactions: [] });
+        await wallet.save();
+      }
+      if (wallet.balance < total) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          success: false,
+          message: "Insufficient wallet balance",
+        });
+      }
     }
 
     // 6. Create the order document
@@ -172,7 +182,15 @@ exports.placeOrder = async (req, res) => {
       };
 
       if (paymentMethod === "wallet") {
-        updateUser.$inc = { wallet: -total };
+        const wallet = await Wallet.findOne({ user: userId });
+        wallet.balance -= total;
+        wallet.transactions.push({
+          type: "debit",
+          amount: total,
+          description: `Payment for order #${newOrder._id}`,
+          date: new Date(),
+        });
+        await wallet.save();
       }
 
       await User.findByIdAndUpdate(userId, updateUser);
@@ -218,6 +236,13 @@ exports.getOrderDetails = async (req, res) => {
   try {
     const { orderId } = req.params;
     const userId = req.session.user;
+
+    // Validate ObjectId to prevent CastError
+    if (!mongoose.isValidObjectId(orderId)) {
+      return res.status(StatusCodes.BAD_REQUEST).render("page-404", {
+        message: "Invalid order ID",
+      });
+    }
 
     if (!userId) {
       return res.redirect("/login");
@@ -309,6 +334,14 @@ exports.cancelOrder = async (req, res) => {
     const { orderId } = req.params;
     const userId = req.session.user;
 
+    // Validate ObjectId
+    if (!mongoose.isValidObjectId(orderId)) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Invalid order ID",
+      });
+    }
+
     if (!userId) {
       return res.status(StatusCodes.UNAUTHORIZED).json({
         success: false,
@@ -340,9 +373,9 @@ exports.cancelOrder = async (req, res) => {
     // Update order status
     order.orderedItems.forEach((item) => {
       item.status = "Cancelled";
+      item.order_cancelled_date = new Date();
     });
     order.cancellationReason = "User requested cancellation";
-    const updatedOrder = await order.save();
 
     // Restore product quantities
     try {
@@ -351,24 +384,41 @@ exports.cancelOrder = async (req, res) => {
           await Product.findByIdAndUpdate(item.product, {
             $inc: { quantity: item.quantity },
           });
+          // Log status change
+          await Log.create({
+            orderId,
+            productId: item.product,
+            status: "Cancelled",
+          });
         })
       );
     } catch (error) {
-      console.error("Failed to restore product quantities:", error);
+      console.error("Failed to restore product quantities or log status:", error);
       // Log for manual intervention
     }
 
     // Refund wallet if payment was made with wallet
     if (order.paymentMethod === "wallet") {
       try {
-        await User.findByIdAndUpdate(userId, {
-          $inc: { wallet: order.finalAmount },
+        let wallet = await Wallet.findOne({ user: userId });
+        if (!wallet) {
+          wallet = new Wallet({ user: userId, balance: 0, transactions: [] });
+        }
+        wallet.balance += order.finalAmount;
+        wallet.transactions.push({
+          type: "credit",
+          amount: order.finalAmount,
+          description: `Refund for cancelled order #${orderId}`,
+          date: new Date(),
         });
+        await wallet.save();
       } catch (error) {
         console.error("Failed to refund wallet:", error);
         // Log for manual intervention
       }
     }
+
+    const updatedOrder = await order.save();
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -380,6 +430,91 @@ exports.cancelOrder = async (req, res) => {
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: "Failed to cancel order",
+    });
+  }
+};
+
+// Request a return for an order item
+exports.requestReturn = async (req, res) => {
+  try {
+    const { orderId, productId, returnReason } = req.body;
+    const userId = req.session.user;
+
+    // Validate ObjectIds
+    if (!mongoose.isValidObjectId(orderId) || !mongoose.isValidObjectId(productId)) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Invalid order or product ID",
+      });
+    }
+
+    if (!userId) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: "User not authenticated",
+      });
+    }
+
+    // Find the order
+    const order = await Order.findOne({ _id: orderId, userId });
+    if (!order) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    // Find the order item
+    const item = order.orderedItems.find(
+      (item) => item.product.toString() === productId
+    );
+    if (!item) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: "Item not found in order",
+      });
+    }
+
+    // Check if return is possible (e.g., within 7 days of delivery)
+    const deliveryDate = item.order_delivered_date;
+    const returnWindow = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+    if (!deliveryDate || Date.now() - new Date(deliveryDate) > returnWindow) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Return period has expired",
+      });
+    }
+    if (item.status !== "Delivered") {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Item is not eligible for return",
+      });
+    }
+
+    // Update item status and return details
+    item.status = "Return Request";
+    item.returnReason = returnReason;
+    item.order_return_request_date = new Date();
+    item.order_return_status = "Pending";
+
+    // Log the status change
+    await Log.create({
+      orderId,
+      productId,
+      status: "Return Request",
+    });
+
+    await order.save();
+
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      message: "Return request submitted successfully",
+    });
+  } catch (error) {
+    console.error("Error requesting return:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Failed to submit return request",
     });
   }
 };
@@ -396,6 +531,12 @@ function calculateOverallStatus(orderedItems) {
   }
   if (orderedItems.some((item) => item.status === "Cancelled")) {
     return "Cancelled";
+  }
+  if (orderedItems.some((item) => item.status === "Return Request")) {
+    return "Return Requested";
+  }
+  if (orderedItems.some((item) => item.status === "Returned")) {
+    return "Returned";
   }
   return "Processing";
 }

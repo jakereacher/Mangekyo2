@@ -11,6 +11,8 @@
         .status-shipped { @apply bg-blue-100 text-blue-800; }
         .status-delivered { @apply bg-green-100 text-green-800; }
         .status-cancelled { @apply bg-red-100 text-red-800; }
+        .status-return-request { @apply bg-orange-100 text-orange-800; }
+        .status-returned { @apply bg-purple-100 text-purple-800; }
         .order-item { @apply border-b border-gray-200 last:border-0; }
         .order-card { @apply transition-all duration-300 hover:shadow-md; }
     </style>
@@ -61,9 +63,25 @@
                                     <p class="text-sm text-gray-600">Quantity: <%= item.quantity %></p>
                                     <p class="text-sm text-gray-600">Price: ₹<%= item.price.toFixed(2) %></p>
                                     <p class="text-sm text-gray-600">Status: <%= item.status %></p>
+                                    <% if (item.status === 'Delivered') { %>
+                                        <button onclick="showReturnModal('<%= order._id %>', '<%= item.product._id %>')"
+                                                class="mt-2 bg-orange-600 text-white px-4 py-1 rounded hover:bg-orange-700 transition flex items-center">
+                                            <i class="fas fa-undo mr-2"></i> Request Return
+                                        </button>
+                                    <% } else if (item.status === 'Return Request') { %>
+                                        <p class="text-sm text-orange-600">Return request pending</p>
+                                    <% } else if (item.status === 'Returned') { %>
+                                        <p class="text-sm text-purple-600">Returned - Refund credited to wallet</p>
+                                    <% } %>
+                                    <% if (item.returnReason) { %>
+                                        <p class="text-sm text-gray-600">Return Reason: <%= item.returnReason %></p>
+                                    <% } %>
+                                    <% if (item.order_return_status === 'Rejected' && item.adminResponse) { %>
+                                        <p class="text-sm text-red-600">Admin Response: <%= item.adminResponse %></p>
+                                    <% } %>
                                 </div>
                                 <div class="text-right">
-                                    <p class="font-medium">₹<%= item.totalPrice %></p>
+                                    <p class="font-medium">₹<%= (item.price * item.quantity).toFixed(2) %></p>
                                 </div>
                             </div>
                         <% }); %>
@@ -81,15 +99,15 @@
                     <div class="space-y-3 mb-4">
                         <div class="flex justify-between">
                             <span class="text-gray-600">Subtotal (<%= order.items.length %> items)</span>
-                            <span>₹<%= order.subtotal %></span>
+                            <span>₹<%= order.subtotal.toFixed(2) %></span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-600">Shipping</span>
-                            <span>₹<%= order.shipping %></span>
+                            <span>₹<%= order.shipping.toFixed(2) %></span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-600">Tax</span>
-                            <span>₹<%= order.tax %></span>
+                            <span>₹<%= order.tax.toFixed(2) %></span>
                         </div>
                         <% if (order.discount > 0) { %>
                             <div class="flex justify-between">
@@ -101,7 +119,7 @@
                     <div class="border-t border-gray-200 pt-4">
                         <div class="flex justify-between font-bold text-lg">
                             <span>Total</span>
-                            <span>₹<%= order.total %></span>
+                            <span>₹<%= order.total.toFixed(2) %></span>
                         </div>
                     </div>
                 </div>
@@ -125,7 +143,7 @@
                     <h2 class="text-xl font-bold mb-4 flex items-center">
                         <i class="fas fa-credit-card mr-2"></i> Payment Information
                     </h2>
-                    <p class="text-gray-600">Method: <%= order.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Wallet' %></p>
+                    <p class="text-gray-600">Method: <%= order.paymentMethod === 'cod' ? 'Cash on Delivery' : order.paymentMethod === 'wallet' ? 'Wallet' : 'Razorpay' %></p>
                     <p class="text-gray-600">Status: <%= order.paymentStatus %></p>
                 </div>
             </div>
@@ -136,7 +154,7 @@
             <a href="/profile" class="bg-gray-200 text-gray-800 px-6 py-2 rounded hover:bg-gray-300 transition flex items-center">
                 <i class="fas fa-arrow-left mr-2"></i> Back to Profile
             </a>
-            <% if (order.status === 'Processing') { %>
+            <% if (order.orderedItems.every(item => item.status === 'Processing')) { %>
                 <button onclick="cancelOrder('<%= order._id %>')"
                         class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition flex items-center">
                     <i class="fas fa-times-circle mr-2"></i> Cancel Order
@@ -145,7 +163,79 @@
         </div>
     </div>
 
+    <!-- Return Request Modal -->
+    <div id="returnModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md">
+            <h2 class="text-xl font-bold mb-4">Request Return</h2>
+            <form id="returnForm">
+                <input type="hidden" id="returnOrderId">
+                <input type="hidden" id="returnProductId">
+                <div class="mb-4">
+                    <label for="returnReason" class="block text-sm font-medium text-gray-700">Reason for Return</label>
+                    <textarea id="returnReason" name="returnReason" rows="4" required
+                              class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-orange-600"
+                              placeholder="Please provide the reason for your return"></textarea>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="hideReturnModal()"
+                            class="px-4 py-2 border rounded text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700">
+                        Submit Return Request
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
+        // Show return modal
+        function showReturnModal(orderId, productId) {
+            document.getElementById('returnOrderId').value = orderId;
+            document.getElementById('returnProductId').value = productId;
+            document.getElementById('returnModal').classList.remove('hidden');
+        }
+
+        // Hide return modal
+        function hideReturnModal() {
+            document.getElementById('returnModal').classList.add('hidden');
+            document.getElementById('returnForm').reset();
+        }
+
+        // Handle return form submission
+        document.getElementById('returnForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const orderId = document.getElementById('returnOrderId').value;
+            const productId = document.getElementById('returnProductId').value;
+            const returnReason = document.getElementById('returnReason').value;
+
+            try {
+                const response = await fetch(`/orders/${orderId}/return`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ orderId, productId, returnReason })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('Return request submitted successfully');
+                    hideReturnModal();
+                    window.location.reload();
+                } else {
+                    alert(result.message || 'Failed to submit return request');
+                }
+            } catch (error) {
+                console.error('Error submitting return request:', error);
+                alert('Failed to submit return request');
+            }
+        });
+
+        // Cancel order
         async function cancelOrder(orderId) {
             if (!confirm('Are you sure you want to cancel this order?')) return;
 

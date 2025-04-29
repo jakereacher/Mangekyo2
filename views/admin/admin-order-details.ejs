@@ -1,4 +1,3 @@
-<!-- views/admin-order-details.ejs -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,194 +7,167 @@
     <link rel="stylesheet" href="/css/bootstrap.min.css">
     <link rel="stylesheet" href="/css/admin.css">
     <style>
-        /* public/css/admin.css */
-
-/* General Styles */
-body {
-    background-color: #f8f9fa;
-    font-family: 'Arial', sans-serif;
-}
-
-/* Navbar */
-.navbar {
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.navbar-brand {
-    font-weight: bold;
-}
-
-.navbar-nav .nav-link {
-    padding: 0.5rem 1rem;
-    transition: color 0.3s ease;
-}
-
-.navbar-nav .nav-link:hover {
-    color: #ffc107 !important;
-}
-
-/* Container */
-.container {
-    max-width: 1200px;
-    margin-top: 2rem;
-    padding: 0 15px;
-}
-
-/* Headings */
-h2.mb-4 {
-    color: #343a40;
-    font-weight: 600;
-    border-bottom: 2px solid #007bff;
-    padding-bottom: 0.5rem;
-    display: inline-block;
-}
-
-/* Cards */
-.card {
-    border: none;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    margin-bottom: 1.5rem;
-}
-
-.card-header {
-    background-color: #007bff;
-    color: white;
-    font-weight: 500;
-    border-radius: 8px 8px 0 0;
-    padding: 1rem;
-}
-
-.card-body {
-    padding: 1.5rem;
-}
-
-/* Tables */
-.table {
-    background-color: #fff;
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-.table thead th {
-    background-color: #f1f3f5;
-    color: #343a40;
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.85rem;
-    padding: 1rem;
-}
-
-.table tbody tr {
-    transition: background-color 0.2s ease;
-}
-
-.table tbody tr:hover {
-    background-color: #f8f9fa;
-}
-
-.table td, .table th {
-    vertical-align: middle;
-    padding: 0.75rem;
-}
-
-.table img {
-    border-radius: 4px;
-    object-fit: cover;
-}
-
-/* Forms */
-.form-select {
-    width: 150px;
-    padding: 0.5rem;
-    font-size: 0.9rem;
-    border-radius: 4px;
-    border: 1px solid #ced4da;
-    transition: border-color 0.3s ease;
-}
-
-.form-select:focus {
-    border-color: #007bff;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-}
-
-/* Order Summary and Totals */
-.card-body p {
-    margin-bottom: 0.75rem;
-    font-size: 0.95rem;
-}
-
-.card-body p strong {
-    color: #343a40;
-    min-width: 120px;
-    display: inline-block;
-}
-
-address {
-    font-style: normal;
-    line-height: 1.6;
-    color: #6c757d;
-}
-
-/* Footer */
-footer {
-    position: relative;
-    bottom: 0;
-    width: 100%;
-    padding: 1rem 0;
-    background-color: #343a40;
-    color: #fff;
-    font-size: 0.9rem;
-}
-
-/* Responsive Adjustments */
-@media (max-width: 768px) {
-    .container {
-        padding: 0 10px;
-    }
-
-    .card-header h5 {
-        font-size: 1.1rem;
-    }
-
-    .table {
-        font-size: 0.85rem;
-    }
-
-    .form-select {
-        width: 120px;
-    }
-
-    .card-body p strong {
-        min-width: 100px;
-    }
-
-    .navbar-nav .nav-link {
-        padding: 0.5rem;
-    }
-}
-
-@media (max-width: 576px) {
-    h2.mb-4 {
-        font-size: 1.5rem;
-    }
-
-    .table thead th {
-        font-size: 0.75rem;
-    }
-
-    .table td, .table th {
-        padding: 0.5rem;
-    }
-
-    .form-select {
-        width: 100%;
-    }
-
-    .card-body p {
-        font-size: 0.85rem;
-    }
-}
+        /* Same as provided CSS */
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Arial', sans-serif;
+        }
+        .navbar {
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .navbar-brand {
+            font-weight: bold;
+        }
+        .navbar-nav .nav-link {
+            padding: 0.5rem 1rem;
+            transition: color 0.3s ease;
+        }
+        .navbar-nav .nav-link:hover {
+            color: #ffc107 !important;
+        }
+        .container {
+            max-width: 1200px;
+            margin-top: 2rem;
+            padding: 0 15px;
+        }
+        h2.mb-4 {
+            color: #343a40;
+            font-weight: 600;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 0.5rem;
+            display: inline-block;
+        }
+        .card {
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+        }
+        .card-header {
+            background-color: #007bff;
+            color: white;
+            font-weight: 500;
+            border-radius: 8px 8px 0 0;
+            padding: 1rem;
+        }
+        .card-body {
+            padding: 1.5rem;
+        }
+        .table {
+            background-color: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .table thead th {
+            background-color: #f1f3f5;
+            color: #343a40;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            padding: 1rem;
+        }
+        .table tbody tr {
+            transition: background-color 0.2s ease;
+        }
+        .table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+        .table td, .table th {
+            vertical-align: middle;
+            padding: 0.75rem;
+        }
+        .table img {
+            border-radius: 4px;
+            object-fit: cover;
+        }
+        .form-select, .form-control {
+            padding: 0.5rem;
+            font-size: 0.9rem;
+            border-radius: 4px;
+            border: 1px solid #ced4da;
+            transition: border-color 0.3s ease;
+        }
+        .form-select:focus, .form-control:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+        .form-select:disabled, .form-control:disabled {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+        }
+        .card-body p {
+            margin-bottom: 0.75rem;
+            font-size: 0.95rem;
+        }
+        .card-body p strong {
+            color: #343a40;
+            min-width: 120px;
+            display: inline-block;
+        }
+        address {
+            font-style: normal;
+            line-height: 1.6;
+            color: #6c757d;
+        }
+        footer {
+            position: relative;
+            bottom: 0;
+            width: 100%;
+            padding: 1rem 0;
+            background-color: #343a40;
+            color: #fff;
+            font-size: 0.9rem;
+        }
+        .return-info {
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        .return-info p {
+            margin: 0;
+            font-size: 0.9rem;
+        }
+        .btn-sm {
+            font-size: 0.85rem;
+        }
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 10px;
+            }
+            .card-header h5 {
+                font-size: 1.1rem;
+            }
+            .table {
+                font-size: 0.85rem;
+            }
+            .form-select, .form-control {
+                width: 100%;
+            }
+            .card-body p strong {
+                min-width: 100px;
+            }
+            .navbar-nav .nav-link {
+                padding: 0.5rem;
+            }
+        }
+        @media (max-width: 576px) {
+            h2.mb-4 {
+                font-size: 1.5rem;
+            }
+            .table thead th {
+                font-size: 0.75rem;
+            }
+            .table td, .table th {
+                padding: 0.5rem;
+            }
+            .form-select, .form-control {
+                width: 100%;
+            }
+            .card-body p {
+                font-size: 0.85rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -215,6 +187,9 @@ footer {
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/admin/users">Users</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/return-requests">Return Requests</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/admin/logout">Logout</a>
@@ -271,11 +246,12 @@ footer {
                             <th>Total</th>
                             <th>Status</th>
                             <th>Update Status</th>
+                            <th>Return Status</th>
                         </tr>
                     </thead>
                     <tbody>
                         <% order.items.forEach(item => { %>
-                            <tr>
+                            <tr data-product-id="<%= item.product._id %>">
                                 <td><%= item.product.productName %></td>
                                 <td>
                                     <img src="<%= item.product.mainImage %>" alt="<%= item.product.productName %>" style="width: 50px; height: auto;">
@@ -283,18 +259,45 @@ footer {
                                 <td><%= item.quantity %></td>
                                 <td>$<%= item.price.toFixed(2) %></td>
                                 <td>$<%= item.totalPrice %></td>
-                                <td><%= item.status %></td>
+                                <td class="status-cell"><%= item.status %></td>
                                 <td>
-                                    <form action="/admin/orders/<%= order._id %>/status" method="POST" class="update-status-form">
-                                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                                        <input type="hidden" name="productId" value="<%= item.product._id %>">
-                                        <select name="status" class="form-select" onchange="this.form.submit()">
-                                            <option value="Processing" <%= item.status === 'Processing' ? 'selected' : '' %>>Processing</option>
-                                            <option value="Shipped" <%= item.status === 'Shipped' ? 'selected' : '' %>>Shipped</option>
-                                            <option value="Delivered" <%= item.status === 'Delivered' ? 'selected' : '' %>>Delivered</option>
-                                            <option value="Cancelled" <%= item.status === 'Cancelled' ? 'selected' : '' %>>Cancelled</option>
-                                        </select>
-                                    </form>
+                                    <select class="form-select status-select" data-product-id="<%= item.product._id %>" <%= item.order_return_status === 'Pending' || item.order_return_status === 'Approved' || item.order_return_status === 'Rejected' ? 'disabled' : '' %>>
+                                        <option value="Processing" <%= item.status === 'Processing' ? 'selected' : '' %>>Processing</option>
+                                        <option value="Shipped" <%= item.status === 'Shipped' ? 'selected' : '' %>>Shipped</option>
+                                        <option value="Delivered" <%= item.status === 'Delivered' ? 'selected' : '' %>>Delivered</option>
+                                        <option value="Cancelled" <%= item.status === 'Cancelled' ? 'selected' : '' %>>Cancelled</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <% if (item.order_return_status === 'Pending') { %>
+                                        <div class="return-info">
+                                            <p><strong>Return Reason:</strong> <%= item.returnReason %></p>
+                                            <p><strong>Requested:</strong> <%= new Date(item.order_return_request_date).toLocaleDateString() %></p>
+                                            <form action="/admin/orders/<%= order._id %>/approve-return" method="POST" class="d-inline return-form" data-action="approve">
+                                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                                <input type="hidden" name="orderId" value="<%= order._id %>">
+                                                <input type="hidden" name="productId" value="<%= item.product._id %>">
+                                                <button type="submit" class="btn btn-success btn-sm">Approve</button>
+                                            </form>
+                                            <form action="/admin/orders/<%= order._id %>/reject-return" method="POST" class="d-inline return-form" data-action="reject">
+                                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                                <input type="hidden" name="orderId" value="<%= order._id %>">
+                                                <input type="hidden" name="productId" value="<%= item.product._id %>">
+                                                <input type="text" name="adminResponse" class="form-control d-inline w-auto" placeholder="Rejection reason" required>
+                                                <button type="submit" class="btn btn-danger btn-sm">Reject</button>
+                                            </form>
+                                        </div>
+                                    <% } else if (item.order_return_status === 'Approved') { %>
+                                        <div class="return-info">
+                                            <p>Return Approved on <%= new Date(item.order_returned_date).toLocaleDateString() %></p>
+                                        </div>
+                                    <% } else if (item.order_return_status === 'Rejected') { %>
+                                        <div class="return-info">
+                                            <p>Return Rejected: <%= item.adminResponse %></p>
+                                        </div>
+                                    <% } else { %>
+                                        <p>No return requested</p>
+                                    <% } %>
                                 </td>
                             </tr>
                         <% }) %>
@@ -327,14 +330,32 @@ footer {
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="successModalLabel">Status Updated</h5>
+                    <h5 class="modal-title" id="successModalLabel">Success</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    The item status has been updated successfully.
+                    The action was completed successfully.
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Modal -->
+    <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="errorModalLabel">Error</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    An error occurred.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
@@ -348,30 +369,121 @@ footer {
     <!-- Scripts -->
     <script src="/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Handle form submission and show modal on success
-        document.querySelectorAll('.update-status-form').forEach(form => {
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const formData = new FormData(form);
+        // Status Update Handler
+        document.querySelectorAll('.status-select').forEach(select => {
+            select.addEventListener('change', async (e) => {
+                const selectElement = e.target;
+                const productId = selectElement.dataset.productId;
+                const status = selectElement.value;
+                const orderId = '<%= order._id %>';
+
+                // Disable select to prevent multiple submissions
+                selectElement.disabled = true;
+
                 try {
-                    const response = await fetch(form.action, {
+                    const response = await fetch(`/admin/orders/${orderId}/update-status`, {
                         method: 'POST',
-                        body: formData
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': '<%= csrfToken %>'
+                        },
+                        body: JSON.stringify({ productId, status })
                     });
+
                     const result = await response.json();
+
                     if (result.success) {
-                        // Show the success modal
+                        // Update status in the table
+                        const row = selectElement.closest('tr');
+                        row.querySelector('.status-cell').textContent = status;
+
+                        // Show success modal
                         const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                        document.querySelector('#successModal .modal-body').textContent = 'The item status has been updated successfully.';
                         successModal.show();
-                        // Optionally refresh the page to reflect status changes
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 1500); // Reload after 1.5 seconds
                     } else {
-                        alert(result.message || 'Failed to update status');
+                        // Show error modal with message
+                        const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                        document.querySelector('#errorModal .modal-body').textContent = result.message || 'Failed to update item status.';
+                        errorModal.show();
+
+                        // Revert select to original value
+                        const originalStatus = row.querySelector('.status-cell').textContent;
+                        selectElement.value = originalStatus;
                     }
                 } catch (error) {
-                    alert('Error updating status');
+                    // Show error modal
+                    const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                    document.querySelector('#errorModal .modal-body').textContent = 'Error updating status: ' + error.message;
+                    errorModal.show();
+
+                    // Revert select to original value
+                    const originalStatus = selectElement.closest('tr').querySelector('.status-cell').textContent;
+                    selectElement.value = originalStatus;
+                } finally {
+                    // Re-enable select
+                    selectElement.disabled = false;
+                }
+            });
+        });
+
+        // Return Request Handler
+        document.querySelectorAll('.return-form').forEach(form => {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formElement = e.target;
+                const action = formElement.dataset.action;
+                const orderId = formElement.querySelector('input[name="orderId"]').value;
+                const productId = formElement.querySelector('input[name="productId"]').value;
+                const adminResponse = formElement.querySelector('input[name="adminResponse"]')?.value;
+
+                // Disable form buttons to prevent multiple submissions
+                const buttons = formElement.querySelectorAll('button');
+                buttons.forEach(btn => btn.disabled = true);
+
+                try {
+                    const response = await fetch(`/admin/orders/${orderId}/${action}-return`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': '<%= csrfToken %>'
+                        },
+                        body: JSON.stringify({ orderId, productId, adminResponse })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        // Update return status in the table
+                        const row = formElement.closest('tr');
+                        const returnCell = row.querySelector('td:last-child');
+                        if (action === 'approve') {
+                            returnCell.innerHTML = `<div class="return-info"><p>Return Approved on ${new Date().toLocaleDateString()}</p></div>`;
+                        } else {
+                            returnCell.innerHTML = `<div class="return-info"><p>Return Rejected: ${adminResponse}</p></div>`;
+                        }
+
+                        // Disable status select
+                        row.querySelector('.status-select').disabled = true;
+
+                        // Show success modal
+                        const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                        document.querySelector('#successModal .modal-body').textContent = `Return ${action === 'approve' ? 'approved and wallet credited' : 'rejected'} successfully.`;
+                        successModal.show();
+                    } else {
+                        // Show error modal
+                        const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                        document.querySelector('#errorModal .modal-body').textContent = result.message || `Failed to ${action} return.`;
+                        errorModal.show();
+                    }
+                } catch (error) {
+                    // Show error modal
+                    const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                    document.querySelector('#errorModal .modal-body').textContent = `Error ${action === 'approve' ? 'approving' : 'rejecting'} return: ${error.message}`;
+                    errorModal.show();
+                } finally {
+                    // Re-enable buttons
+                    buttons.forEach(btn => btn.disabled = false);
                 }
             });
         });

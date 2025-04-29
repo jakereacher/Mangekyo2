@@ -63,6 +63,7 @@ router.post("/address",  checkoutController.handleAddressSelection);
 
 router.post("/checkout/place-order", checkoutController.placeOrder);
 router.get("/orders/:orderId", orderController.getOrderDetails);
+router.post("/orders/:orderId/return", orderController.requestReturn);
 
 //profile routes
 router.get("/profile", renderProfilePage);

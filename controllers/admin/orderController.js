@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const Order = require("../../models/orderSchema");
 const User = require("../../models/userSchema");
 const Product = require("../../models/productSchema");
@@ -76,7 +77,7 @@ exports.getAllOrders = async (req, res) => {
     });
   } catch (error) {
     logger.error("Error fetching all orders", { error: error.message, stack: error.stack });
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).render("admin-page-404", {
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).render("admin/error", {
       message: "Failed to load orders",
     });
   }
@@ -92,6 +93,14 @@ exports.getAdminOrderDetails = async (req, res) => {
       return res.status(StatusCodes.UNAUTHORIZED).redirect("/admin/login");
     }
 
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
+      logger.error("Invalid orderId format", { orderId });
+      return res.status(StatusCodes.BAD_REQUEST).render("admin/error", {
+        message: "Invalid order ID",
+      });
+    }
+
     const order = await Order.findById(orderId)
       .populate("orderedItems.product")
       .populate("userId", "email fullName")
@@ -99,7 +108,7 @@ exports.getAdminOrderDetails = async (req, res) => {
 
     if (!order) {
       logger.error("Order not found", { orderId });
-      return res.status(StatusCodes.NOT_FOUND).render("admin-page-404", {
+      return res.status(StatusCodes.NOT_FOUND).render("admin/error", {
         message: "Order not found",
       });
     }
@@ -137,7 +146,7 @@ exports.getAdminOrderDetails = async (req, res) => {
     });
   } catch (error) {
     logger.error("Error fetching admin order details", { orderId: req.params.orderId, error: error.message, stack: error.stack });
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).render("admin-page-404", {
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).render("admin/error", {
       message: "Failed to load order details",
     });
   }
@@ -155,6 +164,24 @@ exports.updateOrderItemStatus = async (req, res) => {
       return res.status(StatusCodes.UNAUTHORIZED).json({
         success: false,
         message: "Admin not authenticated",
+      });
+    }
+
+    // Validate ObjectId for orderId
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
+      logger.error("Invalid orderId format", { orderId });
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Invalid order ID",
+      });
+    }
+
+    // Validate ObjectId for productId
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      logger.error("Invalid productId format", { productId });
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Invalid product ID",
       });
     }
 
@@ -230,7 +257,7 @@ exports.updateOrderItemStatus = async (req, res) => {
       logger.info("Updated payment status to Paid", { orderId });
     }
 
-    // Audit log
+    // Audit log (remove this block if you don't need audit logging)
     const Log = require("../../models/logSchema");
     await Log.create({
       action: "Order Item Status Update",
@@ -243,15 +270,6 @@ exports.updateOrderItemStatus = async (req, res) => {
     });
     logger.info("Audit log created for status update", { orderId, productId, status });
 
-    // Placeholder for email notification
-    // const nodemailer = require("nodemailer");
-    // const transporter = nodemailer.createTransport({ /* SMTP config */ });
-    // await transporter.sendMail({
-    //   to: order.userId.email,
-    //   subject: "Order Status Update",
-    //   text: `Item ${product.productName} status updated to ${status}.`,
-    // });
-
     res.status(StatusCodes.OK).json({
       success: true,
       message: "Item status updated successfully",
@@ -260,7 +278,7 @@ exports.updateOrderItemStatus = async (req, res) => {
     logger.error("Error updating item status", { orderId: req.params.orderId, productId: req.body.productId, error: error.message, stack: error.stack });
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
-      message: " ",
+      message: "Failed to update item status",
     });
   }
 };
