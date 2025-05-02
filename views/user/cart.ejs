@@ -327,6 +327,13 @@
                         if (currentValue < maxValue) {
                             input.value = currentValue + 1;
                             updateCartItem(productId, input.value);
+                        } else {
+                            Swal.fire({
+                                title: 'Not Allowed',
+                                text: 'You cannot add more than 6 items of this product.',
+                                icon: 'warning',
+                                confirmButtonColor: '#00ffff'
+                            });
                         }
                     } else if (this.classList.contains('decrease')) {
                         if (currentValue > 1) {
@@ -369,14 +376,23 @@
                         // Reload the page to update totals
                         window.location.reload();
                     } else {
-                        // Display error message
-                        alert(data.message || 'Failed to update cart');
+                        Swal.fire({
+                            title: 'Error',
+                            text: data.message || 'Failed to update cart',
+                            icon: 'error',
+                            confirmButtonColor: '#00ffff'
+                        });
                     }
                 })
                 .catch(error => {
                     if (loaderElement) loaderElement.style.display = 'none';
                     console.error('Error updating cart:', error);
-                    alert('An error occurred. Please try again.');
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'An error occurred. Please try again.',
+                        icon: 'error',
+                        confirmButtonColor: '#00ffff'
+                    });
                 });
             }
             

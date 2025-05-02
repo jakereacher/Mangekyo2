@@ -276,7 +276,7 @@
                                 <% cartItems.forEach(item => { %>
                                     <div class="flex items-start pb-4 border-b border-gray-200 last:border-0">
                                         <div class="w-16 h-16 bg-gray-100 rounded overflow-hidden mr-4">
-                                            <img src="<%= item.product.mainImage %>" alt="<%= item.product.productName %>" class="w-full h-full object-cover">
+                                            <img src="/uploads/product-images/<%= item.product.productImage[0] %>" alt="<%= item.product.productName %>" class="w-full h-full object-cover">
                                         </div>
                                         <div class="flex-1">
                                             <h4 class="font-medium"><%= item.product.productName %></h4>
@@ -342,7 +342,7 @@
                             <% cartItems.forEach(item => { %>
                                 <div class="flex items-center">
                                     <div class="w-12 h-12 bg-gray-100 rounded overflow-hidden mr-3">
-                                        <img src="<%= item.product.mainImage %>" alt="<%= item.product.productName %>" class="w-full h-full object-cover">
+                                        <img src="/uploads/product-images/<%= item.product.productImage[0] %>" alt="<%= item.product.productName %>" class="w-full h-full object-cover">
                                     </div>
                                     <div class="flex-1">
                                         <p class="text-sm font-medium"><%= item.product.productName %></p>
@@ -674,12 +674,13 @@
 
                 const result = await response.json();
 
-                document.getElementById('loadingOverlay').style.display = 'none';
-
                 if (result.success) {
                     // Redirect to order confirmation page
                     window.location.href = `/orders/${result.orderId}`;
                 } else {
+                    // Hide loading overlay
+                    document.getElementById('loadingOverlay').style.display = 'none';
+                    
                     if (result.redirect) {
                         window.location.href = result.redirect;
                     } else {

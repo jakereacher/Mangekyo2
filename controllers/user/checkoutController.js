@@ -30,13 +30,14 @@ exports.renderCheckoutPage= async (req, res) => {
     const cartItems = await Promise.all(
       cart.products.map(async (item) => {
         const product = await Product.findById(item.productId).lean();
+        console.log('Product:', product); // Debugging line
         if (!product) return null;
 
         // Handle product images safely
         const mainImage = product.productImage && product.productImage.length > 0 
           ? product.productImage[0] 
           : '/images/default-product.jpg';
-
+console.log(mainImage);
         return {
           ...item,
           product: {

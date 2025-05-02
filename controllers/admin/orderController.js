@@ -2,20 +2,15 @@ const mongoose = require("mongoose");
 const Order = require("../../models/orderSchema");
 const User = require("../../models/userSchema");
 const Product = require("../../models/productSchema");
+const Wallet = require("../../models/walletSchema");
 const StatusCodes = require("../../utils/httpStatusCodes");
 const winston = require("winston");
 
 // Configure Winston logger
 const logger = winston.createLogger({
   level: "error",
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.json()
-  ),
-  transports: [
-    new winston.transports.File({ filename: "error.log" }),
-    new winston.transports.Console(),
-  ],
+  format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
+  transports: [new winston.transports.File({ filename: "error.log" }), new winston.transports.Console()],
 });
 
 // Helper function to calculate overall order status
@@ -30,6 +25,12 @@ function calculateOverallStatus(orderedItems) {
   if (orderedItems.some((item) => item.status === "Cancelled")) {
     return "Cancelled";
   }
+  if (orderedItems.some((item) => item.status === "Return Request")) {
+    return "Return Requested";
+  }
+  if (orderedItems.some((item) => item.status === "Returned")) {
+    return "Returned";
+  }
   return "Processing";
 }
 
@@ -42,8 +43,8 @@ exports.getAllOrders = async (req, res) => {
       return res.status(StatusCodes.UNAUTHORIZED).redirect("/admin/login");
     }
 
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const page = Number.parseInt(req.query.page) || 1;
+    const limit = Number.parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
     const orders = await Order.find()
@@ -61,7 +62,7 @@ exports.getAllOrders = async (req, res) => {
       customerName: order.userId.fullName,
       customerEmail: order.userId.email,
       formattedOrderDate: new Date(order.orderDate).toLocaleDateString(),
-      finalAmount: order.finalAmount || (order.totalPrice + order.shippingCharge + (order.taxAmount || 0)),
+      finalAmount: order.finalAmount || order.totalPrice + order.shippingCharge + (order.taxAmount || 0),
     }));
 
     res.render("admin-orders", {
@@ -74,11 +75,13 @@ exports.getAllOrders = async (req, res) => {
       limit,
       admin: { id: adminId },
       csrfToken: req.csrfToken ? req.csrfToken() : "",
+      activePage: "orders",
     });
   } catch (error) {
     logger.error("Error fetching all orders", { error: error.message, stack: error.stack });
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).render("admin/error", {
       message: "Failed to load orders",
+      activePage: "orders",
     });
   }
 };
@@ -98,6 +101,7 @@ exports.getAdminOrderDetails = async (req, res) => {
       logger.error("Invalid orderId format", { orderId });
       return res.status(StatusCodes.BAD_REQUEST).render("admin/error", {
         message: "Invalid order ID",
+        activePage: "orders",
       });
     }
 
@@ -110,6 +114,7 @@ exports.getAdminOrderDetails = async (req, res) => {
       logger.error("Order not found", { orderId });
       return res.status(StatusCodes.NOT_FOUND).render("admin/error", {
         message: "Order not found",
+        activePage: "orders",
       });
     }
 
@@ -119,7 +124,7 @@ exports.getAdminOrderDetails = async (req, res) => {
       ...order,
       status,
       formattedOrderDate: new Date(order.orderDate).toLocaleDateString(),
-      formattedDeliveryDate: new Date(order.deliveryDate).toLocaleDateString(),
+      formattedDeliveryDate: order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString() : "Pending",
       items: order.orderedItems.map((item) => ({
         ...item,
         product: {
@@ -131,10 +136,10 @@ exports.getAdminOrderDetails = async (req, res) => {
         },
         totalPrice: (item.quantity * item.price).toFixed(2),
       })),
-      subtotal: order.totalPrice.toFixed(2),
-      shipping: order.shippingCharge.toFixed(2),
-      tax: order.taxAmount ? order.taxAmount.toFixed(2) : (order.totalPrice * 0.09).toFixed(2),
-      total: order.finalAmount.toFixed(2),
+      subtotal: order.totalPrice,
+      shipping: order.shippingCharge,
+      tax: order.taxAmount ? order.taxAmount : order.totalPrice * 0.09,
+      total: order.finalAmount,
       userEmail: order.userId.email,
       userName: order.userId.fullName,
     };
@@ -143,11 +148,17 @@ exports.getAdminOrderDetails = async (req, res) => {
       order: orderDetails,
       admin: { id: adminId },
       csrfToken: req.csrfToken ? req.csrfToken() : "",
+      activePage: "orders",
     });
   } catch (error) {
-    logger.error("Error fetching admin order details", { orderId: req.params.orderId, error: error.message, stack: error.stack });
+    logger.error("Error fetching admin order details", {
+      orderId: req.params.orderId,
+      error: error.message,
+      stack: error.stack,
+    });
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).render("admin/error", {
       message: "Failed to load order details",
+      activePage: "orders",
     });
   }
 };
@@ -158,6 +169,8 @@ exports.updateOrderItemStatus = async (req, res) => {
     const { orderId } = req.params;
     const { productId, status } = req.body;
     const adminId = req.session.admin;
+
+    console.log("Admin update order status request:", { orderId, productId, status, adminId });
 
     if (!adminId) {
       logger.error("Unauthorized attempt to update item status", { orderId, productId, adminId: null });
@@ -203,9 +216,7 @@ exports.updateOrderItemStatus = async (req, res) => {
       });
     }
 
-    const item = order.orderedItems.find(
-      (item) => item.product.toString() === productId
-    );
+    const item = order.orderedItems.find((item) => item.product.toString() === productId);
     if (!item) {
       logger.error("Item not found in order", { orderId, productId });
       return res.status(StatusCodes.NOT_FOUND).json({
@@ -214,71 +225,383 @@ exports.updateOrderItemStatus = async (req, res) => {
       });
     }
 
-    const product = await Product.findById(productId);
-    if (status === "Cancelled" && item.status !== "Cancelled") {
-      try {
+    // Handle product quantity updates
+    try {
+      const product = await Product.findById(productId);
+
+      // If changing to Cancelled and not already cancelled, restore quantity
+      if (status === "Cancelled" && item.status !== "Cancelled") {
         await Product.findByIdAndUpdate(productId, {
           $inc: { quantity: item.quantity },
         });
         logger.info("Restored product quantity", { productId, quantity: item.quantity });
-      } catch (error) {
-        logger.error("Failed to restore product quantity", { productId, error: error.message });
-      }
-    }
 
-    if (item.status === "Cancelled" && status !== "Cancelled") {
-      if (product.quantity < item.quantity) {
-        logger.error("Insufficient stock for status update", { productId, available: product.quantity, required: item.quantity });
-        return res.status(StatusCodes.BAD_REQUEST).json({
-          success: false,
-          message: `Insufficient stock to ship item ${product.productName}. Available: ${product.quantity}`,
-        });
+        // If payment was made, refund to wallet
+        if (order.paymentStatus === "Paid") {
+          const refundAmount = item.price * item.quantity;
+          let wallet = await Wallet.findOne({ user: order.userId });
+          if (!wallet) {
+            wallet = new Wallet({ user: order.userId, balance: 0, transactions: [] });
+          }
+
+          wallet.balance += refundAmount;
+          wallet.transactions.push({
+            type: "credit",
+            amount: refundAmount,
+            description: `Refund for cancelled item in order #${orderId} by admin`,
+            date: new Date(),
+          });
+          await wallet.save();
+          logger.info("Added refund to user wallet", { userId: order.userId, amount: refundAmount });
+        }
+
+        // Mark as cancelled by admin
+        order.cancelledBy = "admin";
+        order.cancelledAt = new Date();
       }
-      try {
+
+      // If changing from Cancelled to another status, reduce quantity
+      if (item.status === "Cancelled" && status !== "Cancelled") {
+        if (product.quantity < item.quantity) {
+          logger.error("Insufficient stock for status update", {
+            productId,
+            available: product.quantity,
+            required: item.quantity,
+          });
+          return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: `Insufficient stock to ship item ${product.productName}. Available: ${product.quantity}`,
+          });
+        }
+
         await Product.findByIdAndUpdate(productId, {
           $inc: { quantity: -item.quantity },
         });
         logger.info("Reduced product quantity", { productId, quantity: item.quantity });
-      } catch (error) {
-        logger.error("Failed to reduce product quantity", { productId, error: error.message });
       }
-    }
 
-    const oldStatus = item.status;
-    item.status = status;
-    await order.save();
+      // Update status-specific timestamps
+      if (status === "Delivered" && item.status !== "Delivered") {
+        item.order_delivered_date = new Date();
+      } else if (status === "Shipped" && item.status !== "Shipped") {
+        item.order_shipped_date = new Date();
+      } else if (status === "Cancelled" && item.status !== "Cancelled") {
+        item.order_cancelled_date = new Date();
+      }
 
-    if (
-      order.paymentMethod === "cod" &&
-      order.orderedItems.every((item) => item.status === "Delivered")
-    ) {
-      order.paymentStatus = "Paid";
+      // Update the status
+      const oldStatus = item.status;
+      item.status = status;
+
+      // Save the order
       await order.save();
-      logger.info("Updated payment status to Paid", { orderId });
+
+      // Update payment status if all items are delivered for COD orders
+      if (order.paymentMethod === "cod" && order.orderedItems.every((item) => item.status === "Delivered")) {
+        order.paymentStatus = "Paid";
+        await order.save();
+        logger.info("Updated payment status to Paid", { orderId });
+      }
+
+      console.log("Order status updated successfully");
+      res.status(StatusCodes.OK).json({
+        success: true,
+        message: "Item status updated successfully",
+      });
+    } catch (error) {
+      logger.error("Error updating item status", {
+        orderId: req.params.orderId,
+        productId: req.body.productId,
+        error: error.message,
+        stack: error.stack,
+      });
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Failed to update item status",
+      });
     }
-
-    // Audit log (remove this block if you don't need audit logging)
-    const Log = require("../../models/logSchema");
-    await Log.create({
-      action: "Order Item Status Update",
-      orderId,
-      productId,
-      oldStatus,
-      newStatus: status,
-      adminId,
-      timestamp: new Date(),
-    });
-    logger.info("Audit log created for status update", { orderId, productId, status });
-
-    res.status(StatusCodes.OK).json({
-      success: true,
-      message: "Item status updated successfully",
-    });
   } catch (error) {
-    logger.error("Error updating item status", { orderId: req.params.orderId, productId: req.body.productId, error: error.message, stack: error.stack });
+    logger.error("Error updating item status", {
+      orderId: req.params.orderId,
+      productId: req.body.productId,
+      error: error.message,
+      stack: error.stack,
+    });
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: "Failed to update item status",
+    });
+  }
+};
+
+// Get all return requests for admin
+exports.getReturnRequests = async (req, res) => {
+  try {
+    const adminId = req.session.admin;
+    if (!adminId) {
+      logger.error("Unauthorized access to /admin/return-requests", { adminId: null });
+      return res.status(StatusCodes.UNAUTHORIZED).redirect("/admin/login");
+    }
+
+    // Find all orders with items that have return requests
+    const orders = await Order.find({
+      "orderedItems.status": "Return Request",
+    })
+      .populate("userId", "email fullName")
+      .populate("orderedItems.product")
+      .lean();
+
+    // Format the return requests for display
+    const returnRequests = [];
+    orders.forEach((order) => {
+      order.orderedItems.forEach((item) => {
+        if (item.status === "Return Request") {
+          returnRequests.push({
+            orderId: order._id,
+            orderDate: new Date(order.orderDate).toLocaleDateString(),
+            customerName: order.userId.fullName,
+            customerEmail: order.userId.email,
+            productId: item.product._id,
+            productName: item.product.productName,
+            productImage:
+              item.product.productImage && item.product.productImage.length > 0
+                ? item.product.productImage[0]
+                : "/images/default-product.jpg",
+            quantity: item.quantity,
+            price: item.price,
+            returnReason: item.returnReason,
+            returnRequestDate: new Date(item.order_return_request_date).toLocaleDateString(),
+          });
+        }
+      });
+    });
+
+    res.render("admin-return-requests", {
+      returnRequests,
+      admin: { id: adminId },
+      csrfToken: req.csrfToken ? req.csrfToken() : "",
+      activePage: "returns",
+    });
+  } catch (error) {
+    logger.error("Error fetching return requests", { error: error.message, stack: error.stack });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).render("admin/error", {
+      message: "Failed to load return requests",
+      activePage: "returns",
+    });
+  }
+};
+
+// Approve a return request
+exports.approveReturn = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { productId } = req.body;
+    const adminId = req.session.admin;
+
+    console.log("Admin approve return request:", { orderId, productId, adminId });
+
+    if (!adminId) {
+      logger.error("Unauthorized attempt to approve return", { orderId, productId, adminId: null });
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: "Admin not authenticated",
+      });
+    }
+
+    // Validate ObjectIds
+    if (!mongoose.Types.ObjectId.isValid(orderId) || !mongoose.Types.ObjectId.isValid(productId)) {
+      logger.error("Invalid orderId or productId format", { orderId, productId });
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Invalid order or product ID",
+      });
+    }
+
+    // Find the order
+    const order = await Order.findById(orderId);
+    if (!order) {
+      logger.error("Order not found for return approval", { orderId });
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    // Find the order item
+    const item = order.orderedItems.find((item) => item.product.toString() === productId);
+    if (!item) {
+      logger.error("Item not found in order", { orderId, productId });
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: "Item not found in order",
+      });
+    }
+
+    // Check if item has a pending return request
+    if (item.status !== "Return Request" || item.order_return_status !== "Pending") {
+      logger.error("Item does not have a pending return request", { orderId, productId, status: item.status });
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Item does not have a pending return request",
+      });
+    }
+
+    // Update item status
+    item.status = "Returned";
+    item.order_return_status = "Approved";
+    item.order_returned_date = new Date();
+
+    // Add the refund amount to the user's wallet
+    try {
+      // Find or create user wallet
+      let wallet = await Wallet.findOne({ user: order.userId });
+      if (!wallet) {
+        wallet = new Wallet({
+          user: order.userId,
+          balance: 0,
+          transactions: [],
+        });
+      }
+
+      // Calculate refund amount (price * quantity)
+      const refundAmount = item.price * item.quantity;
+
+      // Add to wallet balance
+      wallet.balance += refundAmount;
+
+      // Add transaction record
+      wallet.transactions.push({
+        type: "credit",
+        amount: refundAmount,
+        date: new Date(),
+        description: `Refund for returned item in order #${order._id}`,
+      });
+
+      await wallet.save();
+      logger.info("Added refund to user wallet", { userId: order.userId, amount: refundAmount });
+
+      // Update product quantity
+      await Product.findByIdAndUpdate(productId, {
+        $inc: { quantity: item.quantity },
+      });
+      logger.info("Restored product quantity", { productId, quantity: item.quantity });
+
+      // Save the order
+      await order.save();
+
+      console.log("Return approved successfully");
+      res.status(StatusCodes.OK).json({
+        success: true,
+        message: "Return approved and refund added to user wallet",
+      });
+    } catch (error) {
+      logger.error("Error processing return approval", { orderId, productId, error: error.message, stack: error.stack });
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Failed to process return approval",
+      });
+    }
+  } catch (error) {
+    logger.error("Error approving return", {
+      orderId: req.params.orderId,
+      productId: req.body.productId,
+      error: error.message,
+      stack: error.stack,
+    });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Failed to approve return",
+    });
+  }
+};
+
+// Reject a return request
+exports.rejectReturn = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { productId, adminResponse } = req.body;
+    const adminId = req.session.admin;
+
+    console.log("Admin reject return request:", { orderId, productId, adminResponse, adminId });
+
+    if (!adminId) {
+      logger.error("Unauthorized attempt to reject return", { orderId, productId, adminId: null });
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: "Admin not authenticated",
+      });
+    }
+
+    // Validate ObjectIds
+    if (!mongoose.Types.ObjectId.isValid(orderId) || !mongoose.Types.ObjectId.isValid(productId)) {
+      logger.error("Invalid orderId or productId format", { orderId, productId });
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Invalid order or product ID",
+      });
+    }
+
+    // Validate admin response
+    if (!adminResponse || adminResponse.trim() === "") {
+      logger.error("Missing admin response for return rejection", { orderId, productId });
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Admin response is required for rejection",
+      });
+    }
+
+    // Find the order
+    const order = await Order.findById(orderId);
+    if (!order) {
+      logger.error("Order not found for return rejection", { orderId });
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    // Find the order item
+    const item = order.orderedItems.find((item) => item.product.toString() === productId);
+    if (!item) {
+      logger.error("Item not found in order", { orderId, productId });
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: "Item not found in order",
+      });
+    }
+
+    // Check if item has a pending return request
+    if (item.status !== "Return Request" || item.order_return_status !== "Pending") {
+      logger.error("Item does not have a pending return request", { orderId, productId, status: item.status });
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Item does not have a pending return request",
+      });
+    }
+
+    // Update item status
+    item.status = "Delivered"; // Revert back to delivered
+    item.order_return_status = "Rejected";
+    item.adminResponse = adminResponse;
+
+    // Save the order
+    await order.save();
+
+    console.log("Return rejected successfully");
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: "Return request rejected",
+    });
+  } catch (error) {
+    logger.error("Error rejecting return", {
+      orderId: req.params.orderId,
+      productId: req.body.productId,
+      error: error.message,
+      stack: error.stack,
+    });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Failed to reject return",
     });
   }
 };

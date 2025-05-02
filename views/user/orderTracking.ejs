@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Track Order | Mangeyko</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        .status-processing { @apply bg-yellow-100 text-yellow-800; }
+        .status-shipped { @apply bg-blue-100 text-blue-800; }
+        .status-out-for-delivery { @apply bg-indigo-100 text-indigo-800; }
+        .status-delivered { @apply bg-green-100 text-green-800; }
+        .status-cancelled { @apply bg-red-100 text-red-800; }
+        .status-return-requested { @apply bg-purple-100 text-purple-800; }
+        .status-returned { @apply bg-gray-100 text-gray-800; }
+        .order-card { @apply transition-all duration-300 hover:shadow-md; }
+        
+        .tracking-step {
+            @apply relative flex items-center;
+        }
+        
+        .tracking-step:not(:last-child)::after {
+            content: '';
+            @apply absolute top-10 left-6 h-full w-0.5 bg-gray-300;
+            z-index: 0;
+        }
+        
+        .tracking-step.completed:not(:last-child)::after {
+            @apply bg-green-500;
+        }
+        
+        .tracking-icon {
+            @apply flex items-center justify-center w-12 h-12 rounded-full border-2 border-gray-300 bg-white text-gray-500 z-10;
+        }
+        
+        .tracking-step.active .tracking-icon {
+            @apply border-blue-500 text-blue-500;
+        }
+        
+        .tracking-step.completed .tracking-icon {
+            @apply border-green-500 bg-green-500 text-white;
+        }
+        
+        .tracking-step.error .tracking-icon {
+            @apply border-red-500 bg-red-500 text-white;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- Header -->
+        <div class="bg-white p-6 rounded-lg shadow-sm mb-8">
+            <h1 class="text-2xl font-bold flex items-center">
+                <i class="fas fa-truck mr-2"></i> Track Order
+            </h1>
+            <p class="text-gray-600 mt-2">Order ID: <%= order._id %></p>
+        </div>
+
+        <!-- Order Status Overview -->
+        <div class="bg-white p-6 rounded-lg shadow-sm mb-8 order-card">
+            <div class="flex flex-col md:flex-row md:items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-xl font-bold mb-2">Order Status: 
+                        <span class="px-3 py-1 rounded text-sm font-medium status-<%= order.status.toLowerCase().replace(' ', '-') %>">
+                            <%= order.status %>
+                        </span>
+                    </h2>
+                    <p class="text-gray-600">
+                        Ordered on <%= order.formattedOrderDate %> | 
+                        Estimated Delivery: <%= order.formattedDeliveryDate %>
+                    </p>
+                </div>
+                <a href="/orders/<%= order._id %>" class="mt-4 md:mt-0 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition inline-flex items-center">
+                    <i class="fas fa-info-circle mr-2"></i> View Order Details
+                </a>
+            </div>
+            
+            <!-- Progress Bar -->
+            <div class="w-full bg-gray-200 rounded-full h-4 mb-6">
+                <div class="bg-blue-600 h-4 rounded-full" style="width: <%= progressWidth %>%"></div>
+            </div>
+            
+            <!-- Tracking Timeline -->
+            <div class="space-y-8 pl-4">
+                <% trackingSteps.forEach(step => { %>
+                    <div class="tracking-step <%= step.active ? 'active' : '' %> <%= step.completed ? 'completed' : '' %> <%= step.error ? 'error' : '' %>">
+                        <div class="tracking-icon">
+                            <i class="fas <%= step.icon %>"></i>
+                        </div>
+                        <div class="ml-6">
+                            <h3 class="font-bold text-lg"><%= step.status %></h3>
+                            <p class="text-gray-600"><%= step.date %></p>
+                            <% if (step.note) { %>
+                                <p class="text-sm text-gray-500 mt-1"><%= step.note %></p>
+                            <% } %>
+                        </div>
+                    </div>
+                <% }); %>
+            </div>
+        </div>
+        
+        <!-- Order Items -->
+        <div class="bg-white p-6 rounded-lg shadow-sm mb-8 order-card">
+            <h2 class="text-xl font-bold mb-4 flex items-center">
+                <i class="fas fa-shopping-bag mr-2"></i> Items in this Order
+            </h2>
+            <div class="space-y-4">
+                <% order.items.forEach(item => { %>
+                    <div class="flex items-start py-4 border-b border-gray-200 last:border-0">
+                        <div class="w-16 h-16 bg-gray-100 rounded overflow-hidden mr-4">
+                            <img src="<%= item.product.mainImage %>" alt="<%= item.product.productName %>" class="w-full h-full object-cover">
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="font-medium"><%= item.product.productName %></h3>
+                            <p class="text-sm text-gray-600">Quantity: <%= item.quantity %></p>
+                            <p class="text-sm text-gray-600">Status: 
+                                <span class="px-2 py-0.5 rounded text-xs font-medium status-<%= item.status.toLowerCase().replace(' ', '-') %>">
+                                    <%= item.status %>
+                                </span>
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-medium">₹<%= item.totalPrice %></p>
+                        </div>
+                    </div>
+                <% }); %>
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="flex justify-between">
+            <a href="/orders" class="bg-gray-200 text-gray-800 px-6 py-2 rounded hover:bg-gray-300 transition flex items-center">
+                <i class="fas fa-arrow-left mr-2"></i> Back to Orders
+            </a>
+            
+            <a href="/orders/<%= order._id %>/invoice" class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition flex items-center">
+                <i class="fas fa-file-invoice mr-2"></i> Download Invoice
+            </a>
+        </div>
+    </div>
+</body>
+</html>

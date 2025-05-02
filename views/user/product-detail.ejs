@@ -635,20 +635,22 @@
     }
   }
 
-  // Function to copy coupon code
+  // Function to copy coupon code with SweetAlert2 notification
   function copyCouponCode(code) {
     navigator.clipboard.writeText(code).then(() => {
-      // Show copied notification
-      const notification = document.createElement('div');
-      notification.innerHTML = `<div class="fixed bottom-4 right-4 bg-[#00ffff] text-black px-4 py-2 rounded-lg shadow-lg">
-                Coupon code copied to clipboard!
-            </div>`;
-      document.body.appendChild(notification);
-
-      // Remove notification after 2 seconds
-      setTimeout(() => {
-        notification.remove();
-      }, 2000);
+      Swal.fire({
+        title: 'Copied!',
+        text: 'Coupon code copied to clipboard',
+        icon: 'success',
+        toast: true,
+        position: 'bottom-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        customClass: {
+          popup: 'colored-toast'
+        }
+      });
     });
   }
 
@@ -718,7 +720,7 @@
     }
   }
 
-  // AJAX form submission
+  // AJAX form submission with SweetAlert2
   document.querySelectorAll('.cart-form').forEach(form => {
     form.addEventListener('submit', async function(e) {
       e.preventDefault();
@@ -750,19 +752,29 @@
         const data = await response.json();
         
         if (response.ok) {
-          // Success - you might want to update the cart counter in your UI here
-          alert('Product added to cart successfully!');
-          // Optional: Update cart count in navbar or elsewhere
-          if (data.cartCount) {
-            document.getElementById('cart-count').textContent = data.cartCount;
-          }
+          Swal.fire({
+            title: 'Added to Cart!',
+            text: 'Product added to your shopping bag',
+            icon: 'success',
+            iconColor: '#00ffff',
+            confirmButtonColor: '#00ffff',
+            confirmButtonText: 'Continue Shopping'
+          });
         } else {
-          // Error from server
-          alert(data.message || 'Failed to add to cart');
+          Swal.fire({
+            title: 'Error',
+            text: data.message || 'Failed to add to cart',
+            icon: 'error',
+            confirmButtonColor: '#00ffff'
+          });
         }
       } catch (error) {
-        console.error('Error:', error);
-        alert('An error occurred while adding to cart');
+        Swal.fire({
+          title: 'Error',
+          text: 'An error occurred while adding to cart',
+          icon: 'error',
+          confirmButtonColor: '#00ffff'
+        });
       } finally {
         // Restore button
         button.innerHTML = originalText;
@@ -771,7 +783,7 @@
     });
   });
 
-  // Enhanced Wishlist Functionality
+  // Enhanced Wishlist Functionality with SweetAlert2
   async function toggleWishlist(productId) {
     const wishlistButton = document.getElementById('wishlistButton');
     const originalContent = wishlistButton.innerHTML;
@@ -800,7 +812,16 @@
             </svg>
             <span class="ml-2 text-red-500">In Wishlist</span>
           `;
-          showNotification('Added to wishlist!', 'success');
+          Swal.fire({
+            title: 'Added to Wishlist',
+            icon: 'success',
+            iconColor: '#FF4B75',
+            toast: true,
+            position: 'bottom-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true
+          });
         } else {
           wishlistButton.innerHTML = `
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-[#00ffff]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -808,19 +829,37 @@
             </svg>
             <span class="ml-2">Add to Wishlist</span>
           `;
-          showNotification('Removed from wishlist', 'info');
+          Swal.fire({
+            title: 'Removed from Wishlist',
+            icon: 'info',
+            toast: true,
+            position: 'bottom-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true
+          });
         }
         
         // Update wishlist count in navbar
         updateWishlistCount();
       } else {
         wishlistButton.innerHTML = originalContent;
-        showNotification(data.error || 'Failed to update wishlist', 'error');
+        Swal.fire({
+          title: 'Error',
+          text: data.error || 'Failed to update wishlist',
+          icon: 'error',
+          confirmButtonColor: '#00ffff'
+        });
       }
     } catch (error) {
       console.error('Error:', error);
       wishlistButton.innerHTML = originalContent;
-      showNotification('An error occurred', 'error');
+      Swal.fire({
+        title: 'Error',
+        text: 'An error occurred',
+        icon: 'error',
+        confirmButtonColor: '#00ffff'
+      });
     } finally {
       wishlistButton.disabled = false;
     }
@@ -882,3 +921,25 @@
     }, 3000);
   }
 </script>
+
+<!-- SweetAlert2 CDN -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<style>
+  .swal2-popup {
+    border-radius: 0.75rem;
+    background-color: #1F2937;
+    color: white;
+  }
+  .swal2-title, .swal2-html-container {
+    color: white !important;
+  }
+  .swal2-confirm {
+    background-color: #00ffff !important;
+    color: black !important;
+  }
+  .swal2-toast {
+    background-color: #374151 !important;
+    color: white !important;
+  }
+</style>

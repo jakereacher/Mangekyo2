@@ -63,8 +63,13 @@ router.post("/address",  checkoutController.handleAddressSelection);
 
 router.post("/checkout/place-order", checkoutController.placeOrder);
 router.get("/orders/:orderId", orderController.getOrderDetails);
-router.post("/orders/:orderId/return", orderController.requestReturn);
 
+router.get("/orders",  orderController.getUserOrders);
+router.get("/orders/:orderId", orderController.getOrderDetails);
+router.get("/orders/:orderId/track", orderController.trackOrder);
+router.get("/orders/:orderId/invoice",  orderController.downloadInvoice);
+router.post("/orders/:orderId/cancel",  orderController.cancelOrder);
+router.post("/orders/:orderId/return",  orderController.requestReturn);
 //profile routes
 router.get("/profile", renderProfilePage);
 router.post("/profile/update", uploadProfileImage, handleProfileUpdate);

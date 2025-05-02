@@ -103,42 +103,36 @@ const orderSchema = new Schema({
   shippingAddress: {
     fullName: {
       type: String,
-      required: true,
+      required: true
     },
     addressType: {
       type: String,
-      required: true,
+      required: true
     },
     landmark: {
       type: String,
-      default: "",
+      default: ''
     },
     city: {
       type: String,
-      required: true,
+      required: true
     },
     state: {
       type: String,
-      required: true,
+      required: true
     },
     pincode: {
       type: String,
-      required: true,
+      required: true
     },
     phone: {
-      type: String, // Changed to String
-      required: true,
-      validate: {
-        validator: function (v) {
-          return /^\d{10}$/.test(v); // Validate 10-digit phone number
-        },
-        message: (props) => `${props.value} is not a valid phone number!`,
-      },
+      type: Number,
+      required: true
     },
   },
   paymentMethod: {
     type: String,
-    enum: ["wallet", "cod", "razorpay"],
+    enum: [ "wallet", "cod", "razorpay"],
     required: true,
   },
   paymentStatus: {

@@ -6,8 +6,11 @@
     <title>Order Details - Admin Panel</title>
     <link rel="stylesheet" href="/css/bootstrap.min.css">
     <link rel="stylesheet" href="/css/admin.css">
+    <!-- Add SweetAlert CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.css">
+    <!-- Add Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* Same as provided CSS */
         body {
             background-color: #f8f9fa;
             font-family: 'Arial', sans-serif;
@@ -80,18 +83,19 @@
             border-radius: 4px;
             object-fit: cover;
         }
-        .form-select, .form-control {
+        .form-select {
+            width: 150px;
             padding: 0.5rem;
             font-size: 0.9rem;
             border-radius: 4px;
             border: 1px solid #ced4da;
             transition: border-color 0.3s ease;
         }
-        .form-select:focus, .form-control:focus {
+        .form-select:focus {
             border-color: #007bff;
             box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
         }
-        .form-select:disabled, .form-control:disabled {
+        .form-select:disabled {
             background-color: #e9ecef;
             cursor: not-allowed;
         }
@@ -118,18 +122,93 @@
             color: #fff;
             font-size: 0.9rem;
         }
-        .return-info {
-            margin-top: 0.5rem;
-            padding: 0.5rem;
-            background-color: #f8f9fa;
+        .return-reason {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 10px;
+            margin-top: 10px;
             border-radius: 4px;
         }
-        .return-info p {
-            margin: 0;
-            font-size: 0.9rem;
+        .return-completed {
+            background-color: #f8f9fa;
+            border-left: 4px solid #6c757d;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
         }
-        .btn-sm {
-            font-size: 0.85rem;
+        .btn-approve {
+            background-color: #28a745;
+            color: white;
+            margin-right: 5px;
+        }
+        .btn-reject {
+            background-color: #dc3545;
+            color: white;
+        }
+        .return-actions {
+            margin-top: 10px;
+            display: flex;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 0.25em 0.6em;
+            font-size: 0.75rem;
+            font-weight: 700;
+            line-height: 1;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: baseline;
+            border-radius: 0.25rem;
+        }
+        .status-processing {
+            background-color: #17a2b8;
+            color: white;
+        }
+        .status-shipped {
+            background-color: #007bff;
+            color: white;
+        }
+        .status-delivered {
+            background-color: #28a745;
+            color: white;
+        }
+        .status-cancelled {
+            background-color: #dc3545;
+            color: white;
+        }
+        .status-return-request {
+            background-color: #ffc107;
+            color: black;
+        }
+        .status-returned {
+            background-color: #6c757d;
+            color: white;
+        }
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .btn-returns {
+            background-color: #6f42c1;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 4px;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+        .btn-returns:hover {
+            background-color: #5a32a3;
+            color: white;
+        }
+        .admin-response {
+            margin-top: 8px;
+            font-style: italic;
+            color: #6c757d;
         }
         @media (max-width: 768px) {
             .container {
@@ -141,14 +220,26 @@
             .table {
                 font-size: 0.85rem;
             }
-            .form-select, .form-control {
-                width: 100%;
+            .form-select {
+                width: 120px;
             }
             .card-body p strong {
                 min-width: 100px;
             }
             .navbar-nav .nav-link {
                 padding: 0.5rem;
+            }
+            .return-actions {
+                flex-direction: column;
+            }
+            .btn-approve, .btn-reject {
+                margin-right: 0;
+                margin-bottom: 5px;
+            }
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
             }
         }
         @media (max-width: 576px) {
@@ -161,7 +252,7 @@
             .table td, .table th {
                 padding: 0.5rem;
             }
-            .form-select, .form-control {
+            .form-select {
                 width: 100%;
             }
             .card-body p {
@@ -189,9 +280,6 @@
                         <a class="nav-link" href="/admin/users">Users</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/admin/return-requests">Return Requests</a>
-                    </li>
-                    <li class="nav-item">
                         <a class="nav-link" href="/admin/logout">Logout</a>
                     </li>
                 </ul>
@@ -201,7 +289,12 @@
 
     <!-- Main Content -->
     <div class="container mt-5">
-        <h2 class="mb-4">Order Details</h2>
+        <div class="page-header">
+            <h2 class="mb-0">Order Details</h2>
+            <a href="/admin/return-requests" class="btn-returns">
+                <i class="fas fa-exchange-alt"></i> View All Return Requests
+            </a>
+        </div>
 
         <!-- Order Summary -->
         <div class="card mb-4">
@@ -220,10 +313,10 @@
                         <p><strong>Payment Status:</strong> <%= order.paymentStatus %></p>
                         <p><strong>Shipping Address:</strong></p>
                         <address>
-                            <%= order.shippingAddress.addressLine1 %><br>
-                            <%= order.shippingAddress.addressLine2 ? order.shippingAddress.addressLine2 + '<br>' : '' %>
-                            <%= order.shippingAddress.city %>, <%= order.shippingAddress.state %> <%= order.shippingAddress.postalCode %><br>
-                            <%= order.shippingAddress.country %>
+                            <%= order.shippingAddress.fullName %><br>
+                            <%= order.shippingAddress.landmark ? order.shippingAddress.landmark + '<br>' : '' %>
+                            <%= order.shippingAddress.city %>, <%= order.shippingAddress.state %> <%= order.shippingAddress.pincode %><br>
+                            Phone: <%= order.shippingAddress.phone %>
                         </address>
                     </div>
                 </div>
@@ -245,8 +338,7 @@
                             <th>Price</th>
                             <th>Total</th>
                             <th>Status</th>
-                            <th>Update Status</th>
-                            <th>Return Status</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -257,46 +349,72 @@
                                     <img src="<%= item.product.mainImage %>" alt="<%= item.product.productName %>" style="width: 50px; height: auto;">
                                 </td>
                                 <td><%= item.quantity %></td>
-                                <td>$<%= item.price.toFixed(2) %></td>
-                                <td>$<%= item.totalPrice %></td>
-                                <td class="status-cell"><%= item.status %></td>
-                                <td>
-                                    <select class="form-select status-select" data-product-id="<%= item.product._id %>" <%= item.order_return_status === 'Pending' || item.order_return_status === 'Approved' || item.order_return_status === 'Rejected' ? 'disabled' : '' %>>
-                                        <option value="Processing" <%= item.status === 'Processing' ? 'selected' : '' %>>Processing</option>
-                                        <option value="Shipped" <%= item.status === 'Shipped' ? 'selected' : '' %>>Shipped</option>
-                                        <option value="Delivered" <%= item.status === 'Delivered' ? 'selected' : '' %>>Delivered</option>
-                                        <option value="Cancelled" <%= item.status === 'Cancelled' ? 'selected' : '' %>>Cancelled</option>
-                                    </select>
+                                <td>₹<%= item.price.toFixed(2) %></td>
+                                <td>₹<%= item.totalPrice %></td>
+                                <td class="status-cell">
+                                    <% let statusClass = ''; %>
+                                    <% if (item.status === 'Processing') { statusClass = 'status-processing'; } %>
+                                    <% if (item.status === 'Shipped') { statusClass = 'status-shipped'; } %>
+                                    <% if (item.status === 'Delivered') { statusClass = 'status-delivered'; } %>
+                                    <% if (item.status === 'Cancelled') { statusClass = 'status-cancelled'; } %>
+                                    <% if (item.status === 'Return Request') { statusClass = 'status-return-request'; } %>
+                                    <% if (item.status === 'Returned') { statusClass = 'status-returned'; } %>
+                                    
+                                    <span class="status-badge <%= statusClass %>"><%= item.status %></span>
+                                    
+                                    <% if (item.status === 'Return Request' && item.returnReason) { %>
+                                        <div class="return-reason">
+                                            <strong>Return Reason:</strong> <%= item.returnReason %>
+                                            <div class="return-actions">
+                                                <button class="btn btn-sm btn-approve btn-approve-return" 
+                                                        data-order-id="<%= order._id %>" 
+                                                        data-product-id="<%= item.product._id %>">
+                                                    Approve Return
+                                                </button>
+                                                <button class="btn btn-sm btn-reject btn-reject-return" 
+                                                        data-order-id="<%= order._id %>" 
+                                                        data-product-id="<%= item.product._id %>">
+                                                    Reject Return
+                                                </button>
+                                            </div>
+                                        </div>
+                                    <% } %>
+                                    
+                                    <% if (item.status === 'Returned' && item.returnReason) { %>
+                                        <div class="return-completed">
+                                            <strong>Return Reason:</strong> <%= item.returnReason %>
+                                            <div class="mt-2">
+                                                <span class="badge bg-secondary">Return Completed</span>
+                                            </div>
+                                        </div>
+                                    <% } %>
+                                    
+                                    <% if (item.status === 'Delivered' && item.order_return_status === 'Rejected' && item.returnReason) { %>
+                                        <div class="return-completed">
+                                            <strong>Return Reason:</strong> <%= item.returnReason %>
+                                            <div class="admin-response">
+                                                <strong>Admin Response:</strong> <%= item.adminResponse %>
+                                            </div>
+                                            <div class="mt-2">
+                                                <span class="badge bg-danger">Return Rejected</span>
+                                            </div>
+                                        </div>
+                                    <% } %>
                                 </td>
                                 <td>
-                                    <% if (item.order_return_status === 'Pending') { %>
-                                        <div class="return-info">
-                                            <p><strong>Return Reason:</strong> <%= item.returnReason %></p>
-                                            <p><strong>Requested:</strong> <%= new Date(item.order_return_request_date).toLocaleDateString() %></p>
-                                            <form action="/admin/orders/<%= order._id %>/approve-return" method="POST" class="d-inline return-form" data-action="approve">
-                                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                                                <input type="hidden" name="orderId" value="<%= order._id %>">
-                                                <input type="hidden" name="productId" value="<%= item.product._id %>">
-                                                <button type="submit" class="btn btn-success btn-sm">Approve</button>
-                                            </form>
-                                            <form action="/admin/orders/<%= order._id %>/reject-return" method="POST" class="d-inline return-form" data-action="reject">
-                                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                                                <input type="hidden" name="orderId" value="<%= order._id %>">
-                                                <input type="hidden" name="productId" value="<%= item.product._id %>">
-                                                <input type="text" name="adminResponse" class="form-control d-inline w-auto" placeholder="Rejection reason" required>
-                                                <button type="submit" class="btn btn-danger btn-sm">Reject</button>
-                                            </form>
-                                        </div>
-                                    <% } else if (item.order_return_status === 'Approved') { %>
-                                        <div class="return-info">
-                                            <p>Return Approved on <%= new Date(item.order_returned_date).toLocaleDateString() %></p>
-                                        </div>
+                                    <% if (item.status !== 'Return Request' && item.status !== 'Returned' && item.order_return_status !== 'Rejected') { %>
+                                        <select class="form-select status-select" data-product-id="<%= item.product._id %>">
+                                            <option value="Processing" <%= item.status === 'Processing' ? 'selected' : '' %>>Processing</option>
+                                            <option value="Shipped" <%= item.status === 'Shipped' ? 'selected' : '' %>>Shipped</option>
+                                            <option value="Delivered" <%= item.status === 'Delivered' ? 'selected' : '' %>>Delivered</option>
+                                            <option value="Cancelled" <%= item.status === 'Cancelled' ? 'selected' : '' %>>Cancelled</option>
+                                        </select>
+                                    <% } else if (item.status === 'Return Request') { %>
+                                        <span class="text-warning">Return Pending</span>
+                                    <% } else if (item.status === 'Returned') { %>
+                                        <span class="text-secondary">Item Returned</span>
                                     <% } else if (item.order_return_status === 'Rejected') { %>
-                                        <div class="return-info">
-                                            <p>Return Rejected: <%= item.adminResponse %></p>
-                                        </div>
-                                    <% } else { %>
-                                        <p>No return requested</p>
+                                        <span class="text-danger">Return Rejected</span>
                                     <% } %>
                                 </td>
                             </tr>
@@ -314,48 +432,12 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6 offset-md-6">
-                        <p><strong>Subtotal:</strong> $<%= order.subtotal %></p>
-                        <p><strong>Shipping:</strong> $<%= order.shipping %></p>
-                        <p><strong>Tax:</strong> $<%= order.tax %></p>
+                        <p><strong>Subtotal:</strong> ₹<%= order.subtotal %></p>
+                        <p><strong>Shipping:</strong> ₹<%= order.shipping %></p>
+                        <p><strong>Tax:</strong> ₹<%= order.tax %></p>
                         <hr>
-                        <p><strong>Total:</strong> $<%= order.total %></p>
+                        <p><strong>Total:</strong> ₹<%= order.total %></p>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Success Modal -->
-    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="successModalLabel">Success</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    The action was completed successfully.
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Error Modal -->
-    <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="errorModalLabel">Error</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    An error occurred.
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
@@ -368,8 +450,10 @@
 
     <!-- Scripts -->
     <script src="/js/bootstrap.bundle.min.js"></script>
+    <!-- Add SweetAlert JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.all.min.js"></script>
     <script>
-        // Status Update Handler
+        // Update Order Status
         document.querySelectorAll('.status-select').forEach(select => {
             select.addEventListener('change', async (e) => {
                 const selectElement = e.target;
@@ -380,12 +464,24 @@
                 // Disable select to prevent multiple submissions
                 selectElement.disabled = true;
 
+                // Show loading state
+                Swal.fire({
+                    title: 'Updating Status...',
+                    text: 'Please wait while we update the order status',
+                    icon: 'info',
+                    allowOutsideClick: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
                 try {
                     const response = await fetch(`/admin/orders/${orderId}/update-status`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-CSRF-Token': '<%= csrfToken %>'
+                            'CSRF-Token': '<%= csrfToken %>'
                         },
                         body: JSON.stringify({ productId, status })
                     });
@@ -393,97 +489,198 @@
                     const result = await response.json();
 
                     if (result.success) {
-                        // Update status in the table
-                        const row = selectElement.closest('tr');
-                        row.querySelector('.status-cell').textContent = status;
-
-                        // Show success modal
-                        const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-                        document.querySelector('#successModal .modal-body').textContent = 'The item status has been updated successfully.';
-                        successModal.show();
+                        // Show success message
+                        Swal.fire({
+                            title: 'Status Updated!',
+                            text: 'The order item status has been updated successfully',
+                            icon: 'success',
+                            confirmButtonColor: '#3085d6'
+                        }).then(() => {
+                            // Reload the page to refresh the status
+                            window.location.reload();
+                        });
                     } else {
-                        // Show error modal with message
-                        const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
-                        document.querySelector('#errorModal .modal-body').textContent = result.message || 'Failed to update item status.';
-                        errorModal.show();
+                        // Show error message
+                        Swal.fire({
+                            title: 'Update Failed',
+                            text: result.message || 'Failed to update item status',
+                            icon: 'error',
+                            confirmButtonColor: '#3085d6'
+                        });
 
-                        // Revert select to original value
-                        const originalStatus = row.querySelector('.status-cell').textContent;
-                        selectElement.value = originalStatus;
+                        // Re-enable select
+                        selectElement.disabled = false;
                     }
                 } catch (error) {
-                    // Show error modal
-                    const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
-                    document.querySelector('#errorModal .modal-body').textContent = 'Error updating status: ' + error.message;
-                    errorModal.show();
+                    // Show error message
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'Error updating status: ' + error.message,
+                        icon: 'error',
+                        confirmButtonColor: '#3085d6'
+                    });
 
-                    // Revert select to original value
-                    const originalStatus = selectElement.closest('tr').querySelector('.status-cell').textContent;
-                    selectElement.value = originalStatus;
-                } finally {
                     // Re-enable select
                     selectElement.disabled = false;
                 }
             });
         });
 
-        // Return Request Handler
-        document.querySelectorAll('.return-form').forEach(form => {
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const formElement = e.target;
-                const action = formElement.dataset.action;
-                const orderId = formElement.querySelector('input[name="orderId"]').value;
-                const productId = formElement.querySelector('input[name="productId"]').value;
-                const adminResponse = formElement.querySelector('input[name="adminResponse"]')?.value;
+        // Approve Return Request
+        document.querySelectorAll('.btn-approve-return').forEach(button => {
+            button.addEventListener('click', async (e) => {
+                const orderId = e.target.dataset.orderId;
+                const productId = e.target.dataset.productId;
 
-                // Disable form buttons to prevent multiple submissions
-                const buttons = formElement.querySelectorAll('button');
-                buttons.forEach(btn => btn.disabled = true);
+                // Show confirmation dialog
+                const result = await Swal.fire({
+                    title: 'Approve Return?',
+                    text: 'This will approve the return request and process a refund to the customer\'s wallet.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#28a745',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, approve it!'
+                });
 
-                try {
-                    const response = await fetch(`/admin/orders/${orderId}/${action}-return`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-Token': '<%= csrfToken %>'
-                        },
-                        body: JSON.stringify({ orderId, productId, adminResponse })
+                if (result.isConfirmed) {
+                    // Show loading state
+                    Swal.fire({
+                        title: 'Processing...',
+                        text: 'Approving return request',
+                        icon: 'info',
+                        allowOutsideClick: false,
+                        showConfirmButton: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
                     });
 
-                    const result = await response.json();
+                    try {
+                        const response = await fetch(`/admin/orders/${orderId}/approve-return`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'CSRF-Token': '<%= csrfToken %>'
+                            },
+                            body: JSON.stringify({ productId })
+                        });
 
-                    if (result.success) {
-                        // Update return status in the table
-                        const row = formElement.closest('tr');
-                        const returnCell = row.querySelector('td:last-child');
-                        if (action === 'approve') {
-                            returnCell.innerHTML = `<div class="return-info"><p>Return Approved on ${new Date().toLocaleDateString()}</p></div>`;
+                        const result = await response.json();
+
+                        if (result.success) {
+                            // Show success message
+                            Swal.fire({
+                                title: 'Return Approved!',
+                                text: 'The return request has been approved and refund processed.',
+                                icon: 'success',
+                                confirmButtonColor: '#28a745'
+                            }).then(() => {
+                                // Reload the page to refresh the status
+                                window.location.reload();
+                            });
                         } else {
-                            returnCell.innerHTML = `<div class="return-info"><p>Return Rejected: ${adminResponse}</p></div>`;
+                            // Show error message
+                            Swal.fire({
+                                title: 'Error',
+                                text: result.message || 'Failed to approve return',
+                                icon: 'error',
+                                confirmButtonColor: '#3085d6'
+                            });
                         }
-
-                        // Disable status select
-                        row.querySelector('.status-select').disabled = true;
-
-                        // Show success modal
-                        const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-                        document.querySelector('#successModal .modal-body').textContent = `Return ${action === 'approve' ? 'approved and wallet credited' : 'rejected'} successfully.`;
-                        successModal.show();
-                    } else {
-                        // Show error modal
-                        const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
-                        document.querySelector('#errorModal .modal-body').textContent = result.message || `Failed to ${action} return.`;
-                        errorModal.show();
+                    } catch (error) {
+                        // Show error message
+                        Swal.fire({
+                            title: 'Error',
+                            text: 'Error approving return: ' + error.message,
+                            icon: 'error',
+                            confirmButtonColor: '#3085d6'
+                        });
                     }
-                } catch (error) {
-                    // Show error modal
-                    const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
-                    document.querySelector('#errorModal .modal-body').textContent = `Error ${action === 'approve' ? 'approving' : 'rejecting'} return: ${error.message}`;
-                    errorModal.show();
-                } finally {
-                    // Re-enable buttons
-                    buttons.forEach(btn => btn.disabled = false);
+                }
+            });
+        });
+
+        // Reject Return Request
+        document.querySelectorAll('.btn-reject-return').forEach(button => {
+            button.addEventListener('click', async (e) => {
+                const orderId = e.target.dataset.orderId;
+                const productId = e.target.dataset.productId;
+
+                // Show input dialog for rejection reason
+                const { value: adminResponse } = await Swal.fire({
+                    title: 'Reject Return',
+                    input: 'textarea',
+                    inputLabel: 'Reason for rejection',
+                    inputPlaceholder: 'Enter the reason for rejecting this return request...',
+                    inputAttributes: {
+                        'aria-label': 'Reason for rejection'
+                    },
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Reject Return',
+                    inputValidator: (value) => {
+                        if (!value) {
+                            return 'You need to provide a reason for rejection!';
+                        }
+                    }
+                });
+
+                if (adminResponse) {
+                    // Show loading state
+                    Swal.fire({
+                        title: 'Processing...',
+                        text: 'Rejecting return request',
+                        icon: 'info',
+                        allowOutsideClick: false,
+                        showConfirmButton: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    try {
+                        const response = await fetch(`/admin/orders/${orderId}/reject-return`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'CSRF-Token': '<%= csrfToken %>'
+                            },
+                            body: JSON.stringify({ productId, adminResponse })
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            // Show success message
+                            Swal.fire({
+                                title: 'Return Rejected!',
+                                text: 'The return request has been rejected.',
+                                icon: 'success',
+                                confirmButtonColor: '#28a745'
+                            }).then(() => {
+                                // Reload the page to refresh the status
+                                window.location.reload();
+                            });
+                        } else {
+                            // Show error message
+                            Swal.fire({
+                                title: 'Error',
+                                text: result.message || 'Failed to reject return',
+                                icon: 'error',
+                                confirmButtonColor: '#3085d6'
+                            });
+                        }
+                    } catch (error) {
+                        // Show error message
+                        Swal.fire({
+                            title: 'Error',
+                            text: 'Error rejecting return: ' + error.message,
+                            icon: 'error',
+                            confirmButtonColor: '#3085d6'
+                        });
+                    }
                 }
             });
         });

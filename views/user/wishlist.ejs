@@ -110,89 +110,123 @@
 
 <%- include("../../views/user/partials/footer") %>
 
+<!-- Add SweetAlert2 CDN -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // Function to show notifications
-    function showNotification(message, type) {
-      // Check if SweetAlert2 is available
-      if (typeof Swal !== 'undefined') {
-        Swal.fire({
-          text: message,
-          icon: type === 'success' ? 'success' : 'error',
-          toast: true,
-          position: 'top-end',
-          showConfirmButton: false,
-          timer: 3000
-        });
-      } else {
-        // Fallback to alert
-        alert(message);
-      }
+  document.addEventListener('DOMContentLoaded', function () {
+    // Enhanced notification function using SweetAlert2
+    function showNotification(message, type = 'success') {
+      const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+          toast.addEventListener('mouseenter', Swal.stopTimer);
+          toast.addEventListener('mouseleave', Swal.resumeTimer);
+        },
+      });
+
+      Toast.fire({
+        icon: type,
+        title: message,
+        background: type === 'success' ? '#1e293b' : '#1e1e2d',
+        color: '#fff',
+        iconColor: type === 'success' ? '#00ffff' : '#ff4d4d',
+      });
     }
-    
-    // Remove from wishlist functionality
-    document.querySelectorAll('.remove-wishlist-btn').forEach(button => {
-      button.addEventListener('click', async function() {
-        const productId = this.getAttribute('data-product-id');
-        const wishlistItem = document.getElementById(`wishlist-item-${productId}`);
-        
-        if (!productId || !wishlistItem) return;
-        
-        // Show loading state
-        const originalContent = wishlistItem.innerHTML;
-        wishlistItem.innerHTML = '<div class="p-8 text-center"><svg class="animate-spin h-8 w-8 mx-auto text-[#00ffff]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>';
-        
-        try {
-          const response = await fetch(`/wishlist/remove/${productId}`, {
-            method: 'DELETE',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Requested-With': 'XMLHttpRequest'
-            }
-          });
-          
-          const data = await response.json();
-          
-          if (response.ok) {
-            // Successfully removed
-            wishlistItem.remove();
-            
-            // Show notification
-            showNotification('Item removed from wishlist', 'success');
-            
-            // Update wishlist count in navbar if it exists
-            updateWishlistCount();
-            
-            // Check if wishlist is now empty
-            const remainingItems = document.querySelectorAll('.bg-gray-800').length;
-            if (remainingItems === 0) {
-              // Show empty state
-              document.querySelector('.bg-gray-900').innerHTML = `
-                <h1 class="text-3xl font-bold mb-6">My Wishlist</h1>
-                <div class="text-center py-12">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                  </svg>
-                  <h3 class="text-xl font-bold mb-2">Your wishlist is empty</h3>
-                  <p class="text-gray-400 mb-6">Explore our collection and add items you love!</p>
-                  <a href="/shop" class="px-6 py-3 bg-[#00ffff] text-black font-bold rounded-lg hover:bg-[#0088ff] transition">
-                    Start Shopping
-                  </a>
-                </div>
-              `;
-            }
-          } else {
-            wishlistItem.innerHTML = originalContent;
-            showNotification(data.error || 'Failed to remove item', 'error');
-          }
-        } catch (error) {
-          console.error('Error removing item from wishlist:', error);
-          wishlistItem.innerHTML = originalContent;
-          showNotification('An error occurred', 'error');
+
+    // Confirmation dialog for removing items
+    function confirmRemoval(callback) {
+      Swal.fire({
+        title: 'Remove from wishlist?',
+        text: 'This item will be removed from your wishlist',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#00ffff',
+        cancelButtonColor: '#374151',
+        confirmButtonText: 'Yes, remove it',
+        background: '#1e293b',
+        color: '#fff',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          callback();
         }
       });
+    }
+
+    // Remove from wishlist functionality
+    document.querySelectorAll('.remove-wishlist-btn').forEach((button) => {
+      button.addEventListener('click', function () {
+        const productId = this.getAttribute('data-product-id');
+        const wishlistItem = document.getElementById(`wishlist-item-${productId}`);
+
+        if (!productId || !wishlistItem) return;
+
+        confirmRemoval(async () => {
+          const originalContent = wishlistItem.innerHTML;
+          wishlistItem.innerHTML = '<div class="p-8 text-center"><svg class="animate-spin h-8 w-8 mx-auto text-[#00ffff]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>';
+
+          try {
+            const response = await fetch(`/wishlist/remove/${productId}`, {
+              method: 'DELETE',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+              },
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+              wishlistItem.style.transition = 'all 0.5s ease';
+              wishlistItem.style.opacity = '0';
+              wishlistItem.style.transform = 'scale(0.9)';
+
+              setTimeout(() => {
+                wishlistItem.remove();
+                showNotification('Item removed from wishlist', 'success');
+                updateWishlistCount();
+
+                const remainingItems = document.querySelectorAll('.bg-gray-800').length;
+                if (remainingItems === 0) {
+                  const container = document.querySelector('.bg-gray-900');
+                  container.style.transition = 'opacity 0.3s ease';
+                  container.style.opacity = '0';
+
+                  setTimeout(() => {
+                    container.innerHTML = `
+                      <h1 class="text-3xl font-bold mb-6">My Wishlist</h1>
+                      <div class="text-center py-12">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                        <h3 class="text-xl font-bold mb-2">Your wishlist is empty</h3>
+                        <p class="text-gray-400 mb-6">Explore our collection and add items you love!</p>
+                        <a href="/shop" class="px-6 py-3 bg-[#00ffff] text-black font-bold rounded-lg hover:bg-[#0088ff] transition">
+                          Start Shopping
+                        </a>
+                      </div>
+                    `;
+                    container.style.opacity = '1';
+                  }, 300);
+                }
+              }, 500);
+            } else {
+              wishlistItem.innerHTML = originalContent;
+              showNotification(data.error || 'Failed to remove item', 'error');
+            }
+          } catch (error) {
+            console.error('Error removing item from wishlist:', error);
+            wishlistItem.innerHTML = originalContent;
+            showNotification('An error occurred', 'error');
+          }
+        });
+      });
     });
-    
+
     // Update wishlist count
     async function updateWishlistCount() {
       try {
@@ -201,94 +235,100 @@
           const data = await response.json();
           const wishlistCountElement = document.getElementById('wishlist-count');
           if (wishlistCountElement) {
-            wishlistCountElement.textContent = data.count;
-            if (data.count === 0) {
-              wishlistCountElement.style.display = 'none';
-            } else {
-              wishlistCountElement.style.display = 'flex';
-            }
+            wishlistCountElement.style.transition = 'transform 0.3s ease';
+            wishlistCountElement.style.transform = 'scale(1.2)';
+
+            setTimeout(() => {
+              wishlistCountElement.textContent = data.count;
+              wishlistCountElement.style.display = data.count === 0 ? 'none' : 'flex';
+              wishlistCountElement.style.transform = 'scale(1)';
+            }, 300);
           }
         }
       } catch (error) {
         console.error('Error updating wishlist count:', error);
       }
     }
-    
+
     // Add to cart functionality
-    document.querySelectorAll('.add-to-cart-btn').forEach(button => {
-      button.addEventListener('click', async function() {
+    document.querySelectorAll('.add-to-cart-btn').forEach((button) => {
+      button.addEventListener('click', async function () {
         if (this.disabled) return;
-        
+
         const productId = this.getAttribute('data-product-id');
         const originalContent = this.innerHTML;
         const wishlistItem = document.getElementById(`wishlist-item-${productId}`);
-        
-        // Show loading state
+
         this.innerHTML = '<svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
         this.disabled = true;
-        
+
         try {
           const response = await fetch('/add-to-cart', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'X-Requested-With': 'XMLHttpRequest'
+              'X-Requested-With': 'XMLHttpRequest',
             },
-            body: JSON.stringify({
-              productId: productId,
-              quantity: 1
-            })
+            body: JSON.stringify({ productId, quantity: 1 }),
           });
-          
+
           const data = await response.json();
-          
+
           if (response.ok) {
-            // Update button state
             this.innerHTML = `
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
               </svg>
               In Cart
             `;
-            
-            // Show success notification
             showNotification('Added to cart! Item removed from wishlist', 'success');
-            
-            // Update cart count in navbar if it exists
+
             if (data.cartCount) {
               const cartCountElement = document.getElementById('cart-count');
               if (cartCountElement) {
-                cartCountElement.textContent = data.cartCount;
-                cartCountElement.style.display = 'flex';
+                cartCountElement.style.transition = 'transform 0.3s ease';
+                cartCountElement.style.transform = 'scale(1.2)';
+
+                setTimeout(() => {
+                  cartCountElement.textContent = data.cartCount;
+                  cartCountElement.style.display = 'flex';
+                  cartCountElement.style.transform = 'scale(1)';
+                }, 300);
               }
             }
-            
-            // Remove from wishlist after slight delay
+
+            wishlistItem.style.transition = 'all 0.5s ease';
+            wishlistItem.style.opacity = '0';
+            wishlistItem.style.transform = 'scale(0.9)';
+
             setTimeout(() => {
               wishlistItem.remove();
-              
-              // Update wishlist count
               updateWishlistCount();
-              
-              // Check if wishlist is now empty
+
               const remainingItems = document.querySelectorAll('.bg-gray-800').length;
               if (remainingItems === 0) {
-                // Show empty state
-                document.querySelector('.bg-gray-900').innerHTML = `
-                  <h1 class="text-3xl font-bold mb-6">My Wishlist</h1>
-                  <div class="text-center py-12">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
-                    <h3 class="text-xl font-bold mb-2">Your wishlist is empty</h3>
-                    <p class="text-gray-400 mb-6">Explore our collection and add items you love!</p>
-                    <a href="/shop" class="px-6 py-3 bg-[#00ffff] text-black font-bold rounded-lg hover:bg-[#0088ff] transition">
-                      Start Shopping
-                    </a>
-                  </div>
-                `;
+                const container = document.querySelector('.bg-gray-900');
+                container.style.transition = 'opacity 0.3s ease';
+                container.style.opacity = '0';
+
+                setTimeout(() => {
+                  container.innerHTML = `
+                    <h1 class="text-3xl font-bold mb-6">My Wishlist</h1>
+                    <div class="text-center py-12">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                      </svg>
+                      <h3 class="text-xl font-bold mb-2">Your wishlist is empty</h3>
+                      <p class="text-gray-400 mb-6">Explore our collection and add items you love!</p>
+                      <a href="/shop" class="px-6 py-3 bg-[#00ffff] text-black font-bold rounded-lg hover:bg-[#0088ff] transition">
+                        Start Shopping
+                      </a>
+                    </div>
+                  `;
+                  container.style.opacity = '1';
+                }, 300);
               }
-            }, 1000);
+            }, 1500);
           } else {
             this.innerHTML = originalContent;
             this.disabled = false;
