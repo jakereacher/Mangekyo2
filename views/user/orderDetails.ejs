@@ -176,7 +176,7 @@
     </div>
 
     <!-- Return Order Modal -->
-    <div id="returnModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div id="returnModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden transition-opacity duration-300">
         <div class="bg-white rounded-lg p-6 w-full max-w-md">
             <h3 class="text-xl font-bold mb-4">Return Order</h3>
             <p class="mb-4">Please provide a reason for returning this order:</p>
@@ -187,7 +187,7 @@
             </div>
         </div>
     </div>
-
+    
     <script>
         // Cancel Order
         async function cancelOrder(orderId) {
@@ -220,18 +220,29 @@
 
         // Return Order Modal
 
-        let currentOrderId = '';
-        let currentProductId = '';
+        let currentProductId = null;
+let currentOrderId = null;
 
-    function returnOrder(productId, orderId) {
-        currentProductId = productId;
-        currentOrderId = orderId;
-        document.getElementById('returnModal').classList.remove('hidden');
-        }
+function returnOrder(productId, orderId) {
+    currentProductId = productId;
+    currentOrderId = orderId;
+    document.getElementById('returnModal').classList.remove('hidden');
+}
 
-        async function submitReturn() {
+function closeReturnModal() {
+    console.log('Closing modal...');
+    const modal = document.getElementById('returnModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+    document.getElementById('returnReason').value = ''; // Clear input after close
+    currentProductId = null;
+    currentOrderId = null;
+}
+
+async function submitReturn() {
     const returnReason = document.getElementById('returnReason').value.trim();
-    
+
     if (!returnReason) {
         alert('Please provide a reason for the return');
         return;
@@ -254,16 +265,15 @@
         if (result.success) {
             alert('Return request submitted successfully');
             closeReturnModal();
-            window.location.reload();
+            setTimeout(() => window.location.reload(), 300); // Slight delay for visual closure
         } else {
             alert(result.message || 'Failed to submit return request');
         }
     } catch (error) {
         console.error('Error submitting return request:', error);
         alert('Failed to submit return request');
-        }
     }
-
+}
 
         
         // let currentOrderId = '';
