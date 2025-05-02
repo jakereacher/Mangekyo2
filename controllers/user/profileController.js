@@ -1,5 +1,6 @@
 const User = require("../../models/userSchema");
 const Order = require("../../models/orderSchema");
+const Wallet = require("../../models/walletSchema");
 const StatusCodes = require("../../utils/httpStatusCodes");
 const { validateEmail, validateMobile } = require('../../utils/helpers');
 const multer = require("../../helpers/multer");
@@ -23,6 +24,9 @@ const generateOTP = () => {
 };
 
 // Render profile page
+
+
+
 exports.renderProfilePage = async (req, res) => {
   try {
     const userId = req.session.user;
@@ -32,7 +36,7 @@ exports.renderProfilePage = async (req, res) => {
       .populate('wishlist')
       .populate({
         path: 'orderHistory',
-        options: { sort: { createdOn: -1 } }, // Sort by newest first
+        options: { sort: { createdOn: -1 } },
         populate: {
           path: 'orderedItems.product',
           model: 'Product'
@@ -42,6 +46,15 @@ exports.renderProfilePage = async (req, res) => {
     if (!user) {
       return res.status(StatusCodes.NOT_FOUND).render('page-404');
     }
+
+    // Fetch wallet balance
+    const wallet = await Wallet.findOne({ user: userId });
+
+    // Attach wallet balance to the user object
+    const userWithWallet = {
+      ...user.toObject(), // convert Mongoose doc to plain object
+      wallet: wallet?.balance || 0,
+    };
 
     // Format order history for the view
     const formattedOrders = user.orderHistory.map(order => ({
@@ -58,7 +71,7 @@ exports.renderProfilePage = async (req, res) => {
     }));
 
     res.render('profile', {
-      user,
+      user: userWithWallet, // use modified user with wallet
       orders: formattedOrders,
       title: 'My Profile',
       currentPage: 'profile',
@@ -72,6 +85,57 @@ exports.renderProfilePage = async (req, res) => {
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).render('page-404');
   }
 };
+
+
+// exports.renderProfilePage = async (req, res) => {
+//   try {
+//     const userId = req.session.user;
+
+//     const user = await User.findById(userId)
+//       .select('-password -googleId -forgotPasswordOtp -otpExpires -resetPasswordOtp')
+//       .populate('wishlist')
+//       .populate({
+//         path: 'orderHistory',
+//         options: { sort: { createdOn: -1 } }, // Sort by newest first
+//         populate: {
+//           path: 'orderedItems.product',
+//           model: 'Product'
+//         }
+//       });
+
+//     if (!user) {
+//       return res.status(StatusCodes.NOT_FOUND).render('page-404');
+//     }
+
+//     // Format order history for the view
+//     const formattedOrders = user.orderHistory.map(order => ({
+//       _id: order._id,
+//       status: getOverallOrderStatus(order.orderedItems),
+//       totalAmount: order.finalAmount,
+//       createdAt: order.createdOn,
+//       items: order.orderedItems.map(item => ({
+//         product: item.product,
+//         quantity: item.quantity,
+//         status: item.status,
+//         price: item.price
+//       }))
+//     }));
+
+//     res.render('profile', {
+//       user,
+//       orders: formattedOrders,
+//       title: 'My Profile',
+//       currentPage: 'profile',
+//       success: req.flash('success'),
+//       error: req.flash('error'),
+//       isDemo: user.email.endsWith('@demo.com')
+//     });
+
+//   } catch (error) {
+//     console.error('Error rendering profile page:', error);
+//     res.status(StatusCodes.INTERNAL_SERVER_ERROR).render('page-404');
+//   }
+// };
 
 // Helper function to determine overall order status
 function getOverallOrderStatus(orderedItems) {
