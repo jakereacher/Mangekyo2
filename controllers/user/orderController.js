@@ -523,12 +523,19 @@ const cancelOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
     const userId = req.session.user;
-    const { cancelReason } = req.body || { cancelReason: "User requested cancellation" };
+    const { productId, cancelReason } = req.body;
 
     if (!userId) {
       return res.status(401).json({
         success: false,
         message: "User not authenticated",
+      });
+    }
+
+    if (!productId) {
+      return res.status(400).json({
+        success: false,
+        message: "Product ID is required for cancellation",
       });
     }
 
@@ -541,55 +548,130 @@ const cancelOrder = async (req, res) => {
       });
     }
 
-    // Check if order can be cancelled (only Processing orders can be cancelled)
-    const canCancel = order.orderedItems.every(
-      (item) => item.status === "Processing"
+    const item = order.orderedItems.find(
+      (item) => item.product.toString() === productId
     );
 
-    if (!canCancel) {
+    if (!item) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found in order",
+      });
+    }
+
+    if (item.status !== "Processing") {
       return res.status(400).json({
         success: false,
-        message: "Order cannot be cancelled at this stage",
+        message: "This product cannot be cancelled at its current stage",
       });
     }
 
-    // Update order status
-    order.orderedItems.forEach((item) => {
-      item.status = "Cancelled";
-      item.order_cancelled_date = new Date();
-    });
-    
-    order.cancellation_reason = cancelReason;
+    // Cancel only this item
+    item.status = "Cancelled";
+    item.order_cancelled_date = new Date();
+    item.order_cancel_reason = cancelReason || "User requested cancellation";
+
     await order.save();
 
-    // Restore product quantities
-    await Promise.all(
-      order.orderedItems.map(async (item) => {
-        await Product.findByIdAndUpdate(item.product, {
-          $inc: { quantity: item.quantity },
-        });
-      })
-    );
+    // Restore the quantity for this product
+    await Product.findByIdAndUpdate(item.product, {
+      $inc: { quantity: item.quantity },
+    });
 
-    // Refund wallet if payment was made with wallet
+    // Refund wallet only the item's price if payment was via wallet
     if (order.paymentMethod === "wallet") {
       await User.findByIdAndUpdate(userId, {
-        $inc: { wallet: order.finalAmount },
+        $inc: { wallet: item.totalPrice },
       });
     }
+
+
 
     res.status(200).json({
       success: true,
-      message: "Order cancelled successfully",
+      message: "Product in order cancelled successfully",
     });
+
   } catch (error) {
-    console.error("Error cancelling order:", error);
+    console.error("Error cancelling product in order:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to cancel order",
+      message: "Failed to cancel product in order",
     });
   }
 };
+
+// const cancelOrder = async (req, res) => {
+//   try {
+//     const { orderId } = req.params;
+//     const userId = req.session.user;
+//     const { cancelReason } = req.body || { cancelReason: "User requested cancellation" };
+
+//     if (!userId) {
+//       return res.status(401).json({
+//         success: false,
+//         message: "User not authenticated",
+//       });
+//     }
+
+//     const order = await Order.findOne({ _id: orderId, userId });
+
+//     if (!order) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Order not found",
+//       });
+//     }
+
+//     // Check if order can be cancelled (only Processing orders can be cancelled)
+//     const canCancel = order.orderedItems.every(
+//       (item) => item.status === "Processing"
+//     );
+
+//     if (!canCancel) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Order cannot be cancelled at this stage",
+//       });
+//     }
+
+//     // Update order status
+//     order.orderedItems.forEach((item) => {
+//       item.status = "Cancelled";
+//       item.order_cancelled_date = new Date();
+//     });
+    
+//     order.cancellation_reason = cancelReason;
+//     await order.save();
+
+//     // Restore product quantities
+//     await Promise.all(
+//       order.orderedItems.map(async (item) => {
+//         await Product.findByIdAndUpdate(item.product, {
+//           $inc: { quantity: item.quantity },
+//         });
+//       })
+//     );
+
+//     // Refund wallet if payment was made with wallet
+//     if (order.paymentMethod === "wallet") {
+//       await User.findByIdAndUpdate(userId, {
+//         $inc: { wallet: order.finalAmount },
+//       });
+//     }
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Order cancelled successfully",
+//     });
+//   } catch (error) {
+//     console.error("Error cancelling order:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to cancel order",
+//     });
+//   }
+// };
 
 // Request a return for an order
 // Request a return for an order

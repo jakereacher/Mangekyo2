@@ -3,6 +3,7 @@ const Order = require("../../models/orderSchema");
 const User = require("../../models/userSchema");
 const Product = require("../../models/productSchema");
 const Wallet = require("../../models/walletSchema");
+const Transaction = require("../../models/transactionSchema");
 const StatusCodes = require("../../utils/httpStatusCodes");
 const winston = require("winston");
 
@@ -426,7 +427,30 @@ exports.approveReturn = async (req, res) => {
         message: "Order not found",
       });
     }
+   
+  //find the user
+    // const user = await User.findById(order.userId);
+    // if (!user) {
+    //   logger.error("User not found for return approval", { userId: order.userId }); 
+    //   return res.status(StatusCodes.NOT_FOUND).json({
+    //     success: false,
+    //     message: "User not found",
+    //   });
+    // }
 
+
+    // // find the wallet
+    // const wallet = await Wallet.findById( user._id );
+    // console.log("walletCheck2",wallet)
+    // if (!wallet) {
+    //   wallet = await Wallet.create({
+    //     _id: user._id, // Assuming you're using user._id as the wallet ID
+    //     userId: user._id, // Optional, if your Wallet schema includes this
+    //     balance: product.saleprice, // Or whatever default values you use
+    //     // other fields...
+    //   });
+    //   console.log("New wallet created:", wallet);
+    // }
     // Find the order item
     const item = order.orderedItems.find((item) => item.product.toString() === productId);
     if (!item) {
@@ -450,7 +474,7 @@ exports.approveReturn = async (req, res) => {
     item.status = "Returned";
     item.order_return_status = "Approved";
     item.order_returned_date = new Date();
-
+    refundAmount = item.price * item.quantity; // Calculate refund amount
     // Add the refund amount to the user's wallet
     try {
       // Find or create user wallet
@@ -459,26 +483,36 @@ exports.approveReturn = async (req, res) => {
         wallet = new Wallet({
           user: order.userId,
           balance: 0,
-          transactions: [],
         });
       }
 
-      // Calculate refund amount (price * quantity)
-      const refundAmount = item.price * item.quantity;
-
-      // Add to wallet balance
-      wallet.balance += refundAmount;
-
       // Add transaction record
-      wallet.transactions.push({
+      const transaction = new Transaction({
+        userId: order.userId,
+        walletId: wallet._id,
         type: "credit",
         amount: refundAmount,
+        description: `Refund for returned item in order #${orderId}`,
         date: new Date(),
-        description: `Refund for returned item in order #${order._id}`,
       });
 
+      wallet.balance += refundAmount;
       await wallet.save();
-      logger.info("Added refund to user wallet", { userId: order.userId, amount: refundAmount });
+
+      logger.info("Added refund to user wallet", {
+      userId: order.userId,
+      amount: refundAmount,
+      });
+
+// Save the transaction
+await transaction.save();
+logger.info("Transaction recorded for refund", {
+  transactionId: transaction._id,
+  userId: order.userId,
+});
+
+
+
 
       // Update product quantity
       await Product.findByIdAndUpdate(productId, {

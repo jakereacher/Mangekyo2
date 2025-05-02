@@ -76,6 +76,13 @@
                                             <i class="fas fa-undo-alt mr-2"></i> Return Order
                                         </button>
                                     <% } %>
+                                    <% if (item.status === 'Processing') { %>
+                                        <button onclick="cancelOrder('<%= order._id %>','<%= item.product._id %>')"
+                                                class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition flex items-center">
+                                            <i class="fas fa-times-circle mr-2"></i> Cancel Order
+                                        </button>
+                                    <% } %>
+                                    
                                 </div>
                             </div>
                         <% }); %>
@@ -158,13 +165,13 @@
                     <i class="fas fa-file-invoice mr-2"></i> Download Invoice
                 </a>
                 
-                <% if (order.status === 'Processing') { %>
+                <!-- <% if (order.status === 'Processing') { %>
                     <button onclick="cancelOrder('<%= order._id %>')"
                             class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition flex items-center">
                         <i class="fas fa-times-circle mr-2"></i> Cancel Order
                     </button>
                 <% } %>
-                
+                 -->
                 <!-- <% if (order.status === 'Delivered') { %>
                     <button onclick="returnOrder('<%= order._id %>')"
                             class="bg-purple-600 text-white px-6 py-2 rounded hover:bg-purple-700 transition flex items-center">
@@ -190,7 +197,7 @@
     
     <script>
         // Cancel Order
-        async function cancelOrder(orderId) {
+        async function cancelOrder(orderId,productId) {
             if (!confirm('Are you sure you want to cancel this order?')) return;
 
             try {
@@ -200,6 +207,7 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
+                        productId: productId,
                         cancelReason: 'Customer requested cancellation'
                     })
                 });
@@ -221,18 +229,18 @@
         // Return Order Modal
 
         let currentProductId = null;
-let currentOrderId = null;
+        let currentOrderId = null;
 
-function returnOrder(productId, orderId) {
+    function returnOrder(productId, orderId) {
     currentProductId = productId;
     currentOrderId = orderId;
     document.getElementById('returnModal').classList.remove('hidden');
-}
+    }
 
-function closeReturnModal() {
-    console.log('Closing modal...');
-    const modal = document.getElementById('returnModal');
-    if (modal) {
+    function closeReturnModal() {
+        console.log('Closing modal...');
+            const modal = document.getElementById('returnModal');
+        if (modal) {
         modal.classList.add('hidden');
     }
     document.getElementById('returnReason').value = ''; // Clear input after close
