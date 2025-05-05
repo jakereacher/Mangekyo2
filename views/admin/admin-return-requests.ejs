@@ -6,50 +6,56 @@
     <title>Return Requests - Admin Panel</title>
     <link rel="stylesheet" href="/css/bootstrap.min.css">
     <link rel="stylesheet" href="/css/admin.css">
-    <!-- Add SweetAlert CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.css">
     <style>
         body {
+            margin: 0;
+            font-family: Arial, sans-serif;
             background-color: #f8f9fa;
-            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
         .navbar {
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            background-color: #333;
+            color: #fff;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        .navbar-brand {
-            font-weight: bold;
+        .navbar a {
+            color: #fff;
+            text-decoration: none;
+            margin-left: 20px;
+            transition: color 0.3s;
         }
-        .navbar-nav .nav-link {
-            padding: 0.5rem 1rem;
-            transition: color 0.3s ease;
+        .navbar a:hover {
+            color: #f0ad4e;
         }
-        .navbar-nav .nav-link:hover {
-            color: #ffc107 !important;
+        .nav-links {
+            display: flex;
+            align-items: center;
         }
         .container {
             max-width: 1200px;
-            margin-top: 2rem;
+            margin: 2rem auto;
             padding: 0 15px;
-        }
-        h2.mb-4 {
-            color: #343a40;
-            font-weight: 600;
-            border-bottom: 2px solid #007bff;
-            padding-bottom: 0.5rem;
-            display: inline-block;
+            flex: 1;
         }
         .card {
             border: none;
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             margin-bottom: 1.5rem;
+            background-color: #fff;
         }
         .card-header {
             background-color: #007bff;
             color: white;
             font-weight: 500;
-            border-radius: 8px 8px 0 0;
             padding: 1rem;
+            border-radius: 8px 8px 0 0;
         }
         .card-body {
             padding: 1.5rem;
@@ -67,102 +73,49 @@
             font-size: 0.85rem;
             padding: 1rem;
         }
-        .table tbody tr {
-            transition: background-color 0.2s ease;
-        }
         .table tbody tr:hover {
             background-color: #f8f9fa;
         }
-        .table td, .table th {
-            vertical-align: middle;
-            padding: 0.75rem;
-        }
-        .table img {
-            border-radius: 4px;
-            object-fit: cover;
-        }
         .btn-group .btn {
             margin-right: 5px;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
         }
         .btn-approve {
             background-color: #28a745;
             color: white;
         }
+        .btn-approve:hover {
+            background-color: #218838;
+        }
         .btn-reject {
             background-color: #dc3545;
             color: white;
         }
+        .btn-reject:hover {
+            background-color: #c82333;
+        }
         footer {
-            position: relative;
-            bottom: 0;
-            width: 100%;
-            padding: 1rem 0;
             background-color: #343a40;
             color: #fff;
+            padding: 1rem 0;
+            text-align: center;
             font-size: 0.9rem;
-        }
-        @media (max-width: 768px) {
-            .container {
-                padding: 0 10px;
-            }
-            .card-header h5 {
-                font-size: 1.1rem;
-            }
-            .table {
-                font-size: 0.85rem;
-            }
-            .btn-group .btn {
-                font-size: 0.8rem;
-                padding: 0.25rem 0.5rem;
-            }
-            .navbar-nav .nav-link {
-                padding: 0.5rem;
-            }
-        }
-        @media (max-width: 576px) {
-            h2.mb-4 {
-                font-size: 1.5rem;
-            }
-            .table thead th {
-                font-size: 0.75rem;
-            }
-            .table td, .table th {
-                padding: 0.5rem;
-            }
-            .btn-group {
-                display: flex;
-                flex-direction: column;
-            }
-            .btn-group .btn {
-                margin-bottom: 5px;
-                margin-right: 0;
-            }
+            margin-top: auto;
         }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/admin/dashboard">Admin Panel</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/admin/orders">Orders</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/admin/products">Products</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/admin/users">Users</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/admin/logout">Logout</a>
-                    </li>
-                </ul>
-            </div>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <a class="navbar-brand" href="/admin/dashboard">Admin Panel</a>
+        <div class="nav-links">
+            <a href="/admin/orders">Orders</a>
+            <a href="/admin/products">Products</a>
+            <a href="/admin/users">Users</a>
+            <a href="/admin/logout">Logout</a>
         </div>
     </nav>
 
@@ -235,7 +188,6 @@
 
     <!-- Scripts -->
     <script src="/js/bootstrap.bundle.min.js"></script>
-    <!-- Add SweetAlert JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.all.min.js"></script>
     <script>
         // Approve Return Request

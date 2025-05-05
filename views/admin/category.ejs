@@ -124,12 +124,14 @@ function handleFormSubmit(event) {
     if (!validateForm()) {
         return;
     }
-    const name = document.getElementsByName("name")[0].value;
-    const description = document.getElementById("descriptionId").value;
+
+    const name = document.getElementsByName("name")[0].value.trim();
+    const description = document.getElementById("descriptionId").value.trim();
+
     fetch('/admin/addCategory', {
         method: 'POST',
         headers: {
-            'content-type': 'application/json'
+            'Content-Type': 'application/json'
         },
         body: JSON.stringify({ name, description })
     })
@@ -155,24 +157,13 @@ function handleFormSubmit(event) {
     })
     .catch(error => {
         console.error("Fetch error:", error);
-        if (typeof Swal === 'undefined') {
-            console.error("SweetAlert2 is not loaded!");
-            alert("Error: " + error.message);
-            return;
-        }
-        if (error.message.toLowerCase().includes("category already exists")) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Oops',
-                text: "Category already exists"
-            });
-        } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'Oops',
-                text: "An error occurred while adding this category: " + error.message
-            });
-        }
+        Swal.fire({
+            icon: 'error',
+            title: 'Oops',
+            text: error.message.includes("Category already exists") 
+                ? "Category already exists" 
+                : "An error occurred while adding this category: " + error.message
+        });
     });
 }
 
@@ -188,16 +179,24 @@ function validateForm() {
     } else if (!/^[a-zA-Z\s]+$/.test(name)) {
         displayErrorMessage("name-error", "Category name should contain only alphabetic characters");
         isValid = false;
+    } else if (name.length < 3 || name.length > 50) {
+        displayErrorMessage("name-error", "Category name must be between 3 and 50 characters");
+        isValid = false;
     }
+
     if (description === "") {
         displayErrorMessage("description-error", "Please enter a description");
         isValid = false;
+    } else if (description.length < 10 || description.length > 200) {
+        displayErrorMessage("description-error", "Description must be between 10 and 200 characters");
+        isValid = false;
     }
+
     return isValid;
 }
 
 function displayErrorMessage(elementId, message) {
-    var errorElement = document.getElementById(elementId);
+    const errorElement = document.getElementById(elementId);
     errorElement.innerText = message;
     errorElement.style.display = "block";
 }

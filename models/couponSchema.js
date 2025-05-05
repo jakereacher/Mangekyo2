@@ -1,64 +1,81 @@
 const mongoose = require("mongoose");
-const { Schema } = mongoose;
 
-const couponSchema = new Schema({
+const couponSchema = new mongoose.Schema({
   code: {
     type: String,
     required: true,
     unique: true,
-    trim: true, 
-    uppercase: true,
+    trim: true,
   },
-  createdOn: {
-    type: Date,
-    default: Date.now,
+  type: {
+    type: String,
+    enum: ["percentage", "fixed"], // Use "fixed" if that's your intended name instead of "flat"
     required: true,
   },
-  startOn: {
-    type: Date,
-    required: true,
-  },
-  expireOn: {
-    type: Date,
-    required: true,
-  },
-  offerPrice: {
+  users: [
+    {
+      userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true,
+      },
+      usedCount: {
+        type: Number,
+        default: 0,
+      },
+    },
+  ],
+  discountValue: {
     type: Number,
     required: true,
   },
-  minimumPrice: {
+  // 👇 maxPrice is only required if type === "percentage"
+  maxPrice: {
+    type: Number,
+    validate: {
+      validator: function (value) {
+        return this.type !== "percentage" || (value !== undefined && value !== null);
+      },
+      message: "maxPrice is required for percentage coupons.",
+    },
+  },
+  minPrice: {
     type: Number,
     required: true,
   },
-  maxUses: {  
-    type: Number,
-    default: 5,  
+  startDate: {
+    type: Date,
+    required: true,
   },
-  usesCount: {  
+  expiryDate: {
+    type: Date,
+    required: true,
+  },
+  usageLimit: {
+    type: Number,
+    default: 1,
+  },
+  totalUsedCount: {
     type: Number,
     default: 0,
   },
-  userUses: [{
-    userId: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: true
-    },
-    count: {
-      type: Number,
-      default: 0
-    }
-  }],
-  isListed: {
-    type: Boolean,
-    default: true,
-  },
-  isDeleted: {
+  isActive: {
     type: Boolean,
     default: false,
   },
+  isDelete: {
+    type: Boolean,
+    default: false,
+  },
+  created_at: {
+    type: Date,
+    default: Date.now,
+  },
+  updated_at: {
+    type: Date,
+    default: Date.now,
+  },
 });
-
 
 const Coupon = mongoose.model("Coupon", couponSchema);
 

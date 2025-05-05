@@ -35,7 +35,7 @@ exports.getWishlist = async (req, res) => {
       return res.render('wishlist', { 
         wishlist: [],
         cartItems: cartProductIds,
-        user: req.user // Add this line to pass user data
+        user: req.user 
       });
     }
     

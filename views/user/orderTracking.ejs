@@ -109,7 +109,7 @@
                 <% order.items.forEach(item => { %>
                     <div class="flex items-start py-4 border-b border-gray-200 last:border-0">
                         <div class="w-16 h-16 bg-gray-100 rounded overflow-hidden mr-4">
-                            <img src="<%= item.product.mainImage %>" alt="<%= item.product.productName %>" class="w-full h-full object-cover">
+                            <img src="/uploads/product-images/<%= item.product.mainImage %>" alt="<%= item.product.productName %>" class="w-full h-full object-cover">
                         </div>
                         <div class="flex-1">
                             <h3 class="font-medium"><%= item.product.productName %></h3>
@@ -130,7 +130,7 @@
         
         <!-- Action Buttons -->
         <div class="flex justify-between">
-            <a href="/orders" class="bg-gray-200 text-gray-800 px-6 py-2 rounded hover:bg-gray-300 transition flex items-center">
+            <a href="/checkout" class="bg-gray-200 text-gray-800 px-6 py-2 rounded hover:bg-gray-300 transition flex items-center">
                 <i class="fas fa-arrow-left mr-2"></i> Back to Orders
             </a>
             

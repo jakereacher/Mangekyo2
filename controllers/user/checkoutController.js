@@ -5,7 +5,7 @@ const User = require("../../models/userSchema");
 const StatusCodes = require("../../utils/httpStatusCodes");
 const mongoose = require("mongoose");
 
-exports.renderCheckoutPage= async (req, res) => {
+exports.renderCheckoutPage = async (req, res) => {
   try {
     const userId = req.session.user;
 
@@ -13,54 +13,45 @@ exports.renderCheckoutPage= async (req, res) => {
       return res.redirect("/login");
     }
 
-    // Get user with addresses
     const user = await User.findById(userId).lean();
     if (!user) {
       return res.status(StatusCodes.NOT_FOUND).render('page-404');
     }
 
-    // Get validated cart items
     const cart = await Cart.findOne({ userId }).lean();
     if (!cart || !cart.products || cart.products.length === 0) {
       req.flash('error', 'Your cart is empty');
       return res.redirect('/cart');
     }
 
-    // Populate product details with proper image handling
     const cartItems = await Promise.all(
       cart.products.map(async (item) => {
         const product = await Product.findById(item.productId).lean();
-        console.log('Product:', product); // Debugging line
         if (!product) return null;
 
-        // Handle product images safely
         const mainImage = product.productImage && product.productImage.length > 0 
           ? product.productImage[0] 
           : '/images/default-product.jpg';
-console.log(mainImage);
+
         return {
           ...item,
           product: {
             ...product,
-            mainImage // Add the processed image to the product object
+            mainImage
           }
         };
       })
     );
 
-    // Filter out invalid products
     const validCartItems = cartItems.filter(item => item !== null);
 
-    // Calculate totals
     const subtotal = validCartItems.reduce((sum, item) => sum + item.totalPrice, 0);
-    const shipping = 5.99; // Fixed shipping for now
-    const tax = subtotal * 0.09; // Example 9% tax
+    const shipping = 5.99;
+    const tax = subtotal * 0.08;
     const total = subtotal + shipping + tax;
 
-    // Get the addresses starting from index 1, ensuring the first valid address is set as default
     let defaultAddress = null;
     if (Array.isArray(user.address) && user.address.length > 0) {
-      // Start searching from index 1, and set the first valid address as default
       defaultAddress = user.address.find((addr, idx) => addr && idx > 0 && addr.isDefault) || user.address[1];
     }
 
@@ -72,7 +63,7 @@ console.log(mainImage);
       shipping: shipping.toFixed(2),
       tax: tax.toFixed(2),
       total: total.toFixed(2),
-      addresses: user.address ? user.address.filter(addr => addr !== null) : [], // Filter out null addresses
+      addresses: user.address ? user.address.filter(addr => addr !== null) : [],
       defaultAddress,
       currentStep: 1
     });
@@ -95,13 +86,11 @@ exports.handleAddressSelection = async (req, res) => {
       });
     }
 
-    // Set all addresses' isDefault to false
     await User.updateMany(
       { _id: userId },
       { $set: { 'address.$[].isDefault': false } }
     );
 
-    // Set selected address's isDefault to true
     await User.updateOne(
       { _id: userId, 'address.id': addressId },
       { $set: { 'address.$.isDefault': true } }
@@ -121,13 +110,11 @@ exports.handleAddressSelection = async (req, res) => {
   }
 };
 
-
 exports.placeOrder = async (req, res) => {
   try {
     const userId = req.session.user;
     const { paymentMethod, addressId } = req.body;
 
-    // Validate user session
     if (!userId) {
       return res.status(StatusCodes.UNAUTHORIZED).json({
         success: false,
@@ -135,7 +122,6 @@ exports.placeOrder = async (req, res) => {
       });
     }
 
-    // Validate payment method
     if (!["cod", "wallet"].includes(paymentMethod)) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -143,7 +129,6 @@ exports.placeOrder = async (req, res) => {
       });
     }
 
-    // Validate cart
     const cart = await Cart.findOne({ userId }).lean();
     if (!cart || !cart.products || cart.products.length === 0) {
       return res.status(StatusCodes.BAD_REQUEST).json({
@@ -153,7 +138,6 @@ exports.placeOrder = async (req, res) => {
       });
     }
 
-    // Validate user and address
     const user = await User.findById(userId);
     if (!user) {
       return res.status(StatusCodes.NOT_FOUND).json({
@@ -170,7 +154,6 @@ exports.placeOrder = async (req, res) => {
       });
     }
 
-    // Validate products and stock
     const orderedItems = await Promise.all(
       cart.products.map(async (item) => {
         const product = await Product.findById(item.productId);
@@ -197,7 +180,6 @@ exports.placeOrder = async (req, res) => {
       })
     );
 
-    // Filter out invalid products and check for stock issues
     const validItems = orderedItems.filter((item) => item !== null);
     const stockIssues = validItems.filter((item) => item.stockIssue);
 
@@ -218,16 +200,14 @@ exports.placeOrder = async (req, res) => {
       });
     }
 
-    // Calculate order totals
     const subtotal = validItems.reduce(
       (sum, item) => sum + item.price * item.quantity,
       0
     );
     const shipping = 5.99;
-    const tax = subtotal * 0.09;
+    const tax = subtotal * 0.08;
     const total = subtotal + shipping + tax;
 
-    // Check wallet balance for wallet payments
     if (paymentMethod === "wallet" && user.wallet < total) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -235,7 +215,6 @@ exports.placeOrder = async (req, res) => {
       });
     }
 
-    // Create the order document
     const order = new Order({
       userId,
       orderedItems: validItems,
@@ -259,10 +238,8 @@ exports.placeOrder = async (req, res) => {
       deliveryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     });
 
-    // Save the order
     const newOrder = await order.save();
 
-    // Update product quantities
     try {
       await Promise.all(
         validItems.map(async (item) => {
@@ -276,12 +253,10 @@ exports.placeOrder = async (req, res) => {
         })
       );
     } catch (error) {
-      // Rollback: Delete the order if product update fails
       await Order.deleteOne({ _id: newOrder._id });
       throw new Error("Failed to update product quantities: " + error.message);
     }
 
-    // Update user (order history and wallet)
     try {
       const updateUser = {
         $push: { orderHistory: newOrder._id },
@@ -293,7 +268,6 @@ exports.placeOrder = async (req, res) => {
 
       await User.findByIdAndUpdate(userId, updateUser);
     } catch (error) {
-      // Rollback: Delete order and restore product quantities
       await Order.deleteOne({ _id: newOrder._id });
       await Promise.all(
         validItems.map(async (item) => {
@@ -305,16 +279,12 @@ exports.placeOrder = async (req, res) => {
       throw new Error("Failed to update user: " + error.message);
     }
 
-    // Clear the cart
     try {
       await Cart.deleteOne({ userId });
     } catch (error) {
-      // Partial rollback: Order is saved, but cart clearing failed
       console.error("Failed to clear cart:", error);
-      // Notify admin or log for manual intervention
     }
 
-    // Return success response
     res.status(StatusCodes.OK).json({
       success: true,
       message: "Order placed successfully",
@@ -329,106 +299,4 @@ exports.placeOrder = async (req, res) => {
     });
   }
 };
-
-// exports.placeOrder = async (req, res) => {
-//   try {
-//     const userId = req.session.user;
-
-//     if (!userId) {
-//       return res.status(StatusCodes.UNAUTHORIZED).json({
-//         success: false,
-//         message: 'User not authenticated'
-//       });
-//     }
-
-//     // Validate cart
-//     const cart = await Cart.findOne({ userId });
-//     if (!cart || !cart.products || cart.products.length === 0) {
-//       return res.status(StatusCodes.BAD_REQUEST).json({
-//         success: false,
-//         message: 'Your cart is empty'
-//       });
-//     }
-
-//     // Validate user and address
-//     const user = await User.findById(userId);
-//     const defaultAddress = user.address.find(addr => addr.isDefault);
-//     if (!defaultAddress) {
-//       return res.status(StatusCodes.BAD_REQUEST).json({
-//         success: false,
-//         message: 'No default address selected'
-//       });
-//     }
-
-//     // Get selected payment method
-//     const paymentMethod = req.body.paymentMethod || 'cod';
-
-//     // Calculate totals
-//     const cartItems = await Promise.all(
-//       cart.products.map(async (item) => {
-//         const product = await Product.findById(item.productId);
-//         if (!product) return null;
-
-//         return {
-//           product: item.productId,
-//           quantity: item.quantity,
-//           price: item.price,
-//           status: 'Processing'
-//         };
-//       })
-//     );
-
-//     const validCartItems = cartItems.filter(item => item !== null);
-//     const subtotal = validCartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-//     const shipping = 5.99; // Fixed shipping
-//     const tax = subtotal * 0.09; // Example 9% tax
-//     const total = subtotal + shipping + tax;
-
-//     // Create order
-//     const order = new Order({
-//       userId,
-//       orderedItems: validCartItems,
-//       totalPrice: subtotal,
-//       shippingCharge: shipping,
-//       discount: 0, // You can add coupon logic here
-//       finalAmount: total,
-//       shippingAddress: {
-//         fullName: defaultAddress.fullName,
-//         addressType: 'Home', // You can make this dynamic
-//         landmark: defaultAddress.landmark || '',
-//         city: defaultAddress.city,
-//         state: defaultAddress.state,
-//         pincode: defaultAddress.pinCode,
-//         phone: defaultAddress.mobile
-//       },
-//       paymentMethod,
-//       paymentStatus: paymentMethod === 'cod' ? 'Pending' : 'Paid',
-//       orderDate: new Date(),
-//       deliveryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
-//     });
-
-//     // Save order
-//     const newOrder = await order.save();
-
-//     // Add order to user's order history
-//     user.orderHistory.push(newOrder._id);
-//     await user.save();
-
-//     // Clear cart
-//     await Cart.deleteOne({ userId });
-
-//     res.json({
-//       success: true,
-//       message: 'Order placed successfully',
-//       orderId: newOrder._id
-//     });
-
-//   } catch (error) {
-//     console.error('Error placing order:', error);
-//     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-//       success: false,
-//       message: 'Error placing order'
-//     });
-//   }
-// };
 

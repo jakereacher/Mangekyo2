@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <%- include("../../views/user/partials/header") %>
     <style>
         #imageUpload { display: none; }
         .profile-pic { 
@@ -35,23 +34,30 @@
     </style>
 </head>
 <body class="bg-gray-50 text-gray-900 font-sans">
-    <div class="container mx-auto px-4 py-8 max-w-6xl">
-        <% if (locals.success) { %>
-            <div class="mb-6 p-3 bg-green-100 text-green-800 rounded">
-                <%= success %>
+    <!-- Navbar -->
+    <nav class="bg-white shadow-sm">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <a href="/" class="text-2xl font-bold text-gray-800">
+                <i class="fas fa-store mr-2"></i> Mangeyko
+            </a>
+            <div class="flex items-center space-x-6">
+                <a href="/profile" class="text-gray-600 hover:text-gray-800 transition">Profile</a>
+                <a href="/cart" class="text-gray-600 hover:text-gray-800 transition">
+                    <i class="fas fa-shopping-cart"></i> Cart
+                </a>
+                <a href="/logout" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition">
+                    Logout
+                </a>
             </div>
-        <% } %>
-        <% if (locals.error) { %>
-            <div class="mb-6 p-3 bg-red-100 text-red-800 rounded">
-                <%= error %>
-            </div>
-        <% } %>
+        </div>
+    </nav>
 
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
         <!-- Status Message Box -->
-        <div id="updateStatus" class="hidden mb-6 p-3 rounded"></div>
+        <div id="updateStatus" class="hidden mb-6 p-3 rounded bg-blue-100 text-blue-800"></div>
 
         <!-- Profile Header Section -->
-        <div class="profile-header bg-white p-6 rounded-lg shadow-sm mb-8">
+        <div class="profile-header bg-white p-6 rounded-lg shadow-md mb-8">
             <h1 class="text-2xl font-bold mb-6 pb-2 border-b border-gray-200">
                 <i class="fas fa-user-circle mr-2"></i>My Profile
             </h1>
@@ -98,7 +104,7 @@
                             <input type="email" name="email" id="emailInput" value="<%= user.email %>" 
                                 class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black"
                                 required>
-                            <% if (!user.isEmailVerified) { %>
+                            <% if (user.unverifiedNewEmail && !user.isEmailVerified) { %>
                                 <p class="text-red-500 text-sm mt-1">
                                     <i class="fas fa-exclamation-circle mr-1"></i>Email not verified
                                 </p>
@@ -184,77 +190,126 @@
                 <i class="fas fa-history mr-2"></i>Order History
             </h2>
             
-            <% if (user.orderHistory && user.orderHistory.length > 0) { %>
-                <div class="space-y-4">
-                    <% user.orderHistory.forEach(order => { %>
+            <button class="bg-black text-white px-4 py-2 rounded hover:bg-gray-800 transition flex items-center" onclick="toggleOrderHistory()">
+                <i class="fas fa-chevron-down mr-2"></i> Show Order History
+            </button>
+
+            <div id="orderHistoryContainer" class="hidden mt-4">
+                <% if (user.orderHistory && user.orderHistory.length > 0) { %>
+                    <div id="paginatedOrders" class="space-y-4">
+                        <!-- Orders will be dynamically rendered here -->
+                    </div>
+                    <div class="flex justify-between items-center mt-4">
+                        <button id="prevPage" class="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300 transition" disabled>
+                            <i class="fas fa-arrow-left mr-2"></i> Previous
+                        </button>
+                        <button id="nextPage" class="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300 transition">
+                            Next <i class="fas fa-arrow-right ml-2"></i>
+                        </button>
+                    </div>
+                <% } else { %>
+                    <div class="bg-gray-50 border border-gray-200 rounded p-6 text-center">
+                        <div class="text-gray-400 mb-3">
+                            <i class="fas fa-shopping-cart text-4xl"></i>
+                        </div>
+                        <p class="text-gray-600 mb-4">You haven't placed any orders yet.</p>
+                        <a href="/products" class="inline-block bg-black text-white px-4 py-2 rounded hover:bg-gray-800 transition">
+                            <i class="fas fa-shopping-bag mr-2"></i> Start Shopping
+                        </a>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+
+        <script>
+            let currentPage = 1;
+            const ordersPerPage = 3;
+            const orders = <%- JSON.stringify(user.orderHistory || []) %>;
+
+            function renderOrders() {
+                const start = (currentPage - 1) * ordersPerPage;
+                const end = start + ordersPerPage;
+                const paginatedOrders = orders.slice(start, end);
+
+                const container = document.getElementById('paginatedOrders');
+                container.innerHTML = '';
+
+                paginatedOrders.forEach(order => {
+                    const orderCard = `
                         <div class="order-card bg-white p-4 rounded shadow-sm border border-gray-200">
                             <div class="flex justify-between items-start mb-2">
                                 <h3 class="font-bold text-lg flex items-center">
                                     <i class="fas fa-shopping-bag mr-2 text-gray-700"></i>
-                                    Order #<%= order._id.toString().slice(-6).toUpperCase() %>
+                                    Order #${order._id.toString().slice(-6).toUpperCase()}
                                 </h3>
-                                <span class="px-2 py-1 text-xs rounded 
-                                    <%= order.status === 'Delivered' ? 'bg-green-100 text-green-800' : '' %>
-                                    <%= order.status === 'Shipped' ? 'bg-blue-100 text-blue-800' : '' %>
-                                    <%= order.status === 'Processing' ? 'bg-yellow-100 text-yellow-800' : '' %>
-                                    <%= order.status === 'Cancelled' ? 'bg-red-100 text-red-800' : '' %>">
-                                    <%= order.status %>
-                                </span>
+                         
                             </div>
-                            
                             <div class="border-t border-gray-200 pt-3">
-                                <% order.orderedItems.forEach(item => { %>
+                                ${order.orderedItems.map(item => `
                                     <div class="flex items-start py-2 border-b border-gray-100 last:border-0">
                                         <div class="w-16 h-16 bg-gray-100 rounded overflow-hidden mr-3">
-                                            <% if (item.product && item.product.productImage && item.product.productImage.length > 0) { %>
-                                                <img src="/uploads/product-images/<%= item.product.productImage[0] %>" alt="<%= item.product.productName %>" class="w-full h-full object-cover">
-                                            <% } else { %>
-                                                <div class="w-full h-full bg-gray-200 flex items-center justify-center">
+                                            ${item.product && item.product.productImage && item.product.productImage.length > 0
+                                                ? `<img src="/uploads/product-images/${item.product.productImage[0]}" alt="${item.product.productName}" class="w-full h-full object-cover">`
+                                                : `<div class="w-full h-full bg-gray-200 flex items-center justify-center">
                                                     <i class="fas fa-image text-gray-400"></i>
-                                                </div>
-                                            <% } %>
+                                                </div>`}
                                         </div>
                                         <div class="flex-1">
-                                            <h4 class="font-medium"><%= item.product ? item.product.productName : 'Product not available' %></h4>
-                                            <p class="text-sm text-gray-600">Qty: <%= item.quantity %> × ₹<%= item.price.toFixed(2) %></p>
+                                            <h4 class="font-medium">${item.product ? item.product.productName : 'Product not available'}</h4>
+                                            <p class="text-sm text-gray-600">Qty: ${item.quantity} × ₹${item.price.toFixed(2)}</p>
                                             <p class="text-xs mt-1">
                                                 Status: 
-                                                <span class="<%= item.status === 'Delivered' ? 'text-green-600' : '' %>
-                                                    <%= item.status === 'Shipped' ? 'text-blue-600' : '' %>
-                                                    <%= item.status === 'Processing' ? 'text-yellow-600' : '' %>
-                                                    <%= item.status === 'Cancelled' ? 'text-red-600' : '' %>">
-                                                    <%= item.status %>
+                                                <span class="${item.status === 'Delivered' ? 'text-green-600' : ''}
+                                                    ${item.status === 'Shipped' ? 'text-blue-600' : ''}
+                                                    ${item.status === 'Processing' ? 'text-yellow-600' : ''}
+                                                    ${item.status === 'Cancelled' ? 'text-red-600' : ''}">
+                                                    ${item.status}
                                                 </span>
                                             </p>
                                         </div>
                                     </div>
-                                <% }) %>
+                                `).join('')}
                             </div>
-                            
                             <div class="flex justify-between items-center mt-4 pt-3 border-t border-gray-200">
                                 <div>
-                                    <p class="text-gray-600 text-sm">Ordered on <%= new Date(order.orderDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) %></p>
-                                    <p class="font-medium">Total: ₹<%= order.finalAmount.toFixed(2) %></p>
+                                    <p class="text-gray-600 text-sm">Ordered on ${new Date(order.orderDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                                    <p class="font-medium">Total: ₹${order.finalAmount.toFixed(2)}</p>
                                 </div>
-                                <a href="/orders/<%= order._id %>" class="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm flex items-center">
+                                <a href="/orders/${order._id}" class="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm flex items-center">
                                     <i class="fas fa-eye mr-1"></i> View Details
                                 </a>
                             </div>
                         </div>
-                    <% }) %>
-                </div>
-            <% } else { %>
-                <div class="bg-gray-50 border border-gray-200 rounded p-6 text-center">
-                    <div class="text-gray-400 mb-3">
-                        <i class="fas fa-shopping-cart text-4xl"></i>
-                    </div>
-                    <p class="text-gray-600 mb-4">You haven't placed any orders yet.</p>
-                    <a href="/products" class="inline-block bg-black text-white px-4 py-2 rounded hover:bg-gray-800 transition">
-                        <i class="fas fa-shopping-bag mr-2"></i> Start Shopping
-                    </a>
-                </div>
-            <% } %>
-        </div>
+                    `;
+                    container.innerHTML += orderCard;
+                });
+
+                document.getElementById('prevPage').disabled = currentPage === 1;
+                document.getElementById('nextPage').disabled = end >= orders.length;
+            }
+
+            document.getElementById('prevPage').addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderOrders();
+                }
+            });
+
+            document.getElementById('nextPage').addEventListener('click', () => {
+                if (currentPage * ordersPerPage < orders.length) {
+                    currentPage++;
+                    renderOrders();
+                }
+            });
+
+            function toggleOrderHistory() {
+                const container = document.getElementById('orderHistoryContainer');
+                container.classList.toggle('hidden');
+                if (!container.classList.contains('hidden')) {
+                    renderOrders();
+                }
+            }
+        </script>
 
         <!-- Wallet Section -->
         <div class="section bg-white p-6 rounded-lg shadow-sm mb-8">
@@ -312,7 +367,9 @@
                             </label>
                             <input type="tel" id="mobile" name="mobile" required
                                    class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black"
-                                   placeholder="10-digit mobile number">
+                                   placeholder="10-digit mobile number"
+                                   maxlength="10"
+                                   pattern="\d{10}">
                         </div>
                         <div>
                             <label for="pinCode" class="form-label">
@@ -320,7 +377,9 @@
                             </label>
                             <input type="text" id="pinCode" name="pinCode" required
                                    class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black"
-                                   placeholder="6-digit PIN code">
+                                   placeholder="6-digit PIN code"
+                                   maxlength="6"
+                                   pattern="\d{6}">
                         </div>
                     </div>
                     
@@ -456,8 +515,8 @@
         // Handle OTP submission
         document.getElementById('otpForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            const otp = document.getElementById('otpInput').value;
-            const email = document.getElementById('emailInput').value;
+            const otp = document.getElementById('otpInput').value.trim(); // Trim to avoid extra spaces
+            const email = document.getElementById('emailInput').value.trim();
 
             try {
                 const response = await fetch('/profile/verify-email', {
@@ -476,11 +535,11 @@
                         window.location.reload();
                     });
                 } else {
-                    Swal.fire('Error', result.message || 'Verification failed', 'error');
+                    Swal.fire('Error', result.message || 'Incorrect OTP. Please try again.', 'error'); // Updated error message
                 }
             } catch (error) {
                 console.error('Error:', error);
-                Swal.fire('Error', 'Verification failed', 'error');
+                Swal.fire('Error', 'Verification failed. Please try again later.', 'error');
             }
         });
 

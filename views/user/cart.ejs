@@ -197,7 +197,7 @@
                     <% }); %>
                     
                     <div class="mt-6 mb-12 hidden md:block">
-                        <a href="/products" class="text-primary flex items-center gap-1 hover:underline">
+                        <a href="/shop" class="text-primary flex items-center gap-1 hover:underline">
                             <div class="w-5 h-5 flex items-center justify-center">
                                 <i class="ri-arrow-left-line"></i>
                             </div>
@@ -270,7 +270,7 @@
                     
                     <!-- Mobile continue shopping link -->
                     <div class="mt-4 md:hidden text-center">
-                        <a href="/products" class="text-primary hover:underline">
+                        <a href="/shop" class="text-primary hover:underline">
                             Continue Shopping
                         </a>
                     </div>
@@ -287,7 +287,7 @@
                 
                 <p class="text-gray-600 mb-8">Looks like you haven't added any items yet</p>
                 
-                <a href="/products" class="bg-primary text-white py-3 px-6 rounded-button hover:bg-gray-800 transition whitespace-nowrap">
+                <a href="/shop" class="bg-primary text-white py-3 px-6 rounded-button hover:bg-gray-800 transition whitespace-nowrap">
                     Browse Products
                 </a>
             </div>
@@ -501,7 +501,7 @@
                     .catch(error => {
                         if (loaderElement) loaderElement.style.display = 'none';
                         console.error('Error removing item:', error);
-                        alert('An error occurred. Please try again.');
+                      
                     });
                 }
             });

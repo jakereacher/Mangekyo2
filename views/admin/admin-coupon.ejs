@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coupon Management</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Flatpickr CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <style>
+        .coupon-card {
+            transition: all 0.3s ease;
+        }
+        .coupon-card:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .active-coupon {
+            border-left: 5px solid #28a745;
+        }
+        .inactive-coupon {
+            border-left: 5px solid #dc3545;
+        }
+        .badge-percentage {
+            background-color: #17a2b8;
+        }
+        .badge-fixed {
+            background-color: #6c757d;
+        }
+        .pagination .page-item.active .page-link {
+            background-color: #6c757d;
+            border-color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <!-- Inline Header -->
+    <header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
+        <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3" href="#">Admin Panel</a>
+        <div class="navbar-nav">
+            <div class="nav-item text-nowrap">
+                <a class="nav-link px-3" href="/logout">Sign out</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Inline Sidebar -->
+            <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/admin/dashboard">
+                                <i class="fas fa-home me-2"></i>Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/coupons">
+                                <i class="fas fa-tags me-2"></i>Coupons
+                            </a>
+                        </li>
+                        <!-- Add more sidebar links as needed -->
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">Coupon Management</h1>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCouponModal">
+                        <i class="fas fa-plus me-2"></i>Add Coupon
+                    </button>
+                </div>
+
+                <!-- Filters -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <form id="filterForm" class="row g-3">
+                            <div class="col-md-4">
+                                <label for="typeFilter" class="form-label">Discount Type</label>
+                                <select class="form-select" id="typeFilter" name="type">
+                                    <option value="all" <%= selectedType === 'all' ? 'selected' : '' %>>All Types</option>
+                                    <% discountTypes.forEach(type => { %>
+                                        <option value="<%= type %>" <%= selectedType === type ? 'selected' : '' %>>
+                                            <%= type.charAt(0).toUpperCase() + type.slice(1) %>
+                                        </option>
+                                    <% }); %>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="statusFilter" class="form-label">Status</label>
+                                <select class="form-select" id="statusFilter" name="isActive">
+                                    <option value="all" <%= selectedStatus === 'all' ? 'selected' : '' %>>All Statuses</option>
+                                    <option value="true" <%= selectedStatus === 'true' ? 'selected' : '' %>>Active</option>
+                                    <option value="false" <%= selectedStatus === 'false' ? 'selected' : '' %>>Inactive</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <button type="submit" class="btn btn-outline-secondary w-100">
+                                    <i class="fas fa-filter me-2"></i>Filter
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Coupons List -->
+                <div class="card">
+                    <div class="card-body">
+                        <% if (coupons.length === 0) { %>
+                            <div class="text-center py-5">
+                                <i class="fas fa-tag fa-4x text-muted mb-3"></i>
+                                <h5>No coupons found</h5>
+                                <p class="text-muted">Add a new coupon to get started</p>
+                            </div>
+                        <% } else { %>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Code</th>
+                                            <th>Type</th>
+                                            <th>Value</th>
+                                            <th>Min/Max Price</th>
+                                            <th>Usage Limit</th>
+                                            <th>Validity</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <% coupons.forEach(coupon => { %>
+                                            <tr class="coupon-card <%= coupon.isActive ? 'active-coupon' : 'inactive-coupon' %>">
+                                                <td><strong><%= coupon.code %></strong></td>
+                                                <td>
+                                                    <span class="badge <%= coupon.type === 'percentage' ? 'badge-percentage' : 'badge-fixed' %> rounded-pill">
+                                                        <%= coupon.type.charAt(0).toUpperCase() + coupon.type.slice(1) %>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <%= coupon.type === 'percentage' ? coupon.discountValue + '%' : '$' + coupon.discountValue %>
+                                                </td>
+                                                <td>
+                                                    $<%= coupon.minPrice %> / $<%= coupon.maxPrice || '∞' %>
+                                                </td>
+                                                <td>
+                                                    <%= coupon.usageCount || 0 %>/<%= coupon.usageLimit || '∞' %>
+                                                </td>
+                                                <td>
+                                                    <%= coupon.startDate.toLocaleDateString() %> - 
+                                                    <%= coupon.expiryDate.toLocaleDateString() %>
+                                                </td>
+                                                <td>
+                                                    <% if (coupon.isActive) { %>
+                                                        <span class="badge bg-success">Active</span>
+                                                    <% } else { %>
+                                                        <span class="badge bg-danger">Inactive</span>
+                                                    <% } %>
+                                                </td>
+                                                <td>
+                                                    <% if (coupon.isDelete) { %>
+                                                        <button class="btn btn-sm btn-outline-success restore-btn" data-id="<%= coupon._id %>">
+                                                            <i class="fas fa-undo"></i> Restore
+                                                        </button>
+                                                    <% } else { %>
+                                                        <button class="btn btn-sm btn-outline-warning edit-btn" data-id="<%= coupon._id %>" 
+                                                                data-code="<%= coupon.code %>" data-type="<%= coupon.type %>" 
+                                                                data-value="<%= coupon.discountValue %>" data-limit="<%= coupon.usageLimit %>" 
+                                                                data-minprice="<%= coupon.minPrice %>" data-maxprice="<%= coupon.maxPrice %>" 
+                                                                data-startdate="<%= coupon.startDate.toISOString().split('T')[0] %>" 
+                                                                data-expirydate="<%= coupon.expiryDate.toISOString().split('T')[0] %>">
+                                                            <i class="fas fa-edit"></i> Edit
+                                                        </button>
+                                                        <button class="btn btn-sm btn-outline-danger delete-btn" data-id="<%= coupon._id %>">
+                                                            <i class="fas fa-trash"></i> Delete
+                                                        </button>
+                                                    <% } %>
+                                                </td>
+                                            </tr>
+                                        <% }); %>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Pagination -->
+                            <% if (totalPages > 1) { %>
+                                <nav aria-label="Coupon pagination">
+                                    <ul class="pagination justify-content-center">
+                                        <% if (currentPage > 1) { %>
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page=<%= currentPage - 1 %>&type=<%= selectedType %>&isActive=<%= selectedStatus %>">Previous</a>
+                                            </li>
+                                        <% } %>
+                                        
+                                        <% for (let i = 1; i <= totalPages; i++) { %>
+                                            <li class="page-item <%= currentPage === i ? 'active' : '' %>">
+                                                <a class="page-link" href="?page=<%= i %>&type=<%= selectedType %>&isActive=<%= selectedStatus %>"><%= i %></a>
+                                            </li>
+                                        <% } %>
+                                        
+                                        <% if (currentPage < totalPages) { %>
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page=<%= currentPage + 1 %>&type=<%= selectedType %>&isActive=<%= selectedStatus %>">Next</a>
+                                            </li>
+                                        <% } %>
+                                    </ul>
+                                </nav>
+                            <% } %>
+                        <% } %>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Add Coupon Modal -->
+    <div class="modal fade" id="addCouponModal" tabindex="-1" aria-labelledby="addCouponModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addCouponModalLabel">Add New Coupon</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="addCouponForm">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="couponCode" class="form-label">Coupon Code</label>
+                            <input type="text" class="form-control" id="couponCode" name="code" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="discountType" class="form-label">Discount Type</label>
+                            <select class="form-select" id="discountType" name="discountType" required>
+                                <option value="percentage">Percentage</option>
+                                <option value="fixed">Fixed Amount</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="discountValue" class="form-label">Discount Value</label>
+                            <input type="number" class="form-control" id="discountValue" name="value" min="1" required>
+                            <div class="form-text" id="valueHelp">Enter percentage (e.g., 10) or fixed amount (e.g., 5)</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="minPrice" class="form-label">Minimum Cart Value</label>
+                            <input type="number" class="form-control" id="minPrice" name="minPrice" min="0" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="maxPrice" class="form-label">Maximum Discount Applicable (for percentage)</label>
+                            <input type="number" class="form-control" id="maxPrice" name="maxPrice" min="0">
+                            <div class="form-text">Leave empty for no maximum limit</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="usageLimit" class="form-label">Usage Limit</label>
+                            <input type="number" class="form-control" id="usageLimit" name="limit" min="1">
+                            <div class="form-text">Leave empty for unlimited usage</div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="startDate" class="form-label">Start Date</label>
+                                <input type="text" class="form-control" id="startDate" name="startDate" placeholder="Select start date" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="expiryDate" class="form-label">Expiry Date</label>
+                                <input type="text" class="form-control" id="expiryDate" name="expiryDate" placeholder="Select expiry date" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Add Coupon</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Coupon Modal -->
+    <div class="modal fade" id="editCouponModal" tabindex="-1" aria-labelledby="editCouponModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editCouponModalLabel">Edit Coupon</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="editCouponForm">
+                    <div class="modal-body">
+                        <input type="hidden" id="editCouponId" name="id">
+                        <div class="mb-3">
+                            <label for="editCouponCode" class="form-label">Coupon Code</label>
+                            <input type="text" class="form-control" id="editCouponCode" name="code" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editDiscountType" class="form-label">Discount Type</label>
+                            <select class="form-select" id="editDiscountType" name="discountType" required>
+                                <option value="percentage">Percentage</option>
+                                <option value="fixed">Fixed Amount</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editDiscountValue" class="form-label">Discount Value</label>
+                            <input type="number" class="form-control" id="editDiscountValue" name="value" min="1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editMinPrice" class="form-label">Minimum Cart Value</label>
+                            <input type="number" class="form-control" id="editMinPrice" name="minPrice" min="0" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editMaxPrice" class="form-label">Maximum Discount Applicable (for percentage)</label>
+                            <input type="number" class="form-control" id="editMaxPrice" name="maxPrice" min="0">
+                        </div>
+                        <div class="mb-3">
+                            <label for="editUsageLimit" class="form-label">Usage Limit</label>
+                            <input type="number" class="form-control" id="editUsageLimit" name="limit" min="1">
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="editStartDate" class="form-label">Start Date</label>
+                                <input type="text" class="form-control" id="editStartDate" name="startDate" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="editExpiryDate" class="form-label">Expiry Date</label>
+                                <input type="text" class="form-control" id="editExpiryDate" name="expiryDate" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Flatpickr JS -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    
+    <script>
+        $(document).ready(function() {
+            // Filter form submission
+            $('#filterForm').on('submit', function(e) {
+                e.preventDefault();
+                const type = $('#typeFilter').val();
+                const status = $('#statusFilter').val();
+                window.location.href = `/admin/coupons?type=${type}&isActive=${status}`;
+            });
+
+            // Add coupon form submission
+            $('#addCouponForm').on('submit', function(e) {
+                e.preventDefault();
+                
+                $.ajax({
+                    url: '/admin/add-coupon',
+                    method: 'POST',
+                    data: $(this).serialize(),
+                    success: function(response) {
+                        if (response.success) {
+                            alert('Coupon added successfully!');
+                            $('#addCouponModal').modal('hide');
+                            location.reload();
+                        }
+                    },
+                    error: function(xhr) {
+                        alert('Error adding coupon: ' + (xhr.responseJSON?.message || 'Please try again'));
+                    }
+                });
+            });
+
+            // Delete coupon button
+            $('.delete-btn').on('click', function() {
+                const couponId = $(this).data('id');
+                if (confirm('Are you sure you want to delete this coupon?')) {
+                    $.ajax({
+                        url: '/admin/remove-coupon',
+                        method: 'POST',
+                        data: { id: couponId },
+                        success: function(response) {
+                            if (response.success) {
+                                alert('Coupon deleted successfully!');
+                                location.reload();
+                            }
+                        },
+                        error: function() {
+                            alert('Error deleting coupon');
+                        }
+                    });
+                }
+            });
+
+            // Restore coupon button
+            $('.restore-btn').on('click', function() {
+                const couponId = $(this).data('id');
+                if (confirm('Are you sure you want to restore this coupon?')) {
+                    $.ajax({
+                        url: '/admin/restore-coupon',
+                        method: 'POST',
+                        data: { id: couponId },
+                        success: function(response) {
+                            if (response.success) {
+                                alert('Coupon restored successfully!');
+                                location.reload();
+                            }
+                        },
+                        error: function() {
+                            alert('Error restoring coupon');
+                        }
+                    });
+                }
+            });
+
+            // Update help text based on discount type
+            $('#discountType').on('change', function() {
+                const type = $(this).val();
+                if (type === 'percentage') {
+                    $('#valueHelp').text('Enter percentage (e.g., 10 for 10%)');
+                    $('#maxPrice').closest('.mb-3').show();
+                } else {
+                    $('#valueHelp').text('Enter fixed amount (e.g., 5 for $5)');
+                    $('#maxPrice').closest('.mb-3').hide();
+                }
+            }).trigger('change');
+
+            // Initialize Flatpickr
+            const startDatePicker = flatpickr("#startDate", {
+                enableTime: true,
+                dateFormat: "Y-m-d H:i",
+                minDate: "today",
+                onChange: function (selectedDates, dateStr) {
+                    expiryDatePicker.set("minDate", dateStr);
+                }
+            });
+
+            const expiryDatePicker = flatpickr("#expiryDate", {
+                enableTime: true,
+                dateFormat: "Y-m-d H:i",
+                minDate: "today"
+            });
+
+            // Initialize Flatpickr for edit modal
+            const editStartDatePicker = flatpickr("#editStartDate", {
+                enableTime: true,
+                dateFormat: "Y-m-d H:i",
+                minDate: "today",
+                onChange: function (selectedDates, dateStr) {
+                    editExpiryDatePicker.set("minDate", dateStr);
+                }
+            });
+
+            const editExpiryDatePicker = flatpickr("#editExpiryDate", {
+                enableTime: true,
+                dateFormat: "Y-m-d H:i",
+                minDate: "today"
+            });
+
+            // Open edit modal and populate fields
+            $('.edit-btn').on('click', function () {
+                const button = $(this);
+                $('#editCouponId').val(button.data('id'));
+                $('#editCouponCode').val(button.data('code'));
+                $('#editDiscountType').val(button.data('type'));
+                $('#editDiscountValue').val(button.data('value'));
+                $('#editMinPrice').val(button.data('minprice'));
+                $('#editMaxPrice').val(button.data('maxprice'));
+                $('#editUsageLimit').val(button.data('limit'));
+                editStartDatePicker.setDate(button.data('startdate'));
+                editExpiryDatePicker.setDate(button.data('expirydate'));
+                $('#editCouponModal').modal('show');
+            });
+
+            // Submit edit coupon form
+            $('#editCouponForm').on('submit', function (e) {
+                e.preventDefault();
+                const now = new Date();
+                const startDate = new Date($('#editStartDate').val());
+
+                // Add isActive reset logic
+                const data = $(this).serializeArray();
+                if (startDate > now) {
+                    data.push({ name: 'isActive', value: false });
+                }
+
+                $.ajax({
+                    url: '/admin/edit-coupon',
+                    method: 'PUT',
+                    data: $.param(data),
+                    success: function (response) {
+                        if (response.success) {
+                            alert('Coupon updated successfully!');
+                            $('#editCouponModal').modal('hide');
+                            location.reload();
+                        }
+                    },
+                    error: function (xhr) {
+                        alert('Error updating coupon: ' + (xhr.responseJSON?.message || 'Please try again'));
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

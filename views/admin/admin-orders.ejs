@@ -6,56 +6,317 @@
     <title>Admin Orders | Mangeyko</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        .status-processing {
+            background-color: #e0e0e0;
+            color: #424242;
+        }
+        .status-shipped {
+            background-color: #bbdefb;
+            color: #0d47a1;
+        }
+        .status-delivered {
+            background-color: #c8e6c9;
+            color: #1b5e20;
+        }
+        .status-cancelled {
+            background-color: #ffcdd2;
+            color: #b71c1c;
+        }
+        .status-return-requested {
+            background-color: #fff9c4;
+            color: #f57f17;
+        }
+        .status-returned {
+            background-color: #d1c4e9;
+            color: #311b92;
+        }
+        .pagination-link {
+            transition: all 0.3s ease;
+        }
+        .pagination-link:hover {
+            transform: translateY(-1px);
+        }
+    </style>
 </head>
 <body class="bg-gray-50">
+    <!-- Navbar -->
+    <nav class="bg-gray-800 text-white py-4">
+        <div class="container mx-auto flex justify-between items-center px-4">
+            <a href="/admin/dashboard" class="text-lg font-bold">Admin Panel</a>
+            <ul class="flex space-x-6">
+                <li><a href="/admin/orders" class="hover:text-gray-300">Orders</a></li>
+                <li><a href="/admin/products" class="hover:text-gray-300">Products</a></li>
+                <li><a href="/admin/users" class="hover:text-gray-300">Users</a></li>
+                <li><a href="/admin/logout" class="hover:text-gray-300">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
     <div class="container mx-auto px-4 py-8 max-w-6xl">
-        <h1 class="text-2xl font-bold mb-6 flex items-center">
-            <i class="fas fa-receipt mr-2"></i> All Orders
-        </h1>
-        <div class="bg-white p-6 rounded-lg shadow-sm">
-            <table class="w-full">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold flex items-center">
+                <i class="fas fa-receipt mr-2"></i> All Orders
+            </h1>
+            <a href="/admin/return-requests" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+                <i class="fas fa-exchange-alt mr-2"></i> View Return Requests
+            </a>
+        </div>
+        
+        <!-- Orders Table -->
+        <div class="bg-white p-6 rounded-lg shadow-sm mb-6 overflow-x-auto">
+            <table class="w-full min-w-max">
                 <thead>
                     <tr class="border-b">
-                        <th class="py-2 text-left">Order ID</th>
-                        <th class="py-2 text-left">Customer</th>
-                        <th class="py-2 text-left">Date</th>
-                        <th class="py-2 text-left">Status</th>
-                        <th class="py-2 text-left">Total</th>
-                        <th class="py-2 text-left">Actions</th>
+                        <th class="py-3 px-2 text-left">Order ID</th>
+                        <th class="py-3 px-2 text-left">Customer</th>
+                        <th class="py-3 px-2 text-left">Date</th>
+                        <th class="py-3 px-2 text-left">Status</th>
+                        <th class="py-3 px-2 text-left">Total</th>
+                        <th class="py-3 px-2 text-left">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <% orders.forEach(order => { %>
-                        <tr class="border-b">
-                            <td class="py-2"><%= order._id %></td>
-                            <td class="py-2"><%= order.customerName %> (<%= order.customerEmail %>)</td>
-                            <td class="py-2"><%= order.formattedOrderDate %></td>
-                            <td class="py-2">
-                                <span class="px-3 py-1 rounded text-sm font-medium status-<%= order.status.toLowerCase() %>">
-                                    <%= order.status %>
-                                </span>
-                            </td>
-                            <td class="py-2">₹<%= order.finalAmount.toFixed(2) %></td>
-                            <td class="py-2">
-                                <a href="/admin/orders/<%= order._id %>" class="text-blue-600 hover:underline">View Details</a>
-                            </td>
+                    <% if (orders.length > 0) { %>
+                        <% orders.forEach(order => { %>
+                            <tr class="border-b hover:bg-gray-50">
+                                <td class="py-3 px-2"><%= order._id %></td>
+                                <td class="py-3 px-2"><%= order.customerName %> (<%= order.customerEmail %>)</td>
+                                <td class="py-3 px-2"><%= order.formattedOrderDate %></td>
+                                <td class="py-3 px-2">
+                                    <span class="px-3 py-1 rounded-full text-sm font-medium status-<%= order.status.toLowerCase().replace(' ', '-') %>">
+                                        <%= order.status %>
+                                    </span>
+                                </td>
+                                <td class="py-3 px-2">₹<%= order.finalAmount.toFixed(2) %></td>
+                                <td class="py-3 px-2">
+                                    <a href="/admin/orders/<%= order._id %>" 
+                                       class="text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+                                        <i class="fas fa-eye mr-1"></i> View
+                                    </a>
+                                    <% if (order.status === "Return Requested") { %>
+                                        <a href="/admin/return-requests" 
+                                           class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded text-sm hover:bg-yellow-200">
+                                            Return Requested
+                                        </a>
+                                    <% } %>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    <% } else { %>
+                        <tr>
+                            <td colspan="6" class="py-4 text-center text-gray-500">No orders found</td>
                         </tr>
-                    <% }); %>
+                    <% } %>
                 </tbody>
             </table>
-            <!-- Pagination -->
-            <div class="mt-4 flex justify-between">
-                <p>Page <%= pagination.currentPage %> of <%= pagination.totalPages %></p>
-                <div>
-                    <% if (pagination.currentPage > 1) { %>
-                        <a href="?page=<%= pagination.currentPage - 1 %>&limit=<%= limit %>" class="px-4 py-2 bg-gray-200 rounded">Previous</a>
+        </div>
+
+        <!-- Pagination -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="text-sm text-gray-600">
+                Showing <span class="font-medium"><%= (pagination.currentPage - 1) * limit + 1 %></span> to 
+                <span class="font-medium"><%= Math.min(pagination.currentPage * limit, pagination.totalOrders) %></span> of 
+                <span class="font-medium"><%= pagination.totalOrders %></span> orders
+            </div>
+            
+            <div class="flex items-center gap-1">
+                <!-- First Page -->
+                <% if (pagination.currentPage > 1) { %>
+                    <a href="?page=1&limit=<%= limit %>" 
+                       class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
+                        <i class="fas fa-angle-double-left"></i>
+                    </a>
+                <% } else { %>
+                    <span class="px-3 py-1 rounded border text-gray-400 cursor-not-allowed">
+                        <i class="fas fa-angle-double-left"></i>
+                    </span>
+                <% } %>
+                
+                <!-- Previous Page -->
+                <% if (pagination.currentPage > 1) { %>
+                    <a href="?page=<%= pagination.currentPage - 1 %>&limit=<%= limit %>" 
+                       class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
+                        <i class="fas fa-angle-left"></i>
+                    </a>
+                <% } else { %>
+                    <span class="px-3 py-1 rounded border text-gray-400 cursor-not-allowed">
+                        <i class="fas fa-angle-left"></i>
+                    </span>
+                <% } %>
+                
+                <!-- Page Numbers -->
+                <% const maxVisiblePages = 5;
+                   let startPage = Math.max(1, pagination.currentPage - Math.floor(maxVisiblePages / 2));
+                   let endPage = Math.min(pagination.totalPages, startPage + maxVisiblePages - 1);
+                   
+                   if (endPage - startPage + 1 < maxVisiblePages) {
+                       startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                   }
+                   
+                   for (let i = startPage; i <= endPage; i++) { %>
+                    <% if (i === pagination.currentPage) { %>
+                        <span class="px-3 py-1 rounded border bg-blue-600 text-white font-medium">
+                            <%= i %>
+                        </span>
+                    <% } else { %>
+                        <a href="?page=<%= i %>&limit=<%= limit %>" 
+                           class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
+                            <%= i %>
+                        </a>
                     <% } %>
-                    <% if (pagination.currentPage < pagination.totalPages) { %>
-                        <a href="?page=<%= pagination.currentPage + 1 %>&limit=<%= limit %>" class="px-4 py-2 bg-gray-200 rounded">Next</a>
-                    <% } %>
-                </div>
+                <% } %>
+                
+                <!-- Next Page -->
+                <% if (pagination.currentPage < pagination.totalPages) { %>
+                    <a href="?page=<%= pagination.currentPage + 1 %>&limit=<%= limit %>" 
+                       class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
+                        <i class="fas fa-angle-right"></i>
+                    </a>
+                <% } else { %>
+                    <span class="px-3 py-1 rounded border text-gray-400 cursor-not-allowed">
+                        <i class="fas fa-angle-right"></i>
+                    </span>
+                <% } %>
+                
+                <!-- Last Page -->
+                <% if (pagination.currentPage < pagination.totalPages) { %>
+                    <a href="?page=<%= pagination.totalPages %>&limit=<%= limit %>" 
+                       class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
+                        <i class="fas fa-angle-double-right"></i>
+                    </a>
+                <% } else { %>
+                    <span class="px-3 py-1 rounded border text-gray-400 cursor-not-allowed">
+                        <i class="fas fa-angle-double-right"></i>
+                    </span>
+                <% } %>
+            </div>
+            
+            <!-- Items per page selector -->
+            <div class="flex items-center gap-2">
+                <span class="text-sm text-gray-600">Items per page:</span>
+                <select onchange="window.location.href=`?page=1&limit=${this.value}`" 
+                        class="border rounded px-2 py-1 text-sm">
+                    <option value="10" <%= limit == 10 ? 'selected' : '' %>>10</option>
+                    <option value="25" <%= limit == 25 ? 'selected' : '' %>>25</option>
+                    <option value="50" <%= limit == 50 ? 'selected' : '' %>>50</option>
+                    <option value="100" <%= limit == 100 ? 'selected' : '' %>>100</option>
+                </select>
             </div>
         </div>
     </div>
+
+    <!-- Approve Modal -->
+    <div id="approveModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white p-6 rounded-lg w-96">
+            <h3 class="text-lg font-bold mb-4">Approve Return Request</h3>
+            <p id="approveReason" class="text-gray-700 mb-4"></p>
+            <div class="flex justify-end space-x-2">
+                <button type="button" onclick="hideApproveModal()" class="px-4 py-2 bg-gray-200 rounded">Cancel</button>
+                <button type="button" onclick="approveReturn()" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Approve</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reject Modal -->
+    <div id="rejectModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white p-6 rounded-lg w-96">
+            <h3 class="text-lg font-bold mb-4">Reject Return Request</h3>
+            <p id="rejectReasonDisplay" class="text-gray-700 mb-4"></p>
+            <form id="rejectForm">
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Reason for rejection</label>
+                    <textarea id="rejectReasonInput" class="w-full border rounded p-2" rows="4" required></textarea>
+                </div>
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="hideRejectModal()" class="px-4 py-2 bg-gray-200 rounded">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Reject</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentOrderId = null;
+
+        function showApproveModal(orderId, returnReason) {
+            currentOrderId = orderId;
+            document.getElementById('approveReason').textContent = `Reason for return: ${returnReason || 'No reason provided'}`;
+            document.getElementById('approveModal').classList.remove('hidden');
+        }
+
+        function hideApproveModal() {
+            document.getElementById('approveModal').classList.add('hidden');
+            currentOrderId = null;
+        }
+
+        function approveReturn() {
+            fetch(`/admin/orders/${currentOrderId}/approve-return`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'CSRF-Token': '<%= csrfToken %>'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Return approved successfully!');
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while approving the return');
+            })
+            .finally(() => {
+                hideApproveModal();
+            });
+        }
+
+        function showRejectModal(orderId, returnReason) {
+            currentOrderId = orderId;
+            document.getElementById('rejectReasonDisplay').textContent = `Reason for return: ${returnReason || 'No reason provided'}`;
+            document.getElementById('rejectModal').classList.remove('hidden');
+        }
+
+        function hideRejectModal() {
+            document.getElementById('rejectModal').classList.add('hidden');
+            document.getElementById('rejectForm').reset();
+            currentOrderId = null;
+        }
+
+        document.getElementById('rejectForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const rejectReason = document.getElementById('rejectReasonInput').value;
+
+            fetch(`/admin/orders/${currentOrderId}/reject-return`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'CSRF-Token': '<%= csrfToken %>'
+                },
+                body: JSON.stringify({ adminResponse: rejectReason })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Return rejected successfully!');
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while rejecting the return');
+            })
+            .finally(() => {
+                hideRejectModal();
+            });
+        });
+    </script>
 </body>
 </html>

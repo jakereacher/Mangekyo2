@@ -1,3 +1,9 @@
+/**
+ * Order Controller
+ * Handles order-related operations such as fetching order details, tracking orders, 
+ * managing cancellations and returns, and generating invoices.
+ */
+
 const Order = require("../../models/orderSchema");
 const User = require("../../models/userSchema");
 const Product = require("../../models/productSchema");
@@ -5,7 +11,9 @@ const PDFDocument = require("pdfkit");
 const fs = require("fs");
 const path = require("path");
 
-// Helper function to calculate overall order status
+/**
+ * Calculate the overall status of an order based on its items.
+ */
 function calculateOverallStatus(orderedItems) {
   if (!orderedItems || orderedItems.length === 0) return "Processing";
 
@@ -33,7 +41,9 @@ function calculateOverallStatus(orderedItems) {
   return "Processing";
 }
 
-// Helper function to get the date for a specific status
+/**
+ * Get the date associated with a specific order status.
+ */
 function getStatusDate(orderedItems, status) {
   if (!orderedItems || orderedItems.length === 0) return null;
   
@@ -62,7 +72,6 @@ function getStatusDate(orderedItems, status) {
       return null;
   }
   
-  // Find the first item with the date field set
   for (const item of orderedItems) {
     if (item[dateField]) {
       return new Date(item[dateField]).toLocaleDateString();
@@ -72,20 +81,19 @@ function getStatusDate(orderedItems, status) {
   return null;
 }
 
-// Helper function to generate invoice PDF
+/**
+ * Generate a PDF invoice for an order.
+ */
 function generateInvoicePDF(doc, order) {
-  // Add company logo and header
   doc.fontSize(20).text('Mangeyko', { align: 'center' });
   doc.fontSize(12).text('Invoice', { align: 'center' });
   doc.moveDown();
   
-  // Add a horizontal line
   doc.moveTo(50, doc.y)
      .lineTo(550, doc.y)
      .stroke();
   doc.moveDown();
   
-  // Add order information
   doc.fontSize(14).text('Order Information', { underline: true });
   doc.moveDown(0.5);
   doc.fontSize(10).text(`Order ID: ${order._id}`);
@@ -94,14 +102,12 @@ function generateInvoicePDF(doc, order) {
   doc.fontSize(10).text(`Payment Status: ${order.paymentStatus}`);
   doc.moveDown();
   
-  // Add customer information
   doc.fontSize(14).text('Customer Information', { underline: true });
   doc.moveDown(0.5);
   doc.fontSize(10).text(`Name: ${order.userId && order.userId.fullname ? order.userId.fullname : 'Customer'}`);
   doc.fontSize(10).text(`Email: ${order.userId && order.userId.email ? order.userId.email : 'N/A'}`);
   doc.moveDown();
   
-  // Add shipping address
   doc.fontSize(14).text('Shipping Address', { underline: true });
   doc.moveDown(0.5);
   doc.fontSize(10).text(`${order.shippingAddress.fullName}`);
@@ -110,11 +116,9 @@ function generateInvoicePDF(doc, order) {
   doc.fontSize(10).text(`Phone: ${order.shippingAddress.phone}`);
   doc.moveDown();
   
-  // Add order items table
   doc.fontSize(14).text('Order Items', { underline: true });
   doc.moveDown(0.5);
   
-  // Table header
   const tableTop = doc.y;
   const itemX = 50;
   const descriptionX = 150;
@@ -128,12 +132,10 @@ function generateInvoicePDF(doc, order) {
   doc.fontSize(10).text('Price', priceX, tableTop);
   doc.fontSize(10).text('Amount', amountX, tableTop);
   
-  // Draw a line below the header
   doc.moveTo(50, doc.y + 15)
      .lineTo(550, doc.y + 15)
      .stroke();
   
-  // Table rows
   let tableRow = doc.y + 25;
   let subtotal = 0;
   
@@ -152,21 +154,18 @@ function generateInvoicePDF(doc, order) {
     
     tableRow += 20;
     
-    // Add a new page if we're at the bottom
     if (tableRow > 700) {
       doc.addPage();
       tableRow = 50;
     }
   });
   
-  // Draw a line below the items
   doc.moveTo(50, tableRow)
      .lineTo(550, tableRow)
      .stroke();
   
   tableRow += 20;
   
-  // Order summary
   doc.fontSize(10).text('Subtotal:', 350, tableRow);
   doc.fontSize(10).text(`₹${subtotal.toFixed(2)}`, amountX, tableRow);
   tableRow += 15;
@@ -186,23 +185,22 @@ function generateInvoicePDF(doc, order) {
     tableRow += 15;
   }
   
-  // Draw a line above the total
   doc.moveTo(350, tableRow)
      .lineTo(550, tableRow)
      .stroke();
   
   tableRow += 15;
   
-  // Total
   doc.fontSize(12).text('Total:', 350, tableRow);
   doc.fontSize(12).text(`₹${order.finalAmount.toFixed(2)}`, amountX, tableRow);
   
-  // Footer
   doc.fontSize(10).text('Thank you for your purchase!', 50, 700, { align: 'center' });
   doc.fontSize(8).text('This is a computer-generated invoice and does not require a signature.', 50, 720, { align: 'center' });
 }
 
-// Get order details
+/**
+ * Fetch and render the details of a specific order.
+ */
 const getOrderDetails = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -215,12 +213,11 @@ const getOrderDetails = async (req, res) => {
     const order = await Order.findOne({ _id: orderId, userId })
       .populate("orderedItems.product")
       .lean();
-    console.log(`here is ${order}`);
+
     if (!order) {
       return res.status(404).render("page-404");
     }
 
-    // Format dates
     const formattedOrderDate = new Date(order.orderDate).toLocaleDateString('en-US', {
       year: 'numeric', month: 'long', day: 'numeric'
     });
@@ -229,10 +226,8 @@ const getOrderDetails = async (req, res) => {
       year: 'numeric', month: 'long', day: 'numeric'
     });
 
-    // Calculate overall order status based on items
     const status = calculateOverallStatus(order.orderedItems);
-    console.log(order);
-    // Format order data for the template
+
     const orderDetails = {
       ...order,
       _id: order._id.toString(),
@@ -257,19 +252,19 @@ const getOrderDetails = async (req, res) => {
       total: order.finalAmount.toFixed(2),
     };
 
-    console.log("Rohan: ", orderDetails);
     res.render("orderDetails", {
       order: orderDetails,
       user: req.session.user ? { id: userId } : null,
-      
     });
   } catch (error) {
     console.error("Error fetching order details:", error);
     res.status(500).render("page-404");
   }
-};
+}
 
-// Get all orders for a user
+/**
+ * Fetch and render all orders for a user with pagination and filtering.
+ */
 const getUserOrders = async (req, res) => {
   try {
     const userId = req.session.user;
@@ -282,10 +277,8 @@ const getUserOrders = async (req, res) => {
       return res.redirect("/login");
     }
 
-    // Build filter query
     const filterQuery = { userId };
     if (statusFilter !== 'all') {
-      // For specific status filtering
       filterQuery['orderedItems.status'] = statusFilter;
     }
 
@@ -299,12 +292,10 @@ const getUserOrders = async (req, res) => {
       .populate("orderedItems.product")
       .lean();
 
-    // Format orders with overall status
     const formattedOrders = orders.map((order) => {
       const status = calculateOverallStatus(order.orderedItems);
       let progressWidth = 0;
       
-      // Calculate progress width based on status
       switch (status) {
         case "Processing":
           progressWidth = 25;
@@ -355,9 +346,11 @@ const getUserOrders = async (req, res) => {
       error: { status: 500 }
     });
   }
-};
+}
 
-// Track an order
+/**
+ * Track the status of a specific order and render the tracking page.
+ */
 const trackOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -375,14 +368,11 @@ const trackOrder = async (req, res) => {
       return res.status(404).render("page-404");
     }
 
-    // Calculate overall order status
     const status = calculateOverallStatus(order.orderedItems);
     
-    // Create tracking steps based on status
     let trackingSteps = [];
     let progressWidth = 0;
     
-    // Default tracking steps
     trackingSteps = [
       {
         status: "Order Placed",
@@ -421,7 +411,6 @@ const trackOrder = async (req, res) => {
       }
     ];
     
-    // Handle special statuses
     if (status === "Cancelled") {
       trackingSteps = [
         {
@@ -467,7 +456,6 @@ const trackOrder = async (req, res) => {
       });
       progressWidth = 100;
     } else {
-      // Calculate progress width for normal flow
       switch (status) {
         case "Processing":
           progressWidth = 25;
@@ -486,7 +474,6 @@ const trackOrder = async (req, res) => {
       }
     }
 
-    // Format order for template
     const orderDetails = {
       ...order,
       _id: order._id.toString(),
@@ -516,9 +503,11 @@ const trackOrder = async (req, res) => {
     console.error("Error tracking order:", error);
     res.status(500).render("page-404");
   }
-};
+}
 
-// Cancel an order
+/**
+ * Cancel a specific product in an order and update its status.
+ */
 const cancelOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -566,26 +555,21 @@ const cancelOrder = async (req, res) => {
       });
     }
 
-    // Cancel only this item
     item.status = "Cancelled";
     item.order_cancelled_date = new Date();
     item.order_cancel_reason = cancelReason || "User requested cancellation";
 
     await order.save();
 
-    // Restore the quantity for this product
     await Product.findByIdAndUpdate(item.product, {
       $inc: { quantity: item.quantity },
     });
 
-    // Refund wallet only the item's price if payment was via wallet
     if (order.paymentMethod === "wallet") {
       await User.findByIdAndUpdate(userId, {
         $inc: { wallet: item.totalPrice },
       });
     }
-
-
 
     res.status(200).json({
       success: true,
@@ -599,82 +583,11 @@ const cancelOrder = async (req, res) => {
       message: "Failed to cancel product in order",
     });
   }
-};
+}
 
-// const cancelOrder = async (req, res) => {
-//   try {
-//     const { orderId } = req.params;
-//     const userId = req.session.user;
-//     const { cancelReason } = req.body || { cancelReason: "User requested cancellation" };
-
-//     if (!userId) {
-//       return res.status(401).json({
-//         success: false,
-//         message: "User not authenticated",
-//       });
-//     }
-
-//     const order = await Order.findOne({ _id: orderId, userId });
-
-//     if (!order) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "Order not found",
-//       });
-//     }
-
-//     // Check if order can be cancelled (only Processing orders can be cancelled)
-//     const canCancel = order.orderedItems.every(
-//       (item) => item.status === "Processing"
-//     );
-
-//     if (!canCancel) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Order cannot be cancelled at this stage",
-//       });
-//     }
-
-//     // Update order status
-//     order.orderedItems.forEach((item) => {
-//       item.status = "Cancelled";
-//       item.order_cancelled_date = new Date();
-//     });
-    
-//     order.cancellation_reason = cancelReason;
-//     await order.save();
-
-//     // Restore product quantities
-//     await Promise.all(
-//       order.orderedItems.map(async (item) => {
-//         await Product.findByIdAndUpdate(item.product, {
-//           $inc: { quantity: item.quantity },
-//         });
-//       })
-//     );
-
-//     // Refund wallet if payment was made with wallet
-//     if (order.paymentMethod === "wallet") {
-//       await User.findByIdAndUpdate(userId, {
-//         $inc: { wallet: order.finalAmount },
-//       });
-//     }
-
-//     res.status(200).json({
-//       success: true,
-//       message: "Order cancelled successfully",
-//     });
-//   } catch (error) {
-//     console.error("Error cancelling order:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Failed to cancel order",
-//     });
-//   }
-// };
-
-// Request a return for an order
-// Request a return for an order
+/**
+ * Submit a return request for a specific product in an order.
+ */
 const requestReturn = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -704,7 +617,6 @@ const requestReturn = async (req, res) => {
       });
     }
 
-    // Find the specific product in the orderedItems
     const item = order.orderedItems.find(
       (i) => i.product.toString() === productId
     );
@@ -716,7 +628,6 @@ const requestReturn = async (req, res) => {
       });
     }
 
-    // Check if the product was delivered
     if (item.status !== "Delivered") {
       return res.status(400).json({
         success: false,
@@ -724,7 +635,6 @@ const requestReturn = async (req, res) => {
       });
     }
 
-    // Check return window (7 days from delivery)
     const deliveryDate = new Date(item.order_delivered_date);
     const returnPeriod = 7 * 24 * 60 * 60 * 1000;
 
@@ -735,10 +645,9 @@ const requestReturn = async (req, res) => {
       });
     }
 
-    // Update only this item's status
     item.status = "Return Request";
     item.order_return_request_date = new Date();
-    item.return_reason = returnReason;
+    item.returnReason = returnReason;
 
     await order.save();
 
@@ -753,95 +662,11 @@ const requestReturn = async (req, res) => {
       message: "Failed to submit return request",
     });
   }
-};
+}
 
-// const requestReturn = async (req, res) => {
-//   try {
-//     const { orderId } = req.params;
-//     console.log(orderId)
-//     const productId = req.body.productId;
-//     console.log(productId)
-//     const userId = req.session.user;
-//     const { returnReason } = req.body;
-
-//     if (!userId) {
-//       return res.status(401).json({
-//         success: false,
-//         message: "User not authenticated",
-//       });
-//     }
-
-//     if (!returnReason) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Return reason is required",
-//       });
-//     }
-
-//     const order = await Order.findOne({ _id: orderId, userId });
-
-//     if (!order) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "Order not found",
-//       });
-//     }
-
-//     // Check if order can be returned (only Delivered orders can be returned)
-//     // Changed from every to some - at least some items should be delivered to request return
-//     const canReturn = order.orderedItems.some(
-//       (item) => item.status === "Delivered"
-//     );
-
-//     if (!canReturn) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Order cannot be returned at this stage",
-//       });
-//     }
-
-//     // Check if return period has expired (changed from 14 days to 7 days)
-//     const deliveryDate = order.orderedItems.reduce((latest, item) => {
-//       if (item.order_delivered_date && new Date(item.order_delivered_date) > latest) {
-//         return new Date(item.order_delivered_date);
-//       }
-//       return latest;
-//     }, new Date(0));
-
-//     const returnPeriod = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
-    
-//     if (Date.now() - deliveryDate.getTime() > returnPeriod) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Return period has expired (7 days)",
-//       });
-//     }
-
-//     // Update order status - only update delivered items
-//     order.orderedItems.forEach((item) => {
-//       if (item.status === "Delivered") {
-//         item.status = "Return Request";
-//         item.order_return_request_date = new Date();
-//       }
-//     });
-    
-//     order.return_reason = returnReason;
-//     await order.save();
-
-//     res.status(200).json({
-//       success: true,
-//       message: "Return request submitted successfully",
-//     });
-//   } catch (error) {
-//     console.error("Error requesting return:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Failed to submit return request",
-//     });
-//   }
-// };
-
-// Generate and download invoice
+/**
+ * Generate and download the invoice for a specific order as a PDF.
+ */
 const downloadInvoice = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -860,20 +685,15 @@ const downloadInvoice = async (req, res) => {
       return res.status(404).render("page-404");
     }
 
-    // Create a PDF document
     const doc = new PDFDocument({ margin: 50 });
     
-    // Set response headers for PDF download
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=invoice-${orderId}.pdf`);
     
-    // Pipe the PDF to the response
     doc.pipe(res);
     
-    // Add content to the PDF
     generateInvoicePDF(doc, order);
     
-    // Finalize the PDF
     doc.end();
   } catch (error) {
     console.error("Error generating invoice:", error);
@@ -882,9 +702,8 @@ const downloadInvoice = async (req, res) => {
       error: { status: 500 }
     });
   }
-};
+}
 
-// Export all controller functions
 module.exports = {
   getOrderDetails,
   getUserOrders,

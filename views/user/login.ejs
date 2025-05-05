@@ -144,21 +144,6 @@
     <!-- Login Container -->
     <div class="login-container">
         <h2 class="text-3xl font-bold text-[#00ffff] mb-6">Welcome Back</h2>
-        
-        <!-- Demo Login Section -->
-        <div class="demo-login-section mb-6 p-4 bg-gray-900 rounded-lg border border-[#00ffff]">
-            <p class="text-gray-300 mb-3 text-center text-sm">Try demo accounts:</p>
-            <div class="flex gap-3 justify-center">
-                <button 
-                    type="button" 
-                    onclick="demoLogin('user')" 
-                    class="demo-btn demo-user px-4 py-2 text-white rounded-lg text-sm font-medium"
-                >
-                    <i class="fas fa-user mr-2"></i> Demo User
-                </button>
-                
-            </div>
-        </div>
 
         <form action="/login" method="POST" id="loginform">
             <input type="hidden" name="isDemo" id="isDemo">

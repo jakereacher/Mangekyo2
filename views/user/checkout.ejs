@@ -6,6 +6,7 @@
     <title>Checkout | Mangeyko</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         .checkout-step {
             @apply relative pb-8;
@@ -62,57 +63,25 @@
         </div>
     </div>
 
-    <div class="container mx-auto px-4 py-8 max-w-6xl">
-        <!-- Checkout Progress Steps -->
-        <div class="bg-white p-6 rounded-lg shadow-sm mb-8">
-            <div class="flex justify-between items-center mb-6">
-                <h1 class="text-2xl font-bold">
-                    <i class="fas fa-shopping-cart mr-2"></i>Checkout
-                </h1>
-                <div class="text-sm text-gray-500">
-                    <span id="cartCount"><%= cartCount %></span> item(s)
-                </div>
-            </div>
-
-            <div class="flex justify-center mb-8">
-                <div class="w-full max-w-3xl">
-                    <div class="flex justify-between relative">
-                        <!-- Step 1: Address -->
-                        <div class="checkout-step <%= currentStep === 1 ? 'active' : (currentStep > 1 ? 'completed' : 'inactive') %> flex flex-col items-center" style="width: 33.33%">
-                            <div class="step-number w-8 h-8 rounded-full flex items-center justify-center mb-2 font-medium">
-                                <% if (currentStep > 1) { %>
-                                    <i class="fas fa-check text-xs"></i>
-                                <% } else { %>
-                                    1
-                                <% } %>
-                            </div>
-                            <span class="text-sm font-medium text-center">Delivery Address</span>
-                        </div>
-                        
-                        <!-- Step 2: Payment -->
-                        <div class="checkout-step <%= currentStep === 2 ? 'active' : (currentStep > 2 ? 'completed' : 'inactive') %> flex flex-col items-center" style="width: 33.33%">
-                            <div class="step-number w-8 h-8 rounded-full flex items-center justify-center mb-2 font-medium">
-                                <% if (currentStep > 2) { %>
-                                    <i class="fas fa-check text-xs"></i>
-                                <% } else { %>
-                                    2
-                                <% } %>
-                            </div>
-                            <span class="text-sm font-medium text-center">Payment Method</span>
-                        </div>
-                        
-                        <!-- Step 3: Review -->
-                        <div class="checkout-step <%= currentStep === 3 ? 'active' : 'inactive' %> flex flex-col items-center" style="width: 33.33%">
-                            <div class="step-number w-8 h-8 rounded-full flex items-center justify-center mb-2 font-medium">
-                                3
-                            </div>
-                            <span class="text-sm font-medium text-center">Review Order</span>
-                        </div>
-                    </div>
-                </div>
+    <!-- Navbar -->
+    <nav class="bg-white shadow-sm">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <a href="/" class="text-2xl font-bold text-gray-800">
+                <i class="fas fa-store mr-2"></i> Mangeyko
+            </a>
+            <div class="flex items-center space-x-6">
+                <a href="/profile" class="text-gray-600 hover:text-gray-800 transition">Profile</a>
+                <a href="/cart" class="text-gray-600 hover:text-gray-800 transition">
+                    <i class="fas fa-shopping-cart"></i> Cart
+                </a>
+                <a href="/logout" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition">
+                    Logout
+                </a>
             </div>
         </div>
+    </nav>
 
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
         <!-- Main Checkout Content -->
         <div class="flex flex-col lg:flex-row gap-6">
             <!-- Left Column - Checkout Steps -->
@@ -479,7 +448,7 @@
             // Set up event listeners
             document.getElementById('continueToPayment').addEventListener('click', function() {
                 if (!selectedAddressId) {
-                    alert('Please select a delivery address');
+                    Swal.fire('Error', 'Please select a delivery address', 'error');
                     return;
                 }
                 goToStep(2);
@@ -487,7 +456,7 @@
 
             document.getElementById('continueToReview').addEventListener('click', function() {
                 if (!selectedPaymentMethod) {
-                    alert('Please select a payment method');
+                    Swal.fire('Error', 'Please select a payment method', 'error');
                     return;
                 }
                 checkoutData.paymentMethod = selectedPaymentMethod;
@@ -562,11 +531,11 @@
                             }
                         }
                     } else {
-                        alert(result.message || 'Failed to add address');
+                        Swal.fire('Error', result.message || 'Failed to add address', 'error');
                     }
                 } catch (error) {
                     console.error('Error adding address:', error);
-                    alert('Failed to add address');
+                    Swal.fire('Error', 'Failed to add address', 'error');
                 }
             });
         });
@@ -653,7 +622,7 @@
         // Function to place the order
         async function placeOrder() {
             if (!selectedAddressId || !selectedPaymentMethod) {
-                alert('Please complete all checkout steps');
+                Swal.fire('Error', 'Please complete all checkout steps', 'error');
                 return;
             }
 
@@ -684,13 +653,13 @@
                     if (result.redirect) {
                         window.location.href = result.redirect;
                     } else {
-                        alert(result.message || 'Failed to place order');
+                        Swal.fire('Error', result.message || 'Failed to place order', 'error');
                     }
                 }
             } catch (error) {
                 console.error('Error placing order:', error);
                 document.getElementById('loadingOverlay').style.display = 'none';
-                alert('Failed to place order');
+                Swal.fire('Error', 'Failed to place order', 'error');
             }
         }
     </script>

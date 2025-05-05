@@ -6,8 +6,7 @@ const wishlistController = require('./wishlistController');
 exports.addToCart = async (req, res) => {
   try {
     const { productId, quantity = 1 } = req.body;
-    const userId = req.session?.user; // Adjusted to match the session structure
-
+    const userId = req.session?.user;  
     if (!userId) {
       return res.status(StatusCodes.UNAUTHORIZED).json({
         success: false,

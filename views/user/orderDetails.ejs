@@ -6,6 +6,7 @@
     <title>Order Details | Mangeyko</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         .status-processing { @apply bg-yellow-100 text-yellow-800; }
         .status-shipped { @apply bg-blue-100 text-blue-800; }
@@ -20,6 +21,25 @@
     </style>
 </head>
 <body class="bg-gray-50">
+    <!-- Navbar -->
+    <nav class="bg-white shadow-sm">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <a href="/" class="text-2xl font-bold text-gray-800">
+                <i class="fas fa-store mr-2"></i> Mangeyko
+            </a>
+            <div class="flex items-center space-x-6">
+                <a href="/profile" class="text-gray-600 hover:text-gray-800 transition">Profile</a>
+               
+                <a href="/cart" class="text-gray-600 hover:text-gray-800 transition">
+                    <i class="fas fa-shopping-cart"></i> Cart
+                </a>
+                <a href="/logout" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition">
+                    Logout
+                </a>
+            </div>
+        </div>
+    </nav>
+
     <div class="container mx-auto px-4 py-8 max-w-6xl">
         <!-- Header -->
         <div class="bg-white p-6 rounded-lg shadow-sm mb-8">
@@ -67,6 +87,13 @@
                                     <p class="text-sm text-gray-600">Quantity: <%= item.quantity %></p>
                                     <p class="text-sm text-gray-600">Price: ₹<%= item.price.toFixed(2) %></p>
                                     <p class="text-sm text-gray-600">Status: <%= item.status %></p>
+                                    <% if (item.status === 'Delivered' && item.order_return_status === 'Rejected' && item.returnReason) { %>
+                                        <div class="bg-red-100 text-red-800 p-4 rounded mt-4">
+                                            <strong>Return Rejected:</strong>
+                                            <p><strong>Reason:</strong> <%= item.returnReason %></p>
+                                            <p><strong>Admin Response:</strong> <%= item.adminResponse %></p>
+                                        </div>
+                                    <% } %>
                                 </div>
                                 <div class="text-right">
                                     <p class="font-medium">₹<%= item.totalPrice %></p>
@@ -197,8 +224,18 @@
     
     <script>
         // Cancel Order
-        async function cancelOrder(orderId,productId) {
-            if (!confirm('Are you sure you want to cancel this order?')) return;
+        async function cancelOrder(orderId, productId) {
+            const confirmation = await Swal.fire({
+                title: 'Are you sure?',
+                text: 'Do you really want to cancel this order?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, cancel it!'
+            });
+
+            if (!confirmation.isConfirmed) return;
 
             try {
                 const response = await fetch(`/orders/${orderId}/cancel`, {
@@ -215,14 +252,14 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    alert('Order cancelled successfully');
+                    await Swal.fire('Cancelled!', 'Your order has been cancelled.', 'success');
                     window.location.reload();
                 } else {
-                    alert(result.message || 'Failed to cancel order');
+                    Swal.fire('Error', result.message || 'Failed to cancel order', 'error');
                 }
             } catch (error) {
                 console.error('Error cancelling order:', error);
-                alert('Failed to cancel order');
+                Swal.fire('Error', 'Failed to cancel order', 'error');
             }
         }
 
@@ -231,104 +268,57 @@
         let currentProductId = null;
         let currentOrderId = null;
 
-    function returnOrder(productId, orderId) {
-    currentProductId = productId;
-    currentOrderId = orderId;
-    document.getElementById('returnModal').classList.remove('hidden');
-    }
-
-    function closeReturnModal() {
-        console.log('Closing modal...');
-            const modal = document.getElementById('returnModal');
-        if (modal) {
-        modal.classList.add('hidden');
-    }
-    document.getElementById('returnReason').value = ''; // Clear input after close
-    currentProductId = null;
-    currentOrderId = null;
-}
-
-async function submitReturn() {
-    const returnReason = document.getElementById('returnReason').value.trim();
-
-    if (!returnReason) {
-        alert('Please provide a reason for the return');
-        return;
-    }
-
-    try {
-        const response = await fetch(`/orders/${currentOrderId}/return`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                productId: currentProductId,
-                returnReason
-            })
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            alert('Return request submitted successfully');
-            closeReturnModal();
-            setTimeout(() => window.location.reload(), 300); // Slight delay for visual closure
-        } else {
-            alert(result.message || 'Failed to submit return request');
+        function returnOrder(productId, orderId) {
+            currentProductId = productId;
+            currentOrderId = orderId;
+            document.getElementById('returnModal').classList.remove('hidden');
         }
-    } catch (error) {
-        console.error('Error submitting return request:', error);
-        alert('Failed to submit return request');
-    }
-}
 
-        
-        // let currentOrderId = '';
-        
-        // function returnOrder(orderId) {
-        //     currentOrderId = orderId;
-        //     document.getElementById('returnModal').classList.remove('hidden');
-        // }
-        
-        // function closeReturnModal() {
-        //     document.getElementById('returnModal').classList.add('hidden');
-        //     document.getElementById('returnReason').value = '';
-        // }
-        
-        // async function submitReturn() {
-        //     const returnReason = document.getElementById('returnReason').value.trim();
-            
-        //     if (!returnReason) {
-        //         alert('Please provide a reason for the return');
-        //         return;
-        //     }
-            
-        //     try {
-        //         const response = await fetch(`/orders/${currentOrderId}/return`, {
-        //             method: 'POST',
-        //             headers: {
-        //                 'Content-Type': 'application/json'
-        //             },
-        //             body: JSON.stringify({
-        //                 returnReason
-        //             })
-        //         });
+        function closeReturnModal() {
+            console.log('Closing modal...');
+            const modal = document.getElementById('returnModal');
+            if (modal) {
+                modal.classList.add('hidden');
+            }
+            document.getElementById('returnReason').value = ''; // Clear input after close
+            currentProductId = null;
+            currentOrderId = null;
+        }
 
-        //         const result = await response.json();
+        async function submitReturn() {
+            const returnReason = document.getElementById('returnReason').value.trim();
 
-        //         if (result.success) {
-        //             alert('Return request submitted successfully');
-        //             closeReturnModal();
-        //             window.location.reload();
-        //         } else {
-        //             alert(result.message || 'Failed to submit return request');
-        //         }
-        //     } catch (error) {
-        //         console.error('Error submitting return request:', error);
-        //         alert('Failed to submit return request');
-        //     }
-        // }
+            if (!returnReason) {
+                Swal.fire('Error', 'Please provide a reason for the return', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/orders/${currentOrderId}/return`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        productId: currentProductId,
+                        returnReason
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    await Swal.fire('Success', 'Return request submitted successfully', 'success');
+                    closeReturnModal();
+                    setTimeout(() => window.location.reload(), 300); // Slight delay for visual closure
+                } else {
+                    Swal.fire('Error', result.message || 'Failed to submit return request', 'error');
+                }
+            } catch (error) {
+                console.error('Error submitting return request:', error);
+                Swal.fire('Error', 'Failed to submit return request', 'error');
+            }
+        }
     </script>
 </body>
 </html>

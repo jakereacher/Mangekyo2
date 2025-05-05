@@ -5,6 +5,7 @@ const { uploadProfileImage } = require("../helpers/multer");
 const wishlistController = require("../controllers/user/wishlistController");
 const checkoutController = require("../controllers/user/checkoutController");
 const orderController = require("../controllers/user/orderController");
+const couponController = require("../controllers/user/couponController");
 
 const {
   loadLandingpage,
@@ -82,14 +83,17 @@ router.put('/addresses/:addressId', updateAddress); // Update address
 router.delete('/addresses/:addressId', deleteAddress); // Delete address
 router.patch('/addresses/:addressId/set-default', setDefaultAddress); // Set default address
 
-
-
 //wishlist routes
 router.get('/wishlist', wishlistController.getWishlist);
 router.post('/wishlist/toggle', wishlistController.toggleWishlist);
 router.delete('/wishlist/remove/:productId', wishlistController.removeFromWishlist);
 router.get('/wishlist/status/:productId', wishlistController.getWishlistStatus);
 router.get('/wishlist/count', wishlistController.getWishlistCount);
+
+// Coupons
+router.get("/active-coupons", couponController.getActiveCoupons);
+router.get("/coupon/:code", couponController.getCouponByCode);
+
 
 // Auth & User Management
 router.post("/signup", signup);

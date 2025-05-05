@@ -1,3 +1,8 @@
+/**
+ * Profile Controller
+ * Handles user profile rendering, updates, email verification, and address management.
+ */
+
 const User = require("../../models/userSchema");
 const Order = require("../../models/orderSchema");
 const Wallet = require("../../models/walletSchema");
@@ -9,7 +14,6 @@ const path = require("path");
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 
-// Configure nodemailer transporter
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -18,15 +22,13 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// Generate OTP
 const generateOTP = () => {
   return crypto.randomInt(100000, 999999).toString();
 };
 
-// Render profile page
-
-
-
+/**
+ * Render the profile page with user details, wallet balance, and order history.
+ */
 exports.renderProfilePage = async (req, res) => {
   try {
     const userId = req.session.user;
@@ -47,16 +49,13 @@ exports.renderProfilePage = async (req, res) => {
       return res.status(StatusCodes.NOT_FOUND).render('page-404');
     }
 
-    // Fetch wallet balance
     const wallet = await Wallet.findOne({ user: userId });
 
-    // Attach wallet balance to the user object
     const userWithWallet = {
-      ...user.toObject(), // convert Mongoose doc to plain object
+      ...user.toObject(),
       wallet: wallet?.balance || 0,
     };
 
-    // Format order history for the view
     const formattedOrders = user.orderHistory.map(order => ({
       _id: order._id,
       status: getOverallOrderStatus(order.orderedItems),
@@ -71,7 +70,7 @@ exports.renderProfilePage = async (req, res) => {
     }));
 
     res.render('profile', {
-      user: userWithWallet, // use modified user with wallet
+      user: userWithWallet,
       orders: formattedOrders,
       title: 'My Profile',
       currentPage: 'profile',
@@ -86,58 +85,9 @@ exports.renderProfilePage = async (req, res) => {
   }
 };
 
-
-// exports.renderProfilePage = async (req, res) => {
-//   try {
-//     const userId = req.session.user;
-
-//     const user = await User.findById(userId)
-//       .select('-password -googleId -forgotPasswordOtp -otpExpires -resetPasswordOtp')
-//       .populate('wishlist')
-//       .populate({
-//         path: 'orderHistory',
-//         options: { sort: { createdOn: -1 } }, // Sort by newest first
-//         populate: {
-//           path: 'orderedItems.product',
-//           model: 'Product'
-//         }
-//       });
-
-//     if (!user) {
-//       return res.status(StatusCodes.NOT_FOUND).render('page-404');
-//     }
-
-//     // Format order history for the view
-//     const formattedOrders = user.orderHistory.map(order => ({
-//       _id: order._id,
-//       status: getOverallOrderStatus(order.orderedItems),
-//       totalAmount: order.finalAmount,
-//       createdAt: order.createdOn,
-//       items: order.orderedItems.map(item => ({
-//         product: item.product,
-//         quantity: item.quantity,
-//         status: item.status,
-//         price: item.price
-//       }))
-//     }));
-
-//     res.render('profile', {
-//       user,
-//       orders: formattedOrders,
-//       title: 'My Profile',
-//       currentPage: 'profile',
-//       success: req.flash('success'),
-//       error: req.flash('error'),
-//       isDemo: user.email.endsWith('@demo.com')
-//     });
-
-//   } catch (error) {
-//     console.error('Error rendering profile page:', error);
-//     res.status(StatusCodes.INTERNAL_SERVER_ERROR).render('page-404');
-//   }
-// };
-
-// Helper function to determine overall order status
+/**
+ * Determine the overall status of an order based on its items.
+ */
 function getOverallOrderStatus(orderedItems) {
   if (orderedItems.every(item => item.status === 'Delivered')) {
     return 'Delivered';
@@ -154,7 +104,9 @@ function getOverallOrderStatus(orderedItems) {
   return 'Processing';
 }
 
-// Handle profile update with email verification
+/**
+ * Handle profile updates, including name, email, and profile image.
+ */
 exports.handleProfileUpdate = async (req, res) => {
   try {
     const userId = req.session.user;
@@ -167,8 +119,7 @@ exports.handleProfileUpdate = async (req, res) => {
 
     const { name, email, currentEmail } = req.body;
     const user = await User.findById(userId);
-    console.log(req.body, 'req.body');
-    // Handle file upload
+
     let profileImagePath;
     if (req.file) {
       if (user.profileImage) {
@@ -185,10 +136,8 @@ exports.handleProfileUpdate = async (req, res) => {
         profileImage: profileImagePath
       });
     }
-console.log(email,currentEmail,'email,currentEmail')
-    // Check if email is being changed
-    if (email && email !== currentEmail) {
 
+    if (email && email !== currentEmail) {
       if (!validateEmail(email)) {
         if (req.file) fs.unlinkSync(req.file.path);
         return res.status(StatusCodes.BAD_REQUEST).json({
@@ -197,17 +146,14 @@ console.log(email,currentEmail,'email,currentEmail')
         });
       }
 
-      // Generate OTP
       const otp = generateOTP();
-      const otpExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+      const otpExpires = new Date(Date.now() + 15 * 60 * 1000);
 
-      // Update user with OTP details
       user.emailVerificationOtp = otp;
       user.emailVerificationOtpExpires = otpExpires;
       user.isEmailVerified = false;
       await user.save();
 
-      // Send verification email
       const mailOptions = {
         from: process.env.EMAIL_USER,
         to: email,
@@ -228,9 +174,7 @@ console.log(email,currentEmail,'email,currentEmail')
       });
     }
 
-    // If no email change or after verification, update profile
     const updatedData = { name };
-    console.log(updatedData, 'updatedData');
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       updatedData,
@@ -253,7 +197,9 @@ console.log(email,currentEmail,'email,currentEmail')
   }
 };
 
-// Verify Email OTP
+/**
+ * Verify the OTP sent to the user's email for email verification.
+ */
 exports.verifyEmailOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
@@ -272,7 +218,6 @@ exports.verifyEmailOTP = async (req, res) => {
       });
     }
 
-    // Update user email and clear OTP
     user.email = email;
     user.isEmailVerified = true;
     user.emailVerificationOtp = undefined;
@@ -293,7 +238,9 @@ exports.verifyEmailOTP = async (req, res) => {
   }
 };
 
-// Add these new methods for address handling
+/**
+ * Handle address-related actions such as adding, updating, deleting, and setting default addresses.
+ */
 exports.handleAddress = async (req, res) => {
   try {
     const userId = req.session.user;
@@ -310,7 +257,6 @@ exports.handleAddress = async (req, res) => {
     
     switch (action) {
       case 'GET':
-        // Get a specific address
         const user = await User.findOne(
           { _id: userId, 'address._id': addressId },
           { 'address.$': 1 }
@@ -329,7 +275,6 @@ exports.handleAddress = async (req, res) => {
         });
 
       case 'ADD':
-        // Validate required fields
         if (!addressData.fullName || !addressData.mobile || !addressData.addressLine || 
             !addressData.city || !addressData.state || !addressData.pinCode) {
           return res.status(StatusCodes.BAD_REQUEST).json({ 
@@ -338,13 +283,11 @@ exports.handleAddress = async (req, res) => {
           });
         }
 
-        // If this is the first address, set as default
         const userDoc = await User.findById(userId);
         if (userDoc.address.length === 0) {
           addressData.isDefault = true;
         }
 
-        // Add new address using $push
         updatedUser = await User.findByIdAndUpdate(
           userId,
           { $push: { address: addressData } },
@@ -360,7 +303,6 @@ exports.handleAddress = async (req, res) => {
           });
         }
 
-        // Prepare update object
         const updateObj = {};
         Object.keys(addressData).forEach(key => {
           if (key !== '_id' && addressData[key] !== undefined) {
@@ -368,7 +310,6 @@ exports.handleAddress = async (req, res) => {
           }
         });
 
-        // If setting as default, first unset all other defaults
         if (addressData.isDefault) {
           await User.updateOne(
             { _id: userId },
@@ -376,7 +317,6 @@ exports.handleAddress = async (req, res) => {
           );
         }
 
-        // Update the specific address
         updatedUser = await User.findOneAndUpdate(
           { _id: userId, 'address._id': addressId },
           { $set: updateObj },
@@ -392,7 +332,6 @@ exports.handleAddress = async (req, res) => {
           });
         }
 
-        // First find the address to check if it's default
         const userWithAddress = await User.findOne(
           { _id: userId, 'address._id': addressId },
           { 'address.$': 1 }
@@ -407,14 +346,12 @@ exports.handleAddress = async (req, res) => {
 
         const wasDefault = userWithAddress.address[0].isDefault;
 
-        // Remove the address using $pull
         updatedUser = await User.findByIdAndUpdate(
           userId,
           { $pull: { address: { _id: addressId } } },
           { new: true }
         );
 
-        // If deleted address was default and there are other addresses, set the first one as default
         if (wasDefault && updatedUser.address.length > 0) {
           updatedUser = await User.findOneAndUpdate(
             { _id: userId, 'address._id': updatedUser.address[0]._id },
@@ -432,13 +369,11 @@ exports.handleAddress = async (req, res) => {
           });
         }
 
-        // First unset all defaults
         await User.updateOne(
           { _id: userId },
           { $set: { 'address.$[].isDefault': false } }
         );
 
-        // Then set the specified address as default
         updatedUser = await User.findOneAndUpdate(
           { _id: userId, 'address._id': addressId },
           { $set: { 'address.$.isDefault': true } },
@@ -453,7 +388,6 @@ exports.handleAddress = async (req, res) => {
         });
     }
 
-    // Return the updated addresses
     const addressesForFrontend = updatedUser.address.map(addr => ({
       _id: addr._id.toString(),
       fullName: addr.fullName,
@@ -480,7 +414,9 @@ exports.handleAddress = async (req, res) => {
   }
 };
 
-// Get single address
+/**
+ * Retrieve a specific address by its ID.
+ */
 exports.getAddress = async (req, res) => {
   try {
     const userId = req.session.user;
@@ -515,7 +451,9 @@ exports.getAddress = async (req, res) => {
   }
 };
 
-// Update address
+/**
+ * Update a specific address by its ID.
+ */
 exports.updateAddress = async (req, res) => {
   try {
     const userId = req.session.user;
@@ -538,14 +476,12 @@ exports.updateAddress = async (req, res) => {
       });
     }
 
-    // Update address fields
     Object.keys(addressData).forEach(key => {
       if (key !== '_id' && addressData[key] !== undefined) {
         address[key] = addressData[key];
       }
     });
 
-    // If setting as default, unset all others
     if (addressData.isDefault) {
       user.address.forEach(addr => {
         if (addr._id.toString() !== addressId) {
@@ -570,7 +506,9 @@ exports.updateAddress = async (req, res) => {
   }
 };
 
-// Delete address
+/**
+ * Delete a specific address by its ID.
+ */
 exports.deleteAddress = async (req, res) => {
   try {
     const userId = req.session.user;
@@ -584,7 +522,6 @@ exports.deleteAddress = async (req, res) => {
       });
     }
 
-    // Find the address first to check if it's default
     const addressToDelete = user.address.find(addr => addr._id.toString() === addressId);
     if (!addressToDelete) {
       return res.status(StatusCodes.NOT_FOUND).json({ 
@@ -595,13 +532,11 @@ exports.deleteAddress = async (req, res) => {
 
     const wasDefault = addressToDelete.isDefault;
     
-    // Use pull to remove the address
     await User.updateOne(
       { _id: userId },
       { $pull: { address: { _id: addressId } } }
     );
 
-    // If deleted address was default and there are other addresses
     if (wasDefault) {
       const updatedUser = await User.findById(userId);
       if (updatedUser.address.length > 0) {
@@ -626,7 +561,9 @@ exports.deleteAddress = async (req, res) => {
   }
 };
 
-// Set default address
+/**
+ * Set a specific address as the default address.
+ */
 exports.setDefaultAddress = async (req, res) => {
   try {
     const userId = req.session.user;
@@ -648,12 +585,10 @@ exports.setDefaultAddress = async (req, res) => {
       });
     }
 
-    // Set all addresses to non-default
     user.address.forEach(addr => {
       addr.isDefault = false;
     });
 
-    // Set the specified address as default
     address.isDefault = true;
 
     await user.save();
