@@ -30,8 +30,8 @@ exports.renderCheckoutPage = async (req, res) => {
         const product = await Product.findById(item.productId).lean();
         if (!product) return null;
 
-        const mainImage = product.productImage && product.productImage.length > 0 
-          ? product.productImage[0] 
+        const mainImage = product.productImage && product.productImage.length > 0
+          ? product.productImage[0]
           : '/images/default-product.jpg';
 
         return {
@@ -115,6 +115,7 @@ exports.placeOrder = async (req, res) => {
   try {
     const userId = req.session.user;
     const { paymentMethod, addressId, couponCode } = req.body;
+    console.log("Order request body:", req.body);
 
     if (!userId) {
       return res.status(StatusCodes.UNAUTHORIZED).json({
@@ -123,7 +124,7 @@ exports.placeOrder = async (req, res) => {
       });
     }
 
-    if (!["cod", "wallet"].includes(paymentMethod)) {
+    if (!["cod", "wallet", "razorpay"].includes(paymentMethod)) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
         message: "Invalid payment method",
@@ -208,7 +209,7 @@ exports.placeOrder = async (req, res) => {
     const shipping = 5.99;
     const tax = subtotal * 0.08;
 
-    // Coupon validation if applied
+    // Enhanced coupon validation logic
     let coupon = null;
     let discount = 0;
 
@@ -228,20 +229,36 @@ exports.placeOrder = async (req, res) => {
         });
       }
 
-      // Check if user already used this coupon
-      const userUsage = coupon.users.find((u) => u.userId.toString() === userId);
-      if (userUsage && userUsage.usedCount >= coupon.perUserLimit) {
+      if (subtotal < coupon.minPrice) {
         return res.status(StatusCodes.BAD_REQUEST).json({
           success: false,
-          message: "You've already used this coupon the maximum allowed times",
+          message: `Cart value must be at least ₹${coupon.minPrice} to use this coupon`,
         });
       }
 
-      // Check total usage limit
-      if (coupon.totalUsedCount >= coupon.usageLimit) {
+      if (coupon.maxPrice && subtotal > coupon.maxPrice) {
         return res.status(StatusCodes.BAD_REQUEST).json({
           success: false,
-          message: "This coupon has reached its usage limit",
+          message: `Cart value must be less than ₹${coupon.maxPrice} to use this coupon`,
+        });
+      }
+
+      // Check coupon usage limits
+      const userCoupon = coupon.users.find(
+        (u) => u.userId.toString() === userId.toString()
+      );
+
+      if (userCoupon && userCoupon.usedCount >= coupon.usageLimit) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          success: false,
+          message: "You have reached the usage limit for this coupon",
+        });
+      }
+
+      if (coupon.totalUsedCount >= coupon.totalUsageLimit) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          success: false,
+          message: "This coupon has reached its maximum usage limit",
         });
       }
 
@@ -266,7 +283,7 @@ exports.placeOrder = async (req, res) => {
       });
     }
 
-    const order = new Order({
+    const orderData = {
       userId,
       orderedItems: validItems,
       totalPrice: subtotal,
@@ -284,12 +301,44 @@ exports.placeOrder = async (req, res) => {
         phone: selectedAddress.mobile,
       },
       paymentMethod,
-      paymentStatus: paymentMethod === "cod" ? "Pending" : "Paid",
+      paymentStatus: paymentMethod === "cod" ? "Pending" :
+                    (paymentMethod === "razorpay" ? "Pending" : "Paid"),
       orderDate: new Date(),
       deliveryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    });
+    };
 
-    const newOrder = await order.save();
+    // Add coupon information if a coupon was applied
+    if (coupon) {
+      orderData.couponApplied = true;
+      orderData.couponCode = couponCode;
+
+      // Set coupon details as individual properties
+      if (orderData.coupon === undefined) {
+        orderData.coupon = {};
+      }
+
+      orderData.coupon.code = coupon.code;
+      orderData.coupon.type = coupon.type;
+      orderData.coupon.discountValue = coupon.discountValue;
+      orderData.coupon.couponId = coupon._id;
+
+      console.log("Coupon data being saved:", orderData.coupon);
+    }
+
+    const order = new Order(orderData);
+
+    let newOrder;
+    try {
+      newOrder = await order.save();
+      console.log("Order saved successfully:", newOrder._id);
+    } catch (saveError) {
+      console.error("Error saving order:", saveError);
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Failed to create order",
+        error: saveError.message
+      });
+    }
 
     try {
       await Promise.all(
@@ -317,6 +366,14 @@ exports.placeOrder = async (req, res) => {
         updateUser.$inc = { wallet: -finalAmount };
       }
 
+      // For Razorpay, we'll handle the payment separately
+      // This is just a placeholder for now
+      if (paymentMethod === "razorpay") {
+        // We'll update the order with Razorpay details later
+        // For now, just create the order
+        console.log("Razorpay payment method selected");
+      }
+
       await User.findByIdAndUpdate(userId, updateUser);
     } catch (error) {
       await Order.deleteOne({ _id: newOrder._id });
@@ -335,7 +392,7 @@ exports.placeOrder = async (req, res) => {
       coupon.totalUsedCount += 1;
 
       const userUsageIndex = coupon.users.findIndex(
-        (u) => u.userId.toString() === userId
+        (u) => u.userId.toString() === userId.toString()
       );
       if (userUsageIndex >= 0) {
         coupon.users[userUsageIndex].usedCount += 1;
@@ -367,83 +424,5 @@ exports.placeOrder = async (req, res) => {
   }
 };
 
-const applyCoupon = async (req, res) => {
-  try {
-    const { code, cartTotal, userId } = req.body;
-    console.log("Received applyCoupon request:", req.body); // Debug log
-
-    if (!code || !cartTotal || !userId) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        success: false,
-        message: "Coupon code, cart total, and user ID are required.",
-        missingFields: {
-          code: !code,
-          cartTotal: !cartTotal,
-          userId: !userId,
-        },
-      });
-    }
-
-    const numericCartTotal = Number(cartTotal);
-    if (isNaN(numericCartTotal)) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        success: false,
-        message: "Invalid cart total value",
-      });
-    }
-
-    const coupon = await Coupon.findOne({
-      code,
-      isActive: true,
-      isDelete: false,
-      startDate: { $lte: new Date() },
-      expiryDate: { $gte: new Date() },
-    });
-
-    if (!coupon) {
-      return res.status(StatusCodes.NOT_FOUND).json({
-        success: false,
-        message: "Invalid or expired coupon code",
-      });
-    }
-
-    if (numericCartTotal < coupon.minPrice) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        success: false,
-        message: `Minimum cart value for this coupon is ₹${coupon.minPrice}`,
-      });
-    }
-
-    let discount = 0;
-    if (coupon.type === "percentage") {
-      discount = (numericCartTotal * coupon.discountValue) / 100;
-      if (coupon.maxDiscount && discount > coupon.maxDiscount) {
-        discount = coupon.maxDiscount;
-      }
-    } else {
-      discount = coupon.discountValue;
-    }
-
-    const finalAmount = numericCartTotal - discount;
-
-    return res.status(StatusCodes.OK).json({
-      success: true,
-      message: "Coupon applied successfully",
-      discount,
-      finalAmount,
-      coupon: {
-        code: coupon.code,
-        type: coupon.type,
-        discountValue: coupon.discountValue,
-        maxDiscount: coupon.maxDiscount,
-      },
-    });
-  } catch (error) {
-    console.error("Error applying coupon:", error);
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      success: false,
-      message: "Something went wrong",
-    });
-  }
-};
+// Note: This function is now handled in couponController.js
 

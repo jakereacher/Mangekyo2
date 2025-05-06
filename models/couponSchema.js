@@ -54,6 +54,10 @@ const couponSchema = new mongoose.Schema({
     type: Number,
     default: 1, // Per-user usage limit
   },
+  totalUsageLimit: {
+    type: Number,
+    default: 1000, // Overall usage limit
+  },
   totalUsedCount: {
     type: Number,
     default: 0, // Tracks total usage across all users
@@ -82,6 +86,9 @@ couponSchema.methods.canUserUseCoupon = function (userId) {
 };
 
 couponSchema.methods.incrementUserUsage = function (userId) {
+  if (this.totalUsedCount >= this.totalUsageLimit) {
+    throw new Error("Total usage limit for this coupon has been reached.");
+  }
   const userUsage = this.users.find(user => user.userId.toString() === userId.toString());
   if (userUsage) {
     if (userUsage.usedCount < this.usageLimit) {
@@ -98,3 +105,4 @@ couponSchema.methods.incrementUserUsage = function (userId) {
 const Coupon = mongoose.model("Coupon", couponSchema);
 
 module.exports = Coupon;
+

@@ -91,7 +91,7 @@
                     <h2 class="text-xl font-bold mb-4 flex items-center">
                         <i class="fas fa-map-marker-alt mr-2"></i>Select Delivery Address
                     </h2>
-                    
+
                     <!-- Address Selection -->
                     <div class="space-y-4 mb-6" id="addressSelection">
                         <% if (addresses && addresses.length > 0) { %>
@@ -126,16 +126,16 @@
                             </div>
                         <% } %>
                     </div>
-                    
+
                     <!-- Add New Address Button -->
-                    <button onclick="showAddressModal()" 
+                    <button onclick="showAddressModal()"
                             class="bg-gray-100 text-gray-800 px-4 py-2 rounded hover:bg-gray-200 transition flex items-center mb-6">
                         <i class="fas fa-plus mr-2"></i> Add New Address
                     </button>
-                    
+
                     <!-- Continue to Payment Button -->
                     <div class="flex justify-end">
-                        <button id="continueToPayment" 
+                        <button id="continueToPayment"
                                 class="bg-black text-white px-6 py-2 rounded hover:bg-gray-800 transition <%= addresses && addresses.length > 0 ? '' : 'opacity-50 cursor-not-allowed' %>"
                                 <%= addresses && addresses.length > 0 ? '' : 'disabled' %>>
                             Continue to Payment
@@ -148,7 +148,7 @@
                     <h2 class="text-xl font-bold mb-4 flex items-center">
                         <i class="fas fa-credit-card mr-2"></i>Select Payment Method
                     </h2>
-                    
+
                     <div class="space-y-3 mb-6">
                         <!-- Cash on Delivery -->
                         <div class="payment-method p-4 border rounded cursor-pointer"
@@ -164,7 +164,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Razorpay -->
                         <div class="payment-method p-4 border rounded cursor-pointer"
                              onclick="selectPaymentMethod('razorpay')"
@@ -179,7 +179,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Wallet -->
                         <div class="payment-method p-4 border rounded cursor-pointer"
                              onclick="selectPaymentMethod('wallet')"
@@ -195,14 +195,14 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Back and Continue Buttons -->
                     <div class="flex justify-between">
-                        <button onclick="goToStep(1)" 
+                        <button onclick="goToStep(1)"
                                 class="bg-gray-200 text-gray-800 px-6 py-2 rounded hover:bg-gray-300 transition">
                             <i class="fas fa-arrow-left mr-2"></i> Back
                         </button>
-                        <button id="continueToReview" 
+                        <button id="continueToReview"
                                 class="bg-black text-white px-6 py-2 rounded hover:bg-gray-800 transition">
                             Review Order
                         </button>
@@ -214,7 +214,7 @@
                     <h2 class="text-xl font-bold mb-4 flex items-center">
                         <i class="fas fa-clipboard-check mr-2"></i>Review Your Order
                     </h2>
-                    
+
                     <!-- Selected Address -->
                     <div class="mb-6">
                         <h3 class="font-bold text-lg mb-2 flex items-center">
@@ -224,7 +224,7 @@
                             <!-- Address will be populated here by JavaScript -->
                         </div>
                     </div>
-                    
+
                     <!-- Payment Method -->
                     <div class="mb-6">
                         <h3 class="font-bold text-lg mb-2 flex items-center">
@@ -234,7 +234,7 @@
                             <!-- Payment method will be populated here by JavaScript -->
                         </div>
                     </div>
-                    
+
                     <!-- Order Summary -->
                     <div>
                         <h3 class="font-bold text-lg mb-2 flex items-center">
@@ -260,14 +260,14 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Back and Place Order Buttons -->
                     <div class="flex justify-between mt-6">
-                        <button onclick="goToStep(2)" 
+                        <button onclick="goToStep(2)"
                                 class="bg-gray-200 text-gray-800 px-6 py-2 rounded hover:bg-gray-300 transition">
                             <i class="fas fa-arrow-left mr-2"></i> Back
                         </button>
-                        <button id="placeOrderBtn" 
+                        <button id="placeOrderBtn"
                                 class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition flex items-center">
                             <i class="fas fa-check-circle mr-2"></i> Place Order
                         </button>
@@ -281,7 +281,7 @@
                     <h2 class="text-xl font-bold mb-4 flex items-center">
                         <i class="fas fa-receipt mr-2"></i>Order Summary
                     </h2>
-                    
+
                     <!-- Coupon Code Section -->
                     <div class="mb-4">
                         <label for="couponCode" class="block text-sm font-medium text-gray-700">Apply Coupon Code</label>
@@ -312,14 +312,14 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="border-t border-gray-200 pt-4 mb-4">
                         <div class="flex justify-between font-bold text-lg">
                             <span>Total</span>
                             <span id="finalTotal">$<%= total %></span>
                         </div>
                     </div>
-                    
+
                     <!-- Order Summary Items (for mobile) -->
                     <div class="lg:hidden border-t border-gray-200 pt-4 mt-4">
                         <h3 class="font-bold mb-2">Your Items</h3>
@@ -352,7 +352,7 @@
                 <h2 class="text-xl font-bold mb-4 flex items-center">
                     <i class="fas fa-map-marker-alt mr-2"></i>Add New Address
                 </h2>
-                
+
                 <form id="addressForm" class="space-y-4">
                     <div>
                         <label for="fullName" class="form-label">
@@ -362,7 +362,7 @@
                                class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black"
                                placeholder="Enter recipient's full name">
                     </div>
-                    
+
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label for="mobile" class="form-label">
@@ -381,7 +381,7 @@
                                    placeholder="6-digit PIN code">
                         </div>
                     </div>
-                    
+
                     <div>
                         <label for="addressLine" class="form-label">
                             <i class="fas fa-home mr-2"></i>Address Line
@@ -390,7 +390,7 @@
                                   class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black"
                                   placeholder="House No., Building, Street, Area"></textarea>
                     </div>
-                    
+
                     <div>
                         <label for="landmark" class="form-label">
                             <i class="fas fa-landmark mr-2"></i>Landmark (Optional)
@@ -399,7 +399,7 @@
                                class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black"
                                placeholder="Nearby location for easier navigation">
                     </div>
-                    
+
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label for="city" class="form-label">
@@ -418,7 +418,7 @@
                                    placeholder="Your state">
                         </div>
                     </div>
-                    
+
                     <div class="flex items-center mt-2">
                         <input type="checkbox" id="isDefault" name="isDefault"
                                class="h-4 w-4 text-black focus:ring-black border-gray-300 rounded">
@@ -426,7 +426,7 @@
                             Set as default delivery address
                         </label>
                     </div>
-                    
+
                     <div class="flex justify-end space-x-3 pt-4">
                         <button type="button" onclick="hideAddressModal()"
                                 class="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 transition flex items-center">
@@ -446,12 +446,13 @@
         // Global variables to store checkout data
         let selectedAddressId = '<%= defaultAddress ? defaultAddress._id : "" %>';
         let selectedPaymentMethod = '';
-        let checkoutData = {
-            addressId: selectedAddressId,
-            paymentMethod: ''
-        };
         let appliedCoupon = null; // Declare and initialize appliedCoupon
         let currentTotal = parseFloat('<%= total %>'); // Declare and initialize currentTotal
+        let checkoutData = {
+            addressId: selectedAddressId,
+            paymentMethod: '',
+            couponCode: null
+        };
 
         // Initialize the page
         document.addEventListener('DOMContentLoaded', function() {
@@ -487,7 +488,7 @@
             // Address form submission
             document.getElementById('addressForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
-                
+
                 const formData = {
                     fullName: document.getElementById('fullName').value,
                     mobile: document.getElementById('mobile').value,
@@ -539,7 +540,7 @@
                                 `;
                             });
                             addressesContainer.innerHTML = html;
-                            
+
                             // Select the new address if it's default
                             if (formData.isDefault) {
                                 const newAddressId = result.data.find(addr => addr.isDefault)?._id;
@@ -565,14 +566,16 @@
             const discountAmount = document.getElementById('discountAmount');
             const finalTotal = document.getElementById('finalTotal');
 
-            // Initialize currentTotal with the server-side total value
-            let currentTotal = parseFloat('<%= total %>');
-            let appliedCoupon = null;
+            // Initialize variables for coupon application
 
             applyCouponBtn.addEventListener('click', applyCoupon);
 
             async function applyCoupon() {
                 const couponCode = couponCodeInput.value.trim();
+                const subtotal = parseFloat('<%= subtotal %>');
+                const shipping = parseFloat('<%= shipping %>');
+                const tax = parseFloat('<%= tax %>');
+                const currentTotal = subtotal + shipping + tax;
 
                 if (!couponCode) {
                     showCouponError('Please enter a coupon code.');
@@ -583,10 +586,10 @@
                     const response = await fetch('/apply-coupon', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            code: couponCode, 
-                            cartTotal: currentTotal, 
-                            userId: '<%= user._id %>' 
+                        body: JSON.stringify({
+                            code: couponCode,
+                            cartTotal: subtotal, // Pass subtotal without shipping/tax
+                            userId: '<%= user._id %>'
                         }),
                     });
 
@@ -594,11 +597,21 @@
 
                     if (data.success) {
                         appliedCoupon = {
-                            code: couponCode,
+                            code: data.coupon.code,
+                            couponId: data.coupon.id, // Using 'id' as sent from the server
                             discount: data.discount,
-                            finalAmount: data.finalAmount
+                            finalAmount: currentTotal - data.discount
                         };
-                        updateOrderSummary(data.discount, data.finalAmount);
+
+                        // Update checkout data with coupon information
+                        checkoutData.couponCode = data.coupon.code;
+                        console.log("Applied coupon:", appliedCoupon);
+                        console.log("Checkout data:", checkoutData);
+
+                        // Store coupon ID for debugging
+                        localStorage.setItem('lastAppliedCouponId', data.coupon.id || '');
+
+                        updateOrderSummary(data.discount, appliedCoupon.finalAmount);
                         couponMessage.textContent = data.message;
                         couponMessage.className = "text-sm mt-2 text-green-600";
                     } else {
@@ -611,23 +624,18 @@
             }
 
             function updateOrderSummary(discount, finalAmount) {
-                // Show discount section if not already visible
                 discountSection.classList.remove('hidden');
-                
-                // Update discount and final total
                 discountAmount.textContent = `-$${discount.toFixed(2)}`;
                 finalTotal.textContent = `$${finalAmount.toFixed(2)}`;
             }
 
             function showCouponError(message) {
-                // Show error message and reset coupon display
                 couponMessage.textContent = message;
                 couponMessage.className = "text-sm mt-2 text-red-600";
-                
-                // Hide discount section and reset totals
                 discountSection.classList.add('hidden');
-                finalTotal.textContent = `$${currentTotal.toFixed(2)}`;
+                finalTotal.textContent = `$${(parseFloat('<%= subtotal %>') + parseFloat('<%= shipping %>') + parseFloat('<%= tax %>')).toFixed(2)}`;
                 appliedCoupon = null;
+                checkoutData.couponCode = null; // Reset coupon in checkout data
             }
         });
 
@@ -698,6 +706,13 @@
             document.getElementById('selectedPaymentDisplay').innerHTML = `
                 <p class="font-medium">${paymentMethodText}</p>
             `;
+
+            // Update checkout data with coupon information
+            if (appliedCoupon) {
+                checkoutData.couponCode = appliedCoupon.code;
+            } else {
+                checkoutData.couponCode = null;
+            }
         }
 
         // Function to show address modal
@@ -717,9 +732,12 @@
                 return;
             }
 
-            const couponCode = appliedCoupon ? appliedCoupon.code : null; // Use applied coupon if available
-            const discount = appliedCoupon ? appliedCoupon.discount : 0; // Use applied discount if available
-            const finalAmount = appliedCoupon ? appliedCoupon.finalAmount : currentTotal; // Use final amount with discount if available
+            // Log the order data for debugging
+            console.log("Placing order with data:", {
+                paymentMethod: selectedPaymentMethod,
+                addressId: selectedAddressId,
+                couponCode: checkoutData.couponCode
+            });
 
             // Show loading overlay
             document.getElementById('loadingOverlay').style.display = 'flex';
@@ -733,17 +751,24 @@
                     body: JSON.stringify({
                         paymentMethod: selectedPaymentMethod,
                         addressId: selectedAddressId,
-                        couponCode: couponCode, // Include coupon code in the request
-                        discount: discount, // Include discount in the request
-                        finalAmount: finalAmount // Include final amount in the request
+                        couponCode: checkoutData.couponCode
                     })
                 });
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
                 const result = await response.json();
+
+                if (!response.ok) {
+                    console.error("Server error response:", result);
+                    let errorMessage = result.message || `HTTP error! status: ${response.status}`;
+
+                    // If there's a more detailed error message, use it
+                    if (result.error) {
+                        console.error("Detailed error:", result.error);
+                        errorMessage += ` - ${result.error}`;
+                    }
+
+                    throw new Error(errorMessage);
+                }
 
                 if (result.success) {
                     // Redirect to order confirmation page
@@ -761,7 +786,12 @@
             } catch (error) {
                 console.error('Error placing order:', error);
                 document.getElementById('loadingOverlay').style.display = 'none';
-                Swal.fire('Error', 'Failed to place order. Please try again later.', 'error');
+                Swal.fire({
+                    title: 'Error',
+                    text: error.message || 'Failed to place order. Please try again later.',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
             }
         }
     </script>

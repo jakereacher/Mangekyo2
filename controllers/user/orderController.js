@@ -1,6 +1,6 @@
 /**
  * Order Controller
- * Handles order-related operations such as fetching order details, tracking orders, 
+ * Handles order-related operations such as fetching order details, tracking orders,
  * managing cancellations and returns, and generating invoices.
  */
 
@@ -46,9 +46,9 @@ function calculateOverallStatus(orderedItems) {
  */
 function getStatusDate(orderedItems, status) {
   if (!orderedItems || orderedItems.length === 0) return null;
-  
+
   let dateField = null;
-  
+
   switch (status) {
     case "Processing":
       dateField = "order_processing_date";
@@ -71,13 +71,13 @@ function getStatusDate(orderedItems, status) {
     default:
       return null;
   }
-  
+
   for (const item of orderedItems) {
     if (item[dateField]) {
       return new Date(item[dateField]).toLocaleDateString();
     }
   }
-  
+
   return null;
 }
 
@@ -88,12 +88,12 @@ function generateInvoicePDF(doc, order) {
   doc.fontSize(20).text('Mangeyko', { align: 'center' });
   doc.fontSize(12).text('Invoice', { align: 'center' });
   doc.moveDown();
-  
+
   doc.moveTo(50, doc.y)
      .lineTo(550, doc.y)
      .stroke();
   doc.moveDown();
-  
+
   doc.fontSize(14).text('Order Information', { underline: true });
   doc.moveDown(0.5);
   doc.fontSize(10).text(`Order ID: ${order._id}`);
@@ -101,13 +101,13 @@ function generateInvoicePDF(doc, order) {
   doc.fontSize(10).text(`Payment Method: ${order.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Wallet'}`);
   doc.fontSize(10).text(`Payment Status: ${order.paymentStatus}`);
   doc.moveDown();
-  
+
   doc.fontSize(14).text('Customer Information', { underline: true });
   doc.moveDown(0.5);
   doc.fontSize(10).text(`Name: ${order.userId && order.userId.fullname ? order.userId.fullname : 'Customer'}`);
   doc.fontSize(10).text(`Email: ${order.userId && order.userId.email ? order.userId.email : 'N/A'}`);
   doc.moveDown();
-  
+
   doc.fontSize(14).text('Shipping Address', { underline: true });
   doc.moveDown(0.5);
   doc.fontSize(10).text(`${order.shippingAddress.fullName}`);
@@ -115,85 +115,91 @@ function generateInvoicePDF(doc, order) {
   doc.fontSize(10).text(`${order.shippingAddress.city}, ${order.shippingAddress.state} - ${order.shippingAddress.pincode}`);
   doc.fontSize(10).text(`Phone: ${order.shippingAddress.phone}`);
   doc.moveDown();
-  
+
   doc.fontSize(14).text('Order Items', { underline: true });
   doc.moveDown(0.5);
-  
+
   const tableTop = doc.y;
   const itemX = 50;
   const descriptionX = 150;
   const quantityX = 280;
   const priceX = 350;
   const amountX = 450;
-  
+
   doc.fontSize(10).text('Item', itemX, tableTop);
   doc.fontSize(10).text('Description', descriptionX, tableTop);
   doc.fontSize(10).text('Quantity', quantityX, tableTop);
   doc.fontSize(10).text('Price', priceX, tableTop);
   doc.fontSize(10).text('Amount', amountX, tableTop);
-  
+
   doc.moveTo(50, doc.y + 15)
      .lineTo(550, doc.y + 15)
      .stroke();
-  
+
   let tableRow = doc.y + 25;
   let subtotal = 0;
-  
+
   order.orderedItems.forEach(item => {
     const product = item.product;
     const amount = item.price * item.quantity;
     subtotal += amount;
-    
+
     const productName = product.productName || product.name || 'Product';
-    
+
     doc.fontSize(10).text(productName, itemX, tableRow, { width: 90 });
     doc.fontSize(10).text(`Size: ${item.size || 'N/A'}`, descriptionX, tableRow);
     doc.fontSize(10).text(item.quantity.toString(), quantityX, tableRow);
     doc.fontSize(10).text(`₹${item.price.toFixed(2)}`, priceX, tableRow);
     doc.fontSize(10).text(`₹${amount.toFixed(2)}`, amountX, tableRow);
-    
+
     tableRow += 20;
-    
+
     if (tableRow > 700) {
       doc.addPage();
       tableRow = 50;
     }
   });
-  
+
   doc.moveTo(50, tableRow)
      .lineTo(550, tableRow)
      .stroke();
-  
+
   tableRow += 20;
-  
+
   doc.fontSize(10).text('Subtotal:', 350, tableRow);
   doc.fontSize(10).text(`₹${subtotal.toFixed(2)}`, amountX, tableRow);
   tableRow += 15;
-  
+
   doc.fontSize(10).text('Shipping:', 350, tableRow);
   doc.fontSize(10).text(`₹${order.shippingCharge ? order.shippingCharge.toFixed(2) : '0.00'}`, amountX, tableRow);
   tableRow += 15;
-  
+
   doc.fontSize(10).text('Tax:', 350, tableRow);
   const tax = subtotal * 0.09;
   doc.fontSize(10).text(`₹${tax.toFixed(2)}`, amountX, tableRow);
   tableRow += 15;
-  
+
   if (order.discount && order.discount > 0) {
     doc.fontSize(10).text('Discount:', 350, tableRow);
     doc.fontSize(10).text(`-₹${order.discount.toFixed(2)}`, amountX, tableRow);
     tableRow += 15;
+
+    // Add coupon information if available
+    if (order.couponCode) {
+      doc.fontSize(10).text(`Coupon Applied: ${order.couponCode}`, 350, tableRow);
+      tableRow += 15;
+    }
   }
-  
+
   doc.moveTo(350, tableRow)
      .lineTo(550, tableRow)
      .stroke();
-  
+
   tableRow += 15;
-  
+
   doc.fontSize(12).text('Total:', 350, tableRow);
   doc.fontSize(12).text(`₹${order.finalAmount.toFixed(2)}`, amountX, tableRow);
-  
+
   doc.fontSize(10).text('Thank you for your purchase!', 50, 700, { align: 'center' });
   doc.fontSize(8).text('This is a computer-generated invoice and does not require a signature.', 50, 720, { align: 'center' });
 }
@@ -221,7 +227,7 @@ const getOrderDetails = async (req, res) => {
     const formattedOrderDate = new Date(order.orderDate).toLocaleDateString('en-US', {
       year: 'numeric', month: 'long', day: 'numeric'
     });
-    
+
     const formattedDeliveryDate = new Date(order.deliveryDate).toLocaleDateString('en-US', {
       year: 'numeric', month: 'long', day: 'numeric'
     });
@@ -250,6 +256,10 @@ const getOrderDetails = async (req, res) => {
       tax: (order.totalPrice * 0.09).toFixed(2),
       discount: order.discount ? order.discount.toFixed(2) : "0.00",
       total: order.finalAmount.toFixed(2),
+      // Include coupon information
+      couponCode: order.couponCode || null,
+      couponApplied: order.couponApplied || false,
+      couponDetails: order.coupon || null
     };
 
     res.render("orderDetails", {
@@ -295,7 +305,7 @@ const getUserOrders = async (req, res) => {
     const formattedOrders = orders.map((order) => {
       const status = calculateOverallStatus(order.orderedItems);
       let progressWidth = 0;
-      
+
       switch (status) {
         case "Processing":
           progressWidth = 25;
@@ -321,13 +331,17 @@ const getUserOrders = async (req, res) => {
         default:
           progressWidth = 10;
       }
-      
+
       return {
         ...order,
         status,
         progressWidth,
         formattedOrderDate: new Date(order.orderDate).toLocaleDateString(),
         formattedDeliveryDate: new Date(order.deliveryDate).toLocaleDateString(),
+        // Include coupon information
+        couponCode: order.couponCode || null,
+        couponApplied: order.couponApplied || false,
+        couponDetails: order.coupon || null
       };
     });
 
@@ -341,7 +355,7 @@ const getUserOrders = async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching user orders:", error);
-    res.status(500).render("error", { 
+    res.status(500).render("error", {
       message: "Failed to fetch orders",
       error: { status: 500 }
     });
@@ -369,10 +383,10 @@ const trackOrder = async (req, res) => {
     }
 
     const status = calculateOverallStatus(order.orderedItems);
-    
+
     let trackingSteps = [];
     let progressWidth = 0;
-    
+
     trackingSteps = [
       {
         status: "Order Placed",
@@ -410,7 +424,7 @@ const trackOrder = async (req, res) => {
         completed: ["Delivered"].includes(status)
       }
     ];
-    
+
     if (status === "Cancelled") {
       trackingSteps = [
         {
@@ -686,18 +700,18 @@ const downloadInvoice = async (req, res) => {
     }
 
     const doc = new PDFDocument({ margin: 50 });
-    
+
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=invoice-${orderId}.pdf`);
-    
+
     doc.pipe(res);
-    
+
     generateInvoicePDF(doc, order);
-    
+
     doc.end();
   } catch (error) {
     console.error("Error generating invoice:", error);
-    res.status(500).render("error", { 
+    res.status(500).render("error", {
       message: "Failed to generate invoice",
       error: { status: 500 }
     });

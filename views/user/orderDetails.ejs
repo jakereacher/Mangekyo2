@@ -29,7 +29,7 @@
             </a>
             <div class="flex items-center space-x-6">
                 <a href="/profile" class="text-gray-600 hover:text-gray-800 transition">Profile</a>
-               
+
                 <a href="/cart" class="text-gray-600 hover:text-gray-800 transition">
                     <i class="fas fa-shopping-cart"></i> Cart
                 </a>
@@ -63,7 +63,7 @@
                             <%= order.status %>
                         </span>
                         <p class="ml-4 text-gray-600">
-                            Ordered on <%= order.formattedOrderDate %> | 
+                            Ordered on <%= order.formattedOrderDate %> |
                             Estimated Delivery: <%= order.formattedDeliveryDate %>
                         </p>
                     </div>
@@ -78,8 +78,8 @@
                         <% order.items.forEach(item => { %>
                             <div class="flex items-start py-4 order-item">
                                 <div class="w-16 h-16 bg-gray-100 rounded overflow-hidden mr-4">
-                                    <img src="<%= item.product.productImage && item.product.productImage.length > 0 ? '/uploads/product-images/' + item.product.productImage[0] : '/images/placeholder-product.jpg' %>" 
-                                         alt="<%= item.product.productName %>" 
+                                    <img src="<%= item.product.productImage && item.product.productImage.length > 0 ? '/uploads/product-images/' + item.product.productImage[0] : '/images/placeholder-product.jpg' %>"
+                                         alt="<%= item.product.productName %>"
                                          class="w-full h-full object-cover">
                                 </div>
                                 <div class="flex-1">
@@ -109,7 +109,7 @@
                                             <i class="fas fa-times-circle mr-2"></i> Cancel Order
                                         </button>
                                     <% } %>
-                                    
+
                                 </div>
                             </div>
                         <% }); %>
@@ -142,6 +142,11 @@
                                 <span class="text-gray-600">Discount</span>
                                 <span>-₹<%= order.discount %></span>
                             </div>
+                            <% if (order.couponCode) { %>
+                                <div class="flex justify-between text-sm text-green-600">
+                                    <span>Coupon Applied: <%= order.couponCode %></span>
+                                </div>
+                            <% } %>
                         <% } %>
                     </div>
                     <div class="border-t border-gray-200 pt-4">
@@ -174,6 +179,17 @@
                     <p class="text-gray-600">Method: <%= order.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Wallet' %></p>
                     <p class="text-gray-600">Status: <%= order.paymentStatus %></p>
                 </div>
+
+                <% if (order.couponCode) { %>
+                <!-- Coupon Information -->
+                <div class="bg-white p-6 rounded-lg shadow-sm mt-6 order-card">
+                    <h2 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-tag mr-2"></i> Coupon Applied
+                    </h2>
+                    <p class="text-gray-600">Code: <span class="font-medium text-green-600"><%= order.couponCode %></span></p>
+                    <p class="text-gray-600">Discount: <span class="font-medium text-green-600">₹<%= order.discount %></span></p>
+                </div>
+                <% } %>
             </div>
         </div>
 
@@ -182,16 +198,16 @@
             <a href="/profile" class="bg-gray-200 text-gray-800 px-6 py-2 rounded hover:bg-gray-300 transition flex items-center">
                 <i class="fas fa-arrow-left mr-2"></i> Back to Profile
             </a>
-            
+
             <div class="flex flex-wrap gap-3">
                 <a href="/orders/<%= order._id %>/track" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition flex items-center">
                     <i class="fas fa-truck mr-2"></i> Track Order
                 </a>
-                
+
                 <a href="/orders/<%= order._id %>/invoice" class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition flex items-center">
                     <i class="fas fa-file-invoice mr-2"></i> Download Invoice
                 </a>
-                
+
                 <!-- <% if (order.status === 'Processing') { %>
                     <button onclick="cancelOrder('<%= order._id %>')"
                             class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition flex items-center">
@@ -221,7 +237,7 @@
             </div>
         </div>
     </div>
-    
+
     <script>
         // Cancel Order
         async function cancelOrder(orderId, productId) {

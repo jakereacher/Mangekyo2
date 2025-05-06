@@ -138,6 +138,8 @@ exports.getAdminOrderDetails = async (req, res) => {
         totalPrice: (item.quantity * item.price).toFixed(2),
       })),
       subtotal: order.totalPrice,
+      discount: order.discount,
+      couponCode: order.couponCode,
       shipping: order.shippingCharge,
       tax: order.taxAmount ? order.taxAmount : order.totalPrice * 0.09,
       total: order.finalAmount,

@@ -67,6 +67,7 @@ const getCouponByCode = async (req, res) => {
 const applyCoupon = async (req, res) => {
   try {
     const { code, cartTotal, userId } = req.body;
+    console.log(req.body); // For debugging purposes
 
     if (!code || !cartTotal || !userId) {
       return res.status(StatusCodes.BAD_REQUEST).json({
@@ -130,13 +131,24 @@ const applyCoupon = async (req, res) => {
 
     const finalAmount = numericCartTotal - discount;
 
-    // Do not increment usage here; defer this to the order placement process
+    // Increment user usage and total usage
+    try {
+      coupon.incrementUserUsage(userId);
+      await coupon.save();
+    } catch (error) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
     return res.status(StatusCodes.OK).json({
       success: true,
       message: "Coupon applied successfully",
       discount,
       finalAmount,
       coupon: {
+        id: coupon._id,
         code: coupon.code,
         type: coupon.type,
         discountValue: coupon.discountValue,

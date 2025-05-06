@@ -175,9 +175,9 @@ const orderSchema = new Schema({
     default: null,
   },
   coupon: {
-    code: String,
-    type: String,
-    discountValue: Number,
+    code: { type: String },
+    type: { type: String },
+    discountValue: { type: Number },
     couponId: {
       type: Schema.Types.ObjectId,
       ref: 'Coupon'
