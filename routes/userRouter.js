@@ -91,8 +91,9 @@ router.get('/wishlist/status/:productId', wishlistController.getWishlistStatus);
 router.get('/wishlist/count', wishlistController.getWishlistCount);
 
 // Coupons
-router.get("/active-coupons", couponController.getActiveCoupons);
+router.get("/active-coupons", couponController.renderCouponsPage);
 router.get("/coupon/:code", couponController.getCouponByCode);
+router.post("/apply-coupon", couponController.applyCoupon)
 
 
 // Auth & User Management

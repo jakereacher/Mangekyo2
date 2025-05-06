@@ -126,7 +126,8 @@
                                             <th>Type</th>
                                             <th>Value</th>
                                             <th>Min/Max Price</th>
-                                            <th>Usage Limit</th>
+                                            <th>Total Uses</th>
+                                            <th>Usage Limit (Per User)</th>
                                             <th>Validity</th>
                                             <th>Status</th>
                                             <th>Actions</th>
@@ -148,7 +149,10 @@
                                                     $<%= coupon.minPrice %> / $<%= coupon.maxPrice || '∞' %>
                                                 </td>
                                                 <td>
-                                                    <%= coupon.usageCount || 0 %>/<%= coupon.usageLimit || '∞' %>
+                                                    <%= coupon.totalUsedCount || 0 %>
+                                                </td>
+                                                <td>
+                                                    <%= coupon.usageLimit || '∞' %>
                                                 </td>
                                                 <td>
                                                     <%= coupon.startDate.toLocaleDateString() %> - 

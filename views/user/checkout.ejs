@@ -190,7 +190,7 @@
                                 </div>
                                 <div>
                                     <label for="wallet" class="font-medium">Wallet Balance</label>
-                                    <p class="text-sm text-gray-600 mt-1">Use your wallet balance (₹<%= user.wallet ? user.wallet.toFixed(2) : '0.00' %> available)</p>
+                                    <p class="text-sm text-gray-600 mt-1">Use your wallet balance ($<%= user.wallet ? user.wallet.toFixed(2) : '0.00' %> available)</p>
                                 </div>
                             </div>
                         </div>
@@ -250,10 +250,10 @@
                                         <div class="flex-1">
                                             <h4 class="font-medium"><%= item.product.productName %></h4>
                                             <p class="text-sm text-gray-600">Quantity: <%= item.quantity %></p>
-                                            <p class="text-sm text-gray-600">Price: ₹<%= item.price.toFixed(2) %></p>
+                                            <p class="text-sm text-gray-600">Price: $<%= item.price.toFixed(2) %></p>
                                         </div>
                                         <div class="text-right">
-                                            <p class="font-medium">₹<%= item.totalPrice.toFixed(2) %></p>
+                                            <p class="font-medium">$<%= item.totalPrice.toFixed(2) %></p>
                                         </div>
                                     </div>
                                 <% }); %>
@@ -282,25 +282,41 @@
                         <i class="fas fa-receipt mr-2"></i>Order Summary
                     </h2>
                     
+                    <!-- Coupon Code Section -->
+                    <div class="mb-4">
+                        <label for="couponCode" class="block text-sm font-medium text-gray-700">Apply Coupon Code</label>
+                        <div class="flex mt-2">
+                            <input type="text" id="couponCode" class="flex-1 px-3 py-2 border border-gray-300 rounded-l focus:outline-none focus:ring-2 focus:ring-black" placeholder="Enter coupon code">
+                            <button id="applyCouponBtn" class="px-4 py-2 bg-black text-white rounded-r hover:bg-gray-800 transition">Apply</button>
+                        </div>
+                        <p id="couponMessage" class="text-sm mt-2"></p>
+                    </div>
+
                     <div class="space-y-3 mb-4">
                         <div class="flex justify-between">
                             <span class="text-gray-600">Subtotal (<%= cartCount %> items)</span>
-                            <span>₹<%= subtotal %></span>
+                            <span>$<%= subtotal %></span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-600">Shipping</span>
-                            <span>₹<%= shipping %></span>
+                            <span>$<%= shipping %></span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-600">Tax</span>
-                            <span>₹<%= tax %></span>
+                            <span>$<%= tax %></span>
+                        </div>
+                        <div id="discountSection" class="hidden">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Discount</span>
+                                <span id="discountAmount">$0.00</span>
+                            </div>
                         </div>
                     </div>
                     
                     <div class="border-t border-gray-200 pt-4 mb-4">
                         <div class="flex justify-between font-bold text-lg">
                             <span>Total</span>
-                            <span>₹<%= total %></span>
+                            <span id="finalTotal">$<%= total %></span>
                         </div>
                     </div>
                     
@@ -318,7 +334,7 @@
                                         <p class="text-xs text-gray-600">Qty: <%= item.quantity %></p>
                                     </div>
                                     <div class="text-sm font-medium">
-                                        ₹<%= item.totalPrice.toFixed(2) %>
+                                        $<%= item.totalPrice.toFixed(2) %>
                                     </div>
                                 </div>
                             <% }); %>
@@ -434,6 +450,8 @@
             addressId: selectedAddressId,
             paymentMethod: ''
         };
+        let appliedCoupon = null; // Declare and initialize appliedCoupon
+        let currentTotal = parseFloat('<%= total %>'); // Declare and initialize currentTotal
 
         // Initialize the page
         document.addEventListener('DOMContentLoaded', function() {
@@ -538,6 +556,79 @@
                     Swal.fire('Error', 'Failed to add address', 'error');
                 }
             });
+
+            // Coupon code application
+            const applyCouponBtn = document.getElementById('applyCouponBtn');
+            const couponCodeInput = document.getElementById('couponCode');
+            const couponMessage = document.getElementById('couponMessage');
+            const discountSection = document.getElementById('discountSection');
+            const discountAmount = document.getElementById('discountAmount');
+            const finalTotal = document.getElementById('finalTotal');
+
+            // Initialize currentTotal with the server-side total value
+            let currentTotal = parseFloat('<%= total %>');
+            let appliedCoupon = null;
+
+            applyCouponBtn.addEventListener('click', applyCoupon);
+
+            async function applyCoupon() {
+                const couponCode = couponCodeInput.value.trim();
+
+                if (!couponCode) {
+                    showCouponError('Please enter a coupon code.');
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/apply-coupon', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            code: couponCode, 
+                            cartTotal: currentTotal, 
+                            userId: '<%= user._id %>' 
+                        }),
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        appliedCoupon = {
+                            code: couponCode,
+                            discount: data.discount,
+                            finalAmount: data.finalAmount
+                        };
+                        updateOrderSummary(data.discount, data.finalAmount);
+                        couponMessage.textContent = data.message;
+                        couponMessage.className = "text-sm mt-2 text-green-600";
+                    } else {
+                        showCouponError(data.message);
+                    }
+                } catch (error) {
+                    console.error('Error applying coupon:', error);
+                    showCouponError('Something went wrong. Try again later.');
+                }
+            }
+
+            function updateOrderSummary(discount, finalAmount) {
+                // Show discount section if not already visible
+                discountSection.classList.remove('hidden');
+                
+                // Update discount and final total
+                discountAmount.textContent = `-$${discount.toFixed(2)}`;
+                finalTotal.textContent = `$${finalAmount.toFixed(2)}`;
+            }
+
+            function showCouponError(message) {
+                // Show error message and reset coupon display
+                couponMessage.textContent = message;
+                couponMessage.className = "text-sm mt-2 text-red-600";
+                
+                // Hide discount section and reset totals
+                discountSection.classList.add('hidden');
+                finalTotal.textContent = `$${currentTotal.toFixed(2)}`;
+                appliedCoupon = null;
+            }
         });
 
         // Function to select an address
@@ -602,7 +693,7 @@
             } else if (selectedPaymentMethod === 'razorpay') {
                 paymentMethodText = 'Razorpay (Secure online payment)';
             } else if (selectedPaymentMethod === 'wallet') {
-                paymentMethodText = `Wallet Balance (₹<%= user.wallet ? user.wallet.toFixed(2) : '0.00' %> available)`;
+                paymentMethodText = `Wallet Balance ($<%= user.wallet ? user.wallet.toFixed(2) : '0.00' %> available)`;
             }
             document.getElementById('selectedPaymentDisplay').innerHTML = `
                 <p class="font-medium">${paymentMethodText}</p>
@@ -626,6 +717,10 @@
                 return;
             }
 
+            const couponCode = appliedCoupon ? appliedCoupon.code : null; // Use applied coupon if available
+            const discount = appliedCoupon ? appliedCoupon.discount : 0; // Use applied discount if available
+            const finalAmount = appliedCoupon ? appliedCoupon.finalAmount : currentTotal; // Use final amount with discount if available
+
             // Show loading overlay
             document.getElementById('loadingOverlay').style.display = 'flex';
 
@@ -637,9 +732,16 @@
                     },
                     body: JSON.stringify({
                         paymentMethod: selectedPaymentMethod,
-                        addressId: selectedAddressId
+                        addressId: selectedAddressId,
+                        couponCode: couponCode, // Include coupon code in the request
+                        discount: discount, // Include discount in the request
+                        finalAmount: finalAmount // Include final amount in the request
                     })
                 });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
 
                 const result = await response.json();
 
@@ -649,7 +751,7 @@
                 } else {
                     // Hide loading overlay
                     document.getElementById('loadingOverlay').style.display = 'none';
-                    
+
                     if (result.redirect) {
                         window.location.href = result.redirect;
                     } else {
@@ -659,7 +761,7 @@
             } catch (error) {
                 console.error('Error placing order:', error);
                 document.getElementById('loadingOverlay').style.display = 'none';
-                Swal.fire('Error', 'Failed to place order', 'error');
+                Swal.fire('Error', 'Failed to place order. Please try again later.', 'error');
             }
         }
     </script>

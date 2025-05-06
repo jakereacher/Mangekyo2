@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Coupons</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .coupons-container {
+            max-width: 800px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+        .coupon-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 5px solid #0d6efd;
+            position: relative;
+            overflow: hidden;
+        }
+        .coupon-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .coupon-code {
+            font-size: 18px;
+            font-weight: bold;
+            color: #0d6efd;
+            background-color: #e6f7ff;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+        .coupon-discount {
+            font-size: 24px;
+            font-weight: bold;
+            color: #198754;
+        }
+        .coupon-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .coupon-desc {
+            color: #6c757d;
+            margin-bottom: 15px;
+        }
+        .coupon-meta {
+            display: flex;
+            justify-content: space-between;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .coupon-expiry {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .coupon-ribbon {
+            position: absolute;
+            top: 10px;
+            right: -30px;
+            background-color: #198754;
+            color: white;
+            padding: 3px 30px;
+            transform: rotate(45deg);
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .page-title {
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .no-coupons {
+            text-align: center;
+            padding: 40px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        .no-coupons i {
+            font-size: 50px;
+            color: #6c757d;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container coupons-container">
+        <h2 class="page-title">
+            <i class="fas fa-tag me-2"></i>My Coupons
+        </h2>
+
+        <% if (coupons && coupons.length > 0) { %>
+            <% coupons.forEach(coupon => { %>
+                <div class="coupon-card">
+                    <% if (coupon.isActive) { %>
+                        <div class="coupon-ribbon">ACTIVE</div>
+                    <% } %>
+                    
+                    <div class="coupon-header">
+                        <span class="coupon-code"><%= coupon.code %></span>
+                        <span class="coupon-discount">
+                            <% if (coupon.discountType === 'percentage') { %>
+                                <%= coupon.discountValue %>% OFF
+                            <% } else { %>
+                                $<%= coupon.discountValue %> OFF
+                            <% } %>
+                        </span>
+                    </div>
+
+                    <h4 class="coupon-title"><%= coupon.name %></h4>
+                    <p class="coupon-desc"><%= coupon.description %></p>
+
+                    <div class="coupon-meta">
+                        <div>
+                            <span class="text-muted">Min. spend: </span>
+                            <span>$<%= coupon.minOrderAmount || 0 %></span>
+                        </div>
+                        <div>
+                            <span class="text-muted">Uses left: </span>
+                            <span><%= coupon.usageLimit - (coupon.users.find(user => user.userId.toString() === user._id)?.usedCount || 0) %></span>
+                        </div>
+                        <div class="coupon-expiry">
+                            <% if (coupon.expiryDate) { %>
+                                Expires: <%= new Date(coupon.expiryDate).toLocaleDateString() %>
+                            <% } else { %>
+                                No expiry
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
+            <% }); %>
+        <% } else { %>
+            <div class="no-coupons">
+                <i class="fas fa-tag"></i>
+                <h3>No coupons available</h3>
+                <p class="text-muted">You don't have any active coupons at the moment.</p>
+                <a href="/" class="btn btn-primary mt-3">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Home
+                </a>
+            </div>
+        <% } %>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

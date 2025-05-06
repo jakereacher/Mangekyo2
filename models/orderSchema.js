@@ -174,6 +174,15 @@ const orderSchema = new Schema({
     type: String,
     default: null,
   },
+  coupon: {
+    code: String,
+    type: String,
+    discountValue: Number,
+    couponId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Coupon'
+    }
+  },
   cancellation_reason: {
     type: String,
     default: null,

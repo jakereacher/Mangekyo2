@@ -29,7 +29,6 @@ const couponSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
-  // 👇 maxPrice is only required if type === "percentage"
   maxPrice: {
     type: Number,
     validate: {
@@ -53,11 +52,11 @@ const couponSchema = new mongoose.Schema({
   },
   usageLimit: {
     type: Number,
-    default: 1,
+    default: 1, // Per-user usage limit
   },
   totalUsedCount: {
     type: Number,
-    default: 0,
+    default: 0, // Tracks total usage across all users
   },
   isActive: {
     type: Boolean,
@@ -76,6 +75,25 @@ const couponSchema = new mongoose.Schema({
     default: Date.now,
   },
 });
+
+couponSchema.methods.canUserUseCoupon = function (userId) {
+  const userUsage = this.users.find(user => user.userId.toString() === userId.toString());
+  return !userUsage || userUsage.usedCount < this.usageLimit;
+};
+
+couponSchema.methods.incrementUserUsage = function (userId) {
+  const userUsage = this.users.find(user => user.userId.toString() === userId.toString());
+  if (userUsage) {
+    if (userUsage.usedCount < this.usageLimit) {
+      userUsage.usedCount += 1;
+    } else {
+      throw new Error("User has reached the usage limit for this coupon.");
+    }
+  } else {
+    this.users.push({ userId, usedCount: 1 });
+  }
+  this.totalUsedCount += 1;
+};
 
 const Coupon = mongoose.model("Coupon", couponSchema);
 

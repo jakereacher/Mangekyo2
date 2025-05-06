@@ -2,6 +2,7 @@ const Cart = require("../../models/cartSchema");
 const Product = require("../../models/productSchema");
 const Order = require("../../models/orderSchema");
 const User = require("../../models/userSchema");
+const Coupon = require("../../models/couponSchema");
 const StatusCodes = require("../../utils/httpStatusCodes");
 const mongoose = require("mongoose");
 
@@ -113,7 +114,7 @@ exports.handleAddressSelection = async (req, res) => {
 exports.placeOrder = async (req, res) => {
   try {
     const userId = req.session.user;
-    const { paymentMethod, addressId } = req.body;
+    const { paymentMethod, addressId, couponCode } = req.body;
 
     if (!userId) {
       return res.status(StatusCodes.UNAUTHORIZED).json({
@@ -206,9 +207,59 @@ exports.placeOrder = async (req, res) => {
     );
     const shipping = 5.99;
     const tax = subtotal * 0.08;
-    const total = subtotal + shipping + tax;
 
-    if (paymentMethod === "wallet" && user.wallet < total) {
+    // Coupon validation if applied
+    let coupon = null;
+    let discount = 0;
+
+    if (couponCode) {
+      coupon = await Coupon.findOne({
+        code: couponCode,
+        isActive: true,
+        isDelete: false,
+        startDate: { $lte: new Date() },
+        expiryDate: { $gte: new Date() },
+      });
+
+      if (!coupon) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          success: false,
+          message: "Invalid or expired coupon code",
+        });
+      }
+
+      // Check if user already used this coupon
+      const userUsage = coupon.users.find((u) => u.userId.toString() === userId);
+      if (userUsage && userUsage.usedCount >= coupon.perUserLimit) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          success: false,
+          message: "You've already used this coupon the maximum allowed times",
+        });
+      }
+
+      // Check total usage limit
+      if (coupon.totalUsedCount >= coupon.usageLimit) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          success: false,
+          message: "This coupon has reached its usage limit",
+        });
+      }
+
+      // Calculate discount
+      if (coupon.type === "percentage") {
+        discount = (subtotal * coupon.discountValue) / 100;
+        if (coupon.maxDiscount && discount > coupon.maxDiscount) {
+          discount = coupon.maxDiscount;
+        }
+      } else {
+        discount = coupon.discountValue;
+      }
+    }
+
+    // Calculate final amount with discount
+    const finalAmount = subtotal + shipping + tax - discount;
+
+    if (paymentMethod === "wallet" && user.wallet < finalAmount) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
         message: "Insufficient wallet balance",
@@ -221,8 +272,8 @@ exports.placeOrder = async (req, res) => {
       totalPrice: subtotal,
       shippingCharge: shipping,
       taxAmount: tax,
-      discount: 0,
-      finalAmount: total,
+      discount,
+      finalAmount,
       shippingAddress: {
         fullName: selectedAddress.fullName,
         addressType: selectedAddress.addressType || "Home",
@@ -263,7 +314,7 @@ exports.placeOrder = async (req, res) => {
       };
 
       if (paymentMethod === "wallet") {
-        updateUser.$inc = { wallet: -total };
+        updateUser.$inc = { wallet: -finalAmount };
       }
 
       await User.findByIdAndUpdate(userId, updateUser);
@@ -277,6 +328,22 @@ exports.placeOrder = async (req, res) => {
         })
       );
       throw new Error("Failed to update user: " + error.message);
+    }
+
+    // Update coupon usage after successful order creation
+    if (coupon) {
+      coupon.totalUsedCount += 1;
+
+      const userUsageIndex = coupon.users.findIndex(
+        (u) => u.userId.toString() === userId
+      );
+      if (userUsageIndex >= 0) {
+        coupon.users[userUsageIndex].usedCount += 1;
+      } else {
+        coupon.users.push({ userId, usedCount: 1 });
+      }
+
+      await coupon.save();
     }
 
     try {
@@ -296,6 +363,86 @@ exports.placeOrder = async (req, res) => {
       success: false,
       message: "Failed to place order",
       error: error.message,
+    });
+  }
+};
+
+const applyCoupon = async (req, res) => {
+  try {
+    const { code, cartTotal, userId } = req.body;
+    console.log("Received applyCoupon request:", req.body); // Debug log
+
+    if (!code || !cartTotal || !userId) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Coupon code, cart total, and user ID are required.",
+        missingFields: {
+          code: !code,
+          cartTotal: !cartTotal,
+          userId: !userId,
+        },
+      });
+    }
+
+    const numericCartTotal = Number(cartTotal);
+    if (isNaN(numericCartTotal)) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Invalid cart total value",
+      });
+    }
+
+    const coupon = await Coupon.findOne({
+      code,
+      isActive: true,
+      isDelete: false,
+      startDate: { $lte: new Date() },
+      expiryDate: { $gte: new Date() },
+    });
+
+    if (!coupon) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: "Invalid or expired coupon code",
+      });
+    }
+
+    if (numericCartTotal < coupon.minPrice) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: `Minimum cart value for this coupon is ₹${coupon.minPrice}`,
+      });
+    }
+
+    let discount = 0;
+    if (coupon.type === "percentage") {
+      discount = (numericCartTotal * coupon.discountValue) / 100;
+      if (coupon.maxDiscount && discount > coupon.maxDiscount) {
+        discount = coupon.maxDiscount;
+      }
+    } else {
+      discount = coupon.discountValue;
+    }
+
+    const finalAmount = numericCartTotal - discount;
+
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      message: "Coupon applied successfully",
+      discount,
+      finalAmount,
+      coupon: {
+        code: coupon.code,
+        type: coupon.type,
+        discountValue: coupon.discountValue,
+        maxDiscount: coupon.maxDiscount,
+      },
+    });
+  } catch (error) {
+    console.error("Error applying coupon:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Something went wrong",
     });
   }
 };
