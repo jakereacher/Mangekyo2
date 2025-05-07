@@ -144,6 +144,10 @@ const orderSchema = new Schema({
     type: String,
     default: null,
   },
+  razorpayPaymentId: {
+    type: String,
+    default: null,
+  },
   paymentGateway: {
     type: String,
     enum: ["Razorpay", "Other"],

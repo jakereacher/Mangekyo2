@@ -6,6 +6,7 @@ const wishlistController = require("../controllers/user/wishlistController");
 const checkoutController = require("../controllers/user/checkoutController");
 const orderController = require("../controllers/user/orderController");
 const couponController = require("../controllers/user/couponController");
+const razorpayController = require("../controllers/user/razorpayController");
 
 const {
   loadLandingpage,
@@ -38,7 +39,7 @@ const {
   deleteAddress,
   setDefaultAddress
 
-} = require("../controllers/user"); 
+} = require("../controllers/user");
 
 
 // Page Routes
@@ -71,6 +72,7 @@ router.get("/orders/:orderId/track", orderController.trackOrder);
 router.get("/orders/:orderId/invoice",  orderController.downloadInvoice);
 router.post("/orders/:orderId/cancel",  orderController.cancelOrder);
 router.post("/orders/:orderId/return",  orderController.requestReturn);
+router.post("/orders/:orderId/complete-payment", orderController.completePayment);
 //profile routes
 router.get("/profile", renderProfilePage);
 router.post("/profile/update", uploadProfileImage, handleProfileUpdate);
@@ -94,6 +96,10 @@ router.get('/wishlist/count', wishlistController.getWishlistCount);
 router.get("/active-coupons", couponController.renderCouponsPage);
 router.get("/coupon/:code", couponController.getCouponByCode);
 router.post("/apply-coupon", couponController.applyCoupon)
+
+// Razorpay Payment Routes
+router.post("/razorpay/create-order", razorpayController.createRazorpayOrder);
+router.post("/razorpay/verify-payment", razorpayController.verifyRazorpayPayment);
 
 
 // Auth & User Management

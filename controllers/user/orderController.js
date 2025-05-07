@@ -718,11 +718,70 @@ const downloadInvoice = async (req, res) => {
   }
 }
 
+/**
+ * Complete payment for an order
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+const completePayment = async (req, res) => {
+  try {
+    const { orderId, paymentId } = req.body;
+    const userId = req.session.user;
+
+    if (!orderId || !paymentId) {
+      return res.status(400).json({
+        success: false,
+        message: "Order ID and payment ID are required"
+      });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found"
+      });
+    }
+
+    if (order.userId.toString() !== userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized access to this order"
+      });
+    }
+
+    if (order.paymentStatus === "Paid") {
+      return res.status(400).json({
+        success: false,
+        message: "Order is already paid"
+      });
+    }
+
+    // Update order payment status
+    order.paymentStatus = "Paid";
+    order.razorpayPaymentId = paymentId;
+    await order.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Payment completed successfully"
+    });
+  } catch (error) {
+    console.error("Error completing payment:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to complete payment",
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getOrderDetails,
   getUserOrders,
   trackOrder,
   cancelOrder,
   requestReturn,
-  downloadInvoice
+  downloadInvoice,
+  completePayment
 };

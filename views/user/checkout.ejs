@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <style>
         .checkout-step {
             @apply relative pb-8;
@@ -771,8 +772,186 @@
                 }
 
                 if (result.success) {
-                    // Redirect to order confirmation page
-                    window.location.href = `/orders/${result.orderId}`;
+                    // If payment method is Razorpay, initiate Razorpay payment
+                    if (selectedPaymentMethod === 'razorpay') {
+                        // Hide loading overlay temporarily
+                        document.getElementById('loadingOverlay').style.display = 'none';
+
+                        // Create Razorpay order
+                        try {
+                            console.log('Creating Razorpay order for order ID:', result.orderId);
+
+                            const razorpayResponse = await fetch('/razorpay/create-order', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    orderId: result.orderId
+                                })
+                            });
+
+                            const razorpayResult = await razorpayResponse.json();
+                            console.log('Razorpay create order response:', razorpayResult);
+
+                            if (!razorpayResponse.ok) {
+                                console.error('Razorpay order creation failed:', razorpayResult);
+                                throw new Error(razorpayResult.message || razorpayResult.error || 'Failed to create Razorpay order');
+                            }
+
+                            // Initialize Razorpay checkout
+                            console.log('Initializing Razorpay checkout with key:', '<%= razorpayKeyId %>');
+
+                            // Ensure we have all required data
+                            if (!razorpayResult.order || !razorpayResult.order.id || !razorpayResult.order.amount) {
+                                console.error('Missing required Razorpay order data:', razorpayResult);
+                                throw new Error('Invalid Razorpay order data received from server');
+                            }
+
+                            // Make sure we have a valid Razorpay key
+                            const razorpayKey = '<%= razorpayKeyId %>';
+                            console.log('Using Razorpay key:', razorpayKey);
+
+                            // Validate Razorpay key
+                            if (!razorpayKey || razorpayKey.trim() === '') {
+                                throw new Error('Razorpay key is missing or invalid');
+                            }
+
+                            // Get contact information from the selected address
+                            let contactNumber = '<%= user.mobile || "" %>';
+                            try {
+                                const selectedAddressElement = document.querySelector(`[data-address-id="${selectedAddressId}"]`);
+                                if (selectedAddressElement) {
+                                    const mobileText = selectedAddressElement.textContent.match(/Mobile: (\d+)/);
+                                    if (mobileText && mobileText[1]) {
+                                        contactNumber = mobileText[1];
+                                        console.log('Found contact number from address:', contactNumber);
+                                    }
+                                }
+                            } catch (e) {
+                                console.error('Error getting contact from address:', e);
+                            }
+
+                            const options = {
+                                key: razorpayKey, // Get from server
+                                amount: razorpayResult.order.amount,
+                                currency: razorpayResult.order.currency || 'INR',
+                                name: 'Mangeyko',
+                                description: 'Purchase from Mangeyko',
+                                order_id: razorpayResult.order.id,
+                                image: 'https://i.imgur.com/3g7nmJC.png', // Add your logo URL here
+                                notes: {
+                                    order_id: result.orderId,
+                                    customer_name: '<%= user.name %>'
+                                },
+                                handler: async function(response) {
+                                    console.log('Razorpay payment successful:', response);
+                                    // Show loading overlay again
+                                    document.getElementById('loadingOverlay').style.display = 'flex';
+
+                                    // Verify payment with server
+                                    try {
+                                        // Validate response
+                                        if (!response.razorpay_order_id || !response.razorpay_payment_id || !response.razorpay_signature) {
+                                            throw new Error('Invalid payment response from Razorpay');
+                                        }
+
+                                        console.log('Verifying payment with server...');
+                                        const verifyResponse = await fetch('/razorpay/verify-payment', {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json'
+                                            },
+                                            body: JSON.stringify({
+                                                razorpay_order_id: response.razorpay_order_id,
+                                                razorpay_payment_id: response.razorpay_payment_id,
+                                                razorpay_signature: response.razorpay_signature,
+                                                order_id: result.orderId
+                                            })
+                                        });
+
+                                        const verifyResult = await verifyResponse.json();
+                                        console.log('Payment verification result:', verifyResult);
+
+                                        if (verifyResult.success) {
+                                            // Show success message before redirecting
+                                            Swal.fire({
+                                                title: 'Payment Successful!',
+                                                text: 'Your order has been placed successfully.',
+                                                icon: 'success',
+                                                confirmButtonText: 'View Order'
+                                            }).then(() => {
+                                                // Redirect to order confirmation page
+                                                window.location.href = `/orders/${result.orderId}`;
+                                            });
+                                        } else {
+                                            throw new Error(verifyResult.message || verifyResult.error || 'Payment verification failed');
+                                        }
+                                    } catch (error) {
+                                        console.error('Payment verification error:', error);
+                                        document.getElementById('loadingOverlay').style.display = 'none';
+                                        Swal.fire({
+                                            title: 'Payment Verification Failed',
+                                            text: error.message || 'Failed to verify payment. Please contact support.',
+                                            icon: 'error',
+                                            confirmButtonText: 'OK'
+                                        });
+                                    }
+                                },
+                                prefill: {
+                                    name: '<%= user.name %>',
+                                    email: '<%= user.email %>',
+                                    contact: contactNumber
+                                },
+                                theme: {
+                                    color: '#000000'
+                                },
+                                modal: {
+                                    ondismiss: function() {
+                                        document.getElementById('loadingOverlay').style.display = 'none';
+                                        Swal.fire({
+                                            title: 'Payment Cancelled',
+                                            text: 'Your order has been created but payment is pending. You can complete the payment later from your orders page.',
+                                            icon: 'warning',
+                                            confirmButtonText: 'OK'
+                                        }).then(() => {
+                                            window.location.href = `/orders/${result.orderId}`;
+                                        });
+                                    }
+                                }
+                            };
+
+                            const rzp = new Razorpay(options);
+                            rzp.open();
+
+                        } catch (razorpayError) {
+                            console.error('Razorpay error:', razorpayError);
+                            document.getElementById('loadingOverlay').style.display = 'none';
+
+                            // Show detailed error message
+                            let errorMessage = 'Failed to initialize payment';
+
+                            if (razorpayError.message) {
+                                errorMessage = razorpayError.message;
+                            }
+
+                            // Log additional details for debugging
+                            console.log('Order ID:', result.orderId);
+                            console.log('Payment method:', selectedPaymentMethod);
+                            console.log('Razorpay key:', '<%= razorpayKeyId %>');
+
+                            Swal.fire({
+                                title: 'Payment Error',
+                                text: errorMessage,
+                                icon: 'error',
+                                confirmButtonText: 'OK',
+                                footer: '<a href="javascript:void(0)" onclick="window.location.reload()">Try again</a>'
+                            });
+                        }
+                    } else {
+                        // For non-Razorpay payments, redirect to order confirmation page
+                        window.location.href = `/orders/${result.orderId}`;
+                    }
                 } else {
                     // Hide loading overlay
                     document.getElementById('loadingOverlay').style.display = 'none';

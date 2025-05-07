@@ -5,6 +5,7 @@ const User = require("../../models/userSchema");
 const Coupon = require("../../models/couponSchema");
 const StatusCodes = require("../../utils/httpStatusCodes");
 const mongoose = require("mongoose");
+const { razorpayKeyId } = require("../../config/razorpay");
 
 exports.renderCheckoutPage = async (req, res) => {
   try {
@@ -56,6 +57,9 @@ exports.renderCheckoutPage = async (req, res) => {
       defaultAddress = user.address.find((addr, idx) => addr && idx > 0 && addr.isDefault) || user.address[1];
     }
 
+    // Make sure we have a valid Razorpay key ID
+    const safeRazorpayKeyId = razorpayKeyId || 'rzp_test_UkVZCj9Q9Jy9Ja';
+
     res.render("checkout", {
       user,
       cartItems: validCartItems,
@@ -66,7 +70,8 @@ exports.renderCheckoutPage = async (req, res) => {
       total: total.toFixed(2),
       addresses: user.address ? user.address.filter(addr => addr !== null) : [],
       defaultAddress,
-      currentStep: 1
+      currentStep: 1,
+      razorpayKeyId: safeRazorpayKeyId // Pass Razorpay key ID to the frontend
     });
 
   } catch (error) {
