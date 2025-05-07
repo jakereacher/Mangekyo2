@@ -61,6 +61,7 @@
         <div class="bg-white p-6 rounded-lg shadow-lg flex flex-col items-center">
             <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black mb-4"></div>
             <p class="text-lg font-medium">Processing your order...</p>
+            <p class="text-sm text-gray-500 mt-2">Press ESC to cancel if stuck</p>
         </div>
     </div>
 
@@ -455,6 +456,40 @@
             couponCode: null
         };
 
+        // Global function to hide the loading overlay
+        function hideLoadingOverlay() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+            console.log('Loading overlay hidden');
+        }
+
+        // Global function to show the loading overlay
+        function showLoadingOverlay() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+            console.log('Loading overlay shown');
+        }
+
+        // Add event listener to hide loading overlay when page is about to be unloaded
+        window.addEventListener('beforeunload', function() {
+            hideLoadingOverlay();
+        });
+
+        // Add keyboard shortcut (Escape key) to hide loading overlay in case it gets stuck
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' && document.getElementById('loadingOverlay').style.display === 'flex') {
+                console.log('Escape key pressed: Hiding loading overlay');
+                hideLoadingOverlay();
+            }
+        });
+
+        // Add click handler to loading overlay to hide it when clicked
+        document.getElementById('loadingOverlay').addEventListener('click', function(event) {
+            // Only hide if clicking directly on the overlay (not on its children)
+            if (event.target === this) {
+                console.log('Loading overlay clicked: Hiding loading overlay');
+                hideLoadingOverlay();
+            }
+        });
+
         // Initialize the page
         document.addEventListener('DOMContentLoaded', function() {
             // If we have a default address, select it
@@ -741,7 +776,7 @@
             });
 
             // Show loading overlay
-            document.getElementById('loadingOverlay').style.display = 'flex';
+            showLoadingOverlay();
 
             try {
                 const response = await fetch('/checkout/place-order', {
@@ -775,7 +810,7 @@
                     // If payment method is Razorpay, initiate Razorpay payment
                     if (selectedPaymentMethod === 'razorpay') {
                         // Hide loading overlay temporarily
-                        document.getElementById('loadingOverlay').style.display = 'none';
+                        hideLoadingOverlay();
 
                         // Create Razorpay order
                         try {
@@ -847,7 +882,7 @@
                                 handler: async function(response) {
                                     console.log('Razorpay payment successful:', response);
                                     // Show loading overlay again
-                                    document.getElementById('loadingOverlay').style.display = 'flex';
+                                    showLoadingOverlay();
 
                                     // Verify payment with server
                                     try {
@@ -874,6 +909,9 @@
                                         console.log('Payment verification result:', verifyResult);
 
                                         if (verifyResult.success) {
+                                            // Hide loading overlay before showing success message
+                                            hideLoadingOverlay();
+
                                             // Show success message before redirecting
                                             Swal.fire({
                                                 title: 'Payment Successful!',
@@ -889,7 +927,7 @@
                                         }
                                     } catch (error) {
                                         console.error('Payment verification error:', error);
-                                        document.getElementById('loadingOverlay').style.display = 'none';
+                                        hideLoadingOverlay();
                                         Swal.fire({
                                             title: 'Payment Verification Failed',
                                             text: error.message || 'Failed to verify payment. Please contact support.',
@@ -908,7 +946,7 @@
                                 },
                                 modal: {
                                     ondismiss: function() {
-                                        document.getElementById('loadingOverlay').style.display = 'none';
+                                        hideLoadingOverlay();
                                         Swal.fire({
                                             title: 'Payment Cancelled',
                                             text: 'Your order has been created but payment is pending. You can complete the payment later from your orders page.',
@@ -924,9 +962,18 @@
                             const rzp = new Razorpay(options);
                             rzp.open();
 
+                            // Add a safety timeout to hide the loading overlay after 60 seconds
+                            // in case something goes wrong and it doesn't get hidden properly
+                            setTimeout(() => {
+                                if (document.getElementById('loadingOverlay').style.display === 'flex') {
+                                    console.log('Safety timeout: Hiding loading overlay after 60 seconds');
+                                    hideLoadingOverlay();
+                                }
+                            }, 60000);
+
                         } catch (razorpayError) {
                             console.error('Razorpay error:', razorpayError);
-                            document.getElementById('loadingOverlay').style.display = 'none';
+                            hideLoadingOverlay();
 
                             // Show detailed error message
                             let errorMessage = 'Failed to initialize payment';
@@ -954,7 +1001,7 @@
                     }
                 } else {
                     // Hide loading overlay
-                    document.getElementById('loadingOverlay').style.display = 'none';
+                    hideLoadingOverlay();
 
                     if (result.redirect) {
                         window.location.href = result.redirect;
@@ -964,7 +1011,7 @@
                 }
             } catch (error) {
                 console.error('Error placing order:', error);
-                document.getElementById('loadingOverlay').style.display = 'none';
+                hideLoadingOverlay();
                 Swal.fire({
                     title: 'Error',
                     text: error.message || 'Failed to place order. Please try again later.',
