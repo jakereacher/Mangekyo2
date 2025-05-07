@@ -13,6 +13,7 @@ const fs = require("fs");
 const path = require("path");
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
+const { razorpayKeyId } = require("../../config/razorpay");
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -76,7 +77,8 @@ exports.renderProfilePage = async (req, res) => {
       currentPage: 'profile',
       success: req.flash('success'),
       error: req.flash('error'),
-      isDemo: user.email.endsWith('@demo.com')
+      isDemo: user.email.endsWith('@demo.com'),
+      razorpayKeyId // Pass Razorpay key ID to the frontend
     });
 
   } catch (error) {
@@ -247,39 +249,39 @@ exports.handleAddress = async (req, res) => {
     const { action, addressId, ...addressData } = req.body;
 
     if (!userId) {
-      return res.status(StatusCodes.UNAUTHORIZED).json({ 
-        success: false, 
-        message: 'Not authenticated' 
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: 'Not authenticated'
       });
     }
 
     let updatedUser;
-    
+
     switch (action) {
       case 'GET':
         const user = await User.findOne(
           { _id: userId, 'address._id': addressId },
           { 'address.$': 1 }
         );
-        
+
         if (!user || !user.address || user.address.length === 0) {
-          return res.status(StatusCodes.NOT_FOUND).json({ 
-            success: false, 
-            message: 'Address not found' 
+          return res.status(StatusCodes.NOT_FOUND).json({
+            success: false,
+            message: 'Address not found'
           });
         }
-        
-        return res.json({ 
-          success: true, 
-          data: user.address[0] 
+
+        return res.json({
+          success: true,
+          data: user.address[0]
         });
 
       case 'ADD':
-        if (!addressData.fullName || !addressData.mobile || !addressData.addressLine || 
+        if (!addressData.fullName || !addressData.mobile || !addressData.addressLine ||
             !addressData.city || !addressData.state || !addressData.pinCode) {
-          return res.status(StatusCodes.BAD_REQUEST).json({ 
-            success: false, 
-            message: 'Missing required address fields' 
+          return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: 'Missing required address fields'
           });
         }
 
@@ -297,9 +299,9 @@ exports.handleAddress = async (req, res) => {
 
       case 'UPDATE':
         if (!addressId) {
-          return res.status(StatusCodes.BAD_REQUEST).json({ 
-            success: false, 
-            message: 'Address ID is required for update' 
+          return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: 'Address ID is required for update'
           });
         }
 
@@ -326,9 +328,9 @@ exports.handleAddress = async (req, res) => {
 
       case 'DELETE':
         if (!addressId) {
-          return res.status(StatusCodes.BAD_REQUEST).json({ 
-            success: false, 
-            message: 'Address ID is required for deletion' 
+          return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: 'Address ID is required for deletion'
           });
         }
 
@@ -338,9 +340,9 @@ exports.handleAddress = async (req, res) => {
         );
 
         if (!userWithAddress || !userWithAddress.address || userWithAddress.address.length === 0) {
-          return res.status(StatusCodes.NOT_FOUND).json({ 
-            success: false, 
-            message: 'Address not found' 
+          return res.status(StatusCodes.NOT_FOUND).json({
+            success: false,
+            message: 'Address not found'
           });
         }
 
@@ -363,9 +365,9 @@ exports.handleAddress = async (req, res) => {
 
       case 'SET_DEFAULT':
         if (!addressId) {
-          return res.status(StatusCodes.BAD_REQUEST).json({ 
-            success: false, 
-            message: 'Address ID is required to set default' 
+          return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: 'Address ID is required to set default'
           });
         }
 
@@ -382,9 +384,9 @@ exports.handleAddress = async (req, res) => {
         break;
 
       default:
-        return res.status(StatusCodes.BAD_REQUEST).json({ 
-          success: false, 
-          message: 'Invalid action' 
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          success: false,
+          message: 'Invalid action'
         });
     }
 
@@ -400,16 +402,16 @@ exports.handleAddress = async (req, res) => {
       isDefault: addr.isDefault
     }));
 
-    res.json({ 
-      success: true, 
-      data: addressesForFrontend 
+    res.json({
+      success: true,
+      data: addressesForFrontend
     });
 
   } catch (error) {
     console.error("Error in address operation:", error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
-      success: false, 
-      message: 'Server error' 
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Server error'
     });
   }
 };
@@ -424,29 +426,29 @@ exports.getAddress = async (req, res) => {
 
     const user = await User.findById(userId);
     if (!user) {
-      return res.status(StatusCodes.NOT_FOUND).json({ 
-        success: false, 
-        message: 'User not found' 
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'User not found'
       });
     }
 
     const address = user.address.id(addressId);
     if (!address) {
-      return res.status(StatusCodes.NOT_FOUND).json({ 
-        success: false, 
-        message: 'Address not found' 
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'Address not found'
       });
     }
 
-    res.json({ 
-      success: true, 
-      data: address 
+    res.json({
+      success: true,
+      data: address
     });
   } catch (error) {
     console.error("Error getting address:", error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
-      success: false, 
-      message: 'Server error' 
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Server error'
     });
   }
 };
@@ -462,17 +464,17 @@ exports.updateAddress = async (req, res) => {
 
     const user = await User.findById(userId);
     if (!user) {
-      return res.status(StatusCodes.NOT_FOUND).json({ 
-        success: false, 
-        message: 'User not found' 
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'User not found'
       });
     }
 
     const address = user.address.id(addressId);
     if (!address) {
-      return res.status(StatusCodes.NOT_FOUND).json({ 
-        success: false, 
-        message: 'Address not found' 
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'Address not found'
       });
     }
 
@@ -492,16 +494,16 @@ exports.updateAddress = async (req, res) => {
 
     await user.save();
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       message: 'Address updated successfully',
       data: user.address
     });
   } catch (error) {
     console.error("Error updating address:", error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
-      success: false, 
-      message: 'Server error' 
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Server error'
     });
   }
 };
@@ -516,22 +518,22 @@ exports.deleteAddress = async (req, res) => {
 
     const user = await User.findById(userId);
     if (!user) {
-      return res.status(StatusCodes.NOT_FOUND).json({ 
-        success: false, 
-        message: 'User not found' 
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'User not found'
       });
     }
 
     const addressToDelete = user.address.find(addr => addr._id.toString() === addressId);
     if (!addressToDelete) {
-      return res.status(StatusCodes.NOT_FOUND).json({ 
-        success: false, 
-        message: 'Address not found' 
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'Address not found'
       });
     }
 
     const wasDefault = addressToDelete.isDefault;
-    
+
     await User.updateOne(
       { _id: userId },
       { $pull: { address: { _id: addressId } } }
@@ -547,16 +549,16 @@ exports.deleteAddress = async (req, res) => {
 
     const updatedUser = await User.findById(userId);
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       message: 'Address deleted successfully',
       data: updatedUser.address
     });
   } catch (error) {
     console.error("Error deleting address:", error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
-      success: false, 
-      message: 'Server error' 
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Server error'
     });
   }
 };
@@ -571,17 +573,17 @@ exports.setDefaultAddress = async (req, res) => {
 
     const user = await User.findById(userId);
     if (!user) {
-      return res.status(StatusCodes.NOT_FOUND).json({ 
-        success: false, 
-        message: 'User not found' 
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'User not found'
       });
     }
 
     const address = user.address.id(addressId);
     if (!address) {
-      return res.status(StatusCodes.NOT_FOUND).json({ 
-        success: false, 
-        message: 'Address not found' 
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'Address not found'
       });
     }
 
@@ -593,16 +595,16 @@ exports.setDefaultAddress = async (req, res) => {
 
     await user.save();
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       message: 'Default address updated successfully',
       data: user.address
     });
   } catch (error) {
     console.error("Error setting default address:", error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
-      success: false, 
-      message: 'Server error' 
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Server error'
     });
   }
 };
