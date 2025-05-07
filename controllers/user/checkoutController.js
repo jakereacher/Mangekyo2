@@ -274,7 +274,7 @@ exports.placeOrder = async (req, res) => {
     }
 
     // Calculate final amount with discount
-    const finalAmount = subtotal + shipping + tax - discount;
+    const finalAmount = (subtotal + shipping + tax) - discount;
 
     if (paymentMethod === "wallet" && user.wallet < finalAmount) {
       return res.status(StatusCodes.BAD_REQUEST).json({
