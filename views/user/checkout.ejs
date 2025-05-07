@@ -912,28 +912,18 @@
                                             // Hide loading overlay before showing success message
                                             hideLoadingOverlay();
 
-                                            // Show success message before redirecting
-                                            Swal.fire({
-                                                title: 'Payment Successful!',
-                                                text: 'Your order has been placed successfully.',
-                                                icon: 'success',
-                                                confirmButtonText: 'View Order'
-                                            }).then(() => {
-                                                // Redirect to order confirmation page
-                                                window.location.href = `/orders/${result.orderId}`;
-                                            });
+                                            // Redirect to payment success page
+                                            window.location.href = `/payment/success/${result.orderId}?paymentId=${response.razorpay_payment_id}`;
                                         } else {
                                             throw new Error(verifyResult.message || verifyResult.error || 'Payment verification failed');
                                         }
                                     } catch (error) {
                                         console.error('Payment verification error:', error);
                                         hideLoadingOverlay();
-                                        Swal.fire({
-                                            title: 'Payment Verification Failed',
-                                            text: error.message || 'Failed to verify payment. Please contact support.',
-                                            icon: 'error',
-                                            confirmButtonText: 'OK'
-                                        });
+
+                                        // Redirect to payment failure page
+                                        const errorMessage = encodeURIComponent(error.message || 'Payment verification failed');
+                                        window.location.href = `/payment/failure/${result.orderId}?error=${errorMessage}`;
                                     }
                                 },
                                 prefill: {
@@ -947,14 +937,9 @@
                                 modal: {
                                     ondismiss: function() {
                                         hideLoadingOverlay();
-                                        Swal.fire({
-                                            title: 'Payment Cancelled',
-                                            text: 'Your order has been created but payment is pending. You can complete the payment later from your orders page.',
-                                            icon: 'warning',
-                                            confirmButtonText: 'OK'
-                                        }).then(() => {
-                                            window.location.href = `/orders/${result.orderId}`;
-                                        });
+                                        // Redirect to payment failure page with cancelled message
+                                        const errorMessage = encodeURIComponent('Payment was cancelled. You can retry payment from your order details page.');
+                                        window.location.href = `/payment/failure/${result.orderId}?error=${errorMessage}`;
                                     }
                                 }
                             };
@@ -975,7 +960,7 @@
                             console.error('Razorpay error:', razorpayError);
                             hideLoadingOverlay();
 
-                            // Show detailed error message
+                            // Get error message
                             let errorMessage = 'Failed to initialize payment';
 
                             if (razorpayError.message) {
@@ -987,13 +972,9 @@
                             console.log('Payment method:', selectedPaymentMethod);
                             console.log('Razorpay key:', '<%= razorpayKeyId %>');
 
-                            Swal.fire({
-                                title: 'Payment Error',
-                                text: errorMessage,
-                                icon: 'error',
-                                confirmButtonText: 'OK',
-                                footer: '<a href="javascript:void(0)" onclick="window.location.reload()">Try again</a>'
-                            });
+                            // Redirect to payment failure page
+                            const encodedError = encodeURIComponent(errorMessage);
+                            window.location.href = `/payment/failure/${result.orderId}?error=${encodedError}`;
                         }
                     } else {
                         // For non-Razorpay payments, redirect to order confirmation page

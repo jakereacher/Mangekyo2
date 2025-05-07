@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Successful | Mangeyko</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- Navbar -->
+    <nav class="bg-white shadow-sm">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <a href="/" class="text-2xl font-bold text-gray-800">
+                <i class="fas fa-store mr-2"></i> Mangeyko
+            </a>
+            <div class="flex items-center space-x-6">
+                <a href="/profile" class="text-gray-600 hover:text-gray-800 transition">Profile</a>
+                <a href="/cart" class="text-gray-600 hover:text-gray-800 transition">
+                    <i class="fas fa-shopping-cart"></i> Cart
+                </a>
+                <a href="/logout" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition">
+                    Logout
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 py-12 max-w-4xl">
+        <div class="bg-white rounded-lg shadow-md p-8 text-center">
+            <div class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-check-circle text-green-600 text-5xl"></i>
+            </div>
+            
+            <h1 class="text-3xl font-bold text-gray-800 mb-4">Payment Successful!</h1>
+            
+            <p class="text-gray-600 text-lg mb-8">
+                Your order has been placed successfully and is being processed.
+                Thank you for shopping with Mangeyko!
+            </p>
+            
+            <div class="bg-gray-50 p-6 rounded-lg mb-8">
+                <div class="flex justify-between mb-2">
+                    <span class="font-medium">Order ID:</span>
+                    <span><%= orderId %></span>
+                </div>
+                <div class="flex justify-between mb-2">
+                    <span class="font-medium">Payment Method:</span>
+                    <span><%= paymentMethod %></span>
+                </div>
+                <% if (paymentId) { %>
+                <div class="flex justify-between">
+                    <span class="font-medium">Payment ID:</span>
+                    <span><%= paymentId %></span>
+                </div>
+                <% } %>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                <a href="/orders/<%= orderId %>" class="bg-black text-white px-6 py-3 rounded hover:bg-gray-800 transition">
+                    <i class="fas fa-eye mr-2"></i> View Order Details
+                </a>
+                <a href="/shop" class="bg-gray-200 text-gray-800 px-6 py-3 rounded hover:bg-gray-300 transition">
+                    <i class="fas fa-shopping-bag mr-2"></i> Continue Shopping
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-12">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between">
+                <div class="mb-6 md:mb-0">
+                    <h3 class="text-xl font-bold mb-4">Mangeyko</h3>
+                    <p class="text-gray-400 max-w-xs">Your one-stop shop for premium products and exceptional shopping experience.</p>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-3">Quick Links</h4>
+                    <ul class="space-y-2">
+                        <li><a href="/" class="text-gray-400 hover:text-white transition">Home</a></li>
+                        <li><a href="/shop" class="text-gray-400 hover:text-white transition">Shop</a></li>
+                        <li><a href="/profile" class="text-gray-400 hover:text-white transition">My Account</a></li>
+                        <li><a href="/orders" class="text-gray-400 hover:text-white transition">My Orders</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-6 text-center text-gray-400">
+                <p>&copy; 2023 Mangeyko. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

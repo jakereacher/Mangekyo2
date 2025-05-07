@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Failed | Mangeyko</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- Navbar -->
+    <nav class="bg-white shadow-sm">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <a href="/" class="text-2xl font-bold text-gray-800">
+                <i class="fas fa-store mr-2"></i> Mangeyko
+            </a>
+            <div class="flex items-center space-x-6">
+                <a href="/profile" class="text-gray-600 hover:text-gray-800 transition">Profile</a>
+                <a href="/cart" class="text-gray-600 hover:text-gray-800 transition">
+                    <i class="fas fa-shopping-cart"></i> Cart
+                </a>
+                <a href="/logout" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition">
+                    Logout
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center;">
+        <div class="bg-white p-6 rounded-lg shadow-lg flex flex-col items-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black mb-4"></div>
+            <p class="text-lg font-medium">Processing your payment...</p>
+            <p class="text-sm text-gray-500 mt-2">Press ESC to cancel if stuck</p>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 py-12 max-w-4xl">
+        <div class="bg-white rounded-lg shadow-md p-8 text-center">
+            <div class="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-exclamation-circle text-red-600 text-5xl"></i>
+            </div>
+            
+            <h1 class="text-3xl font-bold text-gray-800 mb-4">Payment Failed</h1>
+            
+            <p class="text-gray-600 text-lg mb-2">
+                We couldn't process your payment at this time.
+            </p>
+            <p class="text-gray-600 mb-8">
+                <%= errorMessage || "There was an issue with your payment. Please try again or choose a different payment method." %>
+            </p>
+            
+            <div class="bg-gray-50 p-6 rounded-lg mb-8">
+                <div class="flex justify-between mb-2">
+                    <span class="font-medium">Order ID:</span>
+                    <span><%= orderId %></span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="font-medium">Payment Method:</span>
+                    <span><%= paymentMethod %></span>
+                </div>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                <button id="retryPaymentBtn" class="bg-black text-white px-6 py-3 rounded hover:bg-gray-800 transition">
+                    <i class="fas fa-redo mr-2"></i> Retry Payment
+                </button>
+                <a href="/orders/<%= orderId %>" class="bg-gray-200 text-gray-800 px-6 py-3 rounded hover:bg-gray-300 transition">
+                    <i class="fas fa-eye mr-2"></i> View Order Details
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-12">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between">
+                <div class="mb-6 md:mb-0">
+                    <h3 class="text-xl font-bold mb-4">Mangeyko</h3>
+                    <p class="text-gray-400 max-w-xs">Your one-stop shop for premium products and exceptional shopping experience.</p>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-3">Quick Links</h4>
+                    <ul class="space-y-2">
+                        <li><a href="/" class="text-gray-400 hover:text-white transition">Home</a></li>
+                        <li><a href="/shop" class="text-gray-400 hover:text-white transition">Shop</a></li>
+                        <li><a href="/profile" class="text-gray-400 hover:text-white transition">My Account</a></li>
+                        <li><a href="/orders" class="text-gray-400 hover:text-white transition">My Orders</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-6 text-center text-gray-400">
+                <p>&copy; 2023 Mangeyko. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Function to show loading overlay
+        function showLoadingOverlay() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+            console.log('Loading overlay shown');
+        }
+        
+        // Function to hide loading overlay
+        function hideLoadingOverlay() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+            console.log('Loading overlay hidden');
+        }
+
+        // Add keyboard shortcut (Escape key) to hide loading overlay
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' && document.getElementById('loadingOverlay').style.display === 'flex') {
+                console.log('Escape key pressed: Hiding loading overlay');
+                hideLoadingOverlay();
+            }
+        });
+
+        // Add click handler to loading overlay
+        document.getElementById('loadingOverlay').addEventListener('click', function(event) {
+            if (event.target === this) {
+                console.log('Loading overlay clicked: Hiding loading overlay');
+                hideLoadingOverlay();
+            }
+        });
+
+        // Retry payment button
+        document.getElementById('retryPaymentBtn').addEventListener('click', async function() {
+            try {
+                showLoadingOverlay();
+                
+                const response = await fetch('/razorpay/create-order', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        orderId: '<%= orderId %>'
+                    })
+                });
+                
+                const result = await response.json();
+                console.log('Razorpay create order response:', result);
+                
+                if (!response.ok) {
+                    throw new Error(result.message || result.error || 'Failed to create Razorpay order');
+                }
+                
+                // Initialize Razorpay checkout
+                const razorpayKey = '<%= razorpayKeyId %>';
+                console.log('Using Razorpay key:', razorpayKey);
+                
+                // Ensure we have all required data
+                if (!result.order || !result.order.id || !result.order.amount) {
+                    throw new Error('Invalid Razorpay order data received from server');
+                }
+                
+                const options = {
+                    key: razorpayKey,
+                    amount: result.order.amount,
+                    currency: result.order.currency || 'INR',
+                    name: 'Mangeyko',
+                    description: 'Purchase from Mangeyko',
+                    order_id: result.order.id,
+                    image: 'https://i.imgur.com/3g7nmJC.png',
+                    notes: {
+                        order_id: '<%= orderId %>',
+                        customer_name: '<%= userName %>'
+                    },
+                    handler: async function(response) {
+                        console.log('Razorpay payment successful:', response);
+                        showLoadingOverlay();
+                        
+                        try {
+                            // Validate response
+                            if (!response.razorpay_order_id || !response.razorpay_payment_id || !response.razorpay_signature) {
+                                throw new Error('Invalid payment response from Razorpay');
+                            }
+                            
+                            console.log('Verifying payment with server...');
+                            const verifyResponse = await fetch('/razorpay/verify-payment', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    razorpay_order_id: response.razorpay_order_id,
+                                    razorpay_payment_id: response.razorpay_payment_id,
+                                    razorpay_signature: response.razorpay_signature,
+                                    order_id: '<%= orderId %>'
+                                })
+                            });
+                            
+                            const verifyResult = await verifyResponse.json();
+                            console.log('Payment verification result:', verifyResult);
+                            
+                            if (verifyResult.success) {
+                                // Redirect to success page
+                                window.location.href = `/payment/success/${result.orderId}?paymentId=${response.razorpay_payment_id}`;
+                            } else {
+                                throw new Error(verifyResult.message || verifyResult.error || 'Payment verification failed');
+                            }
+                        } catch (error) {
+                            console.error('Payment verification error:', error);
+                            hideLoadingOverlay();
+                            Swal.fire({
+                                title: 'Payment Verification Failed',
+                                text: error.message || 'Failed to verify payment. Please try again.',
+                                icon: 'error',
+                                confirmButtonText: 'OK'
+                            });
+                        }
+                    },
+                    prefill: {
+                        name: '<%= userName %>',
+                        email: '<%= userEmail %>',
+                        contact: '<%= userPhone %>'
+                    },
+                    theme: {
+                        color: '#000000'
+                    },
+                    modal: {
+                        ondismiss: function() {
+                            hideLoadingOverlay();
+                            console.log('Payment modal dismissed');
+                        }
+                    }
+                };
+                
+                const rzp = new Razorpay(options);
+                rzp.open();
+                
+                // Safety timeout
+                setTimeout(() => {
+                    if (document.getElementById('loadingOverlay').style.display === 'flex') {
+                        hideLoadingOverlay();
+                    }
+                }, 60000);
+                
+            } catch (error) {
+                console.error('Error retrying payment:', error);
+                hideLoadingOverlay();
+                Swal.fire({
+                    title: 'Error',
+                    text: error.message || 'Failed to initialize payment. Please try again later.',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            }
+        });
+    </script>
+</body>
+</html>

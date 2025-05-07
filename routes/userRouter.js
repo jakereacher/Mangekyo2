@@ -7,6 +7,7 @@ const checkoutController = require("../controllers/user/checkoutController");
 const orderController = require("../controllers/user/orderController");
 const couponController = require("../controllers/user/couponController");
 const razorpayController = require("../controllers/user/razorpayController");
+const paymentController = require("../controllers/user/paymentController");
 
 const {
   loadLandingpage,
@@ -100,6 +101,10 @@ router.post("/apply-coupon", couponController.applyCoupon)
 // Razorpay Payment Routes
 router.post("/razorpay/create-order", razorpayController.createRazorpayOrder);
 router.post("/razorpay/verify-payment", razorpayController.verifyRazorpayPayment);
+
+// Payment Success/Failure Routes
+router.get("/payment/success/:orderId", paymentController.renderPaymentSuccess);
+router.get("/payment/failure/:orderId", paymentController.renderPaymentFailure);
 
 
 // Auth & User Management
