@@ -48,8 +48,7 @@ if (req.files && req.files.length > 0) {
         productName: products.productName,
         description: products.description,
         category: categoryId._id,
-        regularPrice: products.regularPrice,
-        salePrice: products.salePrice,
+        price: products.price,
         createdOn: new Date(),
         quantity: products.quantity,
         productImage: images,
@@ -69,9 +68,39 @@ if (req.files && req.files.length > 0) {
 
 const getProductList = async (req, res) => {
   try {
-    const products = await Product.find().populate("category").sort({ createdAt: -1});
+    // Fetch products with populated category and offer
+    const products = await Product.find()
+      .populate("category")
+      .populate("offer")
+      .sort({ createdAt: -1 });
+
+    // Process products to include offer information
+    const productsWithOffers = products.map(product => {
+      const hasOffer = product.productOffer && product.offer;
+      // Handle price fields with fallbacks
+      const price = product.price || product.salePrice || product.regularPrice || 0;
+      const finalPrice = product.finalPrice || price;
+      const discountAmount = hasOffer ? (price - finalPrice) : 0;
+      const discountPercentage = product.offerPercentage || 0;
+
+      return {
+        ...product.toObject({ virtuals: true }),
+        hasOffer,
+        price,
+        finalPrice,
+        discountAmount,
+        discountPercentage,
+        offerName: hasOffer ? product.offer.name : null,
+        offerType: hasOffer ? product.offer.type : null,
+        offerEndDate: product.offerEndDate
+      };
+    });
+
     const error = req.query.error || null;
-    res.render("products", { products, error });
+    res.render("products", {
+      products: productsWithOffers,
+      error
+    });
   } catch (error) {
     console.error("Error fetching products:", error);
     res.redirect("/admin/pageerror");
@@ -213,8 +242,7 @@ const editProduct = async (req, res) => {
     product.productName = products.productName;
     product.description = products.description;
     product.category = categoryId._id;
-    product.regularPrice = products.regularPrice;
-    product.salePrice = products.salePrice;
+    product.price = products.price;
     product.quantity = products.quantity;
 
     await product.save();

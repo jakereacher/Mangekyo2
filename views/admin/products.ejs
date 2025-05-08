@@ -70,11 +70,11 @@
                                     <th>Image</th>
                                     <th>Name</th>
                                     <th>Category</th>
-                                    <th>Regular Price</th>
-                                    <th>Sale Price</th>
+                                    <th>Base Price</th>
+                                    <th>Offer</th>
+                                    <th>Final Price</th>
                                     <th>Quantity</th>
                                     <th>Status</th>
-                                    <th>Blocked</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -90,11 +90,49 @@
                                         </td>
                                         <td><%= product.productName %></td>
                                         <td><%= product.category.name %></td>
-                                        <td>$<%= product.regularPrice.toFixed(2) %></td>
-                                        <td>$<%= product.salePrice.toFixed(2) %></td>
+                                        <td>₹<%= (product.price ? product.price.toFixed(2) : (product.salePrice ? product.salePrice.toFixed(2) : (product.regularPrice ? product.regularPrice.toFixed(2) : '0.00'))) %></td>
+                                        <td>
+                                            <% if (product.hasOffer) { %>
+                                                <span class="badge bg-success">
+                                                    <%= product.discountPercentage.toFixed(2) %>% OFF
+                                                </span>
+                                                <div class="small text-muted">
+                                                    <%= product.offerName %>
+                                                    <% if (product.offerType === 'product') { %>
+                                                        <span class="badge bg-primary">Product</span>
+                                                    <% } else if (product.offerType === 'category') { %>
+                                                        <span class="badge bg-info">Category</span>
+                                                    <% } %>
+                                                </div>
+                                                <% if (product.offerEndDate) { %>
+                                                    <div class="small text-muted">
+                                                        Ends: <%= new Date(product.offerEndDate).toLocaleDateString() %>
+                                                    </div>
+                                                <% } %>
+                                            <% } else { %>
+                                                <span class="badge bg-secondary">No Offer</span>
+                                            <% } %>
+                                        </td>
+                                        <td>
+                                            <% if (product.hasOffer) { %>
+                                                <strong class="text-success">₹<%= (product.finalPrice ? product.finalPrice.toFixed(2) : (product.price ? product.price.toFixed(2) : (product.salePrice ? product.salePrice.toFixed(2) : '0.00'))) %></strong>
+                                                <div class="small text-muted">
+                                                    Save: ₹<%= (product.discountAmount ? product.discountAmount.toFixed(2) : '0.00') %>
+                                                </div>
+                                            <% } else { %>
+                                                ₹<%= (product.price ? product.price.toFixed(2) : (product.salePrice ? product.salePrice.toFixed(2) : (product.regularPrice ? product.regularPrice.toFixed(2) : '0.00'))) %>
+                                            <% } %>
+                                        </td>
                                         <td><%= product.quantity %></td>
-                                        <td><%= product.status %></td>
-                                        <td><%= product.isBlocked ? 'Yes' : 'No' %></td>
+                                        <td>
+                                            <% if (product.isBlocked) { %>
+                                                <span class="badge bg-danger">Blocked</span>
+                                            <% } else { %>
+                                                <span class="badge bg-<%= product.status === 'Available' ? 'success' : 'warning' %>">
+                                                    <%= product.status %>
+                                                </span>
+                                            <% } %>
+                                        </td>
                                         <td>
                                             <a href="/admin/edit-product/<%= product._id %>" class="btn-edit">Edit</a>
                                             <form action="/admin/delete-product/<%= product._id %>" method="POST" style="display:inline;">

@@ -5,16 +5,24 @@ const wishlistController = require('./wishlistController');
 
 exports.addToCart = async (req, res) => {
   try {
+    console.log("Add to cart request body:", req.body);
     const { productId, quantity = 1 } = req.body;
-    const userId = req.session?.user;  
-    if (!userId) {
+    console.log("Extracted productId and quantity:", { productId, quantity });
+
+    // Check if user is logged in
+    if (!req.session || !req.session.user) {
+      console.log("User not logged in");
       return res.status(StatusCodes.UNAUTHORIZED).json({
         success: false,
         message: "User not logged in",
       });
     }
 
-    const product = await Product.findById(productId);
+    // Get user ID from session
+    const userId = req.session.user._id || req.session.user;
+    console.log("User ID from session:", userId);
+
+    const product = await Product.findById(productId).populate('offer');
     if (!product) {
       return res.status(StatusCodes.NOT_FOUND).json({
         success: false,
@@ -29,7 +37,7 @@ exports.addToCart = async (req, res) => {
       });
     }
 
-    if (product.quantity < quantity) {
+    if (product.stock < quantity) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
         message: "Not enough stock available",
@@ -37,7 +45,26 @@ exports.addToCart = async (req, res) => {
     }
 
     let cart = await Cart.findOne({ userId });
-    const price = product.salePrice;
+
+    // Calculate price based on offer if available
+    let price = product.price || 0;
+
+    // Apply discount if product has an offer
+    if (product.productOffer && product.offer) {
+      // Handle different discount types
+      if (product.offer.discountType === 'percentage') {
+        const discountAmount = (price * product.offer.discountValue) / 100;
+        price = price - discountAmount;
+      } else if (product.offer.discountType === 'fixed') {
+        price = price - product.offer.discountValue;
+        if (price < 0) price = 0;
+      }
+    } else if (product.productOffer && product.offerPercentage > 0) {
+      // Fallback to offerPercentage if offer object is not available
+      const discountAmount = (price * product.offerPercentage) / 100;
+      price = price - discountAmount;
+    }
+
     const totalPrice = price * quantity;
 
     if (!cart) {
@@ -47,7 +74,7 @@ exports.addToCart = async (req, res) => {
       });
 
       await cart.save();
-      
+
       // Remove from wishlist if present
       await wishlistController.removeFromWishlistOnAddToCart(userId, productId);
 
@@ -84,7 +111,7 @@ exports.addToCart = async (req, res) => {
     }
 
     await cart.save();
-    
+
     // Remove from wishlist if present (only for new additions)
     if (!existingItem) {
       await wishlistController.removeFromWishlistOnAddToCart(userId, productId);
@@ -254,14 +281,14 @@ exports.validateCart = async (req, res) => {
         continue;
       }
 
-      if (product.quantity < item.quantity) {
+      if (product.stock < item.quantity) {
         validationErrors.push({
           productId: product._id,
           type: 'quantity',
           productName: product.productName,
-          available: product.quantity,
+          available: product.stock,
           requested: item.quantity,
-          message: `Only ${product.quantity} of "${product.productName}" left. You requested ${item.quantity}.`
+          message: `Only ${product.stock} of "${product.productName}" left. You requested ${item.quantity}.`
         });
       }
     }

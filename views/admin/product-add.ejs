@@ -8,21 +8,21 @@
         margin-top: 0.25rem;
         min-height: 1.25em;
     }
-  
+
     .thumbnails-container {
         display: flex;
         overflow-x: auto;
         gap: 10px;
         padding: 10px 0;
     }
-  
+
     .thumbnail {
         width: 100px;
         height: 100px;
         object-fit: cover;
         border: 1px solid #ddd;
     }
-  
+
     .image-preview {
         max-width: 200px;
         max-height: 200px;
@@ -34,13 +34,13 @@
         border: 1px solid #ddd;
         border-radius: 4px;
     }
-  
+
     .image-cropper {
         max-width: 300px;
         max-height: 300px;
         margin: 10px 0;
     }
-  
+
     .cropper-container {
         position: relative;
         max-width: 100%;
@@ -66,41 +66,39 @@
                                 class="form-control border" id="product_name">
                             <div id="productName-error" class="error-message"></div>
                         </div>
-           
+
                         <div class="mb-4">
                             <label class="form-label">Full description</label>
-                            <textarea placeholder="Type here" id="descriptionid" name="description" 
+                            <textarea placeholder="Type here" id="descriptionid" name="description"
                                 class="form-control border" rows="4"></textarea>
                             <div id="description-error" class="error-message"></div>
                         </div>
-                        
-                        <div class=" omega">
-                            <div class="col-lg-4">
+
+                        <div class="row">
+                            <div class="col-lg-6">
                                 <div class="mb-4">
-                                    <label class="form-label">Regular price</label>
-                                    <input placeholder="$" name="regularPrice" type="text"
-                                        class="form-control border">
-                                    <div id="regularPrice-error" class="error-message"></div>
+                                    <label class="form-label">Price</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₹</span>
+                                        <input placeholder="Enter price" name="price" type="number" step="0.01" min="0"
+                                            class="form-control border">
+                                    </div>
+                                    <div id="price-error" class="error-message"></div>
+                                    <small class="form-text text-muted">
+                                        Note: If an offer is applied, the price will be automatically discounted.
+                                    </small>
                                 </div>
                             </div>
-                            <div class="col-lg-4">
-                                <div class="mb-4">
-                                    <label class="form-label">Sale price</label>
-                                    <input placeholder="$" name="salePrice" type="text" 
-                                        class="form-control border">
-                                    <div id="salePrice-error" class="error-message"></div>
-                                </div>
-                            </div>
-                            <div class="col-lg-4">
+                            <div class="col-lg-6">
                                 <div class="mb-4">
                                     <label class="form-label">Quantity</label>
-                                    <input placeholder="" name="quantity" type="text" 
+                                    <input placeholder="Enter quantity" name="quantity" type="number" min="0" step="1"
                                         class="form-control border">
                                     <div id="quantity-error" class="error-message"></div>
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="card mb-4">
                             <div class="card-body">
                                 <div class="row gx-2">
@@ -118,7 +116,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="card mb-2">
                             <div class="card-header">
                                 <h4>Choose images</h4>
@@ -128,56 +126,56 @@
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Image 1</label>
-                                        <input class="form-control" type="file" name="images[]" id="input1" 
-                                            accept="image/png, image/jpeg, image/jpg" 
+                                        <input class="form-control" type="file" name="images[]" id="input1"
+                                            accept="image/png, image/jpeg, image/jpg"
                                             onchange="viewImage(event, 1)">
                                         <img src="" class="image-preview" id="imgView1" alt="Preview">
                                         <div class="image-cropper" id="cropperContainer1" style="display:none;">
                                             <img src="" id="croppedImg1" alt="Cropper">
-                                            <button type="button" id="saveButton1" 
-                                                class="btn btn-sm btn-primary mt-2" 
+                                            <button type="button" id="saveButton1"
+                                                class="btn btn-sm btn-primary mt-2"
                                                 onclick="saveCroppedImage(1)">Save Crop</button>
                                         </div>
                                         <div id="image-error-1" class="error-message"></div>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Image 2</label>
-                                        <input class="form-control" type="file" name="images[]" id="input2" 
-                                            accept="image/png, image/jpeg, image/jpg" 
+                                        <input class="form-control" type="file" name="images[]" id="input2"
+                                            accept="image/png, image/jpeg, image/jpg"
                                             onchange="viewImage(event, 2)">
                                         <img src="" class="image-preview" id="imgView2" alt="Preview">
                                         <div class="image-cropper" id="cropperContainer2" style="display:none;">
                                             <img src="" id="croppedImg2" alt="Cropper">
-                                            <button type="button" id="saveButton2" 
-                                                class="btn btn-sm btn-primary mt-2" 
+                                            <button type="button" id="saveButton2"
+                                                class="btn btn-sm btn-primary mt-2"
                                                 onclick="saveCroppedImage(2)">Save Crop</button>
                                         </div>
                                         <div id="image-error-2" class="error-message"></div>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Image 3</label>
-                                        <input class="form-control" type="file" name="images[]" id="input3" 
-                                            accept="image/png, image/jpeg, image/jpg" 
+                                        <input class="form-control" type="file" name="images[]" id="input3"
+                                            accept="image/png, image/jpeg, image/jpg"
                                             onchange="viewImage(event, 3)">
                                         <img src="" class="image-preview" id="imgView3" alt="Preview">
                                         <div class="image-cropper" id="cropperContainer3" style="display:none;">
                                             <img src="" id="croppedImg3" alt="Cropper">
-                                            <button type="button" id="saveButton3" 
-                                                class="btn btn-sm btn-primary mt-2" 
+                                            <button type="button" id="saveButton3"
+                                                class="btn btn-sm btn-primary mt-2"
                                                 onclick="saveCroppedImage(3)">Save Crop</button>
                                         </div>
                                         <div id="image-error-3" class="error-message"></div>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Image 4</label>
-                                        <input class="form-control" type="file" name="images[]" id="input4" 
-                                            accept="image/png, image/jpeg, image/jpg" 
+                                        <input class="form-control" type="file" name="images[]" id="input4"
+                                            accept="image/png, image/jpeg, image/jpg"
                                             onchange="viewImage(event, 4)">
                                         <img src="" class="image-preview" id="imgView4" alt="Preview">
                                         <div class="image-cropper" id="cropperContainer4" style="display:none;">
                                             <img src="" id="croppedImg4" alt="Cropper">
-                                            <button type="button" id="saveButton4" 
-                                                class="btn btn-sm btn-primary mt-2" 
+                                            <button type="button" id="saveButton4"
+                                                class="btn btn-sm btn-primary mt-2"
                                                 onclick="saveCroppedImage(4)">Save Crop</button>
                                         </div>
                                         <div id="image-error-4" class="error-message"></div>
@@ -284,8 +282,7 @@
     function validateForm() {
         const productName = document.querySelector('input[name="productName"]');
         const description = document.querySelector('textarea[name="description"]');
-        const regularPrice = document.querySelector('input[name="regularPrice"]');
-        const salePrice = document.querySelector('input[name="salePrice"]');
+        const price = document.querySelector('input[name="price"]');
         const quantity = document.querySelector('input[name="quantity"]');
         const category = document.querySelector('select[name="category"]');
         const imageInputs = [
@@ -298,8 +295,7 @@
         const errorElements = {
             productName: document.getElementById('productName-error'),
             description: document.getElementById('description-error'),
-            regularPrice: document.getElementById('regularPrice-error'),
-            salePrice: document.getElementById('salePrice-error'),
+            price: document.getElementById('price-error'),
             quantity: document.getElementById('quantity-error'),
             category: document.getElementById('category-error'),
             images: [
@@ -331,19 +327,11 @@
             isValid = false;
         }
 
-        if (!regularPrice.value.trim()) {
-            errorElements.regularPrice.textContent = 'Regular price is required';
+        if (!price.value.trim()) {
+            errorElements.price.textContent = 'Price is required';
             isValid = false;
-        } else if (isNaN(regularPrice.value) || Number(regularPrice.value) < 0) {
-            errorElements.regularPrice.textContent = 'Please enter a valid non-negative number';
-            isValid = false;
-        }
-
-        if (!salePrice.value.trim()) {
-            errorElements.salePrice.textContent = 'Sale price is required';
-            isValid = false;
-        } else if (isNaN(salePrice.value) || Number(salePrice.value) < 0) {
-            errorElements.salePrice.textContent = 'Please enter a valid non-negative number';
+        } else if (isNaN(price.value) || Number(price.value) < 0) {
+            errorElements.price.textContent = 'Please enter a valid non-negative number';
             isValid = false;
         }
 

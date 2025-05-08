@@ -135,17 +135,38 @@
 
         <!-- Price -->
         <div class="mb-6">
-          <% if (product.originalPrice && product.originalPrice> product.price) { %>
-          <span class="text-gray-400 line-through text-xl mr-2">$<%=
-                                            product.originalPrice.toFixed(2) %></span>
-          <% } %>
-          <span class="text-3xl font-bold text-[#00ffff]">$<%= product.price.toFixed(2) %>
-          </span>
+          <% if (product.hasOffer && product.discount > 0) { %>
+            <div class="flex items-center mb-2">
+              <span class="text-3xl font-bold text-[#00ffff]">₹<%= product.displayPrice ? product.displayPrice.toFixed(2) : '0.00' %></span>
+              <span class="text-gray-400 line-through text-xl ml-3">₹<%= product.price ? product.price.toFixed(2) : '0.00' %></span>
+              <span class="ml-3 bg-red-600 text-white text-sm px-2 py-1 rounded">
+                <% if (product.offerInfo && product.offerInfo.discountType === 'percentage') { %>
+                  <%= product.offerInfo.discountValue ? product.offerInfo.discountValue.toFixed(0) : '0' %>% OFF
+                <% } else { %>
+                  <%= product.discount ? product.discount.toFixed(0) : '0' %>% OFF
+                <% } %>
+              </span>
+            </div>
 
-          <% if (product.discount> 0) { %>
-          <span class="ml-2 bg-red-500/20 text-red-400 text-sm px-2 py-1 rounded">
-            Save $<%= (product.originalPrice - product.price).toFixed(2) %>
-          </span>
+            <% if (product.offerInfo) { %>
+              <div class="bg-gray-800 p-2 rounded-lg inline-block">
+                <span class="text-sm">
+                  <span class="text-[#00ffff] font-semibold"><%= product.offerInfo.name %></span>
+                  <% if (product.offerInfo.type === 'product') { %>
+                    <span class="bg-blue-500 text-white text-xs px-1 py-0.5 rounded ml-1">Product Offer</span>
+                  <% } else if (product.offerInfo.type === 'category') { %>
+                    <span class="bg-green-500 text-white text-xs px-1 py-0.5 rounded ml-1">Category Offer</span>
+                  <% } %>
+                </span>
+                <% if (product.offerInfo.endDate) { %>
+                  <div class="text-xs text-gray-400 mt-1">
+                    Offer ends: <%= new Date(product.offerInfo.endDate).toLocaleDateString() %>
+                  </div>
+                <% } %>
+              </div>
+            <% } %>
+          <% } else { %>
+            <span class="text-3xl font-bold text-[#00ffff]">₹<%= product.price ? product.price.toFixed(2) : '0.00' %></span>
           <% } %>
         </div>
 
@@ -221,7 +242,7 @@
                                                   </svg>Add to Bag
                                                 </button>
                                               </form>
-                                              
+
                                               <div class="flex flex-wrap space-y-4 md:space-y-0 md:space-x-4 mb-8">
                                                 <div class="w-full md:w-auto flex items-center bg-gray-800 rounded-lg">
                                                   <button type="button" class="px-4 py-3 text-white" onclick="decrementQuantity()" <%=product.stock <=0 ? 'disabled' : '' %>>
@@ -237,9 +258,9 @@
                                                   </button>
                                                 </div>
                                               </div>
-                                              
+
 <!-- Replace the existing wishlist button with this -->
-<button 
+<button
   class="wishlist-btn w-full md:w-auto px-4 py-3 border border-[#00ffff] text-[#00ffff] font-bold rounded-lg hover:bg-gray-800 transition flex items-center justify-center"
   onclick="toggleWishlist('<%= product._id %>')"
   data-product-id="<%= product._id %>"
@@ -510,9 +531,9 @@
           <a href="/shop/product/<%= relatedProduct._id %>" class="block relative">
             <img src="<%= relatedProduct.image %>" alt="<%= relatedProduct.name %>" class="w-full h-48 object-cover">
 
-            <% if (relatedProduct.discount> 0) { %>
-            <div class="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-              -<%= relatedProduct.discount %>% OFF
+            <% if (relatedProduct.hasOffer && relatedProduct.discount > 0) { %>
+            <div class="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full">
+              <%= Math.round(relatedProduct.discount) %>% OFF
             </div>
             <% } %>
 
@@ -544,13 +565,14 @@
 
             <div class="flex items-center justify-between">
               <div>
-                <% if (relatedProduct.originalPrice && relatedProduct.originalPrice>
-                                                        relatedProduct.price) { %>
-                <span class="text-gray-400 line-through text-sm mr-1">$<%=
-                                                                relatedProduct.originalPrice.toFixed(2) %></span>
+                <% if (relatedProduct.hasOffer && relatedProduct.discount > 0) { %>
+                  <div class="flex items-center">
+                    <span class="text-lg font-bold text-[#00ffff]">₹<%= relatedProduct.displayPrice ? relatedProduct.displayPrice.toFixed(2) : '0.00' %></span>
+                    <span class="text-gray-400 line-through text-sm ml-2">₹<%= relatedProduct.price ? relatedProduct.price.toFixed(2) : '0.00' %></span>
+                  </div>
+                <% } else { %>
+                  <span class="text-lg font-bold text-[#00ffff]">₹<%= relatedProduct.price ? relatedProduct.price.toFixed(2) : '0.00' %></span>
                 <% } %>
-                <span class="text-lg font-bold text-[#00ffff]">$<%=
-                                                                    relatedProduct.price.toFixed(2) %></span>
               </div>
 
               <button class="p-2 rounded-full bg-gray-700 hover:bg-[#00ffff] hover:text-black transition" onclick="quickAddToCart('<%= relatedProduct._id %>')">
@@ -582,7 +604,7 @@
       behavior: 'smooth'
     });
   });
-  
+
   // Image zoom functionality
   document.addEventListener('DOMContentLoaded', function() {
     const zoomContainer = document.getElementById('productZoomContainer');
@@ -704,53 +726,80 @@
 
   function incrementQuantity(max) {
     const quantityInput = document.getElementById('quantity');
+    const formQuantityInput = document.getElementById('form-quantity');
     const currentValue = parseInt(quantityInput.value);
+
     if (currentValue < max) {
-      quantityInput.value = currentValue + 1;
-      document.getElementById('form-quantity').value = quantityInput.value;
+      const newValue = currentValue + 1;
+      quantityInput.value = newValue;
+      formQuantityInput.value = newValue;
+      console.log("Quantity incremented to:", newValue);
     }
   }
 
   function decrementQuantity() {
     const quantityInput = document.getElementById('quantity');
+    const formQuantityInput = document.getElementById('form-quantity');
     const currentValue = parseInt(quantityInput.value);
+
     if (currentValue > 1) {
-      quantityInput.value = currentValue - 1;
-      document.getElementById('form-quantity').value = quantityInput.value;
+      const newValue = currentValue - 1;
+      quantityInput.value = newValue;
+      formQuantityInput.value = newValue;
+      console.log("Quantity decremented to:", newValue);
     }
   }
+
+  // Also update form-quantity when quantity input changes directly
+  document.addEventListener('DOMContentLoaded', function() {
+    const quantityInput = document.getElementById('quantity');
+    const formQuantityInput = document.getElementById('form-quantity');
+
+    if (quantityInput && formQuantityInput) {
+      quantityInput.addEventListener('change', function() {
+        formQuantityInput.value = this.value;
+        console.log("Quantity changed to:", this.value);
+      });
+    }
+  });
 
   // AJAX form submission with SweetAlert2
   document.querySelectorAll('.cart-form').forEach(form => {
     form.addEventListener('submit', async function(e) {
       e.preventDefault();
-      
+
       const productId = this.getAttribute('data-product-id');
       const quantity = document.getElementById('form-quantity').value;
       const button = this.querySelector('.add-to-cart-btn');
-      
+
       // Save original button text
       const originalText = button.innerHTML;
-      
+
       // Show loading state
       button.innerHTML = '<svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Adding...';
       button.disabled = true;
-      
+
       try {
+        const requestData = {
+          productId: productId,
+          quantity: parseInt(quantity)
+        };
+
+        console.log("Sending add to cart request:", requestData);
+
         const response = await fetch('/add-to-cart', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json'
           },
-          body: JSON.stringify({
-            productId: productId,
-            quantity: quantity
-          })
+          body: JSON.stringify(requestData)
         });
-        
+
+        console.log("Response status:", response.status);
         const data = await response.json();
-        
+        console.log("Response data:", data);
+
         if (response.ok) {
           Swal.fire({
             title: 'Added to Cart!',
@@ -787,11 +836,11 @@
   async function toggleWishlist(productId) {
     const wishlistButton = document.getElementById('wishlistButton');
     const originalContent = wishlistButton.innerHTML;
-    
+
     // Show loading state
     wishlistButton.innerHTML = '<svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
     wishlistButton.disabled = true;
-    
+
     try {
       const response = await fetch('/wishlist/toggle', {
         method: 'POST',
@@ -800,9 +849,9 @@
         },
         body: JSON.stringify({ productId: productId })
       });
-      
+
       const data = await response.json();
-      
+
       if (response.ok) {
         // Update button appearance based on current state
         if (data.action === 'added') {
@@ -839,7 +888,7 @@
             timerProgressBar: true
           });
         }
-        
+
         // Update wishlist count in navbar
         updateWishlistCount();
       } else {
@@ -885,9 +934,9 @@
   document.addEventListener('DOMContentLoaded', async function() {
     const productId = '<%= product._id %>';
     const wishlistButton = document.getElementById('wishlistButton');
-    
+
     if (!wishlistButton) return;
-    
+
     try {
       const response = await fetch(`/wishlist/status/${productId}`);
       if (response.ok) {
@@ -906,6 +955,63 @@
     }
   });
 
+  // Quick add to cart function for related products
+  async function quickAddToCart(productId) {
+    try {
+      console.log("Quick add to cart for product:", productId);
+
+      const response = await fetch('/add-to-cart', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          productId: productId,
+          quantity: 1
+        })
+      });
+
+      const data = await response.json();
+      console.log("Quick add response:", data);
+
+      if (response.ok) {
+        Swal.fire({
+          title: 'Added to Cart!',
+          text: 'Product added to your shopping bag',
+          icon: 'success',
+          iconColor: '#00ffff',
+          toast: true,
+          position: 'bottom-end',
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true
+        });
+      } else {
+        Swal.fire({
+          title: 'Error',
+          text: data.message || 'Failed to add to cart',
+          icon: 'error',
+          toast: true,
+          position: 'bottom-end',
+          showConfirmButton: false,
+          timer: 3000
+        });
+      }
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      Swal.fire({
+        title: 'Error',
+        text: 'An error occurred while adding to cart',
+        icon: 'error',
+        toast: true,
+        position: 'bottom-end',
+        showConfirmButton: false,
+        timer: 3000
+      });
+    }
+  }
+
   // Helper function to show notifications
   function showNotification(message, type = 'success') {
     const notification = document.createElement('div');
@@ -914,7 +1020,7 @@
     }`;
     notification.textContent = message;
     document.body.appendChild(notification);
-    
+
     // Remove notification after 3 seconds
     setTimeout(() => {
       notification.remove();

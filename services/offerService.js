@@ -34,13 +34,13 @@ const getValidOffersByType = async (type) => {
  */
 const getValidOffersForProduct = async (productId) => {
   const now = new Date();
-  
+
   // Get the product with its category
   const product = await Product.findById(productId).populate('category');
   if (!product) {
     return [];
   }
-  
+
   // Get direct product offers
   const productOffers = await Offer.find({
     type: 'product',
@@ -49,7 +49,7 @@ const getValidOffersForProduct = async (productId) => {
     startDate: { $lte: now },
     endDate: { $gte: now }
   });
-  
+
   // Get category offers for the product's category
   const categoryOffers = await Offer.find({
     type: 'category',
@@ -58,7 +58,7 @@ const getValidOffersForProduct = async (productId) => {
     startDate: { $lte: now },
     endDate: { $gte: now }
   });
-  
+
   return [...productOffers, ...categoryOffers];
 };
 
@@ -69,7 +69,7 @@ const getValidOffersForProduct = async (productId) => {
  */
 const getBestOfferForProduct = async (productId, price) => {
   const offers = await getValidOffersForProduct(productId);
-  
+
   if (offers.length === 0) {
     return {
       hasOffer: false,
@@ -78,20 +78,20 @@ const getBestOfferForProduct = async (productId, price) => {
       offer: null
     };
   }
-  
+
   // Calculate discount for each offer and find the best one
   let bestOffer = null;
   let maxDiscount = 0;
-  
+
   for (const offer of offers) {
     const discountAmount = offer.calculateDiscount(price);
-    
+
     if (discountAmount > maxDiscount) {
       maxDiscount = discountAmount;
       bestOffer = offer;
     }
   }
-  
+
   return {
     hasOffer: !!bestOffer,
     discountAmount: maxDiscount,
@@ -106,11 +106,11 @@ const getBestOfferForProduct = async (productId, price) => {
  */
 const applyOffersToProducts = async (products) => {
   const productsWithOffers = [];
-  
+
   for (const product of products) {
-    const price = product.salePrice || product.regularPrice;
+    const price = product.price;
     const offerResult = await getBestOfferForProduct(product._id, price);
-    
+
     productsWithOffers.push({
       ...product.toObject ? product.toObject() : product,
       offerPrice: offerResult.finalPrice,
@@ -119,7 +119,7 @@ const applyOffersToProducts = async (products) => {
       appliedOffer: offerResult.offer
     });
   }
-  
+
   return productsWithOffers;
 };
 
@@ -132,22 +132,22 @@ const applyProductOffer = async (productId, offerId) => {
   // Validate product and offer
   const product = await Product.findById(productId);
   const offer = await Offer.findById(offerId);
-  
+
   if (!product || !offer || offer.type !== 'product') {
     return false;
   }
-  
+
   // Update offer's applicable products
   await Offer.findByIdAndUpdate(offerId, {
     $addToSet: { applicableProducts: productId }
   });
-  
+
   // Update product's offer reference
   await Product.findByIdAndUpdate(productId, {
     offer: offerId,
     productOffer: true
   });
-  
+
   return true;
 };
 
@@ -160,21 +160,21 @@ const applyCategoryOffer = async (categoryId, offerId) => {
   // Validate category and offer
   const category = await Category.findById(categoryId);
   const offer = await Offer.findById(offerId);
-  
+
   if (!category || !offer || offer.type !== 'category') {
     return false;
   }
-  
+
   // Update offer's applicable categories
   await Offer.findByIdAndUpdate(offerId, {
     $addToSet: { applicableCategories: categoryId }
   });
-  
+
   // Update category's offer reference
   await Category.findByIdAndUpdate(categoryId, {
     offer: offerId
   });
-  
+
   return true;
 };
 
@@ -184,22 +184,22 @@ const applyCategoryOffer = async (categoryId, offerId) => {
  */
 const removeProductOffer = async (productId) => {
   const product = await Product.findById(productId).populate('offer');
-  
+
   if (!product || !product.offer) {
     return false;
   }
-  
+
   // Remove product from offer's applicable products
   await Offer.findByIdAndUpdate(product.offer._id, {
     $pull: { applicableProducts: productId }
   });
-  
+
   // Remove offer reference from product
   await Product.findByIdAndUpdate(productId, {
     offer: null,
     productOffer: false
   });
-  
+
   return true;
 };
 
@@ -209,21 +209,21 @@ const removeProductOffer = async (productId) => {
  */
 const removeCategoryOffer = async (categoryId) => {
   const category = await Category.findById(categoryId).populate('offer');
-  
+
   if (!category || !category.offer) {
     return false;
   }
-  
+
   // Remove category from offer's applicable categories
   await Offer.findByIdAndUpdate(category.offer._id, {
     $pull: { applicableCategories: categoryId }
   });
-  
+
   // Remove offer reference from category
   await Category.findByIdAndUpdate(categoryId, {
     offer: null
   });
-  
+
   return true;
 };
 

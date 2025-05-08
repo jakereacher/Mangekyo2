@@ -78,24 +78,32 @@
                             <div id="brand-error" class="error-message"></div> -->
                         </div>
                         <div class="row">
-                            <div class="col-lg-4">
+                            <div class="col-lg-6">
                                 <div class="mb-4">
-                                    <label class="form-label">Regular Price</label>
-                                    <input placeholder="$" name="regularPrice" type="text" class="form-control border" value="<%= product.regularPrice %>">
-                                    <div id="regularPrice-error" class="error-message"></div>
+                                    <label class="form-label">Price</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₹</span>
+                                        <input placeholder="Enter price" name="price" type="number" step="0.01" min="0" class="form-control border" value="<%= product.price %>">
+                                    </div>
+                                    <div id="price-error" class="error-message"></div>
+                                    <% if (product.productOffer && product.offerPercentage > 0) { %>
+                                        <div class="mt-2 alert alert-info">
+                                            <strong>Offer Applied:</strong> <%= product.offerPercentage %>% off
+                                            <div>Original Price: ₹<%= product.price.toFixed(2) %></div>
+                                            <div>Final Price: ₹<%= product.finalPrice.toFixed(2) %></div>
+                                            <small>Note: Changing the price will recalculate the final price with the current offer.</small>
+                                        </div>
+                                    <% } else { %>
+                                        <small class="form-text text-muted">
+                                            Note: If an offer is applied, the price will be automatically discounted.
+                                        </small>
+                                    <% } %>
                                 </div>
                             </div>
-                            <div class="col-lg-4">
-                                <div class="mb-4">
-                                    <label class="form-label">Sale Price</label>
-                                    <input placeholder="$" name="salePrice" type="text" class="form-control border" value="<%= product.salePrice %>">
-                                    <div id="salePrice-error" class="error-message"></div>
-                                </div>
-                            </div>
-                            <div class="col-lg-4">
+                            <div class="col-lg-6">
                                 <div class="mb-4">
                                     <label class="form-label">Quantity</label>
-                                    <input placeholder="" name="quantity" type="text" class="form-control border" value="<%= product.quantity %>">
+                                    <input placeholder="Enter quantity" name="quantity" type="number" min="0" step="1" class="form-control border" value="<%= product.quantity %>">
                                     <div id="quantity-error" class="error-message"></div>
                                 </div>
                             </div>
@@ -279,8 +287,7 @@
         let isValid = true;
         const productName = document.getElementById('product_name').value;
         const description = document.getElementById('descriptionid').value;
-        const brand = document.getElementById('brand').value;
-        const regularPrice = document.querySelector('input[name="regularPrice"]').value;
+        const price = document.querySelector('input[name="price"]').value;
         const quantity = document.querySelector('input[name="quantity"]').value;
 
         if (!productName.trim()) {
@@ -291,12 +298,8 @@
             displayErrorMessage('description-error', 'Description is required');
             isValid = false;
         }
-        if (!brand.trim()) {
-            displayErrorMessage('brand-error', 'Brand is required');
-            isValid = false;
-        }
-        if (!regularPrice || parseFloat(regularPrice) <= 0) {
-            displayErrorMessage('regularPrice-error', 'Please enter a valid price');
+        if (!price || parseFloat(price) < 0) {
+            displayErrorMessage('price-error', 'Please enter a valid price');
             isValid = false;
         }
         if (!quantity || parseInt(quantity) < 0) {

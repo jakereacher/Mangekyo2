@@ -99,10 +99,30 @@
                         </a>
                     </li>
                     <li>
-                        <a href="/admin/offers" class="nav-link <%= activePage === 'offers' ? 'active' : '' %>">
+                        <a href="#offersSubmenu" data-bs-toggle="collapse" class="nav-link <%= ['offers', 'product-offers', 'category-offers'].includes(activePage) ? 'active' : '' %> dropdown-toggle">
                             <i class="fas fa-percent me-2"></i>
                             Offers
                         </a>
+                        <ul class="collapse <%= ['offers', 'product-offers', 'category-offers'].includes(activePage) ? 'show' : '' %> list-unstyled" id="offersSubmenu">
+                            <li>
+                                <a href="/admin/offers" class="nav-link ms-3 <%= activePage === 'offers' ? 'active' : '' %>">
+                                    <i class="fas fa-list-ul me-2"></i>
+                                    All Offers
+                                </a>
+                            </li>
+                            <li>
+                                <a href="/admin/product-offers" class="nav-link ms-3 <%= activePage === 'product-offers' ? 'active' : '' %>">
+                                    <i class="fas fa-box me-2"></i>
+                                    Product Offers
+                                </a>
+                            </li>
+                            <li>
+                                <a href="/admin/category-offers" class="nav-link ms-3 <%= activePage === 'category-offers' ? 'active' : '' %>">
+                                    <i class="fas fa-tags me-2"></i>
+                                    Category Offers
+                                </a>
+                            </li>
+                        </ul>
                     </li>
                     <li>
                         <a href="/admin/orders" class="nav-link <%= activePage === 'orders' ? 'active' : '' %>">

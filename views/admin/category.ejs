@@ -42,51 +42,66 @@
                         <table class="table table-hover">
                             <thead>
                                 <tr>
-                                    <th class="text-center"></th>
+                                    <th class="text-center">#</th>
                                     <th>Name</th>
                                     <th>Description</th>
-                                    <th>Offer Price</th>
                                     <th>Offer</th>
                                     <th>Status</th>
-                                    <th>List/Unlist</th>
-                                    <th class="text-start">Edit</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <% cat.reverse().forEach((category, index) => { %>
+                                <% cat.forEach((category, index) => { %>
                                 <tr>
-                                    <td></td>
+                                    <td class="text-center"><%= index + 1 %></td>
                                     <td class="text-start"><%= category.name %></td>
                                     <td class="text-start"><%= category.description %></td>
-                                    <td></td>
                                     <td class="text-start">
-                                        <button class="btn btn-info" style="width: 100px">
-                                            <a href="#" class="text-white">Add Offer</a>
-                                        </button>
-                                        <button class="btn btn-info" style="width: 100px">
-                                            <a href="#" class="text-white">Remove</a>
-                                        </button>
+                                        <% if (category.hasOffer) { %>
+                                            <div class="d-flex flex-column">
+                                                <span class="badge bg-success mb-1">
+                                                    <%= category.discountPercentage.toFixed(2) %>% OFF
+                                                </span>
+                                                <small class="text-muted">
+                                                    <%= category.offerName %>
+                                                </small>
+                                                <% if (category.offerEndDate) { %>
+                                                    <small class="text-muted">
+                                                        Ends: <%= new Date(category.offerEndDate).toLocaleDateString() %>
+                                                    </small>
+                                                <% } %>
+                                            </div>
+                                        <% } else { %>
+                                            <span class="badge bg-secondary">No Offer</span>
+                                        <% } %>
                                     </td>
                                     <td class="text-start">
                                       <%if(category.isListed){%>
-                                        <span class="badge rounded-pill " style="width: 60px; color: green;">Listed</span>
+                                        <span class="badge rounded-pill bg-success" style="width: 60px;">Listed</span>
                                         <%}else{%>
-                                        <span class="badge rounded-pill alert-danger" style="width: 60px;color: red;">Unlisted</span>
+                                        <span class="badge rounded-pill bg-danger" style="width: 60px;">Unlisted</span>
                                         <%}%>
                                     </td>
                                     <td class="text-start">
-                                      <%if (category.isListed){%>
-                                        <button class="btn btn-danger" style="width: 70px">
-                                            <a href="/admin/listCategory?id=<%=category._id%>" class="text-white">Unlist</a>
-                                        </button>
-                                        <%}else{%>
-                                        <button class="btn btn-success" style="width: 70px">
-                                            <a href="/admin/unlistCategory?id=<%=category._id%>" class="text-white">List</a>
-                                        </button>
-                                        <%}%>
-                                    </td>
-                                    <td class="text-start">
-                                        <a href="/admin/editCategory?id=<%=category._id%>" class="btn btn-info text-white">Edit</a>
+                                        <div class="btn-group" role="group">
+                                            <a href="/admin/editCategory?id=<%=category._id%>" class="btn btn-sm btn-info text-white">
+                                                <i class="fas fa-edit"></i> Edit
+                                            </a>
+
+                                            <%if (category.isListed){%>
+                                                <a href="/admin/listCategory?id=<%=category._id%>" class="btn btn-sm btn-danger text-white">
+                                                    <i class="fas fa-eye-slash"></i> Unlist
+                                                </a>
+                                            <%}else{%>
+                                                <a href="/admin/unlistCategory?id=<%=category._id%>" class="btn btn-sm btn-success text-white">
+                                                    <i class="fas fa-eye"></i> List
+                                                </a>
+                                            <%}%>
+
+                                            <a href="/admin/category-offers/create" class="btn btn-sm btn-primary text-white">
+                                                <i class="fas fa-percent"></i> Manage Offers
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                                 <% }) %>
@@ -160,8 +175,8 @@ function handleFormSubmit(event) {
         Swal.fire({
             icon: 'error',
             title: 'Oops',
-            text: error.message.includes("Category already exists") 
-                ? "Category already exists" 
+            text: error.message.includes("Category already exists")
+                ? "Category already exists"
                 : "An error occurred while adding this category: " + error.message
         });
     });

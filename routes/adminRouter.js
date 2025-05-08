@@ -62,12 +62,22 @@ router.post("/remove-coupon", couponController.removeCoupon);
 router.post("/restore-coupon", couponController.restoreCoupon);
 router.put("/edit-coupon",couponController.editCoupon);
 
-// Offer management routes
+// General Offer management routes
 router.get("/offers", adminAuth, offerController.renderOffersPage);
-router.get("/offers/create", adminAuth, offerController.renderCreateOfferPage);
-router.post("/offers/create", adminAuth, offerController.createOffer);
-router.get("/offers/edit/:id", adminAuth, offerController.renderEditOfferPage);
-router.post("/offers/update/:id", adminAuth, offerController.updateOffer);
 router.delete("/offers/delete/:id", adminAuth, offerController.deleteOffer);
+
+// Product Offer routes
+router.get("/product-offers", adminAuth, offerController.renderProductOffersPage);
+router.get("/product-offers/create", adminAuth, offerController.renderCreateProductOfferPage);
+router.post("/product-offers/create", adminAuth, offerController.createProductOffer);
+router.get("/product-offers/edit/:id", adminAuth, offerController.renderEditProductOfferPage);
+router.post("/product-offers/update/:id", adminAuth, offerController.updateProductOffer);
+
+// Category Offer routes
+router.get("/category-offers", adminAuth, offerController.renderCategoryOffersPage);
+router.get("/category-offers/create", adminAuth, offerController.renderCreateCategoryOfferPage);
+router.post("/category-offers/create", adminAuth, offerController.createCategoryOffer);
+router.get("/category-offers/edit/:id", adminAuth, offerController.renderEditCategoryOfferPage);
+router.post("/category-offers/update/:id", adminAuth, offerController.updateCategoryOffer);
 
 module.exports = router;

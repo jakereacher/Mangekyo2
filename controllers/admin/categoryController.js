@@ -15,16 +15,32 @@ const categoryInfo = async (req, res) => {
       ? { name: { $regex: search, $options: "i" } }
       : {};
 
+    // Fetch categories with populated offer
     const categoryData = await Category.find(query)
+      .populate("offer")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
+
+    // Process categories to include offer information
+    const categoriesWithOffers = categoryData.map(category => {
+      const hasOffer = category.offer !== null;
+
+      return {
+        ...category.toObject(),
+        hasOffer,
+        offerName: hasOffer ? category.offer.name : null,
+        offerType: hasOffer ? category.offer.type : null,
+        discountPercentage: category.categoryOffer || 0,
+        offerEndDate: category.offerEndDate
+      };
+    });
 
     const totalCategories = await Category.countDocuments(query);
     const totalPages = Math.ceil(totalCategories / limit);
 
     res.render("category", {
-      cat: categoryData,
+      cat: categoriesWithOffers,
       currentPage: page,
       totalPages: totalPages,
       totalCategories: totalCategories,
@@ -42,8 +58,8 @@ const addCategory = async (req, res) => {
     const existingCategory = await Category.findOne({ name });
     if (existingCategory) {
       return res.status(400).json({ error: "Category already exists" });
-      
-      
+
+
     }
     const newCategory = new Category({
       name,
@@ -97,7 +113,7 @@ const editCategory = async (req, res) => {
     }
 
     // Check for existing category with the same name (excluding current category)
-    const existingCategory = await Category.findOne({ 
+    const existingCategory = await Category.findOne({
       name: categoryName,
       _id: { $ne: id }
     });
@@ -121,9 +137,9 @@ const editCategory = async (req, res) => {
     }
 
     // Return success response
-    return res.status(200).json({ 
+    return res.status(200).json({
       message: "Category updated successfully",
-      category: updatedCategory 
+      category: updatedCategory
     });
 
   } catch (error) {

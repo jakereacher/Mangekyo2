@@ -1,11 +1,11 @@
-<%- include("partials/header", { activePage: 'offers' }) %>
+<%- include("partials/header", { activePage: 'product-offers' }) %>
 
 <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
   <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">Create New Offer</h1>
+    <h1 class="h2">Create Product Offer</h1>
     <div class="btn-toolbar mb-2 mb-md-0">
-      <a href="/admin/offers" class="btn btn-sm btn-outline-secondary">
-        <i class="fas fa-arrow-left"></i> Back to Offers
+      <a href="/admin/product-offers" class="btn btn-sm btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Product Offers
       </a>
     </div>
   </div>
@@ -18,20 +18,23 @@
   <% } %>
 
   <div class="card">
+    <div class="card-header bg-primary text-white">
+      <i class="fas fa-box me-1"></i>
+      New Product Offer
+    </div>
     <div class="card-body">
-      <form action="/admin/offers/create" method="POST">
+      <form action="/admin/product-offers/create" method="POST">
         <div class="row mb-3">
           <div class="col-md-6">
             <label for="name" class="form-label">Offer Name <span class="text-danger">*</span></label>
             <input type="text" class="form-control" id="name" name="name" required>
           </div>
           <div class="col-md-6">
-            <label for="type" class="form-label">Offer Type <span class="text-danger">*</span></label>
-            <select class="form-select" id="type" name="type" required>
-              <option value="">Select Offer Type</option>
-              <option value="product">Product Offer</option>
-              <option value="category">Category Offer</option>
-              <option value="referral">Referral Offer</option>
+            <label for="discountType" class="form-label">Discount Type <span class="text-danger">*</span></label>
+            <select class="form-select" id="discountType" name="discountType" required>
+              <option value="">Select Discount Type</option>
+              <option value="percentage">Percentage</option>
+              <option value="fixed">Fixed Amount</option>
             </select>
           </div>
         </div>
@@ -42,28 +45,17 @@
         </div>
 
         <div class="row mb-3">
-          <div class="col-md-6">
-            <label for="discountType" class="form-label">Discount Type <span class="text-danger">*</span></label>
-            <select class="form-select" id="discountType" name="discountType" required>
-              <option value="">Select Discount Type</option>
-              <option value="percentage">Percentage</option>
-              <option value="fixed">Fixed Amount</option>
-            </select>
-          </div>
-          <div class="col-md-6">
+          <div class="col-md-4">
             <label for="discountValue" class="form-label">Discount Value <span class="text-danger">*</span></label>
             <input type="number" class="form-control" id="discountValue" name="discountValue" min="0" step="0.01" required>
             <small class="form-text text-muted">For percentage, enter value between 0-100</small>
           </div>
-        </div>
-
-        <div class="row mb-3">
-          <div class="col-md-6">
+          <div class="col-md-4">
             <label for="maxDiscountAmount" class="form-label">Maximum Discount Amount</label>
             <input type="number" class="form-control" id="maxDiscountAmount" name="maxDiscountAmount" min="0" step="0.01">
             <small class="form-text text-muted">Only applicable for percentage discounts</small>
           </div>
-          <div class="col-md-6">
+          <div class="col-md-4">
             <label for="minPurchaseAmount" class="form-label">Minimum Purchase Amount</label>
             <input type="number" class="form-control" id="minPurchaseAmount" name="minPurchaseAmount" min="0" step="0.01">
           </div>
@@ -80,14 +72,14 @@
           </div>
         </div>
 
-        <!-- Product Selection (shown only for product offers) -->
-        <div class="mb-4 product-selection" style="display: none;">
+        <!-- Product Selection -->
+        <div class="mb-4">
           <label class="form-label fw-bold">Select Products <span class="text-danger">*</span></label>
-
+          
           <div class="mb-3">
             <input type="text" class="form-control" id="productSearch" placeholder="Search products by name...">
           </div>
-
+          
           <div class="card">
             <div class="card-header bg-light">
               <div class="d-flex justify-content-between align-items-center">
@@ -117,7 +109,7 @@
               <span id="selectedProductsCount">0</span> products selected
             </div>
           </div>
-
+          
           <div class="mt-3" id="productOfferPreview" style="display: none;">
             <div class="card border-success">
               <div class="card-header bg-success text-white">
@@ -141,62 +133,8 @@
           </div>
         </div>
 
-        <!-- Category Selection (shown only for category offers) -->
-        <div class="mb-4 category-selection" style="display: none;">
-          <label class="form-label fw-bold">Select Categories <span class="text-danger">*</span></label>
-
-          <div class="mb-3">
-            <input type="text" class="form-control" id="categorySearch" placeholder="Search categories by name...">
-          </div>
-
-          <div class="card">
-            <div class="card-header bg-light">
-              <div class="d-flex justify-content-between align-items-center">
-                <span>Available Categories</span>
-                <div>
-                  <button type="button" class="btn btn-sm btn-outline-primary select-all-categories">Select All</button>
-                  <button type="button" class="btn btn-sm btn-outline-secondary clear-all-categories">Clear All</button>
-                </div>
-              </div>
-            </div>
-            <div class="card-body" style="max-height: 300px; overflow-y: auto;">
-              <div class="row" id="categoryList">
-                <% categories.forEach(category => { %>
-                  <div class="col-md-6 mb-2 category-item">
-                    <div class="form-check">
-                      <input class="form-check-input category-checkbox" type="checkbox" value="<%= category._id %>" id="category_<%= category._id %>" name="applicableCategories">
-                      <label class="form-check-label" for="category_<%= category._id %>">
-                        <%= category.name %>
-                      </label>
-                    </div>
-                  </div>
-                <% }); %>
-              </div>
-            </div>
-            <div class="card-footer bg-light">
-              <span id="selectedCategoriesCount">0</span> categories selected
-            </div>
-          </div>
-
-          <div class="mt-3" id="categoryOfferPreview" style="display: none;">
-            <div class="card border-success">
-              <div class="card-header bg-success text-white">
-                Offer Preview
-              </div>
-              <div class="card-body">
-                <p>This offer will apply to all products in the selected categories.</p>
-                <p>For example, if a product costs ₹1000:</p>
-                <ul>
-                  <li>Discount: <span id="categoryDiscountExample"></span></li>
-                  <li>Final Price: ₹<span id="categoryFinalPriceExample" class="text-success fw-bold"></span></li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-          <button type="submit" class="btn btn-primary">Create Offer</button>
+          <button type="submit" class="btn btn-primary">Create Product Offer</button>
         </div>
       </form>
     </div>
@@ -205,13 +143,10 @@
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    const typeSelect = document.getElementById('type');
     const discountTypeSelect = document.getElementById('discountType');
     const discountValueInput = document.getElementById('discountValue');
     const maxDiscountAmountInput = document.getElementById('maxDiscountAmount');
-    const productSelection = document.querySelector('.product-selection');
-    const categorySelection = document.querySelector('.category-selection');
-
+    
     // Product selection elements
     const productSearch = document.getElementById('productSearch');
     const productItems = document.querySelectorAll('.product-item');
@@ -220,41 +155,16 @@
     const clearAllProductsBtn = document.querySelector('.clear-all-products');
     const selectedProductsCount = document.getElementById('selectedProductsCount');
     const productOfferPreview = document.getElementById('productOfferPreview');
-
-    // Category selection elements
-    const categorySearch = document.getElementById('categorySearch');
-    const categoryItems = document.querySelectorAll('.category-item');
-    const categoryCheckboxes = document.querySelectorAll('.category-checkbox');
-    const selectAllCategoriesBtn = document.querySelector('.select-all-categories');
-    const clearAllCategoriesBtn = document.querySelector('.clear-all-categories');
-    const selectedCategoriesCount = document.getElementById('selectedCategoriesCount');
-    const categoryOfferPreview = document.getElementById('categoryOfferPreview');
-
+    
     // Set min date for start date to today
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('startDate').min = today;
-
+    
     // Set min date for end date to start date
     document.getElementById('startDate').addEventListener('change', function() {
       document.getElementById('endDate').min = this.value;
     });
-
-    // Show/hide product/category selection based on offer type
-    typeSelect.addEventListener('change', function() {
-      productSelection.style.display = 'none';
-      categorySelection.style.display = 'none';
-
-      if (this.value === 'product') {
-        productSelection.style.display = 'block';
-        updateProductSelectionCount();
-        updateProductOfferPreview();
-      } else if (this.value === 'category') {
-        categorySelection.style.display = 'block';
-        updateCategorySelectionCount();
-        updateCategoryOfferPreview();
-      }
-    });
-
+    
     // Show/hide max discount amount based on discount type
     discountTypeSelect.addEventListener('change', function() {
       const maxDiscountField = document.getElementById('maxDiscountAmount');
@@ -265,25 +175,22 @@
         maxDiscountField.value = '';
       }
       updateProductOfferPreview();
-      updateCategoryOfferPreview();
     });
-
+    
     // Update offer preview when discount value changes
     discountValueInput.addEventListener('input', function() {
       updateProductOfferPreview();
-      updateCategoryOfferPreview();
     });
-
+    
     // Update offer preview when max discount amount changes
     maxDiscountAmountInput.addEventListener('input', function() {
       updateProductOfferPreview();
-      updateCategoryOfferPreview();
     });
-
+    
     // Product search functionality
     productSearch.addEventListener('input', function() {
       const searchTerm = this.value.toLowerCase();
-
+      
       productItems.forEach(item => {
         const productName = item.querySelector('.product-name').textContent.toLowerCase();
         if (productName.includes(searchTerm)) {
@@ -293,21 +200,7 @@
         }
       });
     });
-
-    // Category search functionality
-    categorySearch.addEventListener('input', function() {
-      const searchTerm = this.value.toLowerCase();
-
-      categoryItems.forEach(item => {
-        const categoryName = item.querySelector('.form-check-label').textContent.trim().toLowerCase();
-        if (categoryName.includes(searchTerm)) {
-          item.style.display = '';
-        } else {
-          item.style.display = 'none';
-        }
-      });
-    });
-
+    
     // Select all products
     selectAllProductsBtn.addEventListener('click', function() {
       productCheckboxes.forEach(checkbox => {
@@ -319,7 +212,7 @@
       updateProductSelectionCount();
       updateProductOfferPreview();
     });
-
+    
     // Clear all products
     clearAllProductsBtn.addEventListener('click', function() {
       productCheckboxes.forEach(checkbox => {
@@ -328,28 +221,7 @@
       updateProductSelectionCount();
       updateProductOfferPreview();
     });
-
-    // Select all categories
-    selectAllCategoriesBtn.addEventListener('click', function() {
-      categoryCheckboxes.forEach(checkbox => {
-        const item = checkbox.closest('.category-item');
-        if (item.style.display !== 'none') {
-          checkbox.checked = true;
-        }
-      });
-      updateCategorySelectionCount();
-      updateCategoryOfferPreview();
-    });
-
-    // Clear all categories
-    clearAllCategoriesBtn.addEventListener('click', function() {
-      categoryCheckboxes.forEach(checkbox => {
-        checkbox.checked = false;
-      });
-      updateCategorySelectionCount();
-      updateCategoryOfferPreview();
-    });
-
+    
     // Update product selection count when checkboxes change
     productCheckboxes.forEach(checkbox => {
       checkbox.addEventListener('change', function() {
@@ -357,61 +229,39 @@
         updateProductOfferPreview();
       });
     });
-
-    // Update category selection count when checkboxes change
-    categoryCheckboxes.forEach(checkbox => {
-      checkbox.addEventListener('change', function() {
-        updateCategorySelectionCount();
-        updateCategoryOfferPreview();
-      });
-    });
-
+    
     // Function to update product selection count
     function updateProductSelectionCount() {
       const selectedCount = document.querySelectorAll('.product-checkbox:checked').length;
       selectedProductsCount.textContent = selectedCount;
-
+      
       // Form validation - at least one product must be selected
       const submitBtn = document.querySelector('button[type="submit"]');
-      if (typeSelect.value === 'product' && selectedCount === 0) {
+      if (selectedCount === 0) {
         submitBtn.disabled = true;
       } else {
         submitBtn.disabled = false;
       }
     }
-
-    // Function to update category selection count
-    function updateCategorySelectionCount() {
-      const selectedCount = document.querySelectorAll('.category-checkbox:checked').length;
-      selectedCategoriesCount.textContent = selectedCount;
-
-      // Form validation - at least one category must be selected
-      const submitBtn = document.querySelector('button[type="submit"]');
-      if (typeSelect.value === 'category' && selectedCount === 0) {
-        submitBtn.disabled = true;
-      } else {
-        submitBtn.disabled = false;
-      }
-    }
-
+    
     // Function to update product offer preview
     function updateProductOfferPreview() {
       const selectedProducts = document.querySelectorAll('.product-checkbox:checked');
-
+      
       if (selectedProducts.length > 0 && discountValueInput.value && discountTypeSelect.value) {
         // Get a sample product (first selected)
         const sampleProductId = selectedProducts[0].value;
         const sampleProductElement = document.getElementById(`product_${sampleProductId}`).closest('.product-item');
         const sampleProductName = sampleProductElement.querySelector('.product-name').textContent;
         const sampleProductPrice = parseFloat(sampleProductElement.querySelector('.text-primary').textContent.replace('₹', ''));
-
+        
         // Calculate discount
         let discountAmount = 0;
         const discountValue = parseFloat(discountValueInput.value);
-
+        
         if (discountTypeSelect.value === 'percentage') {
           discountAmount = (sampleProductPrice * discountValue) / 100;
-
+          
           // Apply max discount cap if specified
           const maxDiscountAmount = parseFloat(maxDiscountAmountInput.value);
           if (!isNaN(maxDiscountAmount) && discountAmount > maxDiscountAmount) {
@@ -419,74 +269,35 @@
           }
         } else {
           discountAmount = discountValue;
-
+          
           // Ensure discount doesn't exceed the price
           if (discountAmount > sampleProductPrice) {
             discountAmount = sampleProductPrice;
           }
         }
-
+        
         const finalPrice = sampleProductPrice - discountAmount;
-
+        
         // Update preview
         document.getElementById('sampleProductName').textContent = sampleProductName;
         document.getElementById('sampleProductPrice').textContent = sampleProductPrice.toFixed(2);
-
+        
         if (discountTypeSelect.value === 'percentage') {
           document.getElementById('sampleProductDiscount').textContent = `${discountValue}% (₹${discountAmount.toFixed(2)})`;
         } else {
           document.getElementById('sampleProductDiscount').textContent = `₹${discountAmount.toFixed(2)}`;
         }
-
+        
         document.getElementById('sampleProductFinalPrice').textContent = finalPrice.toFixed(2);
-
+        
         productOfferPreview.style.display = 'block';
       } else {
         productOfferPreview.style.display = 'none';
       }
     }
-
-    // Function to update category offer preview
-    function updateCategoryOfferPreview() {
-      const selectedCategories = document.querySelectorAll('.category-checkbox:checked');
-
-      if (selectedCategories.length > 0 && discountValueInput.value && discountTypeSelect.value) {
-        // Use a sample price of 1000 for demonstration
-        const samplePrice = 1000;
-
-        // Calculate discount
-        let discountAmount = 0;
-        const discountValue = parseFloat(discountValueInput.value);
-
-        if (discountTypeSelect.value === 'percentage') {
-          discountAmount = (samplePrice * discountValue) / 100;
-
-          // Apply max discount cap if specified
-          const maxDiscountAmount = parseFloat(maxDiscountAmountInput.value);
-          if (!isNaN(maxDiscountAmount) && discountAmount > maxDiscountAmount) {
-            discountAmount = maxDiscountAmount;
-          }
-
-          document.getElementById('categoryDiscountExample').textContent = `${discountValue}% (₹${discountAmount.toFixed(2)})`;
-        } else {
-          discountAmount = discountValue;
-
-          // Ensure discount doesn't exceed the price
-          if (discountAmount > samplePrice) {
-            discountAmount = samplePrice;
-          }
-
-          document.getElementById('categoryDiscountExample').textContent = `₹${discountAmount.toFixed(2)}`;
-        }
-
-        const finalPrice = samplePrice - discountAmount;
-        document.getElementById('categoryFinalPriceExample').textContent = finalPrice.toFixed(2);
-
-        categoryOfferPreview.style.display = 'block';
-      } else {
-        categoryOfferPreview.style.display = 'none';
-      }
-    }
+    
+    // Initialize
+    updateProductSelectionCount();
   });
 </script>
 
