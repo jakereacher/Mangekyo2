@@ -2,10 +2,13 @@ const Cart = require("../../models/cartSchema");
 const Product = require("../../models/productSchema");
 const Order = require("../../models/orderSchema");
 const User = require("../../models/userSchema");
+const Wallet = require("../../models/walletSchema");
+const WalletTransaction = require("../../models/walletTransactionSchema");
 const Coupon = require("../../models/couponSchema");
 const StatusCodes = require("../../utils/httpStatusCodes");
 const mongoose = require("mongoose");
 const { razorpayKeyId } = require("../../config/razorpay");
+const { processWalletPayment } = require("./walletController");
 
 exports.renderCheckoutPage = async (req, res) => {
   try {
@@ -15,9 +18,22 @@ exports.renderCheckoutPage = async (req, res) => {
       return res.redirect("/login");
     }
 
+    // Find user and populate wallet data
     const user = await User.findById(userId).lean();
     if (!user) {
       return res.status(StatusCodes.NOT_FOUND).render('page-404');
+    }
+
+    // Find wallet for this user
+    const wallet = await Wallet.findOne({ user: userId }).lean();
+
+    // If wallet exists, use its balance, otherwise use the user.wallet value or default to 0
+    if (wallet) {
+      user.wallet = wallet.balance;
+      console.log("Using wallet balance from Wallet collection:", wallet.balance);
+    } else {
+      user.wallet = user.wallet || 0;
+      console.log("Using wallet balance from User document:", user.wallet);
     }
 
     const cart = await Cart.findOne({ userId }).lean();
@@ -281,11 +297,21 @@ exports.placeOrder = async (req, res) => {
     // Calculate final amount with discount
     const finalAmount = (subtotal + shipping + tax) - discount;
 
-    if (paymentMethod === "wallet" && user.wallet < finalAmount) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        success: false,
-        message: "Insufficient wallet balance",
-      });
+    // Check wallet balance from both sources for wallet payment
+    if (paymentMethod === "wallet") {
+      // Get wallet balance from Wallet collection
+      const wallet = await Wallet.findOne({ user: userId });
+      const walletBalance = wallet ? wallet.balance : (user.wallet || 0);
+
+      console.log("Wallet payment selected. Available balance:", walletBalance);
+      console.log("Required amount:", finalAmount);
+
+      if (walletBalance < finalAmount) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          success: false,
+          message: "Insufficient wallet balance",
+        });
+      }
     }
 
     const orderData = {
@@ -367,8 +393,44 @@ exports.placeOrder = async (req, res) => {
         $push: { orderHistory: newOrder._id },
       };
 
+      // Handle wallet payment
       if (paymentMethod === "wallet") {
-        updateUser.$inc = { wallet: -finalAmount };
+        try {
+          // Process wallet payment
+          const paymentResult = await processWalletPayment(
+            userId,
+            newOrder._id,
+            finalAmount,
+            `Payment for order #${newOrder._id}`
+          );
+
+          console.log("Wallet payment processed:", paymentResult);
+
+          // Update order payment status
+          await Order.findByIdAndUpdate(newOrder._id, {
+            paymentStatus: "Paid",
+            paymentDetails: {
+              method: "wallet",
+              transactionId: paymentResult.transaction._id,
+              paidAmount: finalAmount,
+              paidAt: new Date()
+            }
+          });
+
+        } catch (walletError) {
+          console.error("Wallet payment error:", walletError);
+
+          // Update order payment status to failed
+          await Order.findByIdAndUpdate(newOrder._id, {
+            paymentStatus: "Failed",
+            paymentDetails: {
+              method: "wallet",
+              error: walletError.message
+            }
+          });
+
+          throw walletError;
+        }
       }
 
       // For Razorpay, we'll handle the payment separately

@@ -449,7 +449,7 @@
         </script>
 
         <!-- Wallet Section -->
-        <div class="section bg-white p-6 rounded-lg shadow-sm mb-8">
+        <div id="wallet" class="section bg-white p-6 rounded-lg shadow-sm mb-8">
             <h2 class="text-2xl font-bold mb-4 pb-2 border-b border-gray-200">
                 <i class="fas fa-wallet mr-2"></i>My Wallet
             </h2>
@@ -1159,6 +1159,19 @@
 
         function editAddress(addressId) {
             showAddressModal('edit', addressId);
+        }
+
+        // Check for hash in URL to scroll to wallet section
+        if (window.location.hash === '#wallet') {
+            // Scroll to wallet section
+            const walletSection = document.getElementById('wallet');
+            if (walletSection) {
+                setTimeout(() => {
+                    walletSection.scrollIntoView({ behavior: 'smooth' });
+                    // Show add money modal
+                    showAddMoneyModal();
+                }, 500);
+            }
         }
     </script>
 </body>

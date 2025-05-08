@@ -20,9 +20,14 @@ const categorySchema = new Schema({
     type: Number,
     default:0,
   },
+  offer: {
+    type: Schema.Types.ObjectId,
+    ref: 'Offer',
+    default: null
+  },
   // createdAt:{
   //   type: Date,
-  //   default: Date.now   
+  //   default: Date.now
   // }
   offerEndDate: {
     type: Date,

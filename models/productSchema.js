@@ -25,9 +25,14 @@ const productSchema = new Schema({
     required: true
   },
   productOffer: {
-    type: Boolean, 
+    type: Boolean,
     required: true,
-    default: false, 
+    default: false,
+  },
+  offer: {
+    type: Schema.Types.ObjectId,
+    ref: 'Offer',
+    default: null
   },
   quantity:{
     type: Number,
@@ -45,7 +50,7 @@ const productSchema = new Schema({
     type: Number,
     default: 0,
   },
-  
+
   offerEndDate: {
     type: Date,
     default: null,

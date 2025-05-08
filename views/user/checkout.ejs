@@ -183,16 +183,35 @@
                         </div>
 
                         <!-- Wallet -->
-                        <div class="payment-method p-4 border rounded cursor-pointer"
-                             onclick="selectPaymentMethod('wallet')"
+                        <%
+                          // Debug wallet balance
+                          console.log("User object in checkout:", user);
+                          console.log("Wallet balance from user:", user.wallet);
+
+                          // Get wallet balance from user object
+                          const walletBalance = typeof user.wallet === 'number' ? user.wallet : 0;
+                          const totalAmount = parseFloat(total);
+                          const isWalletSufficient = walletBalance >= totalAmount;
+
+                          console.log("Wallet balance used:", walletBalance);
+                          console.log("Total amount:", totalAmount);
+                          console.log("Is wallet sufficient:", isWalletSufficient);
+                        %>
+                        <div class="payment-method p-4 border rounded cursor-pointer <%= isWalletSufficient ? '' : 'opacity-50 cursor-not-allowed' %>"
+                             onclick="<%= isWalletSufficient ? 'selectPaymentMethod(\'wallet\')' : 'showInsufficientWalletMessage()' %>"
                              data-method="wallet">
                             <div class="flex items-center">
                                 <div class="mr-4">
-                                    <input type="radio" name="paymentMethod" id="wallet" class="h-4 w-4 text-black focus:ring-black">
+                                    <input type="radio" name="paymentMethod" id="wallet" class="h-4 w-4 text-black focus:ring-black" <%= isWalletSufficient ? '' : 'disabled' %>>
                                 </div>
                                 <div>
                                     <label for="wallet" class="font-medium">Wallet Balance</label>
-                                    <p class="text-sm text-gray-600 mt-1">Use your wallet balance ($<%= user.wallet ? user.wallet.toFixed(2) : '0.00' %> available)</p>
+                                    <p class="text-sm text-gray-600 mt-1">
+                                        Use your wallet balance (₹<%= walletBalance.toFixed(2) %> available)
+                                        <% if (!isWalletSufficient) { %>
+                                            <span class="text-red-500 ml-1">(Insufficient balance - need ₹<%= totalAmount.toFixed(2) %>)</span>
+                                        <% } %>
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -707,6 +726,23 @@
             }
         }
 
+        // Function to show a message when wallet balance is insufficient
+        function showInsufficientWalletMessage() {
+            Swal.fire({
+                title: 'Insufficient Wallet Balance',
+                text: 'Your wallet balance is not enough to complete this purchase. Please add money to your wallet or choose a different payment method.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Add Money to Wallet',
+                cancelButtonText: 'Choose Another Method'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Redirect to profile page to add money to wallet
+                    window.location.href = '/profile#wallet';
+                }
+            });
+        }
+
         // Function to navigate between steps
         function goToStep(step) {
             document.getElementById('addressStep').classList.add('hidden');
@@ -737,7 +773,9 @@
             } else if (selectedPaymentMethod === 'razorpay') {
                 paymentMethodText = 'Razorpay (Secure online payment)';
             } else if (selectedPaymentMethod === 'wallet') {
-                paymentMethodText = `Wallet Balance ($<%= user.wallet ? user.wallet.toFixed(2) : '0.00' %> available)`;
+                // Get wallet balance from user object - use the same value we calculated earlier
+                const walletBalance = <%= typeof user.wallet === 'number' ? user.wallet : 0 %>;
+                paymentMethodText = `Wallet Balance (₹${walletBalance.toFixed(2)} available)`;
             }
             document.getElementById('selectedPaymentDisplay').innerHTML = `
                 <p class="font-medium">${paymentMethodText}</p>

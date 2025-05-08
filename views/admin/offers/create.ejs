@@ -1,0 +1,166 @@
+<%- include('../layouts/header.ejs') %>
+
+<div class="container-fluid">
+  <div class="row">
+    <%- include('../layouts/sidebar.ejs') %>
+
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+      <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">Create New Offer</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+          <a href="/admin/offers" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Offers
+          </a>
+        </div>
+      </div>
+
+      <% if (error && error.length > 0) { %>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+          <%= error %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      <% } %>
+
+      <div class="card">
+        <div class="card-body">
+          <form action="/admin/offers/create" method="POST">
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label for="name" class="form-label">Offer Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="name" name="name" required>
+              </div>
+              <div class="col-md-6">
+                <label for="type" class="form-label">Offer Type <span class="text-danger">*</span></label>
+                <select class="form-select" id="type" name="type" required>
+                  <option value="">Select Offer Type</option>
+                  <option value="product">Product Offer</option>
+                  <option value="category">Category Offer</option>
+                  <option value="referral">Referral Offer</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="description" class="form-label">Description <span class="text-danger">*</span></label>
+              <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label for="discountType" class="form-label">Discount Type <span class="text-danger">*</span></label>
+                <select class="form-select" id="discountType" name="discountType" required>
+                  <option value="">Select Discount Type</option>
+                  <option value="percentage">Percentage</option>
+                  <option value="fixed">Fixed Amount</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label for="discountValue" class="form-label">Discount Value <span class="text-danger">*</span></label>
+                <input type="number" class="form-control" id="discountValue" name="discountValue" min="0" step="0.01" required>
+                <small class="form-text text-muted">For percentage, enter value between 0-100</small>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label for="maxDiscountAmount" class="form-label">Maximum Discount Amount</label>
+                <input type="number" class="form-control" id="maxDiscountAmount" name="maxDiscountAmount" min="0" step="0.01">
+                <small class="form-text text-muted">Only applicable for percentage discounts</small>
+              </div>
+              <div class="col-md-6">
+                <label for="minPurchaseAmount" class="form-label">Minimum Purchase Amount</label>
+                <input type="number" class="form-control" id="minPurchaseAmount" name="minPurchaseAmount" min="0" step="0.01">
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label for="startDate" class="form-label">Start Date <span class="text-danger">*</span></label>
+                <input type="date" class="form-control" id="startDate" name="startDate" required>
+              </div>
+              <div class="col-md-6">
+                <label for="endDate" class="form-label">End Date <span class="text-danger">*</span></label>
+                <input type="date" class="form-control" id="endDate" name="endDate" required>
+              </div>
+            </div>
+
+            <!-- Product Selection (shown only for product offers) -->
+            <div class="mb-3 product-selection" style="display: none;">
+              <label for="applicableProducts" class="form-label">Select Products <span class="text-danger">*</span></label>
+              <select class="form-select" id="applicableProducts" name="applicableProducts" multiple>
+                <% products.forEach(product => { %>
+                  <option value="<%= product._id %>"><%= product.productName %> (₹<%= product.salePrice %>)</option>
+                <% }); %>
+              </select>
+              <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple products</small>
+            </div>
+
+            <!-- Category Selection (shown only for category offers) -->
+            <div class="mb-3 category-selection" style="display: none;">
+              <label for="applicableCategories" class="form-label">Select Categories <span class="text-danger">*</span></label>
+              <select class="form-select" id="applicableCategories" name="applicableCategories" multiple>
+                <% categories.forEach(category => { %>
+                  <option value="<%= category._id %>"><%= category.name %></option>
+                <% }); %>
+              </select>
+              <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple categories</small>
+            </div>
+
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+              <button type="submit" class="btn btn-primary">Create Offer</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const typeSelect = document.getElementById('type');
+    const productSelection = document.querySelector('.product-selection');
+    const categorySelection = document.querySelector('.category-selection');
+    const applicableProducts = document.getElementById('applicableProducts');
+    const applicableCategories = document.getElementById('applicableCategories');
+    
+    // Set min date for start date to today
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('startDate').min = today;
+    
+    // Set min date for end date to start date
+    document.getElementById('startDate').addEventListener('change', function() {
+      document.getElementById('endDate').min = this.value;
+    });
+
+    // Show/hide product/category selection based on offer type
+    typeSelect.addEventListener('change', function() {
+      // Reset selections
+      applicableProducts.required = false;
+      applicableCategories.required = false;
+      productSelection.style.display = 'none';
+      categorySelection.style.display = 'none';
+      
+      if (this.value === 'product') {
+        productSelection.style.display = 'block';
+        applicableProducts.required = true;
+      } else if (this.value === 'category') {
+        categorySelection.style.display = 'block';
+        applicableCategories.required = true;
+      }
+    });
+    
+    // Show/hide max discount amount based on discount type
+    document.getElementById('discountType').addEventListener('change', function() {
+      const maxDiscountField = document.getElementById('maxDiscountAmount');
+      if (this.value === 'percentage') {
+        maxDiscountField.parentElement.style.display = 'block';
+      } else {
+        maxDiscountField.parentElement.style.display = 'none';
+        maxDiscountField.value = '';
+      }
+    });
+  });
+</script>
+
+<%- include('../layouts/footer.ejs') %>

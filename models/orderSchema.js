@@ -140,6 +140,30 @@ const orderSchema = new Schema({
     enum: ["Pending", "Paid", "Failed"],
     default: "Pending",
   },
+  paymentDetails: {
+    method: {
+      type: String,
+      enum: ["wallet", "cod", "razorpay"],
+      default: null
+    },
+    transactionId: {
+      type: Schema.Types.ObjectId,
+      ref: "WalletTransaction",
+      default: null
+    },
+    paidAmount: {
+      type: Number,
+      default: 0
+    },
+    paidAt: {
+      type: Date,
+      default: null
+    },
+    error: {
+      type: String,
+      default: null
+    }
+  },
   razorpayOrderId: {
     type: String,
     default: null,
@@ -150,7 +174,7 @@ const orderSchema = new Schema({
   },
   paymentGateway: {
     type: String,
-    enum: ["Razorpay", "Other"],
+    enum: ["Razorpay", "Wallet", "COD", "Other"],
     default: "Razorpay",
   },
   invoiceDate: {

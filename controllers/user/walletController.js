@@ -284,9 +284,78 @@ const getWalletTransactions = async (req, res) => {
   }
 };
 
+/**
+ * Process wallet payment for an order
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+const processWalletPayment = async (userId, orderId, amount, description = "Order payment") => {
+  try {
+    // Find or create wallet
+    let wallet = await Wallet.findOne({ user: userId });
+    let walletBalance = 0;
+
+    // Also get user to check user.wallet field
+    const user = await User.findById(userId);
+
+    if (wallet) {
+      walletBalance = wallet.balance;
+      console.log("Found wallet with balance:", walletBalance);
+    } else if (user && typeof user.wallet === 'number' && user.wallet > 0) {
+      // If no wallet document but user has wallet balance, create wallet document
+      wallet = new Wallet({
+        user: userId,
+        balance: user.wallet
+      });
+      walletBalance = user.wallet;
+      await wallet.save();
+      console.log("Created new wallet with balance from user:", walletBalance);
+    } else {
+      // Create empty wallet
+      wallet = new Wallet({
+        user: userId,
+        balance: 0
+      });
+      await wallet.save();
+      console.log("Created new empty wallet");
+    }
+
+    // Check if wallet has sufficient balance
+    if (walletBalance < amount) {
+      console.log("Insufficient wallet balance. Available:", walletBalance, "Required:", amount);
+      throw new Error("Insufficient wallet balance");
+    }
+
+    // Create a wallet transaction
+    const transaction = new WalletTransaction({
+      user: userId,
+      amount: amount,
+      type: "debit",
+      description: description,
+      status: "completed",
+      orderId: orderId
+    });
+    await transaction.save();
+
+    // Update wallet balance
+    wallet.balance -= amount;
+    await wallet.save();
+
+    return {
+      success: true,
+      transaction: transaction,
+      newBalance: wallet.balance
+    };
+  } catch (error) {
+    console.error("Error processing wallet payment:", error);
+    throw error;
+  }
+};
+
 module.exports = {
   addMoney,
   verifyPayment,
   getWalletBalance,
-  getWalletTransactions
+  getWalletTransactions,
+  processWalletPayment
 };
