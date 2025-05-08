@@ -2,12 +2,14 @@ const express = require("express");
 const router = express.Router();
 const passport = require("passport");
 const { uploadProfileImage } = require("../helpers/multer");
+const { userAuth } = require("../middlewares/auth");
 const wishlistController = require("../controllers/user/wishlistController");
 const checkoutController = require("../controllers/user/checkoutController");
 const orderController = require("../controllers/user/orderController");
 const couponController = require("../controllers/user/couponController");
 const razorpayController = require("../controllers/user/razorpayController");
 const paymentController = require("../controllers/user/paymentController");
+const walletController = require("../controllers/user/walletController");
 
 const {
   loadLandingpage,
@@ -101,10 +103,32 @@ router.post("/apply-coupon", couponController.applyCoupon)
 // Razorpay Payment Routes
 router.post("/razorpay/create-order", razorpayController.createRazorpayOrder);
 router.post("/razorpay/verify-payment", razorpayController.verifyRazorpayPayment);
+router.get("/razorpay/test", (req, res) => {
+  const { razorpay, razorpayKeyId } = require("../config/razorpay");
+  res.json({
+    success: true,
+    message: "Razorpay configuration test",
+    keyId: razorpayKeyId,
+    isInitialized: !!razorpay
+  });
+});
 
 // Payment Success/Failure Routes
 router.get("/payment/success/:orderId", paymentController.renderPaymentSuccess);
 router.get("/payment/failure/:orderId", paymentController.renderPaymentFailure);
+
+// Wallet Routes
+router.post("/wallet/add-money", userAuth, walletController.addMoney);
+router.post("/wallet/verify-payment", userAuth, walletController.verifyPayment);
+router.get("/wallet/balance", userAuth, walletController.getWalletBalance);
+router.get("/wallet/transactions", userAuth, walletController.getWalletTransactions);
+router.get("/wallet/test", (req, res) => {
+  res.json({
+    success: true,
+    message: "Wallet API is working",
+    session: req.session ? { hasUser: !!req.session.user } : null
+  });
+});
 
 
 // Auth & User Management

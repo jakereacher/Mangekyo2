@@ -466,7 +466,7 @@
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
-                    <button class="bg-gray-800 text-white px-4 py-3 rounded hover:bg-gray-700 transition flex items-center justify-center">
+                    <button onclick="showAddMoneyModal()" class="bg-gray-800 text-white px-4 py-3 rounded hover:bg-gray-700 transition flex items-center justify-center">
                         <i class="fas fa-plus-circle mr-2"></i> Add Money
                     </button>
                     <button class="bg-gray-200 text-gray-800 px-4 py-3 rounded hover:bg-gray-300 transition flex items-center justify-center">
@@ -600,6 +600,47 @@
                     <button type="submit"
                             class="px-4 py-2 bg-black text-white rounded hover:bg-gray-800">
                         Verify
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Money Modal -->
+    <div id="addMoneyModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Add Money to Wallet</h2>
+                <button onclick="hideAddMoneyModal()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <form id="addMoneyForm">
+                <div class="mb-4">
+                    <label for="amount" class="block text-sm font-medium text-gray-700 mb-1">Amount (₹)</label>
+                    <input type="number" id="amount" name="amount" min="1" step="1"
+                           class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black"
+                           placeholder="Enter amount" required>
+                    <p class="text-xs text-gray-500 mt-1">Minimum amount: ₹1</p>
+                </div>
+
+                <div class="flex flex-wrap gap-2 mb-4">
+                    <button type="button" onclick="setAmount(100)" class="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200 text-sm">₹100</button>
+                    <button type="button" onclick="setAmount(200)" class="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200 text-sm">₹200</button>
+                    <button type="button" onclick="setAmount(500)" class="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200 text-sm">₹500</button>
+                    <button type="button" onclick="setAmount(1000)" class="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200 text-sm">₹1000</button>
+                    <button type="button" onclick="setAmount(2000)" class="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200 text-sm">₹2000</button>
+                </div>
+
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="hideAddMoneyModal()"
+                            class="px-4 py-2 border rounded text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="px-4 py-2 bg-black text-white rounded hover:bg-gray-800">
+                        Proceed to Pay
                     </button>
                 </div>
             </form>
@@ -806,6 +847,189 @@
                 }
             }
         }
+
+        // Add Money Modal Functions
+        function showAddMoneyModal() {
+            document.getElementById('addMoneyModal').classList.remove('hidden');
+        }
+
+        function hideAddMoneyModal() {
+            document.getElementById('addMoneyModal').classList.add('hidden');
+        }
+
+        function setAmount(amount) {
+            document.getElementById('amount').value = amount;
+        }
+
+        // Handle Add Money Form Submission
+        document.getElementById('addMoneyForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const amount = parseInt(document.getElementById('amount').value);
+            if (!amount || amount < 1) {
+                Swal.fire('Error', 'Please enter a valid amount (minimum ₹1)', 'error');
+                return;
+            }
+
+            try {
+                // First, check if the wallet API is working
+                const testResponse = await fetch('/wallet/test');
+                const testResult = await testResponse.json();
+                console.log("Wallet API test result:", testResult);
+
+                // Check if Razorpay is configured
+                const razorpayTestResponse = await fetch('/razorpay/test');
+                const razorpayTestResult = await razorpayTestResponse.json();
+                console.log("Razorpay test result:", razorpayTestResult);
+
+                if (!testResult.success || !razorpayTestResult.success) {
+                    throw new Error('API configuration issue. Please try again later.');
+                }
+
+                // Show loading indicator
+                Swal.fire({
+                    title: 'Processing',
+                    text: 'Initializing payment...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                // Create Razorpay order for wallet
+                const response = await fetch('/wallet/add-money', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        amount: amount
+                    })
+                });
+
+                console.log("Add money response status:", response.status);
+                const result = await response.json();
+                console.log("Add money response:", result);
+
+                if (!response.ok) {
+                    let errorMessage = result.message || 'Failed to create payment order';
+                    if (result.details) {
+                        console.error('Detailed error:', result.details);
+                    }
+                    throw new Error(errorMessage);
+                }
+
+                // Close the loading indicator
+                Swal.close();
+
+                // Hide the add money modal
+                hideAddMoneyModal();
+
+                // Initialize Razorpay checkout
+                console.log("Razorpay Key ID from server:", '<%= razorpayKeyId %>');
+                console.log("Order details:", result.order);
+
+                const options = {
+                    key: '<%= razorpayKeyId %>', // This should be passed from the server
+                    amount: result.order.amount,
+                    currency: result.order.currency || 'INR',
+                    name: 'Mangeyko',
+                    description: 'Add money to wallet',
+                    order_id: result.order.id,
+                    image: 'https://i.imgur.com/3g7nmJC.png', // Add your logo URL here
+                    handler: async function(response) {
+                        // Show loading indicator
+                        Swal.fire({
+                            title: 'Verifying',
+                            text: 'Confirming your payment...',
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+
+                        try {
+                            // Verify payment with server
+                            const verifyResponse = await fetch('/wallet/verify-payment', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    razorpay_order_id: response.razorpay_order_id,
+                                    razorpay_payment_id: response.razorpay_payment_id,
+                                    razorpay_signature: response.razorpay_signature,
+                                    amount: amount
+                                })
+                            });
+
+                            const verifyResult = await verifyResponse.json();
+
+                            if (verifyResult.success) {
+                                // Show success message
+                                Swal.fire({
+                                    title: 'Money Added Successfully!',
+                                    text: `₹${amount} has been added to your wallet.`,
+                                    icon: 'success',
+                                    confirmButtonText: 'OK'
+                                }).then(() => {
+                                    // Reload the page to show updated wallet balance
+                                    window.location.reload();
+                                });
+                            } else {
+                                throw new Error(verifyResult.message || 'Payment verification failed');
+                            }
+                        } catch (error) {
+                            console.error('Payment verification error:', error);
+                            Swal.fire({
+                                title: 'Payment Verification Failed',
+                                text: error.message || 'Failed to verify payment. Please try again.',
+                                icon: 'error',
+                                confirmButtonText: 'OK'
+                            });
+                        }
+                    },
+                    prefill: {
+                        name: '<%= user.name %>',
+                        email: '<%= user.email %>',
+                        contact: '<%= user.mobile || "" %>'
+                    },
+                    theme: {
+                        color: '#000000'
+                    },
+                    modal: {
+                        ondismiss: function() {
+                            Swal.fire({
+                                title: 'Payment Cancelled',
+                                text: 'You can try adding money later.',
+                                icon: 'info',
+                                confirmButtonText: 'OK'
+                            });
+                        }
+                    }
+                };
+
+                const rzp = new Razorpay(options);
+                rzp.open();
+
+            } catch (error) {
+                console.error('Error adding money:', error);
+
+                // Close any open loading indicators
+                Swal.close();
+
+                // Hide the add money modal if it's open
+                hideAddMoneyModal();
+
+                // Show a more user-friendly error message
+                Swal.fire({
+                    title: 'Payment Error',
+                    text: error.message || 'Failed to initialize payment. Please try again later.',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            }
+        });
 
         async function setDefaultAddress(addressId) {
             try {

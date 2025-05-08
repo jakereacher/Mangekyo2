@@ -70,6 +70,8 @@ exports.renderProfilePage = async (req, res) => {
       }))
     }));
 
+    console.log("Rendering profile page with Razorpay key ID:", razorpayKeyId);
+
     res.render('profile', {
       user: userWithWallet,
       orders: formattedOrders,
