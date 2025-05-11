@@ -34,7 +34,7 @@ const validateInventory = async (req, res, next) => {
     // Check each product in the cart
     for (const item of cart.products) {
       const product = await Product.findById(item.productId);
-      
+
       if (!product) {
         inventoryIssues.push({
           productId: item.productId,
@@ -54,15 +54,7 @@ const validateInventory = async (req, res, next) => {
         continue;
       }
 
-      if (product.status !== "Available") {
-        inventoryIssues.push({
-          productId: product._id,
-          type: 'unavailable',
-          productName: product.productName,
-          message: `"${product.productName}" is not currently available (${product.status})`
-        });
-        continue;
-      }
+      // We no longer check status, only quantity
 
       if (product.quantity <= 0) {
         inventoryIssues.push({

@@ -283,7 +283,7 @@ exports.validateCart = async (req, res) => {
         continue;
       }
 
-      if (product.isBlocked || product.status !== "Available") {
+      if (product.isBlocked) {
         validationErrors.push({
           productId: product._id,
           type: 'unavailable',

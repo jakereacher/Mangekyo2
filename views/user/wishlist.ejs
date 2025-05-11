@@ -21,7 +21,7 @@
 
     <div class="bg-gray-900 rounded-xl p-6">
       <h1 class="text-3xl font-bold mb-6">My Wishlist</h1>
-      
+
       <% if (wishlist && wishlist.length > 0) { %>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <% wishlist.forEach(item => { %>
@@ -29,12 +29,12 @@
               <div class="relative">
                 <a href="/shop/product/<%= item.id %>">
                   <!-- Fixed image path handling -->
-                  <img src="<%= item.image ? `/uploads/product-images/${item.image}` : '/images/placeholder-product.jpg' %>" 
+                  <img src="<%= item.image ? `/uploads/product-images/${item.image}` : '/images/placeholder-product.jpg' %>"
                        alt="<%= item.name %>" class="w-full h-48 object-cover">
                 </a>
-                
+
                 <!-- Remove from wishlist button -->
-                <button 
+                <button
                   class="absolute top-2 right-2 p-2 bg-gray-900/80 rounded-full hover:bg-red-500 transition remove-wishlist-btn"
                   data-product-id="<%= item.id %>"
                 >
@@ -42,14 +42,14 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
                 </button>
-                
+
                 <% if (item.isOnOffer) { %>
                   <div class="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
                     <%= item.badge %>
                   </div>
                 <% } %>
               </div>
-              
+
               <div class="p-4">
                 <div class="flex justify-between items-start mb-2">
                   <a href="/shop/product/<%= item.id %>" class="hover:text-[#00ffff]">
@@ -57,7 +57,7 @@
                   </a>
                   <span class="text-xs text-gray-400"><%= item.category %></span>
                 </div>
-                
+
                 <div class="flex items-center justify-between mt-4">
                   <div>
                     <% if (item.isOnOffer) { %>
@@ -69,24 +69,37 @@
                       $<%= item.salePrice ? item.salePrice.toFixed(2) : '0.00' %>
                     </span>
                   </div>
-                  
-                  <button 
-                    class="add-to-cart-btn px-3 py-2 bg-[#00ffff] text-black font-bold rounded-lg hover:bg-[#0088ff] transition flex items-center"
-                    data-product-id="<%= item.id %>"
-                    <%= item.inCart ? 'disabled' : '' %>
-                  >
-                    <% if (item.inCart) { %>
+
+                  <% if (item.outOfStock) { %>
+                    <button
+                      class="px-3 py-2 bg-gray-600 text-gray-300 font-bold rounded-lg flex items-center"
+                      disabled
+                    >
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                       </svg>
-                      In Cart
-                    <% } else { %>
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                      </svg>
-                      Add to Cart
-                    <% } %>
-                  </button>
+                      Out of Stock
+                    </button>
+                  <% } else { %>
+                    <button
+                      class="add-to-cart-btn px-3 py-2 bg-[#00ffff] text-black font-bold rounded-lg hover:bg-[#0088ff] transition flex items-center"
+                      data-product-id="<%= item.id %>"
+                      data-product-quantity="<%= item.quantity %>"
+                      <%= item.inCart ? 'disabled' : '' %>
+                    >
+                      <% if (item.inCart) { %>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        In Cart
+                      <% } else { %>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Add to Cart
+                      <% } %>
+                    </button>
+                  <% } %>
                 </div>
               </div>
             </div>
@@ -256,8 +269,23 @@
         if (this.disabled) return;
 
         const productId = this.getAttribute('data-product-id');
+        const productQuantity = parseInt(this.getAttribute('data-product-quantity') || '0');
         const originalContent = this.innerHTML;
         const wishlistItem = document.getElementById(`wishlist-item-${productId}`);
+
+        // Check if product is out of stock
+        if (productQuantity <= 0) {
+          Swal.fire({
+            title: 'Out of Stock',
+            text: 'This product is currently out of stock. We\'ll notify you when it becomes available.',
+            icon: 'info',
+            confirmButtonColor: '#00ffff',
+            confirmButtonText: 'OK',
+            background: '#1F2937',
+            color: 'white'
+          });
+          return;
+        }
 
         this.innerHTML = '<svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
         this.disabled = true;

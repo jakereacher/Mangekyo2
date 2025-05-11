@@ -3,6 +3,32 @@ const Product = require('../../models/productSchema');
 const Category = require('../../models/categorySchema');
 const mongoose = require('mongoose');
 
+// Function to update all product statuses based on quantity
+async function updateAllProductStatuses() {
+  try {
+    const products = await Product.find({});
+    let updatedCount = 0;
+
+    for (const product of products) {
+      if (product.quantity > 0 && product.status !== "Available") {
+        product.status = "Available";
+        await product.save();
+        updatedCount++;
+        console.log(`Updated product status to Available for ${product.productName} (${product._id})`);
+      } else if (product.quantity <= 0 && product.status !== "Out of Stock") {
+        product.status = "Out of Stock";
+        await product.save();
+        updatedCount++;
+        console.log(`Updated product status to Out of Stock for ${product.productName} (${product._id})`);
+      }
+    }
+
+    console.log(`Updated ${updatedCount} product statuses`);
+  } catch (error) {
+    console.error("Error updating product statuses:", error);
+  }
+}
+
 const pageNotFound = async (req, res) => {
   try {
     res.render("page-404");
@@ -13,13 +39,15 @@ const pageNotFound = async (req, res) => {
 
 const loadHome = async (req, res) => {
   try {
+    // Update all product statuses based on quantity
+    await updateAllProductStatuses();
+
     const userId = req.session.user;
     const userData = await User.findById(userId);
 
     // Fetch products with populated offer information
     const products = await Product.find({
-      isBlocked: false,
-      status: "Available"
+      isBlocked: false
     })
     .populate('offer')
     .populate('category')
@@ -130,8 +158,8 @@ const loadShop = async (req, res) => {
     } = req.query;
 
     let query = {
-      isBlocked: false,
-      status: "Available"
+      isBlocked: false
+      // Include all products regardless of status
     };
 
     if (search) {
@@ -181,11 +209,22 @@ const loadShop = async (req, res) => {
       .skip(skip)
       .limit(perPage);
 
+    // Update product statuses based on quantity
+    for (const product of products) {
+      if (product.quantity > 0 && product.status !== "Available") {
+        product.status = "Available";
+        await product.save();
+        console.log(`Updated product status to Available for ${product.productName} (${product._id})`);
+      } else if (product.quantity <= 0 && product.status !== "Out of Stock") {
+        product.status = "Out of Stock";
+        await product.save();
+        console.log(`Updated product status to Out of Stock for ${product.productName} (${product._id})`);
+      }
+    }
 
     const listedCategories = await Category.find({ isListed: true });
     const recommendedProducts = await Product.find({
       isBlocked: false,
-      status: "Available",
       category: { $in: listedCategories.map(cat => cat._id) } // Only from listed categories
     })
       .populate('category')
@@ -357,6 +396,17 @@ const loadProductDetail = async (req, res) => {
       return res.render("product-detail", { product: null, relatedProducts: [] });
     }
 
+    // Update product status based on quantity to ensure consistency
+    if (product.quantity > 0 && product.status !== "Available") {
+      product.status = "Available";
+      await product.save();
+      console.log(`Updated product status to Available for ${product.productName} (${product._id})`);
+    } else if (product.quantity <= 0 && product.status !== "Out of Stock") {
+      product.status = "Out of Stock";
+      await product.save();
+      console.log(`Updated product status to Out of Stock for ${product.productName} (${product._id})`);
+    }
+
     // Log the product price for debugging
     console.log("Product price data:", {
       id: product._id,
@@ -446,12 +496,24 @@ const loadProductDetail = async (req, res) => {
     const relatedProducts = await Product.find({
       category: product.category,
       _id: { $ne: product._id },
-      isBlocked: false,
-      status: "Available"
+      isBlocked: false
     })
       .sort({ popularityScore: -1 })
       .limit(4)
-      .select('productName productImage price offerPercentage productOffer createdAt');
+      .select('productName productImage price offerPercentage productOffer createdAt status quantity');
+
+    // Update related product statuses based on quantity
+    for (const related of relatedProducts) {
+      if (related.quantity > 0 && related.status !== "Available") {
+        related.status = "Available";
+        await related.save();
+        console.log(`Updated related product status to Available for ${related.productName} (${related._id})`);
+      } else if (related.quantity <= 0 && related.status !== "Out of Stock") {
+        related.status = "Out of Stock";
+        await related.save();
+        console.log(`Updated related product status to Out of Stock for ${related.productName} (${related._id})`);
+      }
+    }
 
     const relatedProductsData = await Promise.all(relatedProducts.map(async (related) => {
       // Ensure price is available and not zero
@@ -503,7 +565,9 @@ const loadProductDetail = async (req, res) => {
         hasOffer: hasOffer,
         rating: related.averageRating || 0,
         reviewCount: 0,
-        isNew: (Date.now() - new Date(related.createdAt)) < (7 * 24 * 60 * 60 * 1000)
+        isNew: (Date.now() - new Date(related.createdAt)) < (7 * 24 * 60 * 60 * 1000),
+        status: related.status || "Available",
+        quantity: related.quantity || 0
       };
     }));
 

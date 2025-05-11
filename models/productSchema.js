@@ -114,6 +114,19 @@ productSchema.methods.updateOfferDetails = async function() {
   }
 };
 
+// Pre-save hook to automatically update status based on quantity
+productSchema.pre('save', function(next) {
+  // Update status based on quantity
+  if (this.isModified('quantity')) {
+    if (this.quantity > 0) {
+      this.status = "Available";
+    } else {
+      this.status = "Out of Stock";
+    }
+  }
+  next();
+});
+
 // Set toJSON option to include virtuals
 productSchema.set('toJSON', { virtuals: true });
 productSchema.set('toObject', { virtuals: true });

@@ -234,9 +234,17 @@ exports.updateOrderItemStatus = async (req, res) => {
 
       // If changing to Cancelled and not already cancelled, restore quantity
       if (status === "Cancelled" && item.status !== "Cancelled") {
-        await Product.findByIdAndUpdate(productId, {
-          $inc: { quantity: item.quantity },
-        });
+        const updatedProduct = await Product.findByIdAndUpdate(
+          productId,
+          { $inc: { quantity: item.quantity } },
+          { new: true }
+        );
+
+        // Update status based on new quantity
+        if (updatedProduct.quantity > 0 && updatedProduct.status !== "Available") {
+          updatedProduct.status = "Available";
+          await updatedProduct.save();
+        }
         logger.info("Restored product quantity", { productId, quantity: item.quantity });
 
         // If payment was made, refund to wallet
@@ -277,9 +285,17 @@ exports.updateOrderItemStatus = async (req, res) => {
           });
         }
 
-        await Product.findByIdAndUpdate(productId, {
-          $inc: { quantity: -item.quantity },
-        });
+        const updatedProduct = await Product.findByIdAndUpdate(
+          productId,
+          { $inc: { quantity: -item.quantity } },
+          { new: true }
+        );
+
+        // Update status if quantity becomes zero
+        if (updatedProduct.quantity <= 0 && updatedProduct.status !== "Out of Stock") {
+          updatedProduct.status = "Out of Stock";
+          await updatedProduct.save();
+        }
         logger.info("Reduced product quantity", { productId, quantity: item.quantity });
       }
 
@@ -429,11 +445,11 @@ exports.approveReturn = async (req, res) => {
         message: "Order not found",
       });
     }
-   
+
   //find the user
     // const user = await User.findById(order.userId);
     // if (!user) {
-    //   logger.error("User not found for return approval", { userId: order.userId }); 
+    //   logger.error("User not found for return approval", { userId: order.userId });
     //   return res.status(StatusCodes.NOT_FOUND).json({
     //     success: false,
     //     message: "User not found",

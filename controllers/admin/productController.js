@@ -44,6 +44,9 @@ if (req.files && req.files.length > 0) {
         return res.redirect("/admin/add-products?error=Invalid+category+name");
       }
 
+      // Set status based on quantity
+      const status = products.quantity > 0 ? "Available" : "Out of Stock";
+
       const newProduct = new Product({
         productName: products.productName,
         description: products.description,
@@ -52,7 +55,7 @@ if (req.files && req.files.length > 0) {
         createdOn: new Date(),
         quantity: products.quantity,
         productImage: images,
-        status: "Available",
+        status: status,
       });+
 
       await newProduct.save();
@@ -244,6 +247,13 @@ const editProduct = async (req, res) => {
     product.category = categoryId._id;
     product.price = products.price;
     product.quantity = products.quantity;
+
+    // Automatically update status based on quantity
+    if (product.quantity > 0) {
+      product.status = "Available";
+    } else {
+      product.status = "Out of Stock";
+    }
 
     await product.save();
     return res.redirect("/admin/products");
