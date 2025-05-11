@@ -37,10 +37,22 @@ exports.addToCart = async (req, res) => {
       });
     }
 
-    if (product.stock < quantity) {
+    // Check if product is in stock
+    if (product.quantity <= 0) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
-        message: "Not enough stock available",
+        message: "This product is currently out of stock",
+        outOfStock: true
+      });
+    }
+
+    // Check if requested quantity is available
+    if (product.quantity < quantity) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: `Only ${product.quantity} items available in stock. You requested ${quantity}.`,
+        availableStock: product.quantity,
+        requestedQuantity: quantity
       });
     }
 
@@ -281,14 +293,24 @@ exports.validateCart = async (req, res) => {
         continue;
       }
 
-      if (product.stock < item.quantity) {
+      // Check if product is completely out of stock
+      if (product.quantity <= 0) {
+        validationErrors.push({
+          productId: product._id,
+          type: 'out_of_stock',
+          productName: product.productName,
+          message: `"${product.productName}" is out of stock.`
+        });
+      }
+      // Check if requested quantity exceeds available stock
+      else if (product.quantity < item.quantity) {
         validationErrors.push({
           productId: product._id,
           type: 'quantity',
           productName: product.productName,
-          available: product.stock,
+          available: product.quantity,
           requested: item.quantity,
-          message: `Only ${product.stock} of "${product.productName}" left. You requested ${item.quantity}.`
+          message: `Only ${product.quantity} of "${product.productName}" left. You requested ${item.quantity}.`
         });
       }
     }

@@ -3,6 +3,7 @@ const router = express.Router();
 const passport = require("passport");
 const { uploadProfileImage } = require("../helpers/multer");
 const { userAuth } = require("../middlewares/auth");
+const { validateInventory } = require("../middleware/inventoryMiddleware");
 const wishlistController = require("../controllers/user/wishlistController");
 const checkoutController = require("../controllers/user/checkoutController");
 const orderController = require("../controllers/user/orderController");
@@ -60,13 +61,13 @@ router.get("/shop/product/:id", loadProductDetail);
 router.post("/add-to-cart",addToCart)
 router.get("/cart", renderCartPage)
 router.patch("/remove-from-cart", removeFromCart);
-router.post("/validate-cart", validateCart);
+router.post("/validate-cart", validateInventory, validateCart);
 
 
-router.get("/checkout",  checkoutController.renderCheckoutPage);
-router.post("/address",  checkoutController.handleAddressSelection);
+router.get("/checkout", validateInventory, checkoutController.renderCheckoutPage);
+router.post("/address", checkoutController.handleAddressSelection);
 
-router.post("/checkout/place-order", checkoutController.placeOrder);
+router.post("/checkout/place-order", validateInventory, checkoutController.placeOrder);
 router.get("/orders/:orderId", orderController.getOrderDetails);
 
 router.get("/orders",  orderController.getUserOrders);
