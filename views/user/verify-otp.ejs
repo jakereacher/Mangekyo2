@@ -43,27 +43,35 @@
     <div class="bg-gray-900 bg-opacity-70 p-8 rounded-2xl shadow-lg w-96 text-center relative">
         <h2 class="text-3xl font-bold text-[#00ffff] mb-6">Verify Your Email</h2>
         <p class="text-gray-400 text-sm mb-4">Enter the OTP sent to your email</p>
-        
+
         <% if (typeof message !== 'undefined') { %>
             <p class="text-red-500 text-sm mb-4"><%= message %></p>
         <% } %>
 
+        <% if (typeof referralBonus !== 'undefined' && referralBonus) { %>
+            <div class="bg-green-900 bg-opacity-50 p-3 rounded-lg mb-4">
+                <p class="text-green-300 text-sm">
+                    <i class="fas fa-gift mr-1"></i> You'll receive ₹50 in your wallet after verification!
+                </p>
+            </div>
+        <% } %>
+
         <form id="otpForm" class="space-y-4">
-            <input 
-                type="text" 
-                id="otp" 
-                name="otp" 
-                placeholder="Enter 6-digit OTP" 
-                class="w-full p-3 rounded-xl bg-gray-800 text-[#00ffff] focus:ring-2 focus:ring-[#00ffff]" 
-                required 
-                maxlength="6" 
+            <input
+                type="text"
+                id="otp"
+                name="otp"
+                placeholder="Enter 6-digit OTP"
+                class="w-full p-3 rounded-xl bg-gray-800 text-[#00ffff] focus:ring-2 focus:ring-[#00ffff]"
+                required
+                maxlength="6"
                 oninput="this.value = this.value.replace(/[^0-9]/g, '')"
             />
             <div id="otpError" class="error-message"></div>
 
-            <button 
-                type="submit" 
-                id="submitBtn" 
+            <button
+                type="submit"
+                id="submitBtn"
                 class="w-full p-3 bg-[#00ffff] rounded-xl font-bold text-black hover:bg-[#0088ff] transition"
             >
                 Verify OTP
@@ -73,7 +81,7 @@
         <div class="mt-4 text-gray-400 text-sm">
             <p>Time remaining: <span id="timer">02:00</span></p>
             <p id="resendText" class="mt-2">
-                Didn’t receive the OTP? 
+                Didn’t receive the OTP?
                 <a href="#" id="resendLink" class="text-[#00ffff] hover:underline" onclick="resendOtp()" style="display: none;">Resend OTP</a>
                 <span id="waitText">Wait <span id="waitTimer">30</span> seconds</span>
             </p>
@@ -99,7 +107,7 @@
             const minutes = Math.floor(timeLeft / 60);
             const seconds = timeLeft % 60;
             timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            
+
             if (resendTimeLeft > 0) {
                 waitTimerElement.textContent = resendTimeLeft;
                 resendTimeLeft--;
@@ -244,7 +252,7 @@
             timerElement.classList.remove('expired');
             updateTimer();
         }
-        
+
     </script>
 </body>
 </html>

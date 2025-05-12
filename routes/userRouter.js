@@ -12,6 +12,7 @@ const couponController = require("../controllers/user/couponController");
 const razorpayController = require("../controllers/user/razorpayController");
 const paymentController = require("../controllers/user/paymentController");
 const walletController = require("../controllers/user/walletController");
+const referralController = require("../controllers/user/referralController");
 
 const {
   loadLandingpage,
@@ -133,6 +134,12 @@ router.get("/wallet/test", (req, res) => {
     session: req.session ? { hasUser: !!req.session.user } : null
   });
 });
+
+// Referral Routes
+router.get("/referral/code", userAuth, referralController.getReferralCode);
+router.get("/referral/offer", referralController.getReferralOfferDetails);
+router.get("/referral/stats", userAuth, referralController.getReferralStats);
+router.post("/referral/apply", userAuth, referralController.applyReferralCode);
 
 
 // Auth & User Management

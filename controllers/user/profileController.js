@@ -7,6 +7,8 @@ const User = require("../../models/userSchema");
 const Order = require("../../models/orderSchema");
 const Wallet = require("../../models/walletSchema");
 const Coupon = require("../../models/couponSchema");
+const Offer = require("../../models/offerSchema");
+const WalletTransaction = require("../../models/walletTransactionSchema");
 const StatusCodes = require("../../utils/httpStatusCodes");
 const { validateEmail, validateMobile } = require('../../utils/helpers');
 const multer = require("../../helpers/multer");
@@ -23,6 +25,32 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASS
   }
 });
+
+/**
+ * Generate a unique referral code for a user
+ * @param {String} userId - User ID to generate code for
+ * @returns {String} Generated referral code
+ */
+const generateReferralCode = async (userId) => {
+  try {
+    // Generate a base code using the first 4 characters of the user ID and 4 random characters
+    const userIdPrefix = userId.toString().substring(0, 4);
+    const randomChars = crypto.randomBytes(4).toString("hex").toUpperCase().substring(0, 4);
+    const baseCode = `${userIdPrefix}${randomChars}`;
+
+    // Check if the code already exists
+    const existingUser = await User.findOne({ referralCode: baseCode });
+    if (existingUser) {
+      // If code exists, try again with different random characters
+      return generateReferralCode(userId);
+    }
+
+    return baseCode;
+  } catch (error) {
+    console.error("Error generating referral code:", error);
+    throw error;
+  }
+};
 
 const generateOTP = () => {
   return crypto.randomInt(100000, 999999).toString();
@@ -100,12 +128,61 @@ exports.renderProfilePage = async (req, res) => {
       };
     }).filter(coupon => coupon.isUsable);
 
+    // Get referral information
+    let referralCode = user.referralCode;
+    if (!referralCode) {
+      // Generate a referral code if the user doesn't have one
+      referralCode = await generateReferralCode(userId);
+      await User.findByIdAndUpdate(userId, { referralCode });
+    }
+
+    // Count users referred by this user
+    const referredUsersCount = await User.countDocuments({ referredBy: userId });
+
+    // Get wallet transactions related to referrals
+    const referralTransactions = await WalletTransaction.find({
+      user: userId,
+      description: { $regex: /referral/i }
+    });
+
+    // Calculate total earnings from referrals
+    const totalReferralEarnings = referralTransactions.reduce((total, transaction) => {
+      if (transaction.type === "credit") {
+        return total + transaction.amount;
+      }
+      return total;
+    }, 0);
+
+    // Get active referral offer
+    const activeReferralOffer = await Offer.findOne({
+      type: "referral",
+      isActive: true,
+      startDate: { $lte: now },
+      endDate: { $gte: now }
+    });
+
+    // Prepare referral data
+    const referralData = {
+      code: referralCode,
+      referredUsers: referredUsersCount,
+      totalEarnings: totalReferralEarnings,
+      hasActiveOffer: !!activeReferralOffer,
+      offer: activeReferralOffer ? {
+        name: activeReferralOffer.name,
+        description: activeReferralOffer.description,
+        discountType: activeReferralOffer.discountType,
+        discountValue: activeReferralOffer.discountValue,
+        endDate: activeReferralOffer.endDate
+      } : null
+    };
+
     console.log("Rendering profile page with Razorpay key ID:", razorpayKeyId);
 
     res.render('profile', {
       user: userWithWallet,
       orders: formattedOrders,
       coupons: userCoupons,
+      referral: referralData,
       title: 'My Profile',
       currentPage: 'profile',
       success: req.flash('success'),

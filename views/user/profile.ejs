@@ -476,6 +476,113 @@
             </div>
         </div>
 
+        <!-- Refer & Earn Section -->
+        <div id="refer-earn" class="section bg-white p-6 rounded-lg shadow-sm mb-8">
+            <h2 class="text-2xl font-bold mb-4 pb-2 border-b border-gray-200">
+                <i class="fas fa-user-friends mr-2"></i>Refer & Earn
+            </h2>
+
+            <div class="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6 rounded-lg shadow-md mb-6">
+                <div class="flex flex-col md:flex-row items-center justify-between">
+                    <div class="mb-4 md:mb-0">
+                        <h3 class="text-xl font-bold mb-2">Invite Friends & Earn Rewards</h3>
+                        <% if (referral.hasActiveOffer && referral.offer) { %>
+                            <p class="text-white text-opacity-90">
+                                <%= referral.offer.description || 'Share your referral code with friends and earn rewards when they sign up and make a purchase!' %>
+                            </p>
+                            <p class="mt-2 text-white text-opacity-80 text-sm">
+                                <% if (referral.offer.discountType === 'percentage') { %>
+                                    Earn <%= referral.offer.discountValue %>% of your friend's first purchase
+                                <% } else { %>
+                                    Earn ₹<%= referral.offer.discountValue %> when your friend makes their first purchase
+                                <% } %>
+                            </p>
+                        <% } else { %>
+                            <p class="text-white text-opacity-90">
+                                Share your referral code with friends and earn rewards when they sign up and make a purchase!
+                            </p>
+                        <% } %>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-gift text-5xl text-white text-opacity-80"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Referral Code Section -->
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                    <h3 class="text-lg font-semibold mb-3">Your Referral Code</h3>
+                    <div class="flex items-center">
+                        <div class="flex-1 bg-gray-100 p-3 rounded-l border border-gray-300 font-mono text-lg font-bold text-center">
+                            <%= referral.code %>
+                        </div>
+                        <button id="copyReferralBtn" class="bg-black text-white px-4 py-3 rounded-r hover:bg-gray-800 transition" onclick="copyReferralCode()">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-2">Share this code with your friends</p>
+
+                    <div class="mt-4">
+                        <h4 class="text-sm font-semibold mb-2">Share via</h4>
+                        <div class="flex space-x-3">
+                            <a href="https://wa.me/?text=Use%20my%20referral%20code%20<%= referral.code %>%20to%20get%20a%20discount%20on%20your%20first%20purchase%20at%20Mangeyko!" target="_blank" class="bg-green-500 text-white p-2 rounded-full hover:bg-green-600 transition">
+                                <i class="fab fa-whatsapp"></i>
+                            </a>
+                            <a href="https://www.facebook.com/sharer/sharer.php?u=https://mangeyko.com&quote=Use%20my%20referral%20code%20<%= referral.code %>%20to%20get%20a%20discount%20on%20your%20first%20purchase%20at%20Mangeyko!" target="_blank" class="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition">
+                                <i class="fab fa-facebook-f"></i>
+                            </a>
+                            <a href="https://twitter.com/intent/tweet?text=Use%20my%20referral%20code%20<%= referral.code %>%20to%20get%20a%20discount%20on%20your%20first%20purchase%20at%20Mangeyko!" target="_blank" class="bg-blue-400 text-white p-2 rounded-full hover:bg-blue-500 transition">
+                                <i class="fab fa-twitter"></i>
+                            </a>
+                            <a href="mailto:?subject=Join%20me%20on%20Mangeyko&body=Use%20my%20referral%20code%20<%= referral.code %>%20to%20get%20a%20discount%20on%20your%20first%20purchase%20at%20Mangeyko!" class="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition">
+                                <i class="fas fa-envelope"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Referral Stats Section -->
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                    <h3 class="text-lg font-semibold mb-4">Your Referral Stats</h3>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-gray-50 p-4 rounded-lg text-center">
+                            <p class="text-3xl font-bold text-blue-600"><%= referral.referredUsers %></p>
+                            <p class="text-sm text-gray-600">Friends Referred</p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg text-center">
+                            <p class="text-3xl font-bold text-green-600">₹<%= referral.totalEarnings.toLocaleString('en-IN') %></p>
+                            <p class="text-sm text-gray-600">Total Earned</p>
+                        </div>
+                    </div>
+
+                    <% if (!user.referredBy) { %>
+                    <div class="mt-6 border-t pt-4">
+                        <h4 class="text-sm font-semibold mb-2">Have a referral code?</h4>
+                        <div class="flex">
+                            <input type="text" id="enterReferralCode" placeholder="Enter referral code"
+                                class="flex-1 px-3 py-2 border border-gray-300 rounded-l focus:outline-none focus:ring-2 focus:ring-black">
+                            <button id="applyReferralBtn" class="px-4 py-2 bg-black text-white rounded-r hover:bg-gray-800 transition">
+                                Apply
+                            </button>
+                        </div>
+                        <p id="referralMessage" class="text-sm mt-2"></p>
+                        <p class="text-xs text-gray-500 mt-1">
+                            Get ₹50 in your wallet when you apply a friend's referral code!
+                        </p>
+                    </div>
+                    <% } else { %>
+                    <div class="mt-4 text-center">
+                        <p class="text-sm text-gray-500">
+                            The more friends you refer, the more you earn!
+                        </p>
+                    </div>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+
         <!-- Coupons Section -->
         <div id="coupons-section" class="section bg-white p-6 rounded-lg shadow-sm mb-8">
             <h2 class="text-2xl font-bold mb-4 pb-2 border-b border-gray-200">
@@ -1267,6 +1374,94 @@
                         timer: 3000
                     });
                 });
+        }
+
+        function copyReferralCode() {
+            const referralCode = '<%= referral.code %>';
+            navigator.clipboard.writeText(referralCode)
+                .then(() => {
+                    // Show success message
+                    Swal.fire({
+                        title: 'Copied!',
+                        text: `Referral code ${referralCode} copied to clipboard`,
+                        icon: 'success',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 3000
+                    });
+                })
+                .catch(err => {
+                    console.error('Failed to copy referral code: ', err);
+                    // Fallback for browsers that don't support clipboard API
+                    const tempInput = document.createElement('input');
+                    tempInput.value = referralCode;
+                    document.body.appendChild(tempInput);
+                    tempInput.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(tempInput);
+
+                    Swal.fire({
+                        title: 'Copied!',
+                        text: `Referral code ${referralCode} copied to clipboard`,
+                        icon: 'success',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 3000
+                    });
+                });
+        }
+
+        // Apply referral code functionality
+        const applyReferralBtn = document.getElementById('applyReferralBtn');
+        if (applyReferralBtn) {
+            applyReferralBtn.addEventListener('click', async function() {
+                const referralCodeInput = document.getElementById('enterReferralCode');
+                const referralMessage = document.getElementById('referralMessage');
+                const referralCode = referralCodeInput.value.trim();
+
+                if (!referralCode) {
+                    referralMessage.textContent = 'Please enter a referral code';
+                    referralMessage.className = 'text-sm mt-2 text-red-600';
+                    return;
+                }
+
+                try {
+                    referralMessage.textContent = 'Processing...';
+                    referralMessage.className = 'text-sm mt-2 text-gray-600';
+
+                    const response = await fetch('/referral/apply', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ referralCode })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        // Show success message
+                        Swal.fire({
+                            title: 'Success!',
+                            text: data.message,
+                            icon: 'success',
+                            confirmButtonText: 'Great!'
+                        }).then(() => {
+                            // Reload the page to update the UI
+                            window.location.reload();
+                        });
+                    } else {
+                        referralMessage.textContent = data.message;
+                        referralMessage.className = 'text-sm mt-2 text-red-600';
+                    }
+                } catch (error) {
+                    console.error('Error applying referral code:', error);
+                    referralMessage.textContent = 'Something went wrong. Please try again.';
+                    referralMessage.className = 'text-sm mt-2 text-red-600';
+                }
+            });
         }
 
         // Check for hash in URL to scroll to specific section
