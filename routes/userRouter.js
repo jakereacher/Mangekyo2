@@ -4,6 +4,7 @@ const passport = require("passport");
 const { uploadProfileImage } = require("../helpers/multer");
 const { userAuth } = require("../middlewares/auth");
 const { validateInventory } = require("../middlewares/inventoryMiddleware");
+const { checkExpiredOffers, updateProductOffers } = require("../middlewares/offerMiddleware");
 const wishlistController = require("../controllers/user/wishlistController");
 const checkoutController = require("../controllers/user/checkoutController");
 const orderController = require("../controllers/user/orderController");
@@ -50,12 +51,12 @@ const {
 router.get("/", loadLandingpage);
 router.get("/signup", loadSignUppage);
 router.get("/login", loadLoginpage);
-router.get("/home", loadHome);
+router.get("/home", checkExpiredOffers, updateProductOffers, loadHome);
 router.get("/pageNotFound", pageNotFound);
 router.get("/forgot-password", loadForgotPassword);
 router.get("/newPassword", loadNewPassword);
-router.get("/shop", loadShop);
-router.get("/shop/product/:id", loadProductDetail);
+router.get("/shop", checkExpiredOffers, updateProductOffers, loadShop);
+router.get("/shop/product/:id", checkExpiredOffers, loadProductDetail);
 
 // Cart Routes
 router.post("/add-to-cart",addToCart)

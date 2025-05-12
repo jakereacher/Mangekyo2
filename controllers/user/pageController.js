@@ -44,6 +44,7 @@ const loadHome = async (req, res) => {
 
     const userId = req.session.user;
     const userData = await User.findById(userId);
+    const now = new Date();
 
     // Fetch products with populated offer information
     const products = await Product.find({
@@ -53,6 +54,26 @@ const loadHome = async (req, res) => {
     .populate('category')
     .sort({ createdAt: -1 })
     .limit(8);
+
+    // Double-check for any expired offers that might still be attached to products
+    for (const product of products) {
+      if (product.offer && (product.offer.endDate < now || !product.offer.isActive)) {
+        console.log(`Found expired offer on product ${product._id} during home page load`);
+        await Product.findByIdAndUpdate(product._id, {
+          $set: {
+            offer: null,
+            productOffer: false,
+            offerPercentage: 0,
+            offerEndDate: null
+          }
+        });
+        // Remove the offer from the current product object
+        product.offer = null;
+        product.productOffer = false;
+        product.offerPercentage = 0;
+        product.offerEndDate = null;
+      }
+    }
 
     // Process products to include offer information
     const processedProducts = products.map(product => {
@@ -148,6 +169,7 @@ const loadShop = async (req, res) => {
   try {
     const userId = req.session.user;
     const userData = await User.findById(userId);
+    const now = new Date();
     const {
       search = '',
       sort = 'default',
@@ -209,16 +231,32 @@ const loadShop = async (req, res) => {
       .skip(skip)
       .limit(perPage);
 
-    // Update product statuses based on quantity
+    // Update product statuses based on quantity and check for expired offers
     for (const product of products) {
+      let needsUpdate = false;
+
+      // Check quantity for status update
       if (product.quantity > 0 && product.status !== "Available") {
         product.status = "Available";
-        await product.save();
-        console.log(`Updated product status to Available for ${product.productName} (${product._id})`);
+        needsUpdate = true;
       } else if (product.quantity <= 0 && product.status !== "Out of Stock") {
         product.status = "Out of Stock";
+        needsUpdate = true;
+      }
+
+      // Check for expired offers
+      if (product.offer && (product.offer.endDate < now || !product.offer.isActive)) {
+        console.log(`Found expired offer on product ${product._id} during shop page load`);
+        product.offer = null;
+        product.productOffer = false;
+        product.offerPercentage = 0;
+        product.offerEndDate = null;
+        needsUpdate = true;
+      }
+
+      if (needsUpdate) {
         await product.save();
-        console.log(`Updated product status to Out of Stock for ${product.productName} (${product._id})`);
+        console.log(`Updated product ${product.productName} (${product._id})`);
       }
     }
 
@@ -382,6 +420,7 @@ const loadProductDetail = async (req, res) => {
     const userId = req.session.user;
     const userData = await User.findById(userId);
     const productId = req.params.id;
+    const now = new Date();
 
 
     if (!mongoose.Types.ObjectId.isValid(productId)) {
@@ -394,6 +433,16 @@ const loadProductDetail = async (req, res) => {
 
     if (!product) {
       return res.render("product-detail", { product: null, relatedProducts: [] });
+    }
+
+    // Check for expired offers
+    if (product.offer && (product.offer.endDate < now || !product.offer.isActive)) {
+      console.log(`Found expired offer on product ${product._id} during product detail page load`);
+      product.offer = null;
+      product.productOffer = false;
+      product.offerPercentage = 0;
+      product.offerEndDate = null;
+      await product.save();
     }
 
     // Update product status based on quantity to ensure consistency

@@ -82,11 +82,39 @@ productSchema.virtual('finalPrice').get(function() {
 // Method to calculate and update offer details
 productSchema.methods.updateOfferDetails = async function() {
   const offerService = require('../services/offerService');
+  const Offer = require('./offerSchema');
+  const now = new Date();
+
+  // Check if current offer is expired
+  if (this.offer) {
+    const currentOffer = await Offer.findById(this.offer);
+    if (currentOffer && (!currentOffer.isActive || currentOffer.endDate < now)) {
+      console.log(`Clearing expired offer from product ${this._id}: Offer ${currentOffer._id} expired on ${currentOffer.endDate}`);
+      this.offerPercentage = 0;
+      this.offer = null;
+      this.productOffer = false;
+      this.offerEndDate = null;
+      await this.save();
+    }
+  }
 
   // Get the best offer for this product
   const offerResult = await offerService.getBestOfferForProduct(this._id, this.price);
 
   if (offerResult.hasOffer) {
+    // Double-check offer validity
+    const offer = offerResult.offer;
+    if (!offer.isActive || offer.startDate > now || offer.endDate < now) {
+      console.log(`Skipping expired or inactive offer: ${offer.name} (${offer._id})`);
+      // Clear offer details
+      this.offerPercentage = 0;
+      this.offer = null;
+      this.productOffer = false;
+      this.offerEndDate = null;
+      await this.save();
+      return false;
+    }
+
     // Calculate offer percentage
     const offerPercentage = (offerResult.discountAmount / this.price) * 100;
 

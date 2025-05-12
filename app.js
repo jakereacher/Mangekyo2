@@ -8,11 +8,15 @@ const flash = require('connect-flash');
 const db = require("./config/db");
 const userRouter = require("./routes/userRouter");
 const adminRouter = require("./routes/adminRouter");
+const { initOfferCronJobs } = require('./services/offerCronService');
 
 
 
 
 db();
+// Initialize offer cron jobs
+initOfferCronJobs();
+
 app.use(flash());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.json());
@@ -27,7 +31,7 @@ app.use(
     cookie: {
       secure: false,
       httpOnly: true,
-      maxAge: 72 * 60 * 60 * 1000, 
+      maxAge: 72 * 60 * 60 * 1000,
     },
   })
 );
@@ -68,7 +72,7 @@ app.set("views", [
 
 
 app.use((req, res, next) => {
-  if (req.originalUrl.startsWith("/admin")) return next(); 
+  if (req.originalUrl.startsWith("/admin")) return next();
   res.status(404).render("page-404", {
     pageTitle: "Page Not Found",
     path: req.originalUrl,
@@ -88,7 +92,7 @@ app.use((req, res) => {
 // Error handling middleware
 // app.use((err, req, res, next) => {
 //   console.error(err.stack);
-//   res.status(500).render('error', { 
+//   res.status(500).render('error', {
 //     message: 'Something went wrong!',
 //     isAdmin: req.path.startsWith('/admin') // To use different error templates
 //   });
