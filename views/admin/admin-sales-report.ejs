@@ -1,0 +1,378 @@
+<%- include("../../views/admin/partials/header", { activePage: 'reports' }) %>
+
+<div class="main-content">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">Sales Report</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <a href="/admin/sales-report/download?startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>" 
+               class="btn btn-sm btn-outline-secondary me-2">
+                <i class="fas fa-download"></i> Export CSV
+            </a>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.print()">
+                <i class="fas fa-print"></i> Print
+            </button>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Filter Sales Data</h5>
+        </div>
+        <div class="card-body">
+            <form id="filterForm" action="/admin/sales-report" method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label for="startDate" class="form-label">Start Date</label>
+                    <input type="date" class="form-control" id="startDate" name="startDate" value="<%= filters.startDate %>">
+                </div>
+                <div class="col-md-3">
+                    <label for="endDate" class="form-label">End Date</label>
+                    <input type="date" class="form-control" id="endDate" name="endDate" value="<%= filters.endDate %>">
+                </div>
+                <div class="col-md-3">
+                    <label for="paymentMethod" class="form-label">Payment Method</label>
+                    <select class="form-select" id="paymentMethod" name="paymentMethod">
+                        <option value="all" <%= filters.paymentMethod === 'all' ? 'selected' : '' %>>All Methods</option>
+                        <option value="cod" <%= filters.paymentMethod === 'cod' ? 'selected' : '' %>>Cash on Delivery</option>
+                        <option value="razorpay" <%= filters.paymentMethod === 'razorpay' ? 'selected' : '' %>>Razorpay</option>
+                        <option value="wallet" <%= filters.paymentMethod === 'wallet' ? 'selected' : '' %>>Wallet</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="orderStatus" class="form-label">Order Status</label>
+                    <select class="form-select" id="orderStatus" name="orderStatus">
+                        <option value="all" <%= filters.orderStatus === 'all' ? 'selected' : '' %>>All Statuses</option>
+                        <option value="Processing" <%= filters.orderStatus === 'Processing' ? 'selected' : '' %>>Processing</option>
+                        <option value="Shipped" <%= filters.orderStatus === 'Shipped' ? 'selected' : '' %>>Shipped</option>
+                        <option value="Delivered" <%= filters.orderStatus === 'Delivered' ? 'selected' : '' %>>Delivered</option>
+                        <option value="Cancelled" <%= filters.orderStatus === 'Cancelled' ? 'selected' : '' %>>Cancelled</option>
+                        <option value="Returned" <%= filters.orderStatus === 'Returned' ? 'selected' : '' %>>Returned</option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Apply Filters</button>
+                    <a href="/admin/sales-report" class="btn btn-secondary">Reset</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Sales</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">₹<%= totalSales.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %></div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-rupee-sign fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Total Orders</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800"><%= totalOrders %></div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-shopping-cart fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Total Products Sold</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800"><%= totalProducts %></div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-box fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Average Order Value</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                ₹<%= totalOrders > 0 ? (totalSales / totalOrders).toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '0.00' %>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calculator fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <!-- Sales Trend Chart -->
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Sales Trend</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-area">
+                        <canvas id="salesTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Method Distribution -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Payment Methods</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-pie pt-4 pb-2">
+                        <canvas id="paymentMethodChart"></canvas>
+                    </div>
+                    <div class="mt-4 text-center small">
+                        <span class="mr-2">
+                            <i class="fas fa-circle text-primary"></i> COD
+                        </span>
+                        <span class="mr-2">
+                            <i class="fas fa-circle text-success"></i> Razorpay
+                        </span>
+                        <span class="mr-2">
+                            <i class="fas fa-circle text-info"></i> Wallet
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Products Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Top Selling Products</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Product Name</th>
+                            <th>Quantity Sold</th>
+                            <th>Revenue</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (topProducts && topProducts.length > 0) { %>
+                            <% topProducts.forEach(product => { %>
+                                <tr>
+                                    <td><%= product.name %></td>
+                                    <td><%= product.quantity %></td>
+                                    <td>₹<%= product.revenue.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %></td>
+                                </tr>
+                            <% }); %>
+                        <% } else { %>
+                            <tr>
+                                <td colspan="3" class="text-center">No products found</td>
+                            </tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Orders Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Order Details</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="ordersTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Date</th>
+                            <th>Customer</th>
+                            <th>Payment Method</th>
+                            <th>Items</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (orders && orders.length > 0) { %>
+                            <% orders.forEach(order => { %>
+                                <tr>
+                                    <td><%= order.orderId %></td>
+                                    <td><%= order.formattedOrderDate %></td>
+                                    <td><%= order.customerName %></td>
+                                    <td><%= order.paymentMethod.toUpperCase() %></td>
+                                    <td><%= order.orderedItems.length %> items</td>
+                                    <td>₹<%= order.finalAmount.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %></td>
+                                    <td>
+                                        <% 
+                                        let statusCounts = {};
+                                        order.orderedItems.forEach(item => {
+                                            statusCounts[item.status] = (statusCounts[item.status] || 0) + 1;
+                                        });
+                                        
+                                        Object.entries(statusCounts).forEach(([status, count]) => {
+                                            let badgeClass = 'bg-secondary';
+                                            if (status === 'Delivered') badgeClass = 'bg-success';
+                                            if (status === 'Processing') badgeClass = 'bg-primary';
+                                            if (status === 'Shipped') badgeClass = 'bg-info';
+                                            if (status === 'Cancelled') badgeClass = 'bg-danger';
+                                            if (status === 'Returned') badgeClass = 'bg-warning';
+                                        %>
+                                            <span class="badge <%= badgeClass %> me-1"><%= status %> (<%= count %>)</span>
+                                        <% }); %>
+                                    </td>
+                                    <td>
+                                        <a href="/admin/orders/<%= order._id %>" class="btn btn-sm btn-info">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        <% } else { %>
+                            <tr>
+                                <td colspan="8" class="text-center">No orders found</td>
+                            </tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // Sales Trend Chart
+    const salesData = <%= salesByDate %>;
+    const labels = Object.keys(salesData);
+    const data = Object.values(salesData);
+    
+    const ctx = document.getElementById('salesTrendChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Sales Amount (₹)',
+                data: data,
+                backgroundColor: 'rgba(78, 115, 223, 0.05)',
+                borderColor: 'rgba(78, 115, 223, 1)',
+                pointRadius: 3,
+                pointBackgroundColor: 'rgba(78, 115, 223, 1)',
+                pointBorderColor: 'rgba(78, 115, 223, 1)',
+                pointHoverRadius: 5,
+                pointHoverBackgroundColor: 'rgba(78, 115, 223, 1)',
+                pointHoverBorderColor: 'rgba(78, 115, 223, 1)',
+                pointHitRadius: 10,
+                pointBorderWidth: 2,
+                tension: 0.3,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '₹' + value.toLocaleString('en-IN');
+                        }
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'Sales: ₹' + context.parsed.y.toLocaleString('en-IN');
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    // Payment Method Chart
+    const paymentCtx = document.getElementById('paymentMethodChart').getContext('2d');
+    new Chart(paymentCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['COD', 'Razorpay', 'Wallet'],
+            datasets: [{
+                data: [
+                    <%= salesByPaymentMethod.cod %>, 
+                    <%= salesByPaymentMethod.razorpay %>, 
+                    <%= salesByPaymentMethod.wallet %>
+                ],
+                backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc'],
+                hoverBackgroundColor: ['#2e59d9', '#17a673', '#2c9faf'],
+                hoverBorderColor: 'rgba(234, 236, 244, 1)',
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed || 0;
+                            const total = context.dataset.data.reduce((acc, data) => acc + data, 0);
+                            const percentage = Math.round((value / total) * 100);
+                            return `${label}: ₹${value.toLocaleString('en-IN')} (${percentage}%)`;
+                        }
+                    }
+                }
+            },
+            cutout: '70%'
+        }
+    });
+    
+    // DataTable initialization
+    $(document).ready(function() {
+        $('#ordersTable').DataTable({
+            order: [[1, 'desc']]
+        });
+    });
+</script>
+
+<%- include("../../views/admin/partials/footer") %>

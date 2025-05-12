@@ -9,6 +9,7 @@ const productController = require("../controllers/admin/productController");
 const orderController = require("../controllers/admin/orderController");
 const couponController = require("../controllers/admin/couponController");
 const offerController = require("../controllers/admin/offerController");
+const reportController = require("../controllers/admin/reportController");
 
 const { userAuth, adminAuth } = require("../middlewares/auth");
 
@@ -84,5 +85,9 @@ router.get("/category-offers/create", adminAuth, offerController.renderCreateCat
 router.post("/category-offers/create", adminAuth, offerController.createCategoryOffer);
 router.get("/category-offers/edit/:id", adminAuth, offerController.renderEditCategoryOfferPage);
 router.post("/category-offers/update/:id", adminAuth, offerController.updateCategoryOffer);
+
+// Sales Report routes
+router.get("/sales-report", adminAuth, reportController.renderSalesReport);
+router.get("/sales-report/download", adminAuth, reportController.downloadSalesReport);
 
 module.exports = router;
