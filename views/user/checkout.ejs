@@ -310,7 +310,12 @@
                             <input type="text" id="couponCode" class="flex-1 px-3 py-2 border border-gray-300 rounded-l focus:outline-none focus:ring-2 focus:ring-black" placeholder="Enter coupon code">
                             <button id="applyCouponBtn" class="px-4 py-2 bg-black text-white rounded-r hover:bg-gray-800 transition">Apply</button>
                         </div>
-                        <p id="couponMessage" class="text-sm mt-2"></p>
+                        <div class="flex items-center mt-2">
+                            <p id="couponMessage" class="text-sm flex-grow"></p>
+                            <button id="removeCouponBtn" class="text-sm text-red-600 hover:text-red-800 hidden">
+                                <i class="fas fa-times-circle mr-1"></i>Remove
+                            </button>
+                        </div>
                     </div>
 
                     <div class="space-y-3 mb-4">
@@ -615,6 +620,7 @@
 
             // Coupon code application
             const applyCouponBtn = document.getElementById('applyCouponBtn');
+            const removeCouponBtn = document.getElementById('removeCouponBtn');
             const couponCodeInput = document.getElementById('couponCode');
             const couponMessage = document.getElementById('couponMessage');
             const discountSection = document.getElementById('discountSection');
@@ -624,6 +630,7 @@
             // Initialize variables for coupon application
 
             applyCouponBtn.addEventListener('click', applyCoupon);
+            removeCouponBtn.addEventListener('click', removeCoupon);
 
             async function applyCoupon() {
                 const couponCode = couponCodeInput.value.trim();
@@ -668,7 +675,17 @@
 
                         updateOrderSummary(data.discount, appliedCoupon.finalAmount);
                         couponMessage.textContent = data.message;
-                        couponMessage.className = "text-sm mt-2 text-green-600";
+                        couponMessage.className = "text-sm text-green-600";
+
+                        // Clear the timeout if it exists
+                        if (window.couponMessageTimeout) {
+                            clearTimeout(window.couponMessageTimeout);
+                        }
+
+                        // Set a timeout to clear the message after 3 seconds
+                        window.couponMessageTimeout = setTimeout(() => {
+                            couponMessage.textContent = '';
+                        }, 3000);
                     } else {
                         showCouponError(data.message);
                     }
@@ -678,19 +695,80 @@
                 }
             }
 
+            async function removeCoupon() {
+                try {
+                    const response = await fetch('/remove-coupon', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        // Reset the coupon input and hide the remove button
+                        couponCodeInput.value = '';
+                        removeCouponBtn.classList.add('hidden');
+
+                        // Reset the order summary
+                        resetOrderSummary();
+
+                        // Show success message
+                        couponMessage.textContent = 'Coupon removed successfully';
+                        couponMessage.className = "text-sm text-gray-600";
+
+                        // Clear the timeout if it exists
+                        if (window.couponMessageTimeout) {
+                            clearTimeout(window.couponMessageTimeout);
+                        }
+
+                        // Set a timeout to clear the message after 3 seconds
+                        window.couponMessageTimeout = setTimeout(() => {
+                            couponMessage.textContent = '';
+                        }, 3000);
+                    } else {
+                        couponMessage.textContent = data.message || 'Failed to remove coupon';
+                        couponMessage.className = "text-sm text-red-600";
+                    }
+                } catch (error) {
+                    console.error('Error removing coupon:', error);
+                    couponMessage.textContent = 'Something went wrong. Try again later.';
+                    couponMessage.className = "text-sm text-red-600";
+                }
+            }
+
             function updateOrderSummary(discount, finalAmount) {
                 discountSection.classList.remove('hidden');
                 discountAmount.textContent = `-$${discount.toFixed(2)}`;
                 finalTotal.textContent = `$${finalAmount.toFixed(2)}`;
+
+                // Show the remove coupon button
+                removeCouponBtn.classList.remove('hidden');
+
+                // Disable the coupon input and apply button
+                couponCodeInput.disabled = true;
+                applyCouponBtn.disabled = true;
+            }
+
+            function resetOrderSummary() {
+                // Hide the discount section
+                discountSection.classList.add('hidden');
+
+                // Reset the final total
+                finalTotal.textContent = `$${(parseFloat('<%= subtotal %>') + parseFloat('<%= shipping %>') + parseFloat('<%= tax %>')).toFixed(2)}`;
+
+                // Reset the coupon data
+                appliedCoupon = null;
+                checkoutData.couponCode = null;
+
+                // Enable the coupon input and apply button
+                couponCodeInput.disabled = false;
+                applyCouponBtn.disabled = false;
             }
 
             function showCouponError(message) {
                 couponMessage.textContent = message;
-                couponMessage.className = "text-sm mt-2 text-red-600";
-                discountSection.classList.add('hidden');
-                finalTotal.textContent = `$${(parseFloat('<%= subtotal %>') + parseFloat('<%= shipping %>') + parseFloat('<%= tax %>')).toFixed(2)}`;
-                appliedCoupon = null;
-                checkoutData.couponCode = null; // Reset coupon in checkout data
+                couponMessage.className = "text-sm text-red-600";
+                resetOrderSummary();
             }
         });
 

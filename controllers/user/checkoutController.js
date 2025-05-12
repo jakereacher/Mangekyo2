@@ -456,8 +456,19 @@ exports.placeOrder = async (req, res) => {
 
     // Update coupon usage after successful order creation
     if (coupon) {
+      console.log("Updating coupon usage for coupon:", coupon.code);
+      console.log("Before update - Total used count:", coupon.totalUsedCount);
+
+      // Get current user usage before update
+      const existingUserUsage = coupon.users.find(
+        (u) => u.userId.toString() === userId.toString()
+      );
+      console.log("Before update - User usage:", existingUserUsage ? existingUserUsage.usedCount : 0);
+
+      // Increment total usage count
       coupon.totalUsedCount += 1;
 
+      // Update or add user usage
       const userUsageIndex = coupon.users.findIndex(
         (u) => u.userId.toString() === userId.toString()
       );
@@ -467,7 +478,15 @@ exports.placeOrder = async (req, res) => {
         coupon.users.push({ userId, usedCount: 1 });
       }
 
+      // Save the updated coupon
       await coupon.save();
+
+      // Log the updated values
+      console.log("After update - Total used count:", coupon.totalUsedCount);
+      const updatedUserUsage = coupon.users.find(
+        (u) => u.userId.toString() === userId.toString()
+      );
+      console.log("After update - User usage:", updatedUserUsage.usedCount);
     }
 
     try {

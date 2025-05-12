@@ -101,7 +101,8 @@ router.get('/wishlist/count', wishlistController.getWishlistCount);
 // Coupons
 router.get("/active-coupons", couponController.renderCouponsPage);
 router.get("/coupon/:code", couponController.getCouponByCode);
-router.post("/apply-coupon", couponController.applyCoupon)
+router.post("/apply-coupon", couponController.applyCoupon);
+router.post("/remove-coupon", couponController.removeAppliedCoupon);
 
 // Razorpay Payment Routes
 router.post("/razorpay/create-order", razorpayController.createRazorpayOrder);

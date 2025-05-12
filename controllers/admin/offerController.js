@@ -142,6 +142,10 @@ exports.renderEditProductOfferPage = async (req, res) => {
     offer.startDateFormatted = offer.startDate.toISOString().split('T')[0];
     offer.endDateFormatted = offer.endDate.toISOString().split('T')[0];
 
+    // Format dates with time for the flatpickr
+    offer.startDateTimeFormatted = offer.startDate.toISOString().replace('Z', '').replace('T', ' ').substring(0, 16);
+    offer.endDateTimeFormatted = offer.endDate.toISOString().replace('Z', '').replace('T', ' ').substring(0, 16);
+
     res.render('admin-product-offer-edit', {
       title: 'Edit Product Offer',
       activePage: 'product-offers',
@@ -181,6 +185,10 @@ exports.renderEditCategoryOfferPage = async (req, res) => {
     // Format dates for the form
     offer.startDateFormatted = offer.startDate.toISOString().split('T')[0];
     offer.endDateFormatted = offer.endDate.toISOString().split('T')[0];
+
+    // Format dates with time for the flatpickr
+    offer.startDateTimeFormatted = offer.startDate.toISOString().replace('Z', '').replace('T', ' ').substring(0, 16);
+    offer.endDateTimeFormatted = offer.endDate.toISOString().replace('Z', '').replace('T', ' ').substring(0, 16);
 
     res.render('admin-category-offer-edit', {
       title: 'Edit Category Offer',

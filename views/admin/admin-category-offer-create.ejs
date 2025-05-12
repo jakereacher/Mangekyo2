@@ -1,4 +1,6 @@
 <%- include("partials/header", { activePage: 'category-offers' }) %>
+<!-- Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
 <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
   <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
@@ -63,23 +65,23 @@
 
         <div class="row mb-3">
           <div class="col-md-6">
-            <label for="startDate" class="form-label">Start Date <span class="text-danger">*</span></label>
-            <input type="date" class="form-control" id="startDate" name="startDate" required>
+            <label for="startDate" class="form-label">Start Date & Time <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="startDate" name="startDate" placeholder="Select date and time" required>
           </div>
           <div class="col-md-6">
-            <label for="endDate" class="form-label">End Date <span class="text-danger">*</span></label>
-            <input type="date" class="form-control" id="endDate" name="endDate" required>
+            <label for="endDate" class="form-label">End Date & Time <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="endDate" name="endDate" placeholder="Select date and time" required>
           </div>
         </div>
 
         <!-- Category Selection -->
         <div class="mb-4">
           <label class="form-label fw-bold">Select Categories <span class="text-danger">*</span></label>
-          
+
           <div class="mb-3">
             <input type="text" class="form-control" id="categorySearch" placeholder="Search categories by name...">
           </div>
-          
+
           <div class="card">
             <div class="card-header bg-light">
               <div class="d-flex justify-content-between align-items-center">
@@ -108,7 +110,7 @@
               <span id="selectedCategoriesCount">0</span> categories selected
             </div>
           </div>
-          
+
           <div class="mt-3" id="categoryOfferPreview" style="display: none;">
             <div class="card border-success">
               <div class="card-header bg-success text-white">
@@ -139,7 +141,7 @@
     const discountTypeSelect = document.getElementById('discountType');
     const discountValueInput = document.getElementById('discountValue');
     const maxDiscountAmountInput = document.getElementById('maxDiscountAmount');
-    
+
     // Category selection elements
     const categorySearch = document.getElementById('categorySearch');
     const categoryItems = document.querySelectorAll('.category-item');
@@ -148,16 +150,16 @@
     const clearAllCategoriesBtn = document.querySelector('.clear-all-categories');
     const selectedCategoriesCount = document.getElementById('selectedCategoriesCount');
     const categoryOfferPreview = document.getElementById('categoryOfferPreview');
-    
+
     // Set min date for start date to today
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('startDate').min = today;
-    
+
     // Set min date for end date to start date
     document.getElementById('startDate').addEventListener('change', function() {
       document.getElementById('endDate').min = this.value;
     });
-    
+
     // Show/hide max discount amount based on discount type
     discountTypeSelect.addEventListener('change', function() {
       const maxDiscountField = document.getElementById('maxDiscountAmount');
@@ -169,21 +171,21 @@
       }
       updateCategoryOfferPreview();
     });
-    
+
     // Update offer preview when discount value changes
     discountValueInput.addEventListener('input', function() {
       updateCategoryOfferPreview();
     });
-    
+
     // Update offer preview when max discount amount changes
     maxDiscountAmountInput.addEventListener('input', function() {
       updateCategoryOfferPreview();
     });
-    
+
     // Category search functionality
     categorySearch.addEventListener('input', function() {
       const searchTerm = this.value.toLowerCase();
-      
+
       categoryItems.forEach(item => {
         const categoryName = item.querySelector('.form-check-label').textContent.trim().toLowerCase();
         if (categoryName.includes(searchTerm)) {
@@ -193,7 +195,7 @@
         }
       });
     });
-    
+
     // Select all categories
     selectAllCategoriesBtn.addEventListener('click', function() {
       categoryCheckboxes.forEach(checkbox => {
@@ -205,7 +207,7 @@
       updateCategorySelectionCount();
       updateCategoryOfferPreview();
     });
-    
+
     // Clear all categories
     clearAllCategoriesBtn.addEventListener('click', function() {
       categoryCheckboxes.forEach(checkbox => {
@@ -214,7 +216,7 @@
       updateCategorySelectionCount();
       updateCategoryOfferPreview();
     });
-    
+
     // Update category selection count when checkboxes change
     categoryCheckboxes.forEach(checkbox => {
       checkbox.addEventListener('change', function() {
@@ -222,12 +224,12 @@
         updateCategoryOfferPreview();
       });
     });
-    
+
     // Function to update category selection count
     function updateCategorySelectionCount() {
       const selectedCount = document.querySelectorAll('.category-checkbox:checked').length;
       selectedCategoriesCount.textContent = selectedCount;
-      
+
       // Form validation - at least one category must be selected
       const submitBtn = document.querySelector('button[type="submit"]');
       if (selectedCount === 0) {
@@ -236,51 +238,79 @@
         submitBtn.disabled = false;
       }
     }
-    
+
     // Function to update category offer preview
     function updateCategoryOfferPreview() {
       const selectedCategories = document.querySelectorAll('.category-checkbox:checked');
-      
+
       if (selectedCategories.length > 0 && discountValueInput.value && discountTypeSelect.value) {
         // Use a sample price of 1000 for demonstration
         const samplePrice = 1000;
-        
+
         // Calculate discount
         let discountAmount = 0;
         const discountValue = parseFloat(discountValueInput.value);
-        
+
         if (discountTypeSelect.value === 'percentage') {
           discountAmount = (samplePrice * discountValue) / 100;
-          
+
           // Apply max discount cap if specified
           const maxDiscountAmount = parseFloat(maxDiscountAmountInput.value);
           if (!isNaN(maxDiscountAmount) && discountAmount > maxDiscountAmount) {
             discountAmount = maxDiscountAmount;
           }
-          
+
           document.getElementById('categoryDiscountExample').textContent = `${discountValue}% (₹${discountAmount.toFixed(2)})`;
         } else {
           discountAmount = discountValue;
-          
+
           // Ensure discount doesn't exceed the price
           if (discountAmount > samplePrice) {
             discountAmount = samplePrice;
           }
-          
+
           document.getElementById('categoryDiscountExample').textContent = `₹${discountAmount.toFixed(2)}`;
         }
-        
+
         const finalPrice = samplePrice - discountAmount;
         document.getElementById('categoryFinalPriceExample').textContent = finalPrice.toFixed(2);
-        
+
         categoryOfferPreview.style.display = 'block';
       } else {
         categoryOfferPreview.style.display = 'none';
       }
     }
-    
+
     // Initialize
     updateCategorySelectionCount();
+  });
+</script>
+
+<!-- Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<script>
+  // Initialize Flatpickr for date/time pickers
+  document.addEventListener('DOMContentLoaded', function() {
+    // Initialize start date picker with time
+    const startDatePicker = flatpickr("#startDate", {
+      enableTime: true,
+      dateFormat: "Y-m-d H:i",
+      time_24hr: true,
+      minDate: "today",
+      onChange: function(selectedDates, dateStr) {
+        // Update end date min date when start date changes
+        endDatePicker.set("minDate", dateStr);
+      }
+    });
+
+    // Initialize end date picker with time
+    const endDatePicker = flatpickr("#endDate", {
+      enableTime: true,
+      dateFormat: "Y-m-d H:i",
+      time_24hr: true,
+      minDate: document.getElementById('startDate').value || "today"
+    });
   });
 </script>
 

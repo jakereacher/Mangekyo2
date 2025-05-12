@@ -6,6 +6,7 @@
 const User = require("../../models/userSchema");
 const Order = require("../../models/orderSchema");
 const Wallet = require("../../models/walletSchema");
+const Coupon = require("../../models/couponSchema");
 const StatusCodes = require("../../utils/httpStatusCodes");
 const { validateEmail, validateMobile } = require('../../utils/helpers');
 const multer = require("../../helpers/multer");
@@ -28,7 +29,7 @@ const generateOTP = () => {
 };
 
 /**
- * Render the profile page with user details, wallet balance, and order history.
+ * Render the profile page with user details, wallet balance, order history, and available coupons.
  */
 exports.renderProfilePage = async (req, res) => {
   try {
@@ -70,11 +71,41 @@ exports.renderProfilePage = async (req, res) => {
       }))
     }));
 
+    // Fetch available coupons for the user
+    const now = new Date();
+    const availableCoupons = await Coupon.find({
+      isActive: true,
+      isDelete: false,
+      startDate: { $lte: now },
+      expiryDate: { $gte: now }
+    });
+
+    // Filter coupons based on user usage
+    const userCoupons = availableCoupons.map(coupon => {
+      const userUsage = coupon.users.find(u => u.userId.toString() === userId.toString());
+      const usedCount = userUsage ? userUsage.usedCount : 0;
+      const remainingUses = coupon.usageLimit - usedCount;
+
+      return {
+        _id: coupon._id,
+        code: coupon.code,
+        type: coupon.type,
+        discountValue: coupon.discountValue,
+        minPrice: coupon.minPrice,
+        maxPrice: coupon.maxPrice,
+        expiryDate: coupon.expiryDate,
+        usageLimit: coupon.usageLimit,
+        remainingUses: remainingUses > 0 ? remainingUses : 0,
+        isUsable: remainingUses > 0 && coupon.totalUsedCount < coupon.totalUsageLimit
+      };
+    }).filter(coupon => coupon.isUsable);
+
     console.log("Rendering profile page with Razorpay key ID:", razorpayKeyId);
 
     res.render('profile', {
       user: userWithWallet,
       orders: formattedOrders,
+      coupons: userCoupons,
       title: 'My Profile',
       currentPage: 'profile',
       success: req.flash('success'),

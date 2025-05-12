@@ -1,4 +1,6 @@
 <%- include("partials/header", { activePage: 'category-offers' }) %>
+<!-- Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
 <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
   <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
@@ -76,12 +78,12 @@
 
         <div class="row mb-3">
           <div class="col-md-6">
-            <label for="startDate" class="form-label">Start Date <span class="text-danger">*</span></label>
-            <input type="date" class="form-control" id="startDate" name="startDate" value="<%= offer.startDateFormatted %>" required>
+            <label for="startDate" class="form-label">Start Date & Time <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="startDate" name="startDate" value="<%= offer.startDateTimeFormatted || offer.startDateFormatted %>" placeholder="Select date and time" required>
           </div>
           <div class="col-md-6">
-            <label for="endDate" class="form-label">End Date <span class="text-danger">*</span></label>
-            <input type="date" class="form-control" id="endDate" name="endDate" value="<%= offer.endDateFormatted %>" required>
+            <label for="endDate" class="form-label">End Date & Time <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="endDate" name="endDate" value="<%= offer.endDateTimeFormatted || offer.endDateFormatted %>" placeholder="Select date and time" required>
           </div>
         </div>
 
@@ -112,9 +114,9 @@
                 <% categories.forEach(category => { %>
                   <div class="col-md-6 mb-2 category-item">
                     <div class="form-check">
-                      <input class="form-check-input category-checkbox" type="checkbox" 
-                        value="<%= category._id %>" 
-                        id="category_<%= category._id %>" 
+                      <input class="form-check-input category-checkbox" type="checkbox"
+                        value="<%= category._id %>"
+                        id="category_<%= category._id %>"
                         name="applicableCategories"
                         <%= offer.applicableCategories && offer.applicableCategories.some(c => c.toString() === category._id.toString()) ? 'checked' : '' %>>
                       <label class="form-check-label" for="category_<%= category._id %>">
@@ -129,7 +131,7 @@
               <span id="selectedCategoriesCount">0</span> categories selected
             </div>
           </div>
-          
+
           <div class="mt-3" id="categoryOfferPreview" style="display: none;">
             <div class="card border-success">
               <div class="card-header bg-success text-white">
@@ -165,7 +167,7 @@
     const maxDiscountAmountInput = document.getElementById('maxDiscountAmount');
     const startDateInput = document.getElementById('startDate');
     const endDateInput = document.getElementById('endDate');
-    
+
     // Category selection elements
     const categorySearch = document.getElementById('categorySearch');
     const categoryItems = document.querySelectorAll('.category-item');
@@ -174,10 +176,10 @@
     const clearAllCategoriesBtn = document.querySelector('.clear-all-categories');
     const selectedCategoriesCount = document.getElementById('selectedCategoriesCount');
     const categoryOfferPreview = document.getElementById('categoryOfferPreview');
-    
+
     // Set min date for start date to today
     const today = new Date().toISOString().split('T')[0];
-    
+
     // Ensure end date is after start date
     startDateInput.addEventListener('change', function() {
       endDateInput.min = this.value;
@@ -185,7 +187,7 @@
         endDateInput.value = this.value;
       }
     });
-    
+
     // Toggle max discount amount field based on discount type
     discountTypeSelect.addEventListener('change', function() {
       if (this.value === 'percentage') {
@@ -197,28 +199,28 @@
       }
       updateCategoryOfferPreview();
     });
-    
+
     // Update discount symbol when discount type changes
     discountTypeSelect.addEventListener('change', function() {
       discountSymbol.textContent = this.value === 'percentage' ? '%' : '₹';
     });
-    
+
     // Update category selection count
     function updateCategorySelectionCount() {
       const selectedCount = document.querySelectorAll('.category-checkbox:checked').length;
       selectedCategoriesCount.textContent = selectedCount;
     }
-    
+
     // Update category offer preview
     function updateCategoryOfferPreview() {
       const discountType = discountTypeSelect.value;
       const discountValue = parseFloat(discountValueInput.value) || 0;
       const maxDiscountAmount = parseFloat(maxDiscountAmountInput.value) || 0;
       const samplePrice = 1000;
-      
+
       if (discountType && discountValue > 0) {
         let discountAmount = 0;
-        
+
         if (discountType === 'percentage') {
           discountAmount = (samplePrice * discountValue) / 100;
           if (maxDiscountAmount > 0 && discountAmount > maxDiscountAmount) {
@@ -229,30 +231,30 @@
           discountAmount = Math.min(discountValue, samplePrice);
           document.getElementById('categoryDiscountExample').textContent = `₹${discountAmount}`;
         }
-        
+
         const finalPrice = samplePrice - discountAmount;
         document.getElementById('categoryFinalPriceExample').textContent = finalPrice.toFixed(2);
-        
+
         categoryOfferPreview.style.display = 'block';
       } else {
         categoryOfferPreview.style.display = 'none';
       }
     }
-    
+
     // Update offer preview when discount value changes
     discountValueInput.addEventListener('input', function() {
       updateCategoryOfferPreview();
     });
-    
+
     // Update offer preview when max discount amount changes
     maxDiscountAmountInput.addEventListener('input', function() {
       updateCategoryOfferPreview();
     });
-    
+
     // Category search functionality
     categorySearch.addEventListener('input', function() {
       const searchTerm = this.value.toLowerCase();
-      
+
       categoryItems.forEach(item => {
         const categoryName = item.querySelector('.form-check-label').textContent.trim().toLowerCase();
         if (categoryName.includes(searchTerm)) {
@@ -262,7 +264,7 @@
         }
       });
     });
-    
+
     // Select all categories
     selectAllCategoriesBtn.addEventListener('click', function() {
       categoryCheckboxes.forEach(checkbox => {
@@ -274,7 +276,7 @@
       updateCategorySelectionCount();
       updateCategoryOfferPreview();
     });
-    
+
     // Clear all categories
     clearAllCategoriesBtn.addEventListener('click', function() {
       categoryCheckboxes.forEach(checkbox => {
@@ -283,7 +285,7 @@
       updateCategorySelectionCount();
       updateCategoryOfferPreview();
     });
-    
+
     // Update category selection count when checkboxes change
     categoryCheckboxes.forEach(checkbox => {
       checkbox.addEventListener('change', function() {
@@ -291,10 +293,38 @@
         updateCategoryOfferPreview();
       });
     });
-    
+
     // Initialize
     updateCategorySelectionCount();
     updateCategoryOfferPreview();
+  });
+</script>
+
+<!-- Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<script>
+  // Initialize Flatpickr for date/time pickers
+  document.addEventListener('DOMContentLoaded', function() {
+    // Initialize start date picker with time
+    const startDatePicker = flatpickr("#startDate", {
+      enableTime: true,
+      dateFormat: "Y-m-d H:i",
+      time_24hr: true,
+      minDate: "today",
+      onChange: function(selectedDates, dateStr) {
+        // Update end date min date when start date changes
+        endDatePicker.set("minDate", dateStr);
+      }
+    });
+
+    // Initialize end date picker with time
+    const endDatePicker = flatpickr("#endDate", {
+      enableTime: true,
+      dateFormat: "Y-m-d H:i",
+      time_24hr: true,
+      minDate: document.getElementById('startDate').value || "today"
+    });
   });
 </script>
 

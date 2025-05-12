@@ -12,7 +12,7 @@ const renderCouponsPage = async (req, res) => {
       isDelete: false,
     }).sort({ created_at: -1 });
 
-    return res.render('coupons', { 
+    return res.render('coupons', {
       coupons,
       user: req.session.user // Pass user data if needed for the template
     });
@@ -131,16 +131,9 @@ const applyCoupon = async (req, res) => {
 
     const finalAmount = numericCartTotal - discount;
 
-    // Increment user usage and total usage
-    try {
-      coupon.incrementUserUsage(userId);
-      await coupon.save();
-    } catch (error) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        success: false,
-        message: error.message,
-      });
-    }
+    // We'll only validate the coupon here, but not increment usage
+    // Usage will be incremented only when the order is actually placed
+    // This prevents double-counting when a user applies a coupon and then places an order
 
     return res.status(StatusCodes.OK).json({
       success: true,
@@ -164,8 +157,29 @@ const applyCoupon = async (req, res) => {
   }
 };
 
+// ========================================================================================
+// REMOVE APPLIED COUPON
+// ========================================================================================
+const removeAppliedCoupon = async (req, res) => {
+  try {
+    // No database operation needed, just return success
+    // The frontend will handle removing the coupon from the UI and checkout data
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      message: "Coupon removed successfully",
+    });
+  } catch (error) {
+    console.error("Error removing coupon:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Something went wrong",
+    });
+  }
+};
+
 module.exports = {
   renderCouponsPage,
   getCouponByCode,
   applyCoupon,
+  removeAppliedCoupon,
 };

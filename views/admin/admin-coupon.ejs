@@ -155,8 +155,8 @@
                                                     <%= coupon.usageLimit || '∞' %>
                                                 </td>
                                                 <td>
-                                                    <%= coupon.startDate.toLocaleDateString() %> - 
-                                                    <%= coupon.expiryDate.toLocaleDateString() %>
+                                                    <%= coupon.startDate.toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) %> -
+                                                    <%= coupon.expiryDate.toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) %>
                                                 </td>
                                                 <td>
                                                     <% if (coupon.isActive) { %>
@@ -171,12 +171,12 @@
                                                             <i class="fas fa-undo"></i> Restore
                                                         </button>
                                                     <% } else { %>
-                                                        <button class="btn btn-sm btn-outline-warning edit-btn" data-id="<%= coupon._id %>" 
-                                                                data-code="<%= coupon.code %>" data-type="<%= coupon.type %>" 
-                                                                data-value="<%= coupon.discountValue %>" data-limit="<%= coupon.usageLimit %>" 
-                                                                data-minprice="<%= coupon.minPrice %>" data-maxprice="<%= coupon.maxPrice %>" 
-                                                                data-startdate="<%= coupon.startDate.toISOString().split('T')[0] %>" 
-                                                                data-expirydate="<%= coupon.expiryDate.toISOString().split('T')[0] %>">
+                                                        <button class="btn btn-sm btn-outline-warning edit-btn" data-id="<%= coupon._id %>"
+                                                                data-code="<%= coupon.code %>" data-type="<%= coupon.type %>"
+                                                                data-value="<%= coupon.discountValue %>" data-limit="<%= coupon.usageLimit %>"
+                                                                data-minprice="<%= coupon.minPrice %>" data-maxprice="<%= coupon.maxPrice %>"
+                                                                data-startdate="<%= coupon.startDate.toISOString().replace('Z', '') %>"
+                                                                data-expirydate="<%= coupon.expiryDate.toISOString().replace('Z', '') %>">
                                                             <i class="fas fa-edit"></i> Edit
                                                         </button>
                                                         <button class="btn btn-sm btn-outline-danger delete-btn" data-id="<%= coupon._id %>">
@@ -199,13 +199,13 @@
                                                 <a class="page-link" href="?page=<%= currentPage - 1 %>&type=<%= selectedType %>&isActive=<%= selectedStatus %>">Previous</a>
                                             </li>
                                         <% } %>
-                                        
+
                                         <% for (let i = 1; i <= totalPages; i++) { %>
                                             <li class="page-item <%= currentPage === i ? 'active' : '' %>">
                                                 <a class="page-link" href="?page=<%= i %>&type=<%= selectedType %>&isActive=<%= selectedStatus %>"><%= i %></a>
                                             </li>
                                         <% } %>
-                                        
+
                                         <% if (currentPage < totalPages) { %>
                                             <li class="page-item">
                                                 <a class="page-link" href="?page=<%= currentPage + 1 %>&type=<%= selectedType %>&isActive=<%= selectedStatus %>">Next</a>
@@ -263,12 +263,12 @@
                         </div>
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label for="startDate" class="form-label">Start Date</label>
-                                <input type="text" class="form-control" id="startDate" name="startDate" placeholder="Select start date" required>
+                                <label for="startDate" class="form-label">Start Date & Time</label>
+                                <input type="text" class="form-control" id="startDate" name="startDate" placeholder="Select start date and time" required>
                             </div>
                             <div class="col-md-6">
-                                <label for="expiryDate" class="form-label">Expiry Date</label>
-                                <input type="text" class="form-control" id="expiryDate" name="expiryDate" placeholder="Select expiry date" required>
+                                <label for="expiryDate" class="form-label">Expiry Date & Time</label>
+                                <input type="text" class="form-control" id="expiryDate" name="expiryDate" placeholder="Select expiry date and time" required>
                             </div>
                         </div>
                     </div>
@@ -321,12 +321,12 @@
                         </div>
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label for="editStartDate" class="form-label">Start Date</label>
-                                <input type="text" class="form-control" id="editStartDate" name="startDate" required>
+                                <label for="editStartDate" class="form-label">Start Date & Time</label>
+                                <input type="text" class="form-control" id="editStartDate" name="startDate" placeholder="Select start date and time" required>
                             </div>
                             <div class="col-md-6">
-                                <label for="editExpiryDate" class="form-label">Expiry Date</label>
-                                <input type="text" class="form-control" id="editExpiryDate" name="expiryDate" required>
+                                <label for="editExpiryDate" class="form-label">Expiry Date & Time</label>
+                                <input type="text" class="form-control" id="editExpiryDate" name="expiryDate" placeholder="Select expiry date and time" required>
                             </div>
                         </div>
                     </div>
@@ -345,7 +345,7 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Flatpickr JS -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    
+
     <script>
         $(document).ready(function() {
             // Filter form submission
@@ -359,7 +359,7 @@
             // Add coupon form submission
             $('#addCouponForm').on('submit', function(e) {
                 e.preventDefault();
-                
+
                 $.ajax({
                     url: '/admin/add-coupon',
                     method: 'POST',
@@ -473,8 +473,18 @@
                 $('#editMinPrice').val(button.data('minprice'));
                 $('#editMaxPrice').val(button.data('maxprice'));
                 $('#editUsageLimit').val(button.data('limit'));
-                editStartDatePicker.setDate(button.data('startdate'));
-                editExpiryDatePicker.setDate(button.data('expirydate'));
+
+                // Format the dates for Flatpickr
+                const startDate = button.data('startdate');
+                const expiryDate = button.data('expirydate');
+
+                console.log('Start Date from data attribute:', startDate);
+                console.log('Expiry Date from data attribute:', expiryDate);
+
+                // Set the dates in the Flatpickr instances
+                editStartDatePicker.setDate(startDate);
+                editExpiryDatePicker.setDate(expiryDate);
+
                 $('#editCouponModal').modal('show');
             });
 

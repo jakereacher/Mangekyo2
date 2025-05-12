@@ -58,7 +58,18 @@ const addCoupon = async (req, res) => {
       expiryDate,
     } = req.body;
 
-    if (new Date(startDate) >= new Date(expiryDate)) {
+    console.log('Add Coupon - Received dates:', { startDate, expiryDate });
+
+    // Parse dates with time
+    const parsedStartDate = new Date(startDate);
+    const parsedExpiryDate = new Date(expiryDate);
+
+    console.log('Add Coupon - Parsed dates:', {
+      parsedStartDate: parsedStartDate.toISOString(),
+      parsedExpiryDate: parsedExpiryDate.toISOString()
+    });
+
+    if (parsedStartDate >= parsedExpiryDate) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
         message: "Expiry date must be after start date",
@@ -69,8 +80,8 @@ const addCoupon = async (req, res) => {
       code,
       type: discountType,
       discountValue: value,
-      expiryDate: new Date(expiryDate),
-      startDate: new Date(startDate),
+      expiryDate: parsedExpiryDate,
+      startDate: parsedStartDate,
       minPrice,
       maxPrice: discountType === "percentage" ? maxPrice : undefined,
       usageLimit: limit,
@@ -198,6 +209,8 @@ const editCoupon = async (req, res) => {
       expiryDate,
     } = req.body;
 
+    console.log('Received dates:', { startDate, expiryDate });
+
     // Validate coupon ID
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(StatusCodes.BAD_REQUEST).json({
@@ -206,8 +219,17 @@ const editCoupon = async (req, res) => {
       });
     }
 
+    // Parse dates with time
+    const parsedStartDate = new Date(startDate);
+    const parsedExpiryDate = new Date(expiryDate);
+
+    console.log('Parsed dates:', {
+      parsedStartDate: parsedStartDate.toISOString(),
+      parsedExpiryDate: parsedExpiryDate.toISOString()
+    });
+
     // Validate date logic
-    if (new Date(startDate) >= new Date(expiryDate)) {
+    if (parsedStartDate >= parsedExpiryDate) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
         message: "Expiry date must be after start date",
@@ -229,13 +251,13 @@ const editCoupon = async (req, res) => {
     coupon.usageLimit = limit;
     coupon.minPrice = minPrice;
     coupon.maxPrice = discountType === "percentage" ? maxPrice : undefined;
-    coupon.startDate = new Date(startDate);
-    coupon.expiryDate = new Date(expiryDate);
+    coupon.startDate = parsedStartDate;
+    coupon.expiryDate = parsedExpiryDate;
     coupon.updated_at = new Date();
 
     // Reset isActive if new startDate is in the future
     const now = new Date();
-    if (new Date(startDate) > now) {
+    if (parsedStartDate > now) {
       coupon.isActive = false;
     }
 

@@ -475,6 +475,77 @@
                 </div>
             </div>
         </div>
+
+        <!-- Coupons Section -->
+        <div id="coupons-section" class="section bg-white p-6 rounded-lg shadow-sm mb-8">
+            <h2 class="text-2xl font-bold mb-4 pb-2 border-b border-gray-200">
+                <i class="fas fa-ticket-alt mr-2"></i>My Coupons
+            </h2>
+
+            <% if (coupons && coupons.length > 0) { %>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <% coupons.forEach(coupon => { %>
+                        <div class="coupon-card relative overflow-hidden bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                            <!-- Coupon Header -->
+                            <div class="bg-black text-white p-3 flex justify-between items-center">
+                                <h3 class="font-bold text-lg"><%= coupon.code %></h3>
+                                <span class="text-xs px-2 py-1 bg-white text-black rounded-full">
+                                    <%= coupon.remainingUses %> use<%= coupon.remainingUses !== 1 ? 's' : '' %> left
+                                </span>
+                            </div>
+
+                            <!-- Coupon Body -->
+                            <div class="p-4">
+                                <div class="flex justify-between items-start mb-3">
+                                    <div>
+                                        <p class="text-xl font-bold text-gray-800">
+                                            <%= coupon.type === 'percentage' ? coupon.discountValue + '%' : '₹' + coupon.discountValue %>
+                                            <span class="text-sm font-normal text-gray-600">
+                                                <%= coupon.type === 'percentage' ? 'OFF' : 'FLAT OFF' %>
+                                            </span>
+                                        </p>
+                                        <p class="text-sm text-gray-600 mt-1">
+                                            Min. Order: ₹<%= coupon.minPrice.toLocaleString('en-IN') %>
+                                            <% if (coupon.maxPrice) { %>
+                                                | Max. Order: ₹<%= coupon.maxPrice.toLocaleString('en-IN') %>
+                                            <% } %>
+                                        </p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-xs text-gray-500">Valid till</p>
+                                        <p class="text-sm font-medium">
+                                            <%= new Date(coupon.expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) %>
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <!-- Copy Button -->
+                                <button
+                                    class="w-full mt-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded transition-colors flex items-center justify-center"
+                                    onclick="copyCouponCode('<%= coupon.code %>')">
+                                    <i class="fas fa-copy mr-2"></i> Copy Code
+                                </button>
+                            </div>
+
+                            <!-- Decorative Elements -->
+                            <div class="absolute -left-3 top-1/2 w-6 h-6 bg-gray-100 rounded-full"></div>
+                            <div class="absolute -right-3 top-1/2 w-6 h-6 bg-gray-100 rounded-full"></div>
+                            <div class="border-t border-dashed border-gray-200 mx-4"></div>
+                        </div>
+                    <% }); %>
+                </div>
+            <% } else { %>
+                <div class="bg-gray-50 border border-gray-200 rounded p-6 text-center">
+                    <div class="text-gray-400 mb-3">
+                        <i class="fas fa-ticket-alt text-4xl"></i>
+                    </div>
+                    <p class="text-gray-600 mb-4">You don't have any active coupons at the moment.</p>
+                    <a href="/products" class="inline-block bg-black text-white px-4 py-2 rounded hover:bg-gray-800 transition">
+                        <i class="fas fa-shopping-bag mr-2"></i> Shop Now
+                    </a>
+                </div>
+            <% } %>
+        </div>
     </div>
 
     <!-- Address Modal (Keep mobile field here) -->
@@ -1161,15 +1232,55 @@
             showAddressModal('edit', addressId);
         }
 
-        // Check for hash in URL to scroll to wallet section
-        if (window.location.hash === '#wallet') {
-            // Scroll to wallet section
-            const walletSection = document.getElementById('wallet');
-            if (walletSection) {
+        // Function to copy coupon code to clipboard
+        function copyCouponCode(code) {
+            navigator.clipboard.writeText(code)
+                .then(() => {
+                    // Show success message
+                    Swal.fire({
+                        title: 'Copied!',
+                        text: `Coupon code ${code} copied to clipboard`,
+                        icon: 'success',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 3000
+                    });
+                })
+                .catch(err => {
+                    console.error('Failed to copy code: ', err);
+                    // Fallback for browsers that don't support clipboard API
+                    const tempInput = document.createElement('input');
+                    tempInput.value = code;
+                    document.body.appendChild(tempInput);
+                    tempInput.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(tempInput);
+
+                    Swal.fire({
+                        title: 'Copied!',
+                        text: `Coupon code ${code} copied to clipboard`,
+                        icon: 'success',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 3000
+                    });
+                });
+        }
+
+        // Check for hash in URL to scroll to specific section
+        if (window.location.hash) {
+            const sectionId = window.location.hash;
+            const section = document.querySelector(sectionId);
+            if (section) {
                 setTimeout(() => {
-                    walletSection.scrollIntoView({ behavior: 'smooth' });
-                    // Show add money modal
-                    showAddMoneyModal();
+                    section.scrollIntoView({ behavior: 'smooth' });
+
+                    // If it's the wallet section, show add money modal
+                    if (sectionId === '#wallet') {
+                        showAddMoneyModal();
+                    }
                 }, 500);
             }
         }
