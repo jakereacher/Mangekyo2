@@ -26,6 +26,9 @@ function calculateOverallStatus(orderedItems) {
   if (orderedItems.some((item) => item.status === "Cancelled")) {
     return "Cancelled";
   }
+  if (orderedItems.some((item) => item.status === "Cancellation Pending")) {
+    return "Cancellation Pending";
+  }
   if (orderedItems.some((item) => item.status === "Return Request")) {
     return "Return Requested";
   }
@@ -349,6 +352,312 @@ exports.updateOrderItemStatus = async (req, res) => {
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: "Failed to update item status",
+    });
+  }
+};
+
+// Get all cancellation requests for admin
+exports.getCancellationRequests = async (req, res) => {
+  try {
+    const adminId = req.session.admin;
+    if (!adminId) {
+      logger.error("Unauthorized access to /admin/cancellation-requests", { adminId: null });
+      return res.status(StatusCodes.UNAUTHORIZED).redirect("/admin/login");
+    }
+
+    // Find all orders with items that have cancellation requests
+    const orders = await Order.find({
+      "orderedItems.status": "Cancellation Pending",
+      cancellation_status: "Pending"
+    })
+      .populate("userId", "email fullName")
+      .populate("orderedItems.product")
+      .lean();
+
+    // Format the cancellation requests for display
+    const cancellationRequests = [];
+    orders.forEach((order) => {
+      order.orderedItems.forEach((item) => {
+        if (item.status === "Cancellation Pending") {
+          cancellationRequests.push({
+            orderId: order._id,
+            orderDate: new Date(order.orderDate).toLocaleDateString(),
+            customerName: order.userId.fullName,
+            customerEmail: order.userId.email,
+            productId: item.product._id,
+            productName: item.product.productName,
+            productImage:
+              item.product.productImage && item.product.productImage.length > 0
+                ? item.product.productImage[0]
+                : "/images/default-product.jpg",
+            quantity: item.quantity,
+            price: item.price,
+            paymentMethod: order.paymentMethod,
+            cancellationReason: item.order_cancel_reason || order.cancellation_reason,
+            requestDate: new Date(order.cancellation_requested_at).toLocaleDateString(),
+          });
+        }
+      });
+    });
+
+    res.render("admin-cancellation-requests", {
+      cancellationRequests,
+      admin: { id: adminId },
+      csrfToken: req.csrfToken ? req.csrfToken() : "",
+      activePage: "cancellations",
+    });
+  } catch (error) {
+    logger.error("Error fetching cancellation requests", { error: error.message, stack: error.stack });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).render("admin-error", {
+      message: "Failed to load cancellation requests",
+      activePage: "cancellations",
+    });
+  }
+};
+
+// Approve a cancellation request
+exports.approveCancellation = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { productId } = req.body;
+    const adminId = req.session.admin;
+
+    console.log("Admin approve cancellation request:", { orderId, productId, adminId });
+
+    if (!adminId) {
+      logger.error("Unauthorized attempt to approve cancellation", { orderId, productId, adminId: null });
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: "Admin not authenticated",
+      });
+    }
+
+    // Validate ObjectIds
+    if (!mongoose.Types.ObjectId.isValid(orderId) || !mongoose.Types.ObjectId.isValid(productId)) {
+      logger.error("Invalid orderId or productId format", { orderId, productId });
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Invalid order or product ID",
+      });
+    }
+
+    // Find the order
+    const order = await Order.findById(orderId);
+    if (!order) {
+      logger.error("Order not found for cancellation approval", { orderId });
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    // Find the order item
+    const item = order.orderedItems.find((item) => item.product.toString() === productId);
+    if (!item) {
+      logger.error("Item not found in order", { orderId, productId });
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: "Item not found in order",
+      });
+    }
+
+    // Check if item has a pending cancellation request
+    if (item.status !== "Cancellation Pending") {
+      logger.error("Item does not have a pending cancellation request", { orderId, productId, status: item.status });
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Item does not have a pending cancellation request",
+      });
+    }
+
+    // Update item status
+    item.status = "Cancelled";
+    order.cancellation_status = "Approved";
+    order.cancellation_processed_at = new Date();
+
+    // Calculate refund amount
+    const refundAmount = item.price * item.quantity;
+
+    // Add the refund amount to the user's wallet
+    try {
+      // Find or create user wallet
+      let wallet = await Wallet.findOne({ user: order.userId });
+      if (!wallet) {
+        wallet = new Wallet({
+          user: order.userId,
+          balance: 0
+        });
+      }
+
+      // Add refund to wallet
+      wallet.balance += refundAmount;
+      await wallet.save();
+
+      // Create a transaction record
+      const transaction = new Transaction({
+        userId: order.userId,
+        walletId: wallet._id,
+        type: "credit",
+        amount: refundAmount,
+        description: `Refund for cancelled item in order #${orderId.substring(0, 8)}`,
+        date: new Date(),
+      });
+
+      // Save the transaction
+      await transaction.save();
+
+      logger.info("Added refund to user wallet", {
+        userId: order.userId,
+        amount: refundAmount,
+      });
+
+      logger.info("Transaction recorded for refund", {
+        transactionId: transaction._id,
+        userId: order.userId,
+      });
+
+      // Restore product quantity
+      await Product.findByIdAndUpdate(
+        productId,
+        { $inc: { quantity: item.quantity } },
+        { new: true }
+      );
+
+      logger.info("Restored product quantity", {
+        productId,
+        quantity: item.quantity
+      });
+
+      // Save the order
+      await order.save();
+
+      res.status(StatusCodes.OK).json({
+        success: true,
+        message: "Cancellation approved and refund processed to wallet",
+      });
+    } catch (error) {
+      logger.error("Error processing refund", {
+        orderId,
+        productId,
+        userId: order.userId,
+        error: error.message
+      });
+
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Error processing refund",
+      });
+    }
+  } catch (error) {
+    logger.error("Error approving cancellation", {
+      orderId: req.params.orderId,
+      productId: req.body.productId,
+      error: error.message,
+      stack: error.stack,
+    });
+
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Failed to approve cancellation",
+    });
+  }
+};
+
+// Reject a cancellation request
+exports.rejectCancellation = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { productId, rejectionReason } = req.body;
+    const adminId = req.session.admin;
+
+    console.log("Admin reject cancellation request:", { orderId, productId, adminId });
+
+    if (!adminId) {
+      logger.error("Unauthorized attempt to reject cancellation", { orderId, productId, adminId: null });
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: "Admin not authenticated",
+      });
+    }
+
+    if (!rejectionReason) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Rejection reason is required",
+      });
+    }
+
+    // Validate ObjectIds
+    if (!mongoose.Types.ObjectId.isValid(orderId) || !mongoose.Types.ObjectId.isValid(productId)) {
+      logger.error("Invalid orderId or productId format", { orderId, productId });
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Invalid order or product ID",
+      });
+    }
+
+    // Find the order
+    const order = await Order.findById(orderId);
+    if (!order) {
+      logger.error("Order not found for cancellation rejection", { orderId });
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    // Find the order item
+    const item = order.orderedItems.find((item) => item.product.toString() === productId);
+    if (!item) {
+      logger.error("Item not found in order", { orderId, productId });
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: "Item not found in order",
+      });
+    }
+
+    // Check if item has a pending cancellation request
+    if (item.status !== "Cancellation Pending") {
+      logger.error("Item does not have a pending cancellation request", { orderId, productId, status: item.status });
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Item does not have a pending cancellation request",
+      });
+    }
+
+    // Update item status back to Processing
+    item.status = "Processing";
+    item.order_cancel_status = "Rejected"; // Add rejection status to the item
+    order.cancellation_status = "Rejected";
+    order.cancellation_admin_response = rejectionReason;
+    order.cancellation_processed_at = new Date();
+
+    // Log the rejection
+    logger.info("Cancellation request rejected", {
+      orderId,
+      productId,
+      rejectionReason,
+      adminId
+    });
+
+    // Save the order
+    await order.save();
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: "Cancellation request rejected",
+    });
+  } catch (error) {
+    logger.error("Error rejecting cancellation", {
+      orderId: req.params.orderId,
+      productId: req.body.productId,
+      error: error.message,
+      stack: error.stack,
+    });
+
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Failed to reject cancellation",
     });
   }
 };

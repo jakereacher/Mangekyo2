@@ -1,0 +1,198 @@
+<%- include('partials/header', { activePage: 'cancellations' }) %>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">Cancellation Requests</h4>
+                </div>
+                <div class="card-body">
+                    <% if (cancellationRequests && cancellationRequests.length > 0) { %>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Order Details</th>
+                                        <th>Product</th>
+                                        <th>Customer</th>
+                                        <th>Reason</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% cancellationRequests.forEach(request => { %>
+                                        <tr>
+                                            <td>
+                                                <div class="order-info">
+                                                    <div class="order-id">Order #<%= request.orderId.toString().substring(0, 8) %>...</div>
+                                                    <div class="order-date">Date: <%= request.orderDate %></div>
+                                                    <div class="payment-method">Payment: <%= request.paymentMethod.toUpperCase() %></div>
+                                                    <div class="request-date">Requested: <%= request.requestDate %></div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="product-info d-flex align-items-center">
+                                                    <div class="product-image">
+                                                        <img src="<%= request.productImage %>" alt="<%= request.productName %>" class="img-thumbnail" style="width: 60px; height: 60px; object-fit: cover;">
+                                                    </div>
+                                                    <div class="product-details ms-3">
+                                                        <div class="product-name"><%= request.productName %></div>
+                                                        <div class="product-quantity">Qty: <%= request.quantity %> × ₹<%= request.price.toFixed(2) %></div>
+                                                        <div class="product-total">Total: ₹<%= (request.quantity * request.price).toFixed(2) %></div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="customer-name"><%= request.customerName %></div>
+                                                <div class="customer-email"><%= request.customerEmail %></div>
+                                            </td>
+                                            <td>
+                                                <div class="cancellation-reason"><%= request.cancellationReason %></div>
+                                            </td>
+                                            <td>
+                                                <div class="d-flex">
+                                                    <button 
+                                                        onclick="approveCancellation('<%= request.orderId %>', '<%= request.productId %>')" 
+                                                        class="btn btn-sm btn-success me-2">
+                                                        Approve
+                                                    </button>
+                                                    <button 
+                                                        onclick="showRejectModal('<%= request.orderId %>', '<%= request.productId %>')" 
+                                                        class="btn btn-sm btn-danger">
+                                                        Reject
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    <% }); %>
+                                </tbody>
+                            </table>
+                        </div>
+                    <% } else { %>
+                        <div class="alert alert-info text-center">
+                            No pending cancellation requests found.
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Rejection Modal -->
+<div class="modal fade" id="rejectionModal" tabindex="-1" aria-labelledby="rejectionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="rejectionModalLabel">Reject Cancellation Request</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="closeRejectModal()"></button>
+            </div>
+            <div class="modal-body">
+                <p>Please provide a reason for rejecting this cancellation request:</p>
+                <textarea id="rejectionReason" class="form-control" rows="3" placeholder="Rejection reason"></textarea>
+                <input type="hidden" id="rejectionOrderId" value="">
+                <input type="hidden" id="rejectionProductId" value="">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="closeRejectModal()">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="rejectCancellation()">Reject Request</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Approve cancellation
+    async function approveCancellation(orderId, productId) {
+        try {
+            const confirmation = await Swal.fire({
+                title: 'Approve Cancellation?',
+                text: 'This will refund the amount to the customer\'s wallet.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#dc3545',
+                confirmButtonText: 'Yes, approve it!'
+            });
+
+            if (!confirmation.isConfirmed) return;
+
+            const response = await fetch(`/admin/orders/${orderId}/approve-cancellation`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'CSRF-Token': '<%= csrfToken %>'
+                },
+                body: JSON.stringify({ productId })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                await Swal.fire('Approved!', 'The cancellation request has been approved and refund processed.', 'success');
+                window.location.reload();
+            } else {
+                Swal.fire('Error', result.message || 'Failed to approve cancellation', 'error');
+            }
+        } catch (error) {
+            console.error('Error approving cancellation:', error);
+            Swal.fire('Error', 'Failed to approve cancellation', 'error');
+        }
+    }
+
+    // Show rejection modal
+    function showRejectModal(orderId, productId) {
+        document.getElementById('rejectionOrderId').value = orderId;
+        document.getElementById('rejectionProductId').value = productId;
+        var modal = new bootstrap.Modal(document.getElementById('rejectionModal'));
+        modal.show();
+    }
+
+    // Close rejection modal
+    function closeRejectModal() {
+        document.getElementById('rejectionReason').value = '';
+        document.getElementById('rejectionOrderId').value = '';
+        document.getElementById('rejectionProductId').value = '';
+        var modal = bootstrap.Modal.getInstance(document.getElementById('rejectionModal'));
+        if (modal) modal.hide();
+    }
+
+    // Reject cancellation
+    async function rejectCancellation() {
+        const orderId = document.getElementById('rejectionOrderId').value;
+        const productId = document.getElementById('rejectionProductId').value;
+        const rejectionReason = document.getElementById('rejectionReason').value.trim();
+
+        if (!rejectionReason) {
+            Swal.fire('Error', 'Please provide a reason for rejection', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/admin/orders/${orderId}/reject-cancellation`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'CSRF-Token': '<%= csrfToken %>'
+                },
+                body: JSON.stringify({ productId, rejectionReason })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                closeRejectModal();
+                await Swal.fire('Rejected!', 'The cancellation request has been rejected.', 'success');
+                window.location.reload();
+            } else {
+                Swal.fire('Error', result.message || 'Failed to reject cancellation', 'error');
+            }
+        } catch (error) {
+            console.error('Error rejecting cancellation:', error);
+            Swal.fire('Error', 'Failed to reject cancellation', 'error');
+        }
+    }
+</script>
+
+<%- include('partials/footer') %>

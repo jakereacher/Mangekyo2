@@ -46,6 +46,11 @@ router.get("/return-requests", adminAuth, orderController.getReturnRequests);
 router.post("/orders/:orderId/approve-return", adminAuth, orderController.approveReturn);
 router.post("/orders/:orderId/reject-return", adminAuth, orderController.rejectReturn);
 
+// Cancellation management routes
+router.get("/cancellation-requests", adminAuth, orderController.getCancellationRequests);
+router.post("/orders/:orderId/approve-cancellation", adminAuth, orderController.approveCancellation);
+router.post("/orders/:orderId/reject-cancellation", adminAuth, orderController.rejectCancellation);
+
 router.get("/edit-product/:id", adminAuth, productController.getEditProductPage);
 router.post(
   "/edit-product/:id",

@@ -240,6 +240,13 @@ const getOrderDetails = async (req, res) => {
       status,
       formattedOrderDate,
       formattedDeliveryDate,
+      // Include cancellation information
+      cancellation_status: order.cancellation_status,
+      cancellation_admin_response: order.cancellation_admin_response,
+      cancellation_requested_at: order.cancellation_requested_at ?
+        new Date(order.cancellation_requested_at).toLocaleDateString() : null,
+      cancellation_processed_at: order.cancellation_processed_at ?
+        new Date(order.cancellation_processed_at).toLocaleDateString() : null,
       items: order.orderedItems.map((item) => ({
         ...item,
         product: {
@@ -521,6 +528,7 @@ const trackOrder = async (req, res) => {
 
 /**
  * Cancel a specific product in an order and update its status.
+ * This is for COD orders only.
  */
 const cancelOrder = async (req, res) => {
   try {
@@ -551,6 +559,14 @@ const cancelOrder = async (req, res) => {
       });
     }
 
+    // Check if this is a Razorpay or wallet order
+    if (order.paymentMethod === 'razorpay' || order.paymentMethod === 'wallet') {
+      return res.status(400).json({
+        success: false,
+        message: "Razorpay or wallet orders require admin approval for cancellation. Please use the Request Cancellation option.",
+      });
+    }
+
     const item = order.orderedItems.find(
       (item) => item.product.toString() === productId
     );
@@ -575,15 +591,10 @@ const cancelOrder = async (req, res) => {
 
     await order.save();
 
+    // Restore product quantity
     await Product.findByIdAndUpdate(item.product, {
       $inc: { quantity: item.quantity },
     });
-
-    if (order.paymentMethod === "wallet") {
-      await User.findByIdAndUpdate(userId, {
-        $inc: { wallet: item.totalPrice },
-      });
-    }
 
     res.status(200).json({
       success: true,
@@ -595,6 +606,96 @@ const cancelOrder = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to cancel product in order",
+    });
+  }
+}
+
+/**
+ * Request cancellation for a Razorpay or wallet order.
+ * This requires admin approval.
+ */
+const requestCancellation = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const userId = req.session.user;
+    const { productId, cancellationReason } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User not authenticated",
+      });
+    }
+
+    if (!productId || !cancellationReason) {
+      return res.status(400).json({
+        success: false,
+        message: "Product ID and cancellation reason are required",
+      });
+    }
+
+    const order = await Order.findOne({ _id: orderId, userId });
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    // Verify this is a Razorpay or wallet order
+    if (order.paymentMethod !== 'razorpay' && order.paymentMethod !== 'wallet') {
+      return res.status(400).json({
+        success: false,
+        message: "Only Razorpay or wallet orders require cancellation requests",
+      });
+    }
+
+    const item = order.orderedItems.find(
+      (item) => item.product.toString() === productId
+    );
+
+    if (!item) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found in order",
+      });
+    }
+
+    if (item.status !== "Processing") {
+      return res.status(400).json({
+        success: false,
+        message: "This product cannot be cancelled at its current stage",
+      });
+    }
+
+    // Check if this item has been previously rejected for cancellation
+    if (item.order_cancel_status === "Rejected") {
+      return res.status(400).json({
+        success: false,
+        message: "This product's cancellation was previously rejected and cannot be cancelled again",
+      });
+    }
+
+    // Update item status to Cancellation Pending
+    item.status = "Cancellation Pending";
+    item.order_cancel_reason = cancellationReason;
+    order.cancellation_reason = cancellationReason;
+    order.cancellation_status = "Pending";
+    order.cancellation_requested_at = new Date();
+
+    await order.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Cancellation request submitted successfully",
+    });
+  } catch (error) {
+    console.error("Error requesting cancellation:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to submit cancellation request",
+      error: error.message,
     });
   }
 }
@@ -781,6 +882,7 @@ module.exports = {
   getUserOrders,
   trackOrder,
   cancelOrder,
+  requestCancellation,
   requestReturn,
   downloadInvoice,
   completePayment

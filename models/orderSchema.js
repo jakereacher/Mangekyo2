@@ -36,6 +36,7 @@ const orderSchema = new Schema({
           "Shipped",
           "Delivered",
           "Cancelled",
+          "Cancellation Pending",
           "Return Request",
           "Returned",
         ],
@@ -213,6 +214,23 @@ const orderSchema = new Schema({
   },
   cancellation_reason: {
     type: String,
+    default: null,
+  },
+  cancellation_status: {
+    type: String,
+    enum: ["Pending", "Approved", "Rejected"],
+    default: null,
+  },
+  cancellation_admin_response: {
+    type: String,
+    default: null,
+  },
+  cancellation_requested_at: {
+    type: Date,
+    default: null,
+  },
+  cancellation_processed_at: {
+    type: Date,
     default: null,
   },
   return_reason: {

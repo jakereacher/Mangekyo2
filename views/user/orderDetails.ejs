@@ -104,10 +104,30 @@
                                         </button>
                                     <% } %>
                                     <% if (item.status === 'Processing') { %>
-                                        <button onclick="cancelOrder('<%= order._id %>','<%= item.product._id %>')"
-                                                class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition flex items-center">
-                                            <i class="fas fa-times-circle mr-2"></i> Cancel Order
-                                        </button>
+                                        <% if (order.paymentMethod === 'razorpay' || order.paymentMethod === 'wallet') { %>
+                                            <button onclick="requestCancellation('<%= order._id %>','<%= item.product._id %>')"
+                                                    class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition flex items-center">
+                                                <i class="fas fa-times-circle mr-2"></i> Request Cancellation
+                                            </button>
+                                        <% } else { %>
+                                            <button onclick="cancelOrder('<%= order._id %>','<%= item.product._id %>')"
+                                                    class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition flex items-center">
+                                                <i class="fas fa-times-circle mr-2"></i> Cancel Order
+                                            </button>
+                                        <% } %>
+                                    <% } %>
+
+                                    <% if (item.status === 'Cancellation Pending') { %>
+                                        <span class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">
+                                            Cancellation Pending Approval
+                                        </span>
+                                    <% } %>
+
+                                    <% if (item.status === 'Processing' && order.cancellation_status === 'Rejected' && order.cancellation_admin_response) { %>
+                                        <div class="bg-red-100 text-red-800 p-4 rounded mt-4">
+                                            <strong>Cancellation Rejected:</strong>
+                                            <p><strong>Reason for rejection:</strong> <%= order.cancellation_admin_response %></p>
+                                        </div>
                                     <% } %>
 
                                 </div>
@@ -238,8 +258,22 @@
         </div>
     </div>
 
+    <!-- Cancellation Request Modal -->
+    <div id="cancellationModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden transition-opacity duration-300">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 class="text-xl font-bold mb-4">Request Order Cancellation</h3>
+            <p class="mb-4">Since you paid with Razorpay/Wallet, your cancellation request will need admin approval. The refund will be processed to your wallet upon approval.</p>
+            <p class="mb-4">Please provide a reason for cancelling this order:</p>
+            <textarea id="cancellationReason" class="w-full border border-gray-300 rounded p-2 mb-4" rows="3" placeholder="Cancellation reason"></textarea>
+            <div class="flex justify-end gap-3">
+                <button onclick="closeCancellationModal()" class="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300 transition">Cancel</button>
+                <button onclick="submitCancellationRequest()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition">Submit Request</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // Cancel Order
+        // Cancel Order (for COD orders)
         async function cancelOrder(orderId, productId) {
             const confirmation = await Swal.fire({
                 title: 'Are you sure?',
@@ -276,6 +310,62 @@
             } catch (error) {
                 console.error('Error cancelling order:', error);
                 Swal.fire('Error', 'Failed to cancel order', 'error');
+            }
+        }
+
+        // Request Cancellation (for Razorpay/Wallet orders)
+        let cancellationOrderId = null;
+        let cancellationProductId = null;
+
+        function requestCancellation(orderId, productId) {
+            cancellationOrderId = orderId;
+            cancellationProductId = productId;
+            document.getElementById('cancellationModal').classList.remove('hidden');
+        }
+
+        function closeCancellationModal() {
+            document.getElementById('cancellationModal').classList.add('hidden');
+            document.getElementById('cancellationReason').value = '';
+            cancellationOrderId = null;
+            cancellationProductId = null;
+        }
+
+        async function submitCancellationRequest() {
+            const cancellationReason = document.getElementById('cancellationReason').value.trim();
+
+            if (!cancellationReason) {
+                Swal.fire('Error', 'Please provide a reason for cancellation', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/orders/${cancellationOrderId}/request-cancellation`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        productId: cancellationProductId,
+                        cancellationReason: cancellationReason
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    await Swal.fire({
+                        title: 'Request Submitted!',
+                        text: 'Your cancellation request has been submitted for admin approval. You will be notified once it is processed.',
+                        icon: 'success'
+                    });
+                    closeCancellationModal();
+                    window.location.reload();
+                } else {
+                    Swal.fire('Error', result.message || 'Failed to submit cancellation request', 'error');
+                }
+            } catch (error) {
+                console.error('Error submitting cancellation request:', error);
+                Swal.fire('Error', 'Failed to submit cancellation request', 'error');
             }
         }
 
