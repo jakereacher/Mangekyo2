@@ -22,10 +22,12 @@ const createRazorpayOrder = async (req, res) => {
 
     if (!orderId) {
       console.log('Order ID is missing in the request');
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        success: false,
-        message: 'Order ID is required'
-      });
+      return res.status(StatusCodes.BAD_REQUEST)
+        .header('Content-Type', 'application/json')
+        .json({
+          success: false,
+          message: 'Order ID is required'
+        });
     }
 
     // Find the order in the database
@@ -33,27 +35,33 @@ const createRazorpayOrder = async (req, res) => {
     const order = await Order.findById(orderId);
     if (!order) {
       console.log('Order not found with ID:', orderId);
-      return res.status(StatusCodes.NOT_FOUND).json({
-        success: false,
-        message: 'Order not found'
-      });
+      return res.status(StatusCodes.NOT_FOUND)
+        .header('Content-Type', 'application/json')
+        .json({
+          success: false,
+          message: 'Order not found'
+        });
     }
     console.log('Found order:', order._id, 'with amount:', order.finalAmount);
 
     // Check if the order belongs to the current user
     if (order.userId.toString() !== req.session.user) {
-      return res.status(StatusCodes.UNAUTHORIZED).json({
-        success: false,
-        message: 'Unauthorized access to this order'
-      });
+      return res.status(StatusCodes.UNAUTHORIZED)
+        .header('Content-Type', 'application/json')
+        .json({
+          success: false,
+          message: 'Unauthorized access to this order'
+        });
     }
 
     // Check if the order is already paid
     if (order.paymentStatus === 'Paid') {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        success: false,
-        message: 'Order is already paid'
-      });
+      return res.status(StatusCodes.BAD_REQUEST)
+        .header('Content-Type', 'application/json')
+        .json({
+          success: false,
+          message: 'Order is already paid'
+        });
     }
 
     // Create a Razorpay order
@@ -90,17 +98,19 @@ const createRazorpayOrder = async (req, res) => {
       await order.save();
 
       // Format the response to match what the frontend expects
-      res.status(StatusCodes.OK).json({
-        success: true,
-        order: {
-          id: razorpayOrder.id,
-          amount: razorpayOrder.amount,
-          currency: razorpayOrder.currency,
-          receipt: razorpayOrder.receipt,
-          status: razorpayOrder.status
-        },
-        orderId: order._id
-      });
+      res.status(StatusCodes.OK)
+        .header('Content-Type', 'application/json')
+        .json({
+          success: true,
+          order: {
+            id: razorpayOrder.id,
+            amount: razorpayOrder.amount,
+            currency: razorpayOrder.currency,
+            receipt: razorpayOrder.receipt,
+            status: razorpayOrder.status
+          },
+          orderId: order._id
+        });
     } catch (razorpayError) {
       console.error('Razorpay API error:', razorpayError);
 
@@ -120,11 +130,13 @@ const createRazorpayOrder = async (req, res) => {
 
     console.error('Detailed error:', errorMessage);
 
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      success: false,
-      message: 'Failed to create Razorpay order',
-      error: errorMessage
-    });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .header('Content-Type', 'application/json')
+      .json({
+        success: false,
+        message: 'Failed to create Razorpay order',
+        error: errorMessage
+      });
   }
 };
 
@@ -141,10 +153,12 @@ const verifyRazorpayPayment = async (req, res) => {
     // Validate required parameters
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !order_id) {
       console.error('Missing required parameters for payment verification');
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        success: false,
-        message: 'Missing required parameters for payment verification'
-      });
+      return res.status(StatusCodes.BAD_REQUEST)
+        .header('Content-Type', 'application/json')
+        .json({
+          success: false,
+          message: 'Missing required parameters for payment verification'
+        });
     }
 
     // Verify the payment signature
@@ -161,10 +175,12 @@ const verifyRazorpayPayment = async (req, res) => {
     });
 
     if (generatedSignature !== razorpay_signature) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        success: false,
-        message: 'Invalid payment signature'
-      });
+      return res.status(StatusCodes.BAD_REQUEST)
+        .header('Content-Type', 'application/json')
+        .json({
+          success: false,
+          message: 'Invalid payment signature'
+        });
     }
 
     // Find the order in the database
@@ -172,20 +188,24 @@ const verifyRazorpayPayment = async (req, res) => {
     const order = await Order.findById(order_id);
     if (!order) {
       console.error('Order not found with ID:', order_id);
-      return res.status(StatusCodes.NOT_FOUND).json({
-        success: false,
-        message: 'Order not found'
-      });
+      return res.status(StatusCodes.NOT_FOUND)
+        .header('Content-Type', 'application/json')
+        .json({
+          success: false,
+          message: 'Order not found'
+        });
     }
 
     // Check if payment is already processed
     if (order.paymentStatus === 'Paid' && order.razorpayPaymentId) {
       console.log('Payment already processed for order:', order_id);
-      return res.status(StatusCodes.OK).json({
-        success: true,
-        message: 'Payment already verified',
-        orderId: order._id
-      });
+      return res.status(StatusCodes.OK)
+        .header('Content-Type', 'application/json')
+        .json({
+          success: true,
+          message: 'Payment already verified',
+          orderId: order._id
+        });
     }
 
     // Update the order payment status
@@ -195,18 +215,22 @@ const verifyRazorpayPayment = async (req, res) => {
     await order.save();
 
     console.log('Payment verified successfully for order:', order_id);
-    res.status(StatusCodes.OK).json({
-      success: true,
-      message: 'Payment verified successfully',
-      orderId: order._id
-    });
+    res.status(StatusCodes.OK)
+      .header('Content-Type', 'application/json')
+      .json({
+        success: true,
+        message: 'Payment verified successfully',
+        orderId: order._id
+      });
   } catch (error) {
     console.error('Error verifying Razorpay payment:', error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      success: false,
-      message: 'Failed to verify payment',
-      error: error.message
-    });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .header('Content-Type', 'application/json')
+      .json({
+        success: false,
+        message: 'Failed to verify payment',
+        error: error.message
+      });
   }
 };
 

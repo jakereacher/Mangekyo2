@@ -118,17 +118,32 @@ exports.handleAddressSelection = async (req, res) => {
       { $set: { 'address.$.isDefault': true } }
     );
 
-    res.json({
-      success: true,
-      message: 'Default address updated'
-    });
+    // Return JSON response for AJAX requests
+    if (req.xhr || req.headers.accept.includes('application/json')) {
+      return res.json({
+        success: true,
+        message: 'Default address updated'
+      });
+    }
+
+    // For non-AJAX requests, redirect back to checkout
+    req.flash('success', 'Default address updated');
+    return res.redirect('/checkout');
 
   } catch (error) {
     console.error('Error updating default address:', error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      success: false,
-      message: 'Server error'
-    });
+
+    // Return JSON response for AJAX requests
+    if (req.xhr || req.headers.accept.includes('application/json')) {
+      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: 'Server error'
+      });
+    }
+
+    // For non-AJAX requests, redirect back to checkout with error message
+    req.flash('error', 'Failed to update default address');
+    return res.redirect('/checkout');
   }
 };
 
@@ -495,18 +510,33 @@ exports.placeOrder = async (req, res) => {
       console.error("Failed to clear cart:", error);
     }
 
-    res.status(StatusCodes.OK).json({
-      success: true,
-      message: "Order placed successfully",
-      orderId: newOrder._id,
-    });
+    // For Razorpay payments, always return JSON response
+    // This is needed for the frontend to initiate the Razorpay payment flow
+    if (paymentMethod === 'razorpay' || req.xhr || req.headers.accept.includes('application/json')) {
+      return res.status(StatusCodes.OK).json({
+        success: true,
+        message: "Order placed successfully",
+        orderId: newOrder._id,
+      });
+    }
+
+    // For non-AJAX requests and non-Razorpay payments, redirect to the order details page
+    return res.redirect(`/orders/${newOrder._id}`);
   } catch (error) {
     console.error("Error placing order:", error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      success: false,
-      message: "Failed to place order",
-      error: error.message,
-    });
+
+    // Return JSON response for AJAX requests
+    if (req.xhr || req.headers.accept.includes('application/json')) {
+      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Failed to place order",
+        error: error.message,
+      });
+    }
+
+    // For non-AJAX requests, redirect to cart with error message
+    req.flash('error', `Failed to place order: ${error.message}`);
+    return res.redirect('/cart');
   }
 };
 

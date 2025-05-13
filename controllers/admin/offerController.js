@@ -12,7 +12,7 @@ exports.renderOffersPage = async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    res.render('admin-offers', {
+    res.render('admin/admin-offers', {
       title: 'All Offers',
       activePage: 'offers',
       offers,
@@ -35,7 +35,7 @@ exports.renderProductOffersPage = async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    res.render('admin-product-offers', {
+    res.render('admin/admin-product-offers', {
       title: 'Product Offers',
       activePage: 'product-offers',
       offers,
@@ -58,7 +58,7 @@ exports.renderCategoryOffersPage = async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    res.render('admin-category-offers', {
+    res.render('admin/admin-category-offers', {
       title: 'Category Offers',
       activePage: 'category-offers',
       offers,
@@ -81,7 +81,7 @@ exports.renderCreateProductOfferPage = async (req, res) => {
       .sort({ productName: 1 })
       .lean();
 
-    res.render('admin-product-offer-create', {
+    res.render('admin/admin-product-offer-create', {
       title: 'Create Product Offer',
       activePage: 'product-offers',
       products,
@@ -103,7 +103,7 @@ exports.renderCreateCategoryOfferPage = async (req, res) => {
       .sort({ name: 1 })
       .lean();
 
-    res.render('admin-category-offer-create', {
+    res.render('admin/admin-category-offer-create', {
       title: 'Create Category Offer',
       activePage: 'category-offers',
       categories,
@@ -146,7 +146,7 @@ exports.renderEditProductOfferPage = async (req, res) => {
     offer.startDateTimeFormatted = offer.startDate.toISOString().replace('Z', '').replace('T', ' ').substring(0, 16);
     offer.endDateTimeFormatted = offer.endDate.toISOString().replace('Z', '').replace('T', ' ').substring(0, 16);
 
-    res.render('admin-product-offer-edit', {
+    res.render('admin/admin-product-offer-edit', {
       title: 'Edit Product Offer',
       activePage: 'product-offers',
       offer,
@@ -190,7 +190,7 @@ exports.renderEditCategoryOfferPage = async (req, res) => {
     offer.startDateTimeFormatted = offer.startDate.toISOString().replace('Z', '').replace('T', ' ').substring(0, 16);
     offer.endDateTimeFormatted = offer.endDate.toISOString().replace('Z', '').replace('T', ' ').substring(0, 16);
 
-    res.render('admin-category-offer-edit', {
+    res.render('admin/admin-category-offer-edit', {
       title: 'Edit Category Offer',
       activePage: 'category-offers',
       offer,

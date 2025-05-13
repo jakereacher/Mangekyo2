@@ -104,7 +104,17 @@
                                         </button>
                                     <% } %>
                                     <% if (item.status === 'Processing') { %>
-                                        <% if (order.paymentMethod === 'razorpay' || order.paymentMethod === 'wallet') { %>
+                                        <% if (order.paymentMethod === 'razorpay' && order.paymentStatus === 'Failed') { %>
+                                            <button onclick="retryPayment('<%= order._id %>', <%= order.finalAmount %>)"
+                                                    class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition flex items-center mb-2">
+                                                <i class="fas fa-credit-card mr-2"></i> Pay Now
+                                            </button>
+
+                                            <button onclick="cancelOrder('<%= order._id %>','<%= item.product._id %>')"
+                                                    class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition flex items-center">
+                                                <i class="fas fa-times-circle mr-2"></i> Cancel Order
+                                            </button>
+                                        <% } else if ((order.paymentMethod === 'razorpay' && order.paymentStatus === 'Paid') || order.paymentMethod === 'wallet') { %>
                                             <button onclick="requestCancellation('<%= order._id %>','<%= item.product._id %>')"
                                                     class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition flex items-center">
                                                 <i class="fas fa-times-circle mr-2"></i> Request Cancellation
@@ -273,6 +283,150 @@
     </div>
 
     <script>
+        // Retry payment for failed Razorpay orders
+        async function retryPayment(orderId, amount) {
+            try {
+                // Show loading indicator
+                Swal.fire({
+                    title: 'Processing',
+                    text: 'Initializing payment...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                // Create Razorpay order
+                const response = await fetch('/razorpay/create-order', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        orderId: orderId
+                    })
+                });
+
+                // Try to parse the response as JSON, but handle text responses too
+                let result;
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    try {
+                        result = await response.json();
+                    } catch (e) {
+                        console.error('Error parsing JSON response:', e);
+                        throw new Error('Invalid response from server. Please try again.');
+                    }
+                } else {
+                    // Handle non-JSON response
+                    const textResponse = await response.text();
+                    console.error('Received non-JSON response:', textResponse);
+                    throw new Error('Unexpected response from server. Please try again.');
+                }
+
+                if (!response.ok) {
+                    throw new Error(result.message || result.error || 'Failed to create payment order');
+                }
+
+                // Close the loading indicator
+                Swal.close();
+
+                // Initialize Razorpay checkout
+                const options = {
+                    key: '<%= razorpayKeyId %>', // This should be passed from the server
+                    amount: result.order.amount,
+                    currency: result.order.currency || 'INR',
+                    name: 'Mangeyko',
+                    description: 'Complete your pending payment',
+                    order_id: result.order.id,
+                    image: 'https://i.imgur.com/3g7nmJC.png', // Add your logo URL here
+                    handler: async function(response) {
+                        // Show loading indicator
+                        Swal.fire({
+                            title: 'Verifying',
+                            text: 'Confirming your payment...',
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+
+                        try {
+                            // Verify payment with server
+                            const verifyResponse = await fetch('/razorpay/verify-payment', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    razorpay_order_id: response.razorpay_order_id,
+                                    razorpay_payment_id: response.razorpay_payment_id,
+                                    razorpay_signature: response.razorpay_signature,
+                                    order_id: orderId
+                                })
+                            });
+
+                            // Try to parse the response as JSON, but handle text responses too
+                            let verifyResult;
+                            const contentType = verifyResponse.headers.get('content-type');
+                            if (contentType && contentType.includes('application/json')) {
+                                try {
+                                    verifyResult = await verifyResponse.json();
+                                } catch (e) {
+                                    console.error('Error parsing JSON response:', e);
+                                    throw new Error('Invalid response from server. Please try again.');
+                                }
+                            } else {
+                                // Handle non-JSON response
+                                const textResponse = await verifyResponse.text();
+                                console.error('Received non-JSON response:', textResponse);
+                                throw new Error('Unexpected response from server. Please try again.');
+                            }
+
+                            if (verifyResult.success) {
+                                Swal.fire({
+                                    title: 'Payment Successful',
+                                    text: 'Your payment has been processed successfully.',
+                                    icon: 'success',
+                                    confirmButtonText: 'OK'
+                                }).then(() => {
+                                    window.location.reload();
+                                });
+                            } else {
+                                throw new Error(verifyResult.message || 'Payment verification failed');
+                            }
+                        } catch (error) {
+                            console.error('Payment verification error:', error);
+                            Swal.fire({
+                                title: 'Payment Verification Failed',
+                                text: error.message || 'Failed to verify payment. Please try again.',
+                                icon: 'error',
+                                confirmButtonText: 'OK'
+                            });
+                        }
+                    },
+                    prefill: {
+                        name: '<%= order.shippingAddress.fullName %>',
+                        contact: '<%= order.shippingAddress.phone %>'
+                    },
+                    theme: {
+                        color: '#000000'
+                    }
+                };
+
+                const rzp = new Razorpay(options);
+                rzp.open();
+            } catch (error) {
+                console.error('Error retrying payment:', error);
+                Swal.fire({
+                    title: 'Error',
+                    text: error.message || 'Failed to initialize payment. Please try again later.',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            }
+        }
+
         // Cancel Order (for COD orders)
         async function cancelOrder(orderId, productId) {
             const confirmation = await Swal.fire({
@@ -299,7 +453,22 @@
                     })
                 });
 
-                const result = await response.json();
+                // Try to parse the response as JSON, but handle text responses too
+                let result;
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    try {
+                        result = await response.json();
+                    } catch (e) {
+                        console.error('Error parsing JSON response:', e);
+                        throw new Error('Invalid response from server. Please try again.');
+                    }
+                } else {
+                    // Handle non-JSON response
+                    const textResponse = await response.text();
+                    console.error('Received non-JSON response:', textResponse);
+                    throw new Error('Unexpected response from server. Please try again.');
+                }
 
                 if (result.success) {
                     await Swal.fire('Cancelled!', 'Your order has been cancelled.', 'success');
@@ -350,7 +519,22 @@
                     })
                 });
 
-                const result = await response.json();
+                // Try to parse the response as JSON, but handle text responses too
+                let result;
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    try {
+                        result = await response.json();
+                    } catch (e) {
+                        console.error('Error parsing JSON response:', e);
+                        throw new Error('Invalid response from server. Please try again.');
+                    }
+                } else {
+                    // Handle non-JSON response
+                    const textResponse = await response.text();
+                    console.error('Received non-JSON response:', textResponse);
+                    throw new Error('Unexpected response from server. Please try again.');
+                }
 
                 if (result.success) {
                     await Swal.fire({
@@ -411,7 +595,22 @@
                     })
                 });
 
-                const result = await response.json();
+                // Try to parse the response as JSON, but handle text responses too
+                let result;
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    try {
+                        result = await response.json();
+                    } catch (e) {
+                        console.error('Error parsing JSON response:', e);
+                        throw new Error('Invalid response from server. Please try again.');
+                    }
+                } else {
+                    // Handle non-JSON response
+                    const textResponse = await response.text();
+                    console.error('Received non-JSON response:', textResponse);
+                    throw new Error('Unexpected response from server. Please try again.');
+                }
 
                 if (result.success) {
                     await Swal.fire('Success', 'Return request submitted successfully', 'success');

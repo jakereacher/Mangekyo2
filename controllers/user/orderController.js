@@ -269,9 +269,14 @@ const getOrderDetails = async (req, res) => {
       couponDetails: order.coupon || null
     };
 
+    // Get Razorpay key ID for payment retry functionality
+    const { razorpayKeyId } = require("../../config/razorpay");
+    const safeRazorpayKeyId = razorpayKeyId || 'rzp_test_UkVZCj9Q9Jy9Ja';
+
     res.render("orderDetails", {
       order: orderDetails,
       user: req.session.user ? { id: userId } : null,
+      razorpayKeyId: safeRazorpayKeyId
     });
   } catch (error) {
     console.error("Error fetching order details:", error);
@@ -559,13 +564,18 @@ const cancelOrder = async (req, res) => {
       });
     }
 
-    // Check if this is a Razorpay or wallet order
-    if (order.paymentMethod === 'razorpay' || order.paymentMethod === 'wallet') {
-      return res.status(400).json({
-        success: false,
-        message: "Razorpay or wallet orders require admin approval for cancellation. Please use the Request Cancellation option.",
-      });
+    // Check if this is a Razorpay with successful payment or wallet order
+    if ((order.paymentMethod === 'razorpay' && order.paymentStatus === 'Paid') || order.paymentMethod === 'wallet') {
+      return res.status(400)
+        .header('Content-Type', 'application/json')
+        .json({
+          success: false,
+          message: "Paid orders require admin approval for cancellation. Please use the Request Cancellation option.",
+        });
     }
+
+    // Allow direct cancellation for failed Razorpay payments or COD
+    console.log(`Processing direct cancellation for order: ${orderId}, payment method: ${order.paymentMethod}, payment status: ${order.paymentStatus}`);
 
     const item = order.orderedItems.find(
       (item) => item.product.toString() === productId
@@ -596,17 +606,21 @@ const cancelOrder = async (req, res) => {
       $inc: { quantity: item.quantity },
     });
 
-    res.status(200).json({
-      success: true,
-      message: "Product in order cancelled successfully",
-    });
+    res.status(200)
+      .header('Content-Type', 'application/json')
+      .json({
+        success: true,
+        message: "Product in order cancelled successfully",
+      });
 
   } catch (error) {
     console.error("Error cancelling product in order:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to cancel product in order",
-    });
+    res.status(500)
+      .header('Content-Type', 'application/json')
+      .json({
+        success: false,
+        message: "Failed to cancel product in order",
+      });
   }
 }
 
@@ -621,35 +635,45 @@ const requestCancellation = async (req, res) => {
     const { productId, cancellationReason } = req.body;
 
     if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: "User not authenticated",
-      });
+      return res.status(401)
+        .header('Content-Type', 'application/json')
+        .json({
+          success: false,
+          message: "User not authenticated",
+        });
     }
 
     if (!productId || !cancellationReason) {
-      return res.status(400).json({
-        success: false,
-        message: "Product ID and cancellation reason are required",
-      });
+      return res.status(400)
+        .header('Content-Type', 'application/json')
+        .json({
+          success: false,
+          message: "Product ID and cancellation reason are required",
+        });
     }
 
     const order = await Order.findOne({ _id: orderId, userId });
 
     if (!order) {
-      return res.status(404).json({
-        success: false,
-        message: "Order not found",
-      });
+      return res.status(404)
+        .header('Content-Type', 'application/json')
+        .json({
+          success: false,
+          message: "Order not found",
+        });
     }
 
-    // Verify this is a Razorpay or wallet order
-    if (order.paymentMethod !== 'razorpay' && order.paymentMethod !== 'wallet') {
-      return res.status(400).json({
-        success: false,
-        message: "Only Razorpay or wallet orders require cancellation requests",
-      });
+    // Verify this is a paid Razorpay or wallet order
+    if (!((order.paymentMethod === 'razorpay' && order.paymentStatus === 'Paid') || order.paymentMethod === 'wallet')) {
+      return res.status(400)
+        .header('Content-Type', 'application/json')
+        .json({
+          success: false,
+          message: "Only paid orders require cancellation requests. For COD orders or failed Razorpay payments, use the Cancel Order option.",
+        });
     }
+
+    console.log(`Processing cancellation request for order: ${orderId}, payment method: ${order.paymentMethod}, payment status: ${order.paymentStatus}`);
 
     const item = order.orderedItems.find(
       (item) => item.product.toString() === productId
@@ -686,17 +710,21 @@ const requestCancellation = async (req, res) => {
 
     await order.save();
 
-    res.status(200).json({
-      success: true,
-      message: "Cancellation request submitted successfully",
-    });
+    res.status(200)
+      .header('Content-Type', 'application/json')
+      .json({
+        success: true,
+        message: "Cancellation request submitted successfully",
+      });
   } catch (error) {
     console.error("Error requesting cancellation:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to submit cancellation request",
-      error: error.message,
-    });
+    res.status(500)
+      .header('Content-Type', 'application/json')
+      .json({
+        success: false,
+        message: "Failed to submit cancellation request",
+        error: error.message,
+      });
   }
 }
 
