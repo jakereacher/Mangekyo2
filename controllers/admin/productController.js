@@ -71,11 +71,32 @@ if (req.files && req.files.length > 0) {
 
 const getProductList = async (req, res) => {
   try {
+    // Pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const search = req.query.search || "";
+
+    // Build search query
+    const searchQuery = search
+      ? {
+          $or: [
+            { productName: { $regex: search, $options: 'i' } },
+            { description: { $regex: search, $options: 'i' } }
+          ]
+        }
+      : {};
+
+    // Count total products matching the search
+    const totalProducts = await Product.countDocuments(searchQuery);
+
     // Fetch products with populated category and offer
-    const products = await Product.find()
+    const products = await Product.find(searchQuery)
       .populate("category")
       .populate("offer")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
     // Process products to include offer information
     const productsWithOffers = products.map(product => {
@@ -99,10 +120,22 @@ const getProductList = async (req, res) => {
       };
     });
 
+    // Build search params for pagination links
+    const searchParams = search ? `&search=${encodeURIComponent(search)}` : '';
+    const searchParamsWithoutLimit = search ? `&search=${encodeURIComponent(search)}` : '';
+
     const error = req.query.error || null;
     res.render("products", {
       products: productsWithOffers,
-      error
+      error,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalProducts / limit),
+        totalItems: totalProducts,
+        limit: limit,
+        searchParams: searchParams,
+        searchParamsWithoutLimit: searchParamsWithoutLimit
+      }
     });
   } catch (error) {
     console.error("Error fetching products:", error);

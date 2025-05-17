@@ -7,8 +7,9 @@ const mongoose = require("mongoose");
 // RENDER COUPONS PAGE
 // ========================================================================================
 const renderCouponsPage = async (req, res) => {
-  const { page = 1, type = "all", isActive = "all" } = req.query;
-  const limit = 10;
+  const { page = 1, type = "all", isActive = "all", limit = 10 } = req.query;
+  const pageSize = parseInt(limit, 10);
+  const currentPage = parseInt(page, 10);
 
   try {
     const totalCouponsQuery = {};
@@ -19,17 +20,27 @@ const renderCouponsPage = async (req, res) => {
 
     const coupons = await Coupon.find(totalCouponsQuery)
       .sort({ created_at: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit);
+      .skip((currentPage - 1) * pageSize)
+      .limit(pageSize);
 
-    const totalPages = Math.ceil(totalCoupons / limit);
+    const totalPages = Math.ceil(totalCoupons / pageSize);
     const discountTypes = await Coupon.distinct("type");
+
+    // Build search params for pagination links
+    const searchParams = `&type=${type}&isActive=${isActive}`;
+    const searchParamsWithoutLimit = `&type=${type}&isActive=${isActive}`;
 
     return res.render("admin-coupon", {
       coupons,
       discountTypes,
-      currentPage: parseInt(page, 10),
-      totalPages,
+      pagination: {
+        currentPage: currentPage,
+        totalPages: totalPages,
+        totalItems: totalCoupons,
+        limit: pageSize,
+        searchParams: searchParams,
+        searchParamsWithoutLimit: searchParamsWithoutLimit
+      },
       selectedType: type,
       selectedStatus: isActive,
       admin: req.session.admin,

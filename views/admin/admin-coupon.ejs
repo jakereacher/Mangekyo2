@@ -33,6 +33,39 @@
             background-color: #6c757d;
             border-color: #6c757d;
         }
+        .pagination-link {
+            transition: all 0.3s ease;
+        }
+        .pagination-link:hover {
+            transform: translateY(-1px);
+        }
+        /* Tailwind-like utility classes */
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .flex-row { flex-direction: row; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .gap-1 { gap: 0.25rem; }
+        .gap-2 { gap: 0.5rem; }
+        .gap-4 { gap: 1rem; }
+        .mt-4 { margin-top: 1rem; }
+        .text-sm { font-size: 0.875rem; }
+        .text-gray-400 { color: #9ca3af; }
+        .text-gray-600 { color: #4b5563; }
+        .font-medium { font-weight: 500; }
+        .bg-blue-600 { background-color: #2563eb; }
+        .text-white { color: white; }
+        .rounded { border-radius: 0.25rem; }
+        .border { border: 1px solid #e5e7eb; }
+        .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+        .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+        .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+        .hover\:bg-gray-100:hover { background-color: #f3f4f6; }
+        .cursor-not-allowed { cursor: not-allowed; }
+        .sm\:flex-row { flex-direction: row; }
+        @media (min-width: 640px) {
+            .sm\:flex-row { flex-direction: row; }
+        }
     </style>
 </head>
 <body>
@@ -191,28 +224,98 @@
                             </div>
 
                             <!-- Pagination -->
-                            <% if (totalPages > 1) { %>
-                                <nav aria-label="Coupon pagination">
-                                    <ul class="pagination justify-content-center">
-                                        <% if (currentPage > 1) { %>
-                                            <li class="page-item">
-                                                <a class="page-link" href="?page=<%= currentPage - 1 %>&type=<%= selectedType %>&isActive=<%= selectedStatus %>">Previous</a>
-                                            </li>
+                            <% if (pagination && pagination.totalPages > 1) { %>
+                                <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4">
+                                    <div class="text-sm text-gray-600">
+                                        Showing <span class="font-medium"><%= (pagination.currentPage - 1) * pagination.limit + 1 %></span> to
+                                        <span class="font-medium"><%= Math.min(pagination.currentPage * pagination.limit, pagination.totalItems) %></span> of
+                                        <span class="font-medium"><%= pagination.totalItems %></span> items
+                                    </div>
+
+                                    <div class="flex items-center gap-1">
+                                        <!-- First Page -->
+                                        <% if (pagination.currentPage > 1) { %>
+                                            <a href="?page=1<%= pagination.searchParams %>&limit=<%= pagination.limit %>"
+                                               class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
+                                                <i class="fas fa-angle-double-left"></i>
+                                            </a>
+                                        <% } else { %>
+                                            <span class="px-3 py-1 rounded border text-gray-400 cursor-not-allowed">
+                                                <i class="fas fa-angle-double-left"></i>
+                                            </span>
                                         <% } %>
 
-                                        <% for (let i = 1; i <= totalPages; i++) { %>
-                                            <li class="page-item <%= currentPage === i ? 'active' : '' %>">
-                                                <a class="page-link" href="?page=<%= i %>&type=<%= selectedType %>&isActive=<%= selectedStatus %>"><%= i %></a>
-                                            </li>
+                                        <!-- Previous Page -->
+                                        <% if (pagination.currentPage > 1) { %>
+                                            <a href="?page=<%= pagination.currentPage - 1 %><%= pagination.searchParams %>&limit=<%= pagination.limit %>"
+                                               class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
+                                                <i class="fas fa-angle-left"></i>
+                                            </a>
+                                        <% } else { %>
+                                            <span class="px-3 py-1 rounded border text-gray-400 cursor-not-allowed">
+                                                <i class="fas fa-angle-left"></i>
+                                            </span>
                                         <% } %>
 
-                                        <% if (currentPage < totalPages) { %>
-                                            <li class="page-item">
-                                                <a class="page-link" href="?page=<%= currentPage + 1 %>&type=<%= selectedType %>&isActive=<%= selectedStatus %>">Next</a>
-                                            </li>
+                                        <!-- Page Numbers -->
+                                        <% const maxVisiblePages = 5;
+                                           let startPage = Math.max(1, pagination.currentPage - Math.floor(maxVisiblePages / 2));
+                                           let endPage = Math.min(pagination.totalPages, startPage + maxVisiblePages - 1);
+
+                                           if (endPage - startPage + 1 < maxVisiblePages) {
+                                               startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                                           }
+
+                                           for (let i = startPage; i <= endPage; i++) { %>
+                                            <% if (i === pagination.currentPage) { %>
+                                                <span class="px-3 py-1 rounded border bg-blue-600 text-white font-medium">
+                                                    <%= i %>
+                                                </span>
+                                            <% } else { %>
+                                                <a href="?page=<%= i %><%= pagination.searchParams %>&limit=<%= pagination.limit %>"
+                                                   class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
+                                                    <%= i %>
+                                                </a>
+                                            <% } %>
                                         <% } %>
-                                    </ul>
-                                </nav>
+
+                                        <!-- Next Page -->
+                                        <% if (pagination.currentPage < pagination.totalPages) { %>
+                                            <a href="?page=<%= pagination.currentPage + 1 %><%= pagination.searchParams %>&limit=<%= pagination.limit %>"
+                                               class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
+                                                <i class="fas fa-angle-right"></i>
+                                            </a>
+                                        <% } else { %>
+                                            <span class="px-3 py-1 rounded border text-gray-400 cursor-not-allowed">
+                                                <i class="fas fa-angle-right"></i>
+                                            </span>
+                                        <% } %>
+
+                                        <!-- Last Page -->
+                                        <% if (pagination.currentPage < pagination.totalPages) { %>
+                                            <a href="?page=<%= pagination.totalPages %><%= pagination.searchParams %>&limit=<%= pagination.limit %>"
+                                               class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
+                                                <i class="fas fa-angle-double-right"></i>
+                                            </a>
+                                        <% } else { %>
+                                            <span class="px-3 py-1 rounded border text-gray-400 cursor-not-allowed">
+                                                <i class="fas fa-angle-double-right"></i>
+                                            </span>
+                                        <% } %>
+                                    </div>
+
+                                    <!-- Items per page selector -->
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-sm text-gray-600">Items per page:</span>
+                                        <select onchange="window.location.href='?page=1&limit=' + this.value + '<%= pagination.searchParamsWithoutLimit %>'"
+                                                class="border rounded px-2 py-1 text-sm">
+                                            <option value="10" <%= pagination.limit == 10 ? 'selected' : '' %>>10</option>
+                                            <option value="25" <%= pagination.limit == 25 ? 'selected' : '' %>>25</option>
+                                            <option value="50" <%= pagination.limit == 50 ? 'selected' : '' %>>50</option>
+                                            <option value="100" <%= pagination.limit == 100 ? 'selected' : '' %>>100</option>
+                                        </select>
+                                    </div>
+                                </div>
                             <% } %>
                         <% } %>
                     </div>
