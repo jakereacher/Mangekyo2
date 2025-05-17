@@ -81,9 +81,46 @@ exports.renderProfilePage = async (req, res) => {
 
     const wallet = await Wallet.findOne({ user: userId });
 
+    // Get wallet transactions with pagination
+    const walletTransactionsPage = parseInt(req.query.wallet_page) || 1;
+    const walletTransactionsLimit = 5;
+    const walletTransactionsSkip = (walletTransactionsPage - 1) * walletTransactionsLimit;
+
+    // Get paginated transactions for display
+    const walletTransactions = await WalletTransaction.find({ user: userId })
+      .sort({ createdAt: -1 })
+      .skip(walletTransactionsSkip)
+      .limit(walletTransactionsLimit);
+
+    // Get all transactions for summary calculations
+    const allWalletTransactions = await WalletTransaction.find({
+      user: userId,
+      status: "completed" // Only include completed transactions in summary
+    });
+
+    // Calculate total credits (Refunds & Deposits)
+    const totalCredits = allWalletTransactions
+      .filter(t => t.type === 'credit')
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    // Calculate total debits (Purchases)
+    const totalDebits = allWalletTransactions
+      .filter(t => t.type === 'debit')
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    const totalWalletTransactions = await WalletTransaction.countDocuments({ user: userId });
+
     const userWithWallet = {
       ...user.toObject(),
       wallet: wallet?.balance || 0,
+      walletTransactions: walletTransactions,
+      walletTransactionsPagination: {
+        currentPage: walletTransactionsPage,
+        totalPages: Math.ceil(totalWalletTransactions / walletTransactionsLimit),
+        totalTransactions: totalWalletTransactions
+      },
+      walletTotalCredits: totalCredits,
+      walletTotalDebits: totalDebits
     };
 
     const formattedOrders = user.orderHistory.map(order => ({

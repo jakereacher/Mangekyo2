@@ -148,6 +148,8 @@ exports.handleAddressSelection = async (req, res) => {
 };
 
 exports.placeOrder = async (req, res) => {
+  // Set content type to JSON for all responses from this endpoint
+  res.setHeader('Content-Type', 'application/json');
   try {
     const userId = req.session.user;
     const { paymentMethod, addressId, couponCode } = req.body;
@@ -312,11 +314,34 @@ exports.placeOrder = async (req, res) => {
     // Calculate final amount with discount
     const finalAmount = (subtotal + shipping + tax) - discount;
 
-    // Check wallet balance from both sources for wallet payment
+    // Check wallet balance for wallet payment
     if (paymentMethod === "wallet") {
       // Get wallet balance from Wallet collection
-      const wallet = await Wallet.findOne({ user: userId });
-      const walletBalance = wallet ? wallet.balance : (user.wallet || 0);
+      let wallet = await Wallet.findOne({ user: userId });
+      let walletBalance = 0;
+
+      if (wallet) {
+        walletBalance = wallet.balance;
+        console.log("Found wallet with balance:", walletBalance);
+      } else if (typeof user.wallet === 'number' && user.wallet > 0) {
+        // If no wallet document but user has wallet balance, create wallet document
+        wallet = new Wallet({
+          user: userId,
+          balance: user.wallet
+        });
+        walletBalance = user.wallet;
+        await wallet.save();
+        console.log("Created new wallet with balance from user:", walletBalance);
+      } else {
+        // Create empty wallet
+        wallet = new Wallet({
+          user: userId,
+          balance: 0
+        });
+        await wallet.save();
+        walletBalance = 0;
+        console.log("Created new empty wallet");
+      }
 
       console.log("Wallet payment selected. Available balance:", walletBalance);
       console.log("Required amount:", finalAmount);
@@ -510,33 +535,65 @@ exports.placeOrder = async (req, res) => {
       console.error("Failed to clear cart:", error);
     }
 
-    // For Razorpay payments, always return JSON response
-    // This is needed for the frontend to initiate the Razorpay payment flow
-    if (paymentMethod === 'razorpay' || req.xhr || req.headers.accept.includes('application/json')) {
-      return res.status(StatusCodes.OK).json({
-        success: true,
-        message: "Order placed successfully",
-        orderId: newOrder._id,
-      });
+    // Determine if this is an AJAX request
+    const isAjaxRequest = req.xhr || req.headers.accept.includes('application/json');
+
+    // For AJAX requests, return JSON response
+    if (isAjaxRequest) {
+      return res.status(StatusCodes.OK)
+        .header('Content-Type', 'application/json')
+        .json({
+          success: true,
+          message: "Order placed successfully",
+          orderId: newOrder._id,
+        });
     }
 
-    // For non-AJAX requests and non-Razorpay payments, redirect to the order details page
-    return res.redirect(`/orders/${newOrder._id}`);
+    // Since we've set the Content-Type to application/json for all responses,
+    // we need to return a JSON response even for redirects
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      message: "Order placed successfully",
+      orderId: newOrder._id,
+      redirect: `/orders/${newOrder._id}`
+    });
   } catch (error) {
     console.error("Error placing order:", error);
 
-    // Return JSON response for AJAX requests
-    if (req.xhr || req.headers.accept.includes('application/json')) {
-      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+    // Determine if this is an AJAX request
+    const isAjaxRequest = req.xhr || req.headers.accept.includes('application/json');
+
+    // For AJAX requests, return JSON response
+    if (isAjaxRequest) {
+      return res.status(StatusCodes.INTERNAL_SERVER_ERROR)
+        .header('Content-Type', 'application/json')
+        .json({
+          success: false,
+          message: "Failed to place order",
+          error: error.message,
+        });
+    }
+
+    // Since we've set the Content-Type to application/json for all responses,
+    // we need to return JSON responses for all cases
+
+    // For wallet payment errors
+    if (error.message && error.message.includes("wallet")) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
-        message: "Failed to place order",
+        message: `Wallet payment failed: ${error.message}`,
         error: error.message,
+        redirect: '/profile#wallet'
       });
     }
 
-    // For non-AJAX requests, redirect to cart with error message
-    req.flash('error', `Failed to place order: ${error.message}`);
-    return res.redirect('/cart');
+    // For other errors
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Failed to place order",
+      error: error.message,
+      redirect: '/cart'
+    });
   }
 };
 

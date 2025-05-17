@@ -77,7 +77,6 @@ router.get("/orders/:orderId", orderController.getOrderDetails);
 router.get("/orders/:orderId/track", orderController.trackOrder);
 router.get("/orders/:orderId/invoice",  orderController.downloadInvoice);
 router.post("/orders/:orderId/cancel",  orderController.cancelOrder);
-router.post("/orders/:orderId/request-cancellation",  orderController.requestCancellation);
 router.post("/orders/:orderId/return",  orderController.requestReturn);
 router.post("/orders/:orderId/complete-payment", orderController.completePayment);
 //profile routes

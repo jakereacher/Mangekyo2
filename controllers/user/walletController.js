@@ -186,17 +186,35 @@ const verifyPayment = async (req, res) => {
     transaction.razorpayPaymentId = razorpay_payment_id;
     await transaction.save();
 
-    // Update wallet balance
-    const wallet = await Wallet.findOne({ user: userId });
-    if (!wallet) {
+    // Get user to update wallet field
+    const user = await User.findById(userId);
+    if (!user) {
       return res.status(StatusCodes.NOT_FOUND).json({
         success: false,
-        message: "Wallet not found"
+        message: "User not found"
+      });
+    }
+
+    // Update wallet balance
+    let wallet = await Wallet.findOne({ user: userId });
+    if (!wallet) {
+      // Create new wallet if it doesn't exist
+      wallet = new Wallet({
+        user: userId,
+        balance: 0
       });
     }
 
     wallet.balance += transaction.amount;
     await wallet.save();
+    console.log("Updated wallet balance to:", wallet.balance);
+
+    // Also update user.wallet field for backward compatibility
+    if (typeof user.wallet === 'number') {
+      user.wallet = wallet.balance;
+      await user.save();
+      console.log("Updated user.wallet field to:", user.wallet);
+    }
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -221,15 +239,41 @@ const verifyPayment = async (req, res) => {
 const getWalletBalance = async (req, res) => {
   try {
     const userId = req.session.user;
+    console.log("Getting wallet balance for user:", userId);
+
+    // Get user to check wallet field
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: "User not found"
+      });
+    }
 
     // Find or create wallet
     let wallet = await Wallet.findOne({ user: userId });
-    if (!wallet) {
+    let walletBalance = 0;
+
+    if (wallet) {
+      walletBalance = wallet.balance;
+      console.log("Found wallet with balance:", walletBalance);
+    } else {
+      // Create new wallet with user's wallet balance if available
+      const initialBalance = typeof user.wallet === 'number' ? user.wallet : 0;
       wallet = new Wallet({
         user: userId,
-        balance: 0
+        balance: initialBalance
       });
+      walletBalance = initialBalance;
       await wallet.save();
+      console.log("Created new wallet with balance:", initialBalance);
+    }
+
+    // Ensure user.wallet field is in sync with wallet.balance
+    if (typeof user.wallet === 'number' && user.wallet !== wallet.balance) {
+      user.wallet = wallet.balance;
+      await user.save();
+      console.log("Updated user.wallet field to match wallet.balance:", wallet.balance);
     }
 
     res.status(StatusCodes.OK).json({
@@ -258,10 +302,27 @@ const getWalletTransactions = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
+    // Get paginated transactions for display
     const transactions = await WalletTransaction.find({ user: userId })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
+
+    // Get all transactions for summary calculations
+    const allWalletTransactions = await WalletTransaction.find({
+      user: userId,
+      status: "completed" // Only include completed transactions in summary
+    });
+
+    // Calculate total credits (Refunds & Deposits)
+    const totalCredits = allWalletTransactions
+      .filter(t => t.type === 'credit')
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    // Calculate total debits (Purchases)
+    const totalDebits = allWalletTransactions
+      .filter(t => t.type === 'debit')
+      .reduce((sum, t) => sum + t.amount, 0);
 
     const totalTransactions = await WalletTransaction.countDocuments({ user: userId });
 
@@ -272,6 +333,10 @@ const getWalletTransactions = async (req, res) => {
         currentPage: page,
         totalPages: Math.ceil(totalTransactions / limit),
         totalTransactions
+      },
+      summary: {
+        totalCredits,
+        totalDebits
       }
     });
   } catch (error) {
@@ -291,39 +356,37 @@ const getWalletTransactions = async (req, res) => {
  */
 const processWalletPayment = async (userId, orderId, amount, description = "Order payment") => {
   try {
+    console.log(`Processing wallet payment for user ${userId}, order ${orderId}, amount ${amount}`);
+
+    // Get user to check wallet field
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
     // Find or create wallet
     let wallet = await Wallet.findOne({ user: userId });
     let walletBalance = 0;
 
-    // Also get user to check user.wallet field
-    const user = await User.findById(userId);
-
     if (wallet) {
       walletBalance = wallet.balance;
       console.log("Found wallet with balance:", walletBalance);
-    } else if (user && typeof user.wallet === 'number' && user.wallet > 0) {
-      // If no wallet document but user has wallet balance, create wallet document
-      wallet = new Wallet({
-        user: userId,
-        balance: user.wallet
-      });
-      walletBalance = user.wallet;
-      await wallet.save();
-      console.log("Created new wallet with balance from user:", walletBalance);
     } else {
-      // Create empty wallet
+      // Create new wallet with user's wallet balance if available
+      const initialBalance = typeof user.wallet === 'number' ? user.wallet : 0;
       wallet = new Wallet({
         user: userId,
-        balance: 0
+        balance: initialBalance
       });
+      walletBalance = initialBalance;
       await wallet.save();
-      console.log("Created new empty wallet");
+      console.log("Created new wallet with balance:", initialBalance);
     }
 
     // Check if wallet has sufficient balance
     if (walletBalance < amount) {
       console.log("Insufficient wallet balance. Available:", walletBalance, "Required:", amount);
-      throw new Error("Insufficient wallet balance");
+      throw new Error("Insufficient wallet balance. Please add money to your wallet and try again.");
     }
 
     // Create a wallet transaction
@@ -336,10 +399,19 @@ const processWalletPayment = async (userId, orderId, amount, description = "Orde
       orderId: orderId
     });
     await transaction.save();
+    console.log("Created wallet transaction:", transaction._id);
 
     // Update wallet balance
     wallet.balance -= amount;
     await wallet.save();
+    console.log("Updated wallet balance to:", wallet.balance);
+
+    // Also update user.wallet field for backward compatibility
+    if (typeof user.wallet === 'number') {
+      user.wallet = wallet.balance;
+      await user.save();
+      console.log("Updated user.wallet field to:", user.wallet);
+    }
 
     return {
       success: true,
@@ -351,6 +423,8 @@ const processWalletPayment = async (userId, orderId, amount, description = "Orde
     throw error;
   }
 };
+
+
 
 module.exports = {
   addMoney,

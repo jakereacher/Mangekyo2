@@ -29,7 +29,7 @@ const renderPaymentSuccess = async (req, res) => {
     res.render('payment-success', {
       orderId: order._id,
       paymentMethod: order.paymentMethod,
-      paymentId: paymentId || order.razorpayPaymentId
+      paymentId: paymentId || order.razorpayPaymentId || (order.paymentDetails && order.paymentDetails.transactionId)
     });
   } catch (error) {
     console.error('Error rendering payment success page:', error);
@@ -65,6 +65,9 @@ const renderPaymentFailure = async (req, res) => {
       return res.status(StatusCodes.NOT_FOUND).redirect('/orders');
     }
 
+    // Check if it's a wallet payment failure
+    const isWalletFailure = order.paymentMethod === 'wallet' || (error && error.toLowerCase().includes('wallet'));
+
     // Render the payment failure page
     res.render('payment-failure', {
       orderId: order._id,
@@ -73,7 +76,9 @@ const renderPaymentFailure = async (req, res) => {
       razorpayKeyId,
       userName: user.name,
       userEmail: user.email,
-      userPhone: user.mobile || ''
+      userPhone: user.mobile || '',
+      isWalletFailure: isWalletFailure,
+      walletBalance: user.wallet || 0
     });
   } catch (error) {
     console.error('Error rendering payment failure page:', error);

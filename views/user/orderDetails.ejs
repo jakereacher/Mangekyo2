@@ -109,36 +109,15 @@
                                                     class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition flex items-center mb-2">
                                                 <i class="fas fa-credit-card mr-2"></i> Pay Now
                                             </button>
-
-                                            <button onclick="cancelOrder('<%= order._id %>','<%= item.product._id %>')"
-                                                    class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition flex items-center">
-                                                <i class="fas fa-times-circle mr-2"></i> Cancel Order
-                                            </button>
-                                        <% } else if ((order.paymentMethod === 'razorpay' && order.paymentStatus === 'Paid') || order.paymentMethod === 'wallet') { %>
-                                            <button onclick="requestCancellation('<%= order._id %>','<%= item.product._id %>')"
-                                                    class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition flex items-center">
-                                                <i class="fas fa-times-circle mr-2"></i> Request Cancellation
-                                            </button>
-                                        <% } else { %>
-                                            <button onclick="cancelOrder('<%= order._id %>','<%= item.product._id %>')"
-                                                    class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition flex items-center">
-                                                <i class="fas fa-times-circle mr-2"></i> Cancel Order
-                                            </button>
                                         <% } %>
+
+                                        <button onclick="cancelOrder('<%= order._id %>','<%= item.product._id %>')"
+                                                class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition flex items-center">
+                                            <i class="fas fa-times-circle mr-2"></i> Cancel Order
+                                        </button>
                                     <% } %>
 
-                                    <% if (item.status === 'Cancellation Pending') { %>
-                                        <span class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">
-                                            Cancellation Pending Approval
-                                        </span>
-                                    <% } %>
 
-                                    <% if (item.status === 'Processing' && order.cancellation_status === 'Rejected' && order.cancellation_admin_response) { %>
-                                        <div class="bg-red-100 text-red-800 p-4 rounded mt-4">
-                                            <strong>Cancellation Rejected:</strong>
-                                            <p><strong>Reason for rejection:</strong> <%= order.cancellation_admin_response %></p>
-                                        </div>
-                                    <% } %>
 
                                 </div>
                             </div>
@@ -268,19 +247,7 @@
         </div>
     </div>
 
-    <!-- Cancellation Request Modal -->
-    <div id="cancellationModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden transition-opacity duration-300">
-        <div class="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 class="text-xl font-bold mb-4">Request Order Cancellation</h3>
-            <p class="mb-4">Since you paid with Razorpay/Wallet, your cancellation request will need admin approval. The refund will be processed to your wallet upon approval.</p>
-            <p class="mb-4">Please provide a reason for cancelling this order:</p>
-            <textarea id="cancellationReason" class="w-full border border-gray-300 rounded p-2 mb-4" rows="3" placeholder="Cancellation reason"></textarea>
-            <div class="flex justify-end gap-3">
-                <button onclick="closeCancellationModal()" class="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300 transition">Cancel</button>
-                <button onclick="submitCancellationRequest()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition">Submit Request</button>
-            </div>
-        </div>
-    </div>
+
 
     <script>
         // Retry payment for failed Razorpay orders
@@ -482,76 +449,7 @@
             }
         }
 
-        // Request Cancellation (for Razorpay/Wallet orders)
-        let cancellationOrderId = null;
-        let cancellationProductId = null;
 
-        function requestCancellation(orderId, productId) {
-            cancellationOrderId = orderId;
-            cancellationProductId = productId;
-            document.getElementById('cancellationModal').classList.remove('hidden');
-        }
-
-        function closeCancellationModal() {
-            document.getElementById('cancellationModal').classList.add('hidden');
-            document.getElementById('cancellationReason').value = '';
-            cancellationOrderId = null;
-            cancellationProductId = null;
-        }
-
-        async function submitCancellationRequest() {
-            const cancellationReason = document.getElementById('cancellationReason').value.trim();
-
-            if (!cancellationReason) {
-                Swal.fire('Error', 'Please provide a reason for cancellation', 'error');
-                return;
-            }
-
-            try {
-                const response = await fetch(`/orders/${cancellationOrderId}/request-cancellation`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        productId: cancellationProductId,
-                        cancellationReason: cancellationReason
-                    })
-                });
-
-                // Try to parse the response as JSON, but handle text responses too
-                let result;
-                const contentType = response.headers.get('content-type');
-                if (contentType && contentType.includes('application/json')) {
-                    try {
-                        result = await response.json();
-                    } catch (e) {
-                        console.error('Error parsing JSON response:', e);
-                        throw new Error('Invalid response from server. Please try again.');
-                    }
-                } else {
-                    // Handle non-JSON response
-                    const textResponse = await response.text();
-                    console.error('Received non-JSON response:', textResponse);
-                    throw new Error('Unexpected response from server. Please try again.');
-                }
-
-                if (result.success) {
-                    await Swal.fire({
-                        title: 'Request Submitted!',
-                        text: 'Your cancellation request has been submitted for admin approval. You will be notified once it is processed.',
-                        icon: 'success'
-                    });
-                    closeCancellationModal();
-                    window.location.reload();
-                } else {
-                    Swal.fire('Error', result.message || 'Failed to submit cancellation request', 'error');
-                }
-            } catch (error) {
-                console.error('Error submitting cancellation request:', error);
-                Swal.fire('Error', 'Failed to submit cancellation request', 'error');
-            }
-        }
 
         // Return Order Modal
 

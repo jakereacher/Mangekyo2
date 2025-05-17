@@ -907,20 +907,37 @@
                     })
                 });
 
-                const result = await response.json();
+                let result;
+                try {
+                    // Check if response is ok before trying to parse
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error("Server error response status:", response.status);
+                        console.error("Server error response text:", errorText);
 
-                if (!response.ok) {
-                    console.error("Server error response:", result);
-                    let errorMessage = result.message || `HTTP error! status: ${response.status}`;
-
-                    // If there's a more detailed error message, use it
-                    if (result.error) {
-                        console.error("Detailed error:", result.error);
-                        errorMessage += ` - ${result.error}`;
+                        // Try to parse error as JSON if possible
+                        try {
+                            const errorJson = JSON.parse(errorText);
+                            throw new Error(errorJson.message || errorJson.error || `Server error: ${response.status}`);
+                        } catch (parseError) {
+                            // If parsing fails, use status text
+                            throw new Error(`Server error: ${response.status} ${response.statusText}`);
+                        }
                     }
 
-                    throw new Error(errorMessage);
+                    // If response is ok, parse the JSON
+                    result = await response.json();
+                    console.log("Server response:", result);
+                } catch (error) {
+                    console.error("Error processing response:", error);
+                    if (error.name === 'SyntaxError') {
+                        throw new Error("Server returned an invalid response format. Please try again.");
+                    }
+                    throw error;
                 }
+
+                // We've already checked if response is ok in the try/catch block above
+                // This code will only run if the response was ok and we successfully parsed the JSON
 
                 if (result.success) {
                     // If payment method is Razorpay, initiate Razorpay payment
@@ -942,13 +959,37 @@
                                 })
                             });
 
-                            const razorpayResult = await razorpayResponse.json();
-                            console.log('Razorpay create order response:', razorpayResult);
+                            let razorpayResult;
+                            try {
+                                // Check if response is ok before trying to parse
+                                if (!razorpayResponse.ok) {
+                                    const errorText = await razorpayResponse.text();
+                                    console.error("Razorpay error response status:", razorpayResponse.status);
+                                    console.error("Razorpay error response text:", errorText);
 
-                            if (!razorpayResponse.ok) {
-                                console.error('Razorpay order creation failed:', razorpayResult);
-                                throw new Error(razorpayResult.message || razorpayResult.error || 'Failed to create Razorpay order');
+                                    // Try to parse error as JSON if possible
+                                    try {
+                                        const errorJson = JSON.parse(errorText);
+                                        throw new Error(errorJson.message || errorJson.error || `Payment gateway error: ${razorpayResponse.status}`);
+                                    } catch (parseError) {
+                                        // If parsing fails, use status text
+                                        throw new Error(`Payment gateway error: ${razorpayResponse.status} ${razorpayResponse.statusText}`);
+                                    }
+                                }
+
+                                // If response is ok, parse the JSON
+                                razorpayResult = await razorpayResponse.json();
+                                console.log('Razorpay create order response:', razorpayResult);
+                            } catch (error) {
+                                console.error("Error processing Razorpay response:", error);
+                                if (error.name === 'SyntaxError') {
+                                    throw new Error("Payment gateway returned an invalid response format. Please try again.");
+                                }
+                                throw error;
                             }
+
+                            // We've already checked if razorpayResponse is ok in the try/catch block above
+                            // This code will only run if the response was ok and we successfully parsed the JSON
 
                             // Initialize Razorpay checkout
                             console.log('Initializing Razorpay checkout with key:', '<%= razorpayKeyId %>');
@@ -1092,9 +1133,22 @@
                             const encodedError = encodeURIComponent(errorMessage);
                             window.location.href = `/payment/failure/${result.orderId}?error=${encodedError}`;
                         }
+                    } else if (selectedPaymentMethod === 'wallet') {
+                        // For wallet payments, check if there's a redirect URL
+                        if (result.redirect) {
+                            window.location.href = result.redirect;
+                        } else {
+                            // Fallback to order details page
+                            window.location.href = `/orders/${result.orderId}`;
+                        }
                     } else {
-                        // For non-Razorpay payments, redirect to order confirmation page
-                        window.location.href = `/orders/${result.orderId}`;
+                        // For other payment methods (like COD), check if there's a redirect URL
+                        if (result.redirect) {
+                            window.location.href = result.redirect;
+                        } else {
+                            // Fallback to order details page
+                            window.location.href = `/orders/${result.orderId}`;
+                        }
                     }
                 } else {
                     // Hide loading overlay
@@ -1109,12 +1163,34 @@
             } catch (error) {
                 console.error('Error placing order:', error);
                 hideLoadingOverlay();
-                Swal.fire({
-                    title: 'Error',
-                    text: error.message || 'Failed to place order. Please try again later.',
-                    icon: 'error',
-                    confirmButtonText: 'OK'
-                });
+
+                // Check if it's a wallet-related error
+                if (error.message && error.message.toLowerCase().includes('wallet')) {
+                    Swal.fire({
+                        title: 'Wallet Payment Failed',
+                        text: error.message || 'Failed to process wallet payment.',
+                        icon: 'error',
+                        showCancelButton: true,
+                        confirmButtonText: 'Add Money to Wallet',
+                        cancelButtonText: 'Choose Another Method'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // Redirect to profile page to add money to wallet
+                            window.location.href = '/profile#wallet';
+                        } else {
+                            // Go back to payment method selection
+                            goToStep(2);
+                        }
+                    });
+                } else {
+                    // For other errors
+                    Swal.fire({
+                        title: 'Error',
+                        text: error.message || 'Failed to place order. Please try again later.',
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
+                }
             }
         }
     </script>

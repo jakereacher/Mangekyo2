@@ -3,7 +3,7 @@ const Order = require("../../models/orderSchema");
 const User = require("../../models/userSchema");
 const Product = require("../../models/productSchema");
 const Wallet = require("../../models/walletSchema");
-const Transaction = require("../../models/transactionSchema");
+const WalletTransaction = require("../../models/walletTransactionSchema");
 const StatusCodes = require("../../utils/httpStatusCodes");
 const winston = require("winston");
 
@@ -259,13 +259,19 @@ exports.updateOrderItemStatus = async (req, res) => {
           }
 
           wallet.balance += refundAmount;
-          wallet.transactions.push({
-            type: "credit",
-            amount: refundAmount,
-            description: `Refund for cancelled item in order #${orderId} by admin`,
-            date: new Date(),
-          });
           await wallet.save();
+
+          // Create a wallet transaction record
+          const transaction = new WalletTransaction({
+            user: order.userId,
+            amount: refundAmount,
+            type: "credit",
+            description: `Refund for cancelled item in order #${orderId} by admin`,
+            status: "completed",
+            orderId: orderId
+          });
+          await transaction.save();
+
           logger.info("Added refund to user wallet", { userId: order.userId, amount: refundAmount });
         }
 
@@ -493,14 +499,14 @@ exports.approveCancellation = async (req, res) => {
       wallet.balance += refundAmount;
       await wallet.save();
 
-      // Create a transaction record
-      const transaction = new Transaction({
-        userId: order.userId,
-        walletId: wallet._id,
-        type: "credit",
+      // Create a wallet transaction record
+      const transaction = new WalletTransaction({
+        user: order.userId,
         amount: refundAmount,
+        type: "credit",
         description: `Refund for cancelled item in order #${orderId.substring(0, 8)}`,
-        date: new Date(),
+        status: "completed",
+        orderId: orderId
       });
 
       // Save the transaction
@@ -813,14 +819,14 @@ exports.approveReturn = async (req, res) => {
         });
       }
 
-      // Add transaction record
-      const transaction = new Transaction({
-        userId: order.userId,
-        walletId: wallet._id,
-        type: "credit",
+      // Add wallet transaction record
+      const transaction = new WalletTransaction({
+        user: order.userId,
         amount: refundAmount,
+        type: "credit",
         description: `Refund for returned item in order #${orderId}`,
-        date: new Date(),
+        status: "completed",
+        orderId: orderId
       });
 
       wallet.balance += refundAmount;

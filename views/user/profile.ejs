@@ -454,24 +454,357 @@
                 <i class="fas fa-wallet mr-2"></i>My Wallet
             </h2>
 
-            <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 max-w-md">
-                <div class="flex items-center justify-between mb-6">
-                    <div>
-                        <p class="text-gray-500 mb-1">Available Balance</p>
-                        <p class="text-3xl font-bold">₹<%= (user.wallet || 0).toLocaleString('en-IN') %></p>
-                    </div>
-                    <div class="bg-green-100 text-green-800 p-4 rounded-full">
-                        <i class="fas fa-rupee-sign text-2xl"></i>
+            <script>
+                // Initial wallet transactions page
+                let currentWalletPage = <%= user.walletTransactionsPagination ? user.walletTransactionsPagination.currentPage : 1 %>;
+                let totalWalletPages = <%= user.walletTransactionsPagination ? user.walletTransactionsPagination.totalPages : 1 %>;
+
+                // Function to load wallet transactions via AJAX
+                async function loadWalletTransactions(page) {
+                    try {
+                        // Show loading indicator
+                        document.getElementById('walletTransactionsBody').innerHTML = `
+                            <tr>
+                                <td colspan="4" class="text-center py-4">
+                                    <i class="fas fa-spinner fa-spin mr-2"></i> Loading transactions...
+                                </td>
+                            </tr>
+                        `;
+
+                        // Fetch transactions from API
+                        const response = await fetch(`/wallet/transactions?page=${page}&limit=5`);
+                        const data = await response.json();
+
+                        if (!data.success) {
+                            throw new Error(data.message || 'Failed to load transactions');
+                        }
+
+                        // Update current page and total pages
+                        currentWalletPage = data.pagination.currentPage;
+                        totalWalletPages = data.pagination.totalPages;
+
+                        // Render transactions
+                        renderWalletTransactions(data.transactions);
+
+                        // Render pagination
+                        renderWalletPagination();
+
+                        // Update summary cards
+                        if (data.summary) {
+                            updateWalletSummary(data.summary.totalCredits, data.summary.totalDebits, data.pagination.totalTransactions);
+                        }
+                    } catch (error) {
+                        console.error('Error loading wallet transactions:', error);
+                        document.getElementById('walletTransactionsBody').innerHTML = `
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-red-600">
+                                    <i class="fas fa-exclamation-circle mr-2"></i> ${error.message || 'Failed to load transactions'}
+                                </td>
+                            </tr>
+                        `;
+                    }
+                }
+
+                // Function to render wallet transactions
+                function renderWalletTransactions(transactions) {
+                    const tbody = document.getElementById('walletTransactionsBody');
+
+                    if (!transactions || transactions.length === 0) {
+                        document.getElementById('walletTransactionsContainer').innerHTML = `
+                            <div class="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
+                                <div class="bg-gray-100 inline-block p-4 rounded-full mb-3">
+                                    <i class="fas fa-exchange-alt text-3xl text-gray-400"></i>
+                                </div>
+                                <p class="text-gray-500">No transactions yet</p>
+                                <button onclick="showAddMoneyModal()" class="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition">
+                                    <i class="fas fa-plus-circle mr-2"></i> Add Your First Money
+                                </button>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    tbody.innerHTML = '';
+
+                    transactions.forEach(transaction => {
+                        const date = new Date(transaction.createdAt).toLocaleDateString('en-IN', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+
+                        const isCredit = transaction.type === 'credit';
+                        const colorClass = isCredit ? 'text-green-600' : 'text-red-600';
+                        const badgeClass = isCredit ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+
+                        tbody.innerHTML += `
+                            <tr class="hover:bg-gray-50 transition">
+                                <td class="px-4 py-3 text-sm text-gray-500">${date}</td>
+                                <td class="px-4 py-3 text-sm text-gray-900">${transaction.description}</td>
+                                <td class="px-4 py-3 text-sm">
+                                    <span class="px-2 py-1 rounded-full text-xs font-medium ${badgeClass}">
+                                        ${isCredit ? 'Credit' : 'Debit'}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 text-sm font-medium ${colorClass}">
+                                    ${isCredit ? '+' : '-'}₹${transaction.amount.toLocaleString('en-IN')}
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+
+                // Function to render wallet pagination
+                function renderWalletPagination() {
+                    const paginationContainer = document.getElementById('walletPagination');
+
+                    if (totalWalletPages <= 1) {
+                        paginationContainer.innerHTML = '';
+                        return;
+                    }
+
+                    let paginationHTML = '<div class="flex items-center justify-between">';
+
+                    // Page info
+                    paginationHTML += `
+                        <div class="text-sm text-gray-600">
+                            Showing page ${currentWalletPage} of ${totalWalletPages}
+                        </div>
+                    `;
+
+                    // Pagination controls
+                    paginationHTML += '<div class="flex space-x-2">';
+
+                    // Previous button
+                    const prevDisabled = currentWalletPage === 1;
+                    paginationHTML += `
+                        <button
+                            onclick="${prevDisabled ? '' : 'loadWalletTransactions(' + (currentWalletPage - 1) + ')'}"
+                            class="px-3 py-1 rounded-md ${prevDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'} transition"
+                            ${prevDisabled ? 'disabled' : ''}
+                        >
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                    `;
+
+                    // Page numbers - show limited pages with ellipsis for better UX
+                    const maxPagesToShow = 5;
+                    let startPage = Math.max(1, currentWalletPage - Math.floor(maxPagesToShow / 2));
+                    let endPage = Math.min(totalWalletPages, startPage + maxPagesToShow - 1);
+
+                    // Adjust start page if we're near the end
+                    if (endPage - startPage + 1 < maxPagesToShow) {
+                        startPage = Math.max(1, endPage - maxPagesToShow + 1);
+                    }
+
+                    // First page if not in range
+                    if (startPage > 1) {
+                        paginationHTML += `
+                            <button
+                                onclick="loadWalletTransactions(1)"
+                                class="px-3 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 transition"
+                            >
+                                1
+                            </button>
+                        `;
+
+                        if (startPage > 2) {
+                            paginationHTML += `
+                                <span class="px-2 py-1 text-gray-500">...</span>
+                            `;
+                        }
+                    }
+
+                    // Page numbers
+                    for (let i = startPage; i <= endPage; i++) {
+                        const isActive = i === currentWalletPage;
+                        paginationHTML += `
+                            <button
+                                onclick="${isActive ? '' : 'loadWalletTransactions(' + i + ')'}"
+                                class="px-3 py-1 rounded-md ${isActive ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'} transition"
+                            >
+                                ${i}
+                            </button>
+                        `;
+                    }
+
+                    // Last page if not in range
+                    if (endPage < totalWalletPages) {
+                        if (endPage < totalWalletPages - 1) {
+                            paginationHTML += `
+                                <span class="px-2 py-1 text-gray-500">...</span>
+                            `;
+                        }
+
+                        paginationHTML += `
+                            <button
+                                onclick="loadWalletTransactions(${totalWalletPages})"
+                                class="px-3 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 transition"
+                            >
+                                ${totalWalletPages}
+                            </button>
+                        `;
+                    }
+
+                    // Next button
+                    const nextDisabled = currentWalletPage === totalWalletPages;
+                    paginationHTML += `
+                        <button
+                            onclick="${nextDisabled ? '' : 'loadWalletTransactions(' + (currentWalletPage + 1) + ')'}"
+                            class="px-3 py-1 rounded-md ${nextDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'} transition"
+                            ${nextDisabled ? 'disabled' : ''}
+                        >
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    `;
+
+                    paginationHTML += '</div></div>';
+                    paginationContainer.innerHTML = paginationHTML;
+                }
+
+                // Function to update wallet summary cards
+                function updateWalletSummary(totalCredits, totalDebits, totalTransactions) {
+                    // Update Refunds & Deposits
+                    const creditsElement = document.querySelector('.grid.grid-cols-1.md\\:grid-cols-3 > div:nth-child(1) .text-xl.font-bold');
+                    if (creditsElement) {
+                        creditsElement.textContent = `₹${totalCredits.toLocaleString('en-IN')}`;
+                    }
+
+                    // Update Purchases
+                    const debitsElement = document.querySelector('.grid.grid-cols-1.md\\:grid-cols-3 > div:nth-child(2) .text-xl.font-bold');
+                    if (debitsElement) {
+                        debitsElement.textContent = `₹${totalDebits.toLocaleString('en-IN')}`;
+                    }
+
+                    // Update Total Transactions
+                    const transactionsElement = document.querySelector('.grid.grid-cols-1.md\\:grid-cols-3 > div:nth-child(3) .text-xl.font-bold');
+                    if (transactionsElement) {
+                        transactionsElement.textContent = totalTransactions;
+                    }
+                }
+
+                // Initialize pagination on page load
+                document.addEventListener('DOMContentLoaded', function() {
+                    renderWalletPagination();
+                });
+            </script>
+
+            <!-- Wallet Dashboard -->
+            <div class="mb-8">
+                <!-- Wallet Balance Card -->
+                <div class="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-6 rounded-lg shadow-md mb-6">
+                    <div class="flex flex-col md:flex-row items-center justify-between">
+                        <div class="mb-4 md:mb-0 text-center md:text-left">
+                            <p class="text-white text-opacity-90 mb-1">Available Balance</p>
+                            <p class="text-4xl font-bold">₹<%= (user.wallet || 0).toLocaleString('en-IN') %></p>
+                            <p class="text-sm text-white text-opacity-80 mt-1">Your wallet is ready to use</p>
+                        </div>
+                        <div>
+                            <button onclick="showAddMoneyModal()" class="bg-white text-green-700 px-6 py-2 rounded-lg hover:bg-gray-100 transition flex items-center justify-center shadow-sm">
+                                <i class="fas fa-plus-circle mr-2"></i> Add Money
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <button onclick="showAddMoneyModal()" class="bg-gray-800 text-white px-4 py-3 rounded hover:bg-gray-700 transition flex items-center justify-center">
-                        <i class="fas fa-plus-circle mr-2"></i> Add Money
-                    </button>
-                    <button class="bg-gray-200 text-gray-800 px-4 py-3 rounded hover:bg-gray-300 transition flex items-center justify-center">
-                        <i class="fas fa-arrow-right mr-2"></i> Withdraw
-                    </button>
+                <!-- Transaction Summary Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex items-center">
+                        <div class="bg-green-100 text-green-600 p-3 rounded-full mr-4">
+                            <i class="fas fa-hand-holding-usd text-xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-gray-500 text-sm">Refunds & Deposits</p>
+                            <p class="text-xl font-bold">₹<%= (user.walletTotalCredits || 0).toLocaleString('en-IN') %></p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex items-center">
+                        <div class="bg-red-100 text-red-600 p-3 rounded-full mr-4">
+                            <i class="fas fa-shopping-bag text-xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-gray-500 text-sm">Purchases</p>
+                            <p class="text-xl font-bold">₹<%= (user.walletTotalDebits || 0).toLocaleString('en-IN') %></p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex items-center">
+                        <div class="bg-purple-100 text-purple-600 p-3 rounded-full mr-4">
+                            <i class="fas fa-history text-xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-gray-500 text-sm">Total Transactions</p>
+                            <p class="text-xl font-bold"><%= user.walletTransactionsPagination ? user.walletTransactionsPagination.totalTransactions : 0 %></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transaction History Card -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="p-4 bg-gray-50 border-b border-gray-200">
+                        <h3 class="text-lg font-semibold flex items-center">
+                            <i class="fas fa-history mr-2 text-gray-600"></i>Transaction History
+                        </h3>
+                    </div>
+
+                    <div id="walletTransactionsContainer" class="p-4">
+                        <% if (user.walletTransactions && user.walletTransactions.length > 0) { %>
+                            <div class="overflow-x-auto">
+                                <table class="w-full">
+                                    <thead>
+                                        <tr class="bg-gray-50">
+                                            <th class="px-4 py-3 text-left text-sm font-medium text-gray-500 border-b">Date</th>
+                                            <th class="px-4 py-3 text-left text-sm font-medium text-gray-500 border-b">Description</th>
+                                            <th class="px-4 py-3 text-left text-sm font-medium text-gray-500 border-b">Type</th>
+                                            <th class="px-4 py-3 text-left text-sm font-medium text-gray-500 border-b">Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="walletTransactionsBody" class="divide-y divide-gray-200">
+                                        <% user.walletTransactions.forEach(transaction => { %>
+                                            <tr class="hover:bg-gray-50 transition">
+                                                <td class="px-4 py-3 text-sm text-gray-500">
+                                                    <%= new Date(transaction.createdAt).toLocaleDateString('en-IN', {
+                                                        day: 'numeric',
+                                                        month: 'short',
+                                                        year: 'numeric',
+                                                        hour: '2-digit',
+                                                        minute: '2-digit'
+                                                    }) %>
+                                                </td>
+                                                <td class="px-4 py-3 text-sm text-gray-900">
+                                                    <%= transaction.description %>
+                                                </td>
+                                                <td class="px-4 py-3 text-sm">
+                                                    <span class="px-2 py-1 rounded-full text-xs font-medium <%= transaction.type === 'credit' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>">
+                                                        <%= transaction.type === 'credit' ? 'Credit' : 'Debit' %>
+                                                    </span>
+                                                </td>
+                                                <td class="px-4 py-3 text-sm font-medium <%= transaction.type === 'credit' ? 'text-green-600' : 'text-red-600' %>">
+                                                    <%= transaction.type === 'credit' ? '+' : '-' %>₹<%= transaction.amount.toLocaleString('en-IN') %>
+                                                </td>
+                                            </tr>
+                                        <% }); %>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <% } else { %>
+                            <div class="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
+                                <div class="bg-gray-100 inline-block p-4 rounded-full mb-3">
+                                    <i class="fas fa-exchange-alt text-3xl text-gray-400"></i>
+                                </div>
+                                <p class="text-gray-500">No transactions yet</p>
+                                <button onclick="showAddMoneyModal()" class="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition">
+                                    <i class="fas fa-plus-circle mr-2"></i> Add Your First Money
+                                </button>
+                            </div>
+                        <% } %>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div id="walletPagination" class="flex justify-center p-4 border-t border-gray-200 bg-gray-50">
+                        <!-- Pagination will be rendered by JavaScript -->
+                    </div>
                 </div>
             </div>
         </div>

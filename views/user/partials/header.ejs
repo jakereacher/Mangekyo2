@@ -13,7 +13,7 @@
             color: white;
             overflow-x: hidden;
         }
-        
+
         @keyframes glitch {
             0% { text-shadow: 2px 2px #fff, -2px -2px #000; }
             25% { text-shadow: -2px -2px #fff, 2px 2px #000; }
@@ -21,21 +21,21 @@
             75% { text-shadow: -2px 2px #fff, 2px -2px #000; }
             100% { text-shadow: 2px 2px #fff, -2px -2px #000; }
         }
-        
+
         .animate-glitch {
             font-size: 8rem;
             font-weight: bold;
             color: white;
             animation: glitch 0.2s infinite;
         }
-        
+
         .video-container {
             position: relative;
             width: 100%;
             height: 100vh;
             overflow: hidden;
         }
-        
+
         .video-bg {
             position: absolute;
             top: 0;
@@ -45,31 +45,31 @@
             object-fit: cover;
             opacity: 0.7;
         }
-        
+
         .category-card {
             transition: all 0.3s ease;
             overflow: hidden;
         }
-        
+
         .category-card:hover {
             transform: translateY(-10px);
             box-shadow: 0 0 30px #fff;
         }
-        
+
         .category-card img {
             transition: all 0.5s ease;
         }
-        
+
         .category-card:hover img {
             transform: scale(1.1);
         }
-        
+
         .header-link {
             position: relative;
             color: white;
             text-decoration: none;
         }
-        
+
         .header-link::after {
             content: '';
             position: absolute;
@@ -80,11 +80,11 @@
             background-color: white;
             transition: width 0.3s ease;
         }
-        
+
         .header-link:hover::after {
             width: 100%;
         }
-        
+
         .search-input {
             background: transparent;
             border: 2px solid white;
@@ -93,11 +93,11 @@
             border-radius: 20px;
             outline: none;
         }
-        
+
         .search-input::placeholder {
             color: #aaa;
         }
-        
+
         .search-btn {
             position: absolute;
             right: 10px;
@@ -108,14 +108,14 @@
             color: white;
             cursor: pointer;
         }
-        
+
         .glowing-border {
             border: 2px solid transparent;
             border-image: linear-gradient(to right, white, #888);
             border-image-slice: 1;
             animation: border-glow 2s infinite alternate;
         }
-        
+
         @keyframes border-glow {
             from {
                 box-shadow: 0 0 5px white;
@@ -125,7 +125,7 @@
             }
         }
 
-        .dropdown { 
+        .dropdown {
             position: relative;
             display: inline-block;
             border-radius: 20px;
@@ -168,7 +168,7 @@
     </style>
 </head>
 <body>
-   
+
     <!-- Navigation -->
     <header class="absolute w-full flex justify-between items-center px-8 py-4 bg-black bg-opacity-50 z-10">
         <div class="flex items-center">
@@ -179,15 +179,15 @@
                 <a href="/wishlist" class="header-link">Wishlist</a>
             </nav>
         </div>
-        
+
         <div class="flex items-center space-x-4">
             <!-- Search Bar (matches shop functionality) -->
             <form action="/shop" method="GET" class="relative hidden md:block">
-                <input 
-                    type="text" 
-                    name="search" 
+                <input
+                    type="text"
+                    name="search"
                     value="<%= locals.query ? query.search || '' : '' %>"
-                    placeholder="Search products..." 
+                    placeholder="Search products..."
                     class="search-input pr-10 w-64"
                 >
                 <button type="submit" class="search-btn">
@@ -203,12 +203,13 @@
                     </a>
                 <% } %>
             </form>
-    
+
             <% if (locals.user) { %>
             <div class="dropdown">
                 <a href="#" class="sign-in-link"><%= locals.user.name %></a>
                 <div class="dropdown-content">
                     <a href="/profile">Profile</a>
+                    <a href="/profile#wallet">Wallet</a>
                     <form action="/logout" method="POST">
                         <button type="submit">Logout</button>
                     </form>
