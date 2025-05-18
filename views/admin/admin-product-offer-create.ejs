@@ -25,11 +25,18 @@
       New Product Offer
     </div>
     <div class="card-body">
-      <form action="/admin/product-offers/create" method="POST">
+      <form action="/admin/product-offers/create" method="POST" id="productOfferForm" novalidate>
         <div class="row mb-3">
           <div class="col-md-6">
             <label for="name" class="form-label">Offer Name <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" id="name" name="name" required>
+            <input type="text" class="form-control" id="name" name="name"
+                   pattern="^[a-zA-Z0-9\s]{3,50}$"
+                   title="Name must be 3-50 characters and contain only letters, numbers, and spaces"
+                   required>
+            <div class="invalid-feedback">
+              Name must be 3-50 characters and contain only letters, numbers, and spaces
+            </div>
+            <small class="form-text text-muted">3-50 characters, letters, numbers and spaces only</small>
           </div>
           <div class="col-md-6">
             <label for="discountType" class="form-label">Discount Type <span class="text-danger">*</span></label>
@@ -38,39 +45,68 @@
               <option value="percentage">Percentage</option>
               <option value="fixed">Fixed Amount</option>
             </select>
+            <div class="invalid-feedback">
+              Please select a discount type
+            </div>
           </div>
         </div>
 
         <div class="mb-3">
           <label for="description" class="form-label">Description <span class="text-danger">*</span></label>
-          <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+          <textarea class="form-control" id="description" name="description" rows="3"
+                    minlength="10" maxlength="200" required></textarea>
+          <div class="invalid-feedback">
+            Description must be between 10 and 200 characters
+          </div>
+          <small class="form-text text-muted">10-200 characters</small>
         </div>
 
         <div class="row mb-3">
           <div class="col-md-4">
             <label for="discountValue" class="form-label">Discount Value <span class="text-danger">*</span></label>
-            <input type="number" class="form-control" id="discountValue" name="discountValue" min="0" step="0.01" required>
-            <small class="form-text text-muted">For percentage, enter value between 0-100</small>
+            <input type="number" class="form-control" id="discountValue" name="discountValue"
+                   min="0.01" max="100" step="0.01" required>
+            <div class="invalid-feedback" id="discountValueFeedback">
+              Discount value must be a positive number
+            </div>
+            <small class="form-text text-muted" id="discountValueHelp">For percentage, enter value between 0.01-100</small>
           </div>
           <div class="col-md-4">
             <label for="maxDiscountAmount" class="form-label">Maximum Discount Amount</label>
-            <input type="number" class="form-control" id="maxDiscountAmount" name="maxDiscountAmount" min="0" step="0.01">
+            <input type="number" class="form-control" id="maxDiscountAmount" name="maxDiscountAmount"
+                   min="0.01" step="0.01">
+            <div class="invalid-feedback">
+              Maximum discount amount must be a positive number
+            </div>
             <small class="form-text text-muted">Only applicable for percentage discounts</small>
           </div>
           <div class="col-md-4">
             <label for="minPurchaseAmount" class="form-label">Minimum Purchase Amount</label>
-            <input type="number" class="form-control" id="minPurchaseAmount" name="minPurchaseAmount" min="0" step="0.01">
+            <input type="number" class="form-control" id="minPurchaseAmount" name="minPurchaseAmount"
+                   min="0" step="0.01">
+            <div class="invalid-feedback">
+              Minimum purchase amount must be a non-negative number
+            </div>
           </div>
         </div>
 
         <div class="row mb-3">
           <div class="col-md-6">
             <label for="startDate" class="form-label">Start Date & Time <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" id="startDate" name="startDate" placeholder="Select date and time" required>
+            <input type="text" class="form-control" id="startDate" name="startDate"
+                   placeholder="Select date and time" required>
+            <div class="invalid-feedback">
+              Start date is required and must be in the future
+            </div>
           </div>
           <div class="col-md-6">
             <label for="endDate" class="form-label">End Date & Time <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" id="endDate" name="endDate" placeholder="Select date and time" required>
+            <input type="text" class="form-control" id="endDate" name="endDate"
+                   placeholder="Select date and time" required>
+            <div class="invalid-feedback">
+              End date is required and must be after start date
+            </div>
+            <small class="form-text text-muted">Offer duration cannot exceed 90 days</small>
           </div>
         </div>
 
@@ -136,18 +172,32 @@
         </div>
 
         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-          <button type="submit" class="btn btn-primary">Create Product Offer</button>
+          <button type="submit" class="btn btn-primary" id="submitBtn">Create Product Offer</button>
         </div>
       </form>
+
+      <!-- Validation error summary -->
+      <div class="alert alert-danger mt-3" id="validationErrors" style="display: none;">
+        <h5><i class="fas fa-exclamation-triangle me-2"></i>Please fix the following errors:</h5>
+        <ul id="errorList"></ul>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('productOfferForm');
     const discountTypeSelect = document.getElementById('discountType');
     const discountValueInput = document.getElementById('discountValue');
     const maxDiscountAmountInput = document.getElementById('maxDiscountAmount');
+    const nameInput = document.getElementById('name');
+    const descriptionInput = document.getElementById('description');
+    const minPurchaseAmountInput = document.getElementById('minPurchaseAmount');
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+    const validationErrorsDiv = document.getElementById('validationErrors');
+    const errorList = document.getElementById('errorList');
 
     // Product selection elements
     const productSearch = document.getElementById('productSearch');
@@ -157,6 +207,146 @@
     const clearAllProductsBtn = document.querySelector('.clear-all-products');
     const selectedProductsCount = document.getElementById('selectedProductsCount');
     const productOfferPreview = document.getElementById('productOfferPreview');
+
+    // Form validation
+    form.addEventListener('submit', function(event) {
+      let isValid = true;
+      let errors = [];
+
+      // Clear previous errors
+      form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+      errorList.innerHTML = '';
+      validationErrorsDiv.style.display = 'none';
+
+      // Validate name (alphanumeric with spaces, min 3 chars, max 50 chars)
+      if (!nameInput.value.trim() || !/^[a-zA-Z0-9\s]{3,50}$/.test(nameInput.value.trim())) {
+        isValid = false;
+        nameInput.classList.add('is-invalid');
+        errors.push('Offer name must be 3-50 characters and contain only letters, numbers, and spaces');
+      }
+
+      // Validate description (min 10 chars, max 200 chars)
+      if (!descriptionInput.value.trim() || descriptionInput.value.trim().length < 10 || descriptionInput.value.trim().length > 200) {
+        isValid = false;
+        descriptionInput.classList.add('is-invalid');
+        errors.push('Description must be between 10 and 200 characters');
+      }
+
+      // Validate discount type
+      if (!discountTypeSelect.value) {
+        isValid = false;
+        discountTypeSelect.classList.add('is-invalid');
+        errors.push('Please select a discount type');
+      }
+
+      // Validate discount value
+      const discountValue = parseFloat(discountValueInput.value);
+      if (isNaN(discountValue) || discountValue <= 0) {
+        isValid = false;
+        discountValueInput.classList.add('is-invalid');
+        errors.push('Discount value must be a positive number');
+      } else if (discountTypeSelect.value === 'percentage' && discountValue > 100) {
+        isValid = false;
+        discountValueInput.classList.add('is-invalid');
+        document.getElementById('discountValueFeedback').textContent = 'Percentage discount cannot exceed 100%';
+        errors.push('Percentage discount cannot exceed 100%');
+      }
+
+      // Validate max discount amount (if provided)
+      if (maxDiscountAmountInput.value) {
+        const maxDiscountAmount = parseFloat(maxDiscountAmountInput.value);
+        if (isNaN(maxDiscountAmount) || maxDiscountAmount <= 0) {
+          isValid = false;
+          maxDiscountAmountInput.classList.add('is-invalid');
+          errors.push('Maximum discount amount must be a positive number');
+        }
+      }
+
+      // Validate minimum purchase amount (if provided)
+      if (minPurchaseAmountInput.value) {
+        const minPurchaseAmount = parseFloat(minPurchaseAmountInput.value);
+        if (isNaN(minPurchaseAmount) || minPurchaseAmount < 0) {
+          isValid = false;
+          minPurchaseAmountInput.classList.add('is-invalid');
+          errors.push('Minimum purchase amount must be a non-negative number');
+        }
+      }
+
+      // Validate dates
+      if (!startDateInput.value || !endDateInput.value) {
+        isValid = false;
+        if (!startDateInput.value) {
+          startDateInput.classList.add('is-invalid');
+          errors.push('Start date is required');
+        }
+        if (!endDateInput.value) {
+          endDateInput.classList.add('is-invalid');
+          errors.push('End date is required');
+        }
+      } else {
+        const startDate = new Date(startDateInput.value);
+        const endDate = new Date(endDateInput.value);
+        const now = new Date();
+
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+          isValid = false;
+          if (isNaN(startDate.getTime())) {
+            startDateInput.classList.add('is-invalid');
+            errors.push('Invalid start date format');
+          }
+          if (isNaN(endDate.getTime())) {
+            endDateInput.classList.add('is-invalid');
+            errors.push('Invalid end date format');
+          }
+        } else {
+          // Check if start date is in the future
+          if (startDate < now) {
+            isValid = false;
+            startDateInput.classList.add('is-invalid');
+            errors.push('Start date must be in the future');
+          }
+
+          // Check if end date is after start date
+          if (endDate <= startDate) {
+            isValid = false;
+            endDateInput.classList.add('is-invalid');
+            errors.push('End date must be after start date');
+          }
+
+          // Check if offer duration is not more than 90 days
+          const durationInDays = (endDate - startDate) / (1000 * 60 * 60 * 24);
+          if (durationInDays > 90) {
+            isValid = false;
+            endDateInput.classList.add('is-invalid');
+            errors.push('Offer duration cannot exceed 90 days');
+          }
+        }
+      }
+
+      // Validate product selection
+      const selectedProducts = document.querySelectorAll('.product-checkbox:checked');
+      if (selectedProducts.length === 0) {
+        isValid = false;
+        errors.push('Please select at least one product');
+      }
+
+      // If there are errors, prevent form submission and show error messages
+      if (!isValid) {
+        event.preventDefault();
+
+        // Display errors
+        errors.forEach(error => {
+          const li = document.createElement('li');
+          li.textContent = error;
+          errorList.appendChild(li);
+        });
+
+        validationErrorsDiv.style.display = 'block';
+
+        // Scroll to the error summary
+        validationErrorsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
 
     // Set min date for start date to today
     const today = new Date().toISOString().split('T')[0];

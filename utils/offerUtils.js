@@ -5,10 +5,10 @@ const Category = require('../models/categorySchema');
 /**
  * Get all valid offers for a product
  * @param {Object} product - Product object with populated category
- * @returns {Array} Array of valid offers for the product
+ * @returns {Object} Object containing valid product and category offers
  */
 const getValidOffersForProduct = async (product) => {
-  if (!product) return [];
+  if (!product) return { productOffers: [], categoryOffers: [] };
 
   const now = new Date();
 
@@ -33,28 +33,65 @@ const getValidOffersForProduct = async (product) => {
     }
   }
 
-  // Get category offers
-  let categoryOffers = [];
-  if (product.category && product.category.offer) {
-    const categoryId = typeof product.category === 'object' ? product.category._id : product.category;
-    const category = await Category.findById(categoryId).populate('offer');
+  // Get additional product offers (in case there are multiple)
+  const additionalProductOffers = await Offer.find({
+    type: 'product',
+    applicableProducts: product._id,
+    isActive: true,
+    startDate: { $lte: now },
+    endDate: { $gte: now }
+  }).sort({ createdAt: -1 }); // Sort by creation date, newest first
 
-    if (category && category.offer &&
-        category.offer.isActive &&
-        category.offer.startDate <= now &&
-        category.offer.endDate >= now) {
-      categoryOffers.push(category.offer);
-    } else if (category && category.offer &&
-              (category.offer.endDate < now || !category.offer.isActive)) {
-      // If category offer is expired or inactive, clear it from the category
-      console.log(`Clearing expired offer from category ${category._id}: Offer ${category.offer._id} expired on ${category.offer.endDate}`);
-      await Category.findByIdAndUpdate(category._id, {
-        $set: { offer: null }
-      });
+  // Add any additional offers not already included
+  for (const offer of additionalProductOffers) {
+    if (!productOffers.some(po => po._id.toString() === offer._id.toString())) {
+      productOffers.push(offer);
     }
   }
 
-  return [...productOffers, ...categoryOffers];
+  // Get category offers
+  let categoryOffers = [];
+  if (product.category) {
+    const categoryId = typeof product.category === 'object' ? product.category._id : product.category;
+
+    // Get all category offers, not just the one directly linked to the category
+    const allCategoryOffers = await Offer.find({
+      type: 'category',
+      applicableCategories: categoryId,
+      isActive: true,
+      startDate: { $lte: now },
+      endDate: { $gte: now }
+    }).sort({ createdAt: -1 }); // Sort by creation date, newest first
+
+    categoryOffers = allCategoryOffers;
+
+    // Also check if category has a direct offer reference
+    if (typeof product.category === 'object' && product.category.offer) {
+      const category = await Category.findById(categoryId).populate('offer');
+
+      if (category && category.offer &&
+          category.offer.isActive &&
+          category.offer.startDate <= now &&
+          category.offer.endDate >= now) {
+        // Check if this offer is already in our list
+        if (!categoryOffers.some(co => co._id.toString() === category.offer._id.toString())) {
+          categoryOffers.push(category.offer);
+        }
+      } else if (category && category.offer &&
+                (category.offer.endDate < now || !category.offer.isActive)) {
+        // If category offer is expired or inactive, clear it from the category
+        console.log(`Clearing expired offer from category ${category._id}: Offer ${category.offer._id} expired on ${category.offer.endDate}`);
+        await Category.findByIdAndUpdate(category._id, {
+          $set: { offer: null }
+        });
+      }
+    }
+  }
+
+  return {
+    productOffers,
+    categoryOffers
+  };
 };
 
 /**
@@ -74,18 +111,14 @@ const calculateBestOfferPrice = async (product) => {
     };
   }
 
-  const originalPrice = product.salePrice || product.regularPrice;
+  const originalPrice = product.price || product.salePrice || product.regularPrice;
   const now = new Date();
 
   // Get all valid offers for the product
-  const offers = await getValidOffersForProduct(product);
+  const { productOffers, categoryOffers } = await getValidOffersForProduct(product);
 
-  // Double-check each offer to ensure it's not expired
-  const validOffers = offers.filter(offer => {
-    return offer.isActive && offer.startDate <= now && offer.endDate >= now;
-  });
-
-  if (validOffers.length === 0) {
+  // If no offers at all, return no offer
+  if (productOffers.length === 0 && categoryOffers.length === 0) {
     return {
       hasOffer: false,
       originalPrice,
@@ -96,21 +129,73 @@ const calculateBestOfferPrice = async (product) => {
     };
   }
 
-  // Calculate discount for each offer and find the best one
-  let bestOffer = null;
-  let maxDiscount = 0;
+  // Find the best product offer (if any)
+  let bestProductOffer = null;
+  let maxProductDiscount = 0;
 
-  for (const offer of validOffers) {
+  for (const offer of productOffers) {
+    // Double-check offer validity before calculating discount
+    if (!offer.isActive || offer.startDate > now || offer.endDate < now) {
+      console.log(`Skipping expired or inactive product offer: ${offer.name} (${offer._id})`);
+      continue;
+    }
+
     const discountAmount = offer.calculateDiscount(originalPrice);
 
-    if (discountAmount > maxDiscount) {
-      maxDiscount = discountAmount;
-      bestOffer = offer;
+    if (discountAmount > maxProductDiscount) {
+      maxProductDiscount = discountAmount;
+      bestProductOffer = offer;
     }
   }
 
+  // Find the best category offer (if any)
+  let bestCategoryOffer = null;
+  let maxCategoryDiscount = 0;
+
+  for (const offer of categoryOffers) {
+    // Double-check offer validity before calculating discount
+    if (!offer.isActive || offer.startDate > now || offer.endDate < now) {
+      console.log(`Skipping expired or inactive category offer: ${offer.name} (${offer._id})`);
+      continue;
+    }
+
+    const discountAmount = offer.calculateDiscount(originalPrice);
+
+    if (discountAmount > maxCategoryDiscount) {
+      maxCategoryDiscount = discountAmount;
+      bestCategoryOffer = offer;
+    }
+  }
+
+  // Determine the final best offer based on the requirements:
+  // 1. If both product and category offers exist, use the one with greater discount
+  // 2. If discounts are equal, prefer the newest offer (which is already sorted by createdAt)
+  let bestOffer = null;
+  let maxDiscount = 0;
+
+  if (bestProductOffer && bestCategoryOffer) {
+    // Both types of offers exist, compare discounts
+    if (maxProductDiscount >= maxCategoryDiscount) {
+      // Product offer has greater or equal discount, use it
+      bestOffer = bestProductOffer;
+      maxDiscount = maxProductDiscount;
+    } else {
+      // Category offer has greater discount, use it
+      bestOffer = bestCategoryOffer;
+      maxDiscount = maxCategoryDiscount;
+    }
+  } else if (bestProductOffer) {
+    // Only product offer exists
+    bestOffer = bestProductOffer;
+    maxDiscount = maxProductDiscount;
+  } else if (bestCategoryOffer) {
+    // Only category offer exists
+    bestOffer = bestCategoryOffer;
+    maxDiscount = maxCategoryDiscount;
+  }
+
   const finalPrice = originalPrice - maxDiscount;
-  const discountPercentage = (maxDiscount / originalPrice) * 100;
+  const discountPercentage = originalPrice > 0 ? (maxDiscount / originalPrice) * 100 : 0;
 
   return {
     hasOffer: !!bestOffer,

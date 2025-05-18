@@ -7,7 +7,7 @@ const Product = require("../../models/productSchema");
 const categoryInfo = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = 4;
+    const limit = parseInt(req.query.limit) || 4;
     const skip = (page - 1) * limit;
     const search = req.query.search || "";
 
@@ -39,16 +39,29 @@ const categoryInfo = async (req, res) => {
     const totalCategories = await Category.countDocuments(query);
     const totalPages = Math.ceil(totalCategories / limit);
 
+    // Build search params for pagination links
+    const searchParams = search ? `&search=${encodeURIComponent(search)}` : '';
+    const searchParamsWithoutLimit = search ? `&search=${encodeURIComponent(search)}` : '';
+
     res.render("category", {
       cat: categoriesWithOffers,
       currentPage: page,
       totalPages: totalPages,
       totalCategories: totalCategories,
       search: search,
+      limit: limit,
+      pagination: {
+        currentPage: page,
+        totalPages: totalPages,
+        totalItems: totalCategories,
+        limit: limit,
+        searchParams: searchParams,
+        searchParamsWithoutLimit: searchParamsWithoutLimit
+      }
     });
   } catch (error) {
     console.error("Error in categoryInfo:", error);
-    res.redirect("/pageerror");
+    res.redirect("/admin/pageerror");
   }
 };
 

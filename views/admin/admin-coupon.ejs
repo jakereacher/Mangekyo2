@@ -309,6 +309,7 @@
                                         <span class="text-sm text-gray-600">Items per page:</span>
                                         <select onchange="window.location.href='?page=1&limit=' + this.value + '<%= pagination.searchParamsWithoutLimit %>'"
                                                 class="border rounded px-2 py-1 text-sm">
+                                            <option value="3" <%= pagination.limit == 3 ? 'selected' : '' %>>3</option>
                                             <option value="10" <%= pagination.limit == 10 ? 'selected' : '' %>>10</option>
                                             <option value="25" <%= pagination.limit == 25 ? 'selected' : '' %>>25</option>
                                             <option value="50" <%= pagination.limit == 50 ? 'selected' : '' %>>50</option>
@@ -336,7 +337,10 @@
                     <div class="modal-body">
                         <div class="mb-3">
                             <label for="couponCode" class="form-label">Coupon Code</label>
-                            <input type="text" class="form-control" id="couponCode" name="code" required>
+                            <input type="text" class="form-control" id="couponCode" name="code"
+                                   pattern="[a-zA-Z0-9]+" title="Only letters and numbers allowed"
+                                   required>
+                            <div class="form-text">Only letters and numbers allowed (no spaces or special characters)</div>
                         </div>
                         <div class="mb-3">
                             <label for="discountType" class="form-label">Discount Type</label>
@@ -347,21 +351,25 @@
                         </div>
                         <div class="mb-3">
                             <label for="discountValue" class="form-label">Discount Value</label>
-                            <input type="number" class="form-control" id="discountValue" name="value" min="1" required>
+                            <input type="number" class="form-control" id="discountValue" name="value"
+                                   min="1" max="100" step="0.01" required>
                             <div class="form-text" id="valueHelp">Enter percentage (e.g., 10) or fixed amount (e.g., 5)</div>
                         </div>
                         <div class="mb-3">
                             <label for="minPrice" class="form-label">Minimum Cart Value</label>
-                            <input type="number" class="form-control" id="minPrice" name="minPrice" min="0" required>
+                            <input type="number" class="form-control" id="minPrice" name="minPrice"
+                                   min="0" step="0.01" required>
                         </div>
                         <div class="mb-3">
                             <label for="maxPrice" class="form-label">Maximum Discount Applicable (for percentage)</label>
-                            <input type="number" class="form-control" id="maxPrice" name="maxPrice" min="0">
+                            <input type="number" class="form-control" id="maxPrice" name="maxPrice"
+                                   min="0" step="0.01">
                             <div class="form-text">Leave empty for no maximum limit</div>
                         </div>
                         <div class="mb-3">
                             <label for="usageLimit" class="form-label">Usage Limit</label>
-                            <input type="number" class="form-control" id="usageLimit" name="limit" min="1">
+                            <input type="number" class="form-control" id="usageLimit" name="limit"
+                                   min="1" step="1">
                             <div class="form-text">Leave empty for unlimited usage</div>
                         </div>
                         <div class="row mb-3">
@@ -397,7 +405,10 @@
                         <input type="hidden" id="editCouponId" name="id">
                         <div class="mb-3">
                             <label for="editCouponCode" class="form-label">Coupon Code</label>
-                            <input type="text" class="form-control" id="editCouponCode" name="code" required>
+                            <input type="text" class="form-control" id="editCouponCode" name="code"
+                                   pattern="[a-zA-Z0-9]+" title="Only letters and numbers allowed"
+                                   required>
+                            <div class="form-text">Only letters and numbers allowed (no spaces or special characters)</div>
                         </div>
                         <div class="mb-3">
                             <label for="editDiscountType" class="form-label">Discount Type</label>
@@ -408,19 +419,26 @@
                         </div>
                         <div class="mb-3">
                             <label for="editDiscountValue" class="form-label">Discount Value</label>
-                            <input type="number" class="form-control" id="editDiscountValue" name="value" min="1" required>
+                            <input type="number" class="form-control" id="editDiscountValue" name="value"
+                                   min="1" max="100" step="0.01" required>
+                            <div class="form-text" id="editValueHelp">Enter percentage (e.g., 10) or fixed amount (e.g., 5)</div>
                         </div>
                         <div class="mb-3">
                             <label for="editMinPrice" class="form-label">Minimum Cart Value</label>
-                            <input type="number" class="form-control" id="editMinPrice" name="minPrice" min="0" required>
+                            <input type="number" class="form-control" id="editMinPrice" name="minPrice"
+                                   min="0" step="0.01" required>
                         </div>
                         <div class="mb-3">
                             <label for="editMaxPrice" class="form-label">Maximum Discount Applicable (for percentage)</label>
-                            <input type="number" class="form-control" id="editMaxPrice" name="maxPrice" min="0">
+                            <input type="number" class="form-control" id="editMaxPrice" name="maxPrice"
+                                   min="0" step="0.01">
+                            <div class="form-text">Leave empty for no maximum limit</div>
                         </div>
                         <div class="mb-3">
                             <label for="editUsageLimit" class="form-label">Usage Limit</label>
-                            <input type="number" class="form-control" id="editUsageLimit" name="limit" min="1">
+                            <input type="number" class="form-control" id="editUsageLimit" name="limit"
+                                   min="1" step="1">
+                            <div class="form-text">Leave empty for unlimited usage</div>
                         </div>
                         <div class="row mb-3">
                             <div class="col-md-6">
@@ -463,6 +481,84 @@
             $('#addCouponForm').on('submit', function(e) {
                 e.preventDefault();
 
+                // Get form values
+                const code = $('#couponCode').val().trim();
+                const discountType = $('#discountType').val();
+                const value = parseFloat($('#discountValue').val());
+                const minPrice = parseFloat($('#minPrice').val());
+                const maxPrice = $('#maxPrice').val() ? parseFloat($('#maxPrice').val()) : null;
+                const limit = $('#usageLimit').val() ? parseInt($('#usageLimit').val()) : null;
+                const startDate = $('#startDate').val();
+                const expiryDate = $('#expiryDate').val();
+
+                // Client-side validation
+                let isValid = true;
+                let errorMessage = '';
+
+                // Validate coupon code
+                if (!code) {
+                    isValid = false;
+                    errorMessage = 'Coupon code is required';
+                } else if (!/^[a-zA-Z0-9]+$/.test(code)) {
+                    isValid = false;
+                    errorMessage = 'Coupon code must contain only letters and numbers';
+                }
+
+                // Validate discount value
+                if (isNaN(value) || value <= 0) {
+                    isValid = false;
+                    errorMessage = 'Discount value must be a positive number';
+                } else if (discountType === 'percentage' && value > 100) {
+                    isValid = false;
+                    errorMessage = 'Percentage discount cannot exceed 100%';
+                }
+
+                // Validate minimum price
+                if (isNaN(minPrice) || minPrice < 0) {
+                    isValid = false;
+                    errorMessage = 'Minimum price must be a non-negative number';
+                }
+
+                // Validate maximum price (if provided)
+                if (maxPrice !== null) {
+                    if (isNaN(maxPrice) || maxPrice <= 0) {
+                        isValid = false;
+                        errorMessage = 'Maximum price must be a positive number';
+                    } else if (maxPrice <= minPrice) {
+                        isValid = false;
+                        errorMessage = 'Maximum price must be greater than minimum price';
+                    }
+                }
+
+                // Validate usage limit (if provided)
+                if (limit !== null && (isNaN(limit) || limit <= 0)) {
+                    isValid = false;
+                    errorMessage = 'Usage limit must be a positive integer';
+                }
+
+                // Validate dates
+                if (!startDate || !expiryDate) {
+                    isValid = false;
+                    errorMessage = 'Start date and expiry date are required';
+                } else {
+                    const parsedStartDate = new Date(startDate);
+                    const parsedExpiryDate = new Date(expiryDate);
+
+                    if (isNaN(parsedStartDate.getTime()) || isNaN(parsedExpiryDate.getTime())) {
+                        isValid = false;
+                        errorMessage = 'Invalid date format';
+                    } else if (parsedStartDate >= parsedExpiryDate) {
+                        isValid = false;
+                        errorMessage = 'Expiry date must be after start date';
+                    }
+                }
+
+                if (!isValid) {
+                    alert(errorMessage);
+                    return;
+                }
+
+                // Submit form if validation passes
                 $.ajax({
                     url: '/admin/add-coupon',
                     method: 'POST',
@@ -522,17 +618,33 @@
                 }
             });
 
-            // Update help text based on discount type
+            // Update help text and validation based on discount type
             $('#discountType').on('change', function() {
                 const type = $(this).val();
                 if (type === 'percentage') {
                     $('#valueHelp').text('Enter percentage (e.g., 10 for 10%)');
+                    $('#discountValue').attr('max', '100');
                     $('#maxPrice').closest('.mb-3').show();
                 } else {
                     $('#valueHelp').text('Enter fixed amount (e.g., 5 for $5)');
+                    $('#discountValue').removeAttr('max');
                     $('#maxPrice').closest('.mb-3').hide();
                 }
             }).trigger('change');
+
+            // Update help text and validation based on discount type for edit form
+            $('#editDiscountType').on('change', function() {
+                const type = $(this).val();
+                if (type === 'percentage') {
+                    $('#editValueHelp').text('Enter percentage (e.g., 10 for 10%)');
+                    $('#editDiscountValue').attr('max', '100');
+                    $('#editMaxPrice').closest('.mb-3').show();
+                } else {
+                    $('#editValueHelp').text('Enter fixed amount (e.g., 5 for $5)');
+                    $('#editDiscountValue').removeAttr('max');
+                    $('#editMaxPrice').closest('.mb-3').hide();
+                }
+            });
 
             // Initialize Flatpickr
             const startDatePicker = flatpickr("#startDate", {
@@ -588,18 +700,99 @@
                 editStartDatePicker.setDate(startDate);
                 editExpiryDatePicker.setDate(expiryDate);
 
+                // Trigger the discount type change to update UI
+                $('#editDiscountType').trigger('change');
+
                 $('#editCouponModal').modal('show');
             });
 
             // Submit edit coupon form
             $('#editCouponForm').on('submit', function (e) {
                 e.preventDefault();
+
+                // Get form values
+                const code = $('#editCouponCode').val().trim();
+                const discountType = $('#editDiscountType').val();
+                const value = parseFloat($('#editDiscountValue').val());
+                const minPrice = parseFloat($('#editMinPrice').val());
+                const maxPrice = $('#editMaxPrice').val() ? parseFloat($('#editMaxPrice').val()) : null;
+                const limit = $('#editUsageLimit').val() ? parseInt($('#editUsageLimit').val()) : null;
+                const startDate = $('#editStartDate').val();
+                const expiryDate = $('#editExpiryDate').val();
+
+                // Client-side validation
+                let isValid = true;
+                let errorMessage = '';
+
+                // Validate coupon code
+                if (!code) {
+                    isValid = false;
+                    errorMessage = 'Coupon code is required';
+                } else if (!/^[a-zA-Z0-9]+$/.test(code)) {
+                    isValid = false;
+                    errorMessage = 'Coupon code must contain only letters and numbers';
+                }
+
+                // Validate discount value
+                if (isNaN(value) || value <= 0) {
+                    isValid = false;
+                    errorMessage = 'Discount value must be a positive number';
+                } else if (discountType === 'percentage' && value > 100) {
+                    isValid = false;
+                    errorMessage = 'Percentage discount cannot exceed 100%';
+                }
+
+                // Validate minimum price
+                if (isNaN(minPrice) || minPrice < 0) {
+                    isValid = false;
+                    errorMessage = 'Minimum price must be a non-negative number';
+                }
+
+                // Validate maximum price (if provided)
+                if (maxPrice !== null) {
+                    if (isNaN(maxPrice) || maxPrice <= 0) {
+                        isValid = false;
+                        errorMessage = 'Maximum price must be a positive number';
+                    } else if (maxPrice <= minPrice) {
+                        isValid = false;
+                        errorMessage = 'Maximum price must be greater than minimum price';
+                    }
+                }
+
+                // Validate usage limit (if provided)
+                if (limit !== null && (isNaN(limit) || limit <= 0)) {
+                    isValid = false;
+                    errorMessage = 'Usage limit must be a positive integer';
+                }
+
+                // Validate dates
+                if (!startDate || !expiryDate) {
+                    isValid = false;
+                    errorMessage = 'Start date and expiry date are required';
+                } else {
+                    const parsedStartDate = new Date(startDate);
+                    const parsedExpiryDate = new Date(expiryDate);
+
+                    if (isNaN(parsedStartDate.getTime()) || isNaN(parsedExpiryDate.getTime())) {
+                        isValid = false;
+                        errorMessage = 'Invalid date format';
+                    } else if (parsedStartDate >= parsedExpiryDate) {
+                        isValid = false;
+                        errorMessage = 'Expiry date must be after start date';
+                    }
+                }
+
+                if (!isValid) {
+                    alert(errorMessage);
+                    return;
+                }
+
                 const now = new Date();
-                const startDate = new Date($('#editStartDate').val());
+                const parsedStartDate = new Date(startDate);
 
                 // Add isActive reset logic
                 const data = $(this).serializeArray();
-                if (startDate > now) {
+                if (parsedStartDate > now) {
                     data.push({ name: 'isActive', value: false });
                 }
 

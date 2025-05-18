@@ -12,7 +12,7 @@ exports.renderOffersPage = async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    res.render('admin/admin-offers', {
+    res.render('admin-offers', {
       title: 'All Offers',
       activePage: 'offers',
       offers,
@@ -35,7 +35,7 @@ exports.renderProductOffersPage = async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    res.render('admin/admin-product-offers', {
+    res.render('admin-product-offers', {
       title: 'Product Offers',
       activePage: 'product-offers',
       offers,
@@ -58,7 +58,7 @@ exports.renderCategoryOffersPage = async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    res.render('admin/admin-category-offers', {
+    res.render('admin-category-offers', {
       title: 'Category Offers',
       activePage: 'category-offers',
       offers,
@@ -81,7 +81,7 @@ exports.renderCreateProductOfferPage = async (req, res) => {
       .sort({ productName: 1 })
       .lean();
 
-    res.render('admin/admin-product-offer-create', {
+    res.render('admin-product-offer-create', {
       title: 'Create Product Offer',
       activePage: 'product-offers',
       products,
@@ -103,7 +103,7 @@ exports.renderCreateCategoryOfferPage = async (req, res) => {
       .sort({ name: 1 })
       .lean();
 
-    res.render('admin/admin-category-offer-create', {
+    res.render('admin-category-offer-create', {
       title: 'Create Category Offer',
       activePage: 'category-offers',
       categories,
@@ -146,7 +146,7 @@ exports.renderEditProductOfferPage = async (req, res) => {
     offer.startDateTimeFormatted = offer.startDate.toISOString().replace('Z', '').replace('T', ' ').substring(0, 16);
     offer.endDateTimeFormatted = offer.endDate.toISOString().replace('Z', '').replace('T', ' ').substring(0, 16);
 
-    res.render('admin/admin-product-offer-edit', {
+    res.render('admin-product-offer-edit', {
       title: 'Edit Product Offer',
       activePage: 'product-offers',
       offer,
@@ -190,7 +190,7 @@ exports.renderEditCategoryOfferPage = async (req, res) => {
     offer.startDateTimeFormatted = offer.startDate.toISOString().replace('Z', '').replace('T', ' ').substring(0, 16);
     offer.endDateTimeFormatted = offer.endDate.toISOString().replace('Z', '').replace('T', ' ').substring(0, 16);
 
-    res.render('admin/admin-category-offer-edit', {
+    res.render('admin-category-offer-edit', {
       title: 'Edit Category Offer',
       activePage: 'category-offers',
       offer,
@@ -224,6 +224,86 @@ exports.createProductOffer = async (req, res) => {
     // Validate required fields
     if (!name || !description || !discountType || !discountValue || !startDate || !endDate) {
       req.flash('error', 'Please fill all required fields');
+      return res.redirect('/admin/product-offers/create');
+    }
+
+    // Validate name (alphanumeric with spaces, min 3 chars, max 50 chars)
+    if (!/^[a-zA-Z0-9\s]{3,50}$/.test(name)) {
+      req.flash('error', 'Offer name must be 3-50 characters and contain only letters, numbers, and spaces');
+      return res.redirect('/admin/product-offers/create');
+    }
+
+    // Validate description (min 10 chars, max 200 chars)
+    if (description.length < 10 || description.length > 200) {
+      req.flash('error', 'Description must be between 10 and 200 characters');
+      return res.redirect('/admin/product-offers/create');
+    }
+
+    // Validate discount type
+    if (discountType !== 'percentage' && discountType !== 'fixed') {
+      req.flash('error', 'Invalid discount type. Must be percentage or fixed');
+      return res.redirect('/admin/product-offers/create');
+    }
+
+    // Validate discount value
+    const discountValueNum = parseFloat(discountValue);
+    if (isNaN(discountValueNum) || discountValueNum <= 0) {
+      req.flash('error', 'Discount value must be a positive number');
+      return res.redirect('/admin/product-offers/create');
+    }
+
+    // Validate percentage discount (max 100%)
+    if (discountType === 'percentage' && discountValueNum > 100) {
+      req.flash('error', 'Percentage discount cannot exceed 100%');
+      return res.redirect('/admin/product-offers/create');
+    }
+
+    // Validate max discount amount (if provided)
+    if (maxDiscountAmount) {
+      const maxDiscountAmountNum = parseFloat(maxDiscountAmount);
+      if (isNaN(maxDiscountAmountNum) || maxDiscountAmountNum <= 0) {
+        req.flash('error', 'Maximum discount amount must be a positive number');
+        return res.redirect('/admin/product-offers/create');
+      }
+    }
+
+    // Validate minimum purchase amount (if provided)
+    const minPurchaseAmountNum = minPurchaseAmount ? parseFloat(minPurchaseAmount) : 0;
+    if (isNaN(minPurchaseAmountNum) || minPurchaseAmountNum < 0) {
+      req.flash('error', 'Minimum purchase amount must be a non-negative number');
+      return res.redirect('/admin/product-offers/create');
+    }
+
+    // For fixed discount type, ensure minimum purchase amount is greater than the discount value
+    if (discountType === 'fixed' && minPurchaseAmountNum <= discountValueNum) {
+      req.flash('error', 'For fixed discount, minimum purchase amount must be greater than the discount value');
+      return res.redirect('/admin/product-offers/create');
+    }
+
+    // Validate dates
+    const parsedStartDate = new Date(startDate);
+    const parsedEndDate = new Date(endDate);
+    const now = new Date();
+
+    if (isNaN(parsedStartDate.getTime()) || isNaN(parsedEndDate.getTime())) {
+      req.flash('error', 'Invalid date format');
+      return res.redirect('/admin/product-offers/create');
+    }
+
+    if (parsedStartDate < now) {
+      req.flash('error', 'Start date cannot be in the past');
+      return res.redirect('/admin/product-offers/create');
+    }
+
+    if (parsedEndDate <= parsedStartDate) {
+      req.flash('error', 'End date must be after start date');
+      return res.redirect('/admin/product-offers/create');
+    }
+
+    // Validate offer duration (max 90 days)
+    const durationInDays = (parsedEndDate - parsedStartDate) / (1000 * 60 * 60 * 24);
+    if (durationInDays > 90) {
+      req.flash('error', 'Offer duration cannot exceed 90 days');
       return res.redirect('/admin/product-offers/create');
     }
 
@@ -305,6 +385,86 @@ exports.createCategoryOffer = async (req, res) => {
       return res.redirect('/admin/category-offers/create');
     }
 
+    // Validate name (alphanumeric with spaces, min 3 chars, max 50 chars)
+    if (!/^[a-zA-Z0-9\s]{3,50}$/.test(name)) {
+      req.flash('error', 'Offer name must be 3-50 characters and contain only letters, numbers, and spaces');
+      return res.redirect('/admin/category-offers/create');
+    }
+
+    // Validate description (min 10 chars, max 200 chars)
+    if (description.length < 10 || description.length > 200) {
+      req.flash('error', 'Description must be between 10 and 200 characters');
+      return res.redirect('/admin/category-offers/create');
+    }
+
+    // Validate discount type
+    if (discountType !== 'percentage' && discountType !== 'fixed') {
+      req.flash('error', 'Invalid discount type. Must be percentage or fixed');
+      return res.redirect('/admin/category-offers/create');
+    }
+
+    // Validate discount value
+    const discountValueNum = parseFloat(discountValue);
+    if (isNaN(discountValueNum) || discountValueNum <= 0) {
+      req.flash('error', 'Discount value must be a positive number');
+      return res.redirect('/admin/category-offers/create');
+    }
+
+    // Validate percentage discount (max 100%)
+    if (discountType === 'percentage' && discountValueNum > 100) {
+      req.flash('error', 'Percentage discount cannot exceed 100%');
+      return res.redirect('/admin/category-offers/create');
+    }
+
+    // Validate max discount amount (if provided)
+    if (maxDiscountAmount) {
+      const maxDiscountAmountNum = parseFloat(maxDiscountAmount);
+      if (isNaN(maxDiscountAmountNum) || maxDiscountAmountNum <= 0) {
+        req.flash('error', 'Maximum discount amount must be a positive number');
+        return res.redirect('/admin/category-offers/create');
+      }
+    }
+
+    // Validate minimum purchase amount (if provided)
+    const minPurchaseAmountNum = minPurchaseAmount ? parseFloat(minPurchaseAmount) : 0;
+    if (isNaN(minPurchaseAmountNum) || minPurchaseAmountNum < 0) {
+      req.flash('error', 'Minimum purchase amount must be a non-negative number');
+      return res.redirect('/admin/category-offers/create');
+    }
+
+    // For fixed discount type, ensure minimum purchase amount is greater than the discount value
+    if (discountType === 'fixed' && minPurchaseAmountNum <= discountValueNum) {
+      req.flash('error', 'For fixed discount, minimum purchase amount must be greater than the discount value');
+      return res.redirect('/admin/category-offers/create');
+    }
+
+    // Validate dates
+    const parsedStartDate = new Date(startDate);
+    const parsedEndDate = new Date(endDate);
+    const now = new Date();
+
+    if (isNaN(parsedStartDate.getTime()) || isNaN(parsedEndDate.getTime())) {
+      req.flash('error', 'Invalid date format');
+      return res.redirect('/admin/category-offers/create');
+    }
+
+    if (parsedStartDate < now) {
+      req.flash('error', 'Start date cannot be in the past');
+      return res.redirect('/admin/category-offers/create');
+    }
+
+    if (parsedEndDate <= parsedStartDate) {
+      req.flash('error', 'End date must be after start date');
+      return res.redirect('/admin/category-offers/create');
+    }
+
+    // Validate offer duration (max 90 days)
+    const durationInDays = (parsedEndDate - parsedStartDate) / (1000 * 60 * 60 * 24);
+    if (durationInDays > 90) {
+      req.flash('error', 'Offer duration cannot exceed 90 days');
+      return res.redirect('/admin/category-offers/create');
+    }
+
     // Validate category selection
     if (!applicableCategories || (Array.isArray(applicableCategories) && applicableCategories.length === 0)) {
       req.flash('error', 'Please select at least one category');
@@ -382,6 +542,81 @@ exports.updateProductOffer = async (req, res) => {
     // Validate required fields
     if (!name || !description || !discountType || !discountValue || !startDate || !endDate) {
       req.flash('error', 'Please fill all required fields');
+      return res.redirect(`/admin/product-offers/edit/${id}`);
+    }
+
+    // Validate name (alphanumeric with spaces, min 3 chars, max 50 chars)
+    if (!/^[a-zA-Z0-9\s]{3,50}$/.test(name)) {
+      req.flash('error', 'Offer name must be 3-50 characters and contain only letters, numbers, and spaces');
+      return res.redirect(`/admin/product-offers/edit/${id}`);
+    }
+
+    // Validate description (min 10 chars, max 200 chars)
+    if (description.length < 10 || description.length > 200) {
+      req.flash('error', 'Description must be between 10 and 200 characters');
+      return res.redirect(`/admin/product-offers/edit/${id}`);
+    }
+
+    // Validate discount type
+    if (discountType !== 'percentage' && discountType !== 'fixed') {
+      req.flash('error', 'Invalid discount type. Must be percentage or fixed');
+      return res.redirect(`/admin/product-offers/edit/${id}`);
+    }
+
+    // Validate discount value
+    const discountValueNum = parseFloat(discountValue);
+    if (isNaN(discountValueNum) || discountValueNum <= 0) {
+      req.flash('error', 'Discount value must be a positive number');
+      return res.redirect(`/admin/product-offers/edit/${id}`);
+    }
+
+    // Validate percentage discount (max 100%)
+    if (discountType === 'percentage' && discountValueNum > 100) {
+      req.flash('error', 'Percentage discount cannot exceed 100%');
+      return res.redirect(`/admin/product-offers/edit/${id}`);
+    }
+
+    // Validate max discount amount (if provided)
+    if (maxDiscountAmount) {
+      const maxDiscountAmountNum = parseFloat(maxDiscountAmount);
+      if (isNaN(maxDiscountAmountNum) || maxDiscountAmountNum <= 0) {
+        req.flash('error', 'Maximum discount amount must be a positive number');
+        return res.redirect(`/admin/product-offers/edit/${id}`);
+      }
+    }
+
+    // Validate minimum purchase amount (if provided)
+    const minPurchaseAmountNum = minPurchaseAmount ? parseFloat(minPurchaseAmount) : 0;
+    if (isNaN(minPurchaseAmountNum) || minPurchaseAmountNum < 0) {
+      req.flash('error', 'Minimum purchase amount must be a non-negative number');
+      return res.redirect(`/admin/product-offers/edit/${id}`);
+    }
+
+    // For fixed discount type, ensure minimum purchase amount is greater than the discount value
+    if (discountType === 'fixed' && minPurchaseAmountNum <= discountValueNum) {
+      req.flash('error', 'For fixed discount, minimum purchase amount must be greater than the discount value');
+      return res.redirect(`/admin/product-offers/edit/${id}`);
+    }
+
+    // Validate dates
+    const parsedStartDate = new Date(startDate);
+    const parsedEndDate = new Date(endDate);
+    const now = new Date();
+
+    if (isNaN(parsedStartDate.getTime()) || isNaN(parsedEndDate.getTime())) {
+      req.flash('error', 'Invalid date format');
+      return res.redirect(`/admin/product-offers/edit/${id}`);
+    }
+
+    if (parsedEndDate <= parsedStartDate) {
+      req.flash('error', 'End date must be after start date');
+      return res.redirect(`/admin/product-offers/edit/${id}`);
+    }
+
+    // Validate offer duration (max 90 days)
+    const durationInDays = (parsedEndDate - parsedStartDate) / (1000 * 60 * 60 * 24);
+    if (durationInDays > 90) {
+      req.flash('error', 'Offer duration cannot exceed 90 days');
       return res.redirect(`/admin/product-offers/edit/${id}`);
     }
 
@@ -485,6 +720,81 @@ exports.updateCategoryOffer = async (req, res) => {
     // Validate required fields
     if (!name || !description || !discountType || !discountValue || !startDate || !endDate) {
       req.flash('error', 'Please fill all required fields');
+      return res.redirect(`/admin/category-offers/edit/${id}`);
+    }
+
+    // Validate name (alphanumeric with spaces, min 3 chars, max 50 chars)
+    if (!/^[a-zA-Z0-9\s]{3,50}$/.test(name)) {
+      req.flash('error', 'Offer name must be 3-50 characters and contain only letters, numbers, and spaces');
+      return res.redirect(`/admin/category-offers/edit/${id}`);
+    }
+
+    // Validate description (min 10 chars, max 200 chars)
+    if (description.length < 10 || description.length > 200) {
+      req.flash('error', 'Description must be between 10 and 200 characters');
+      return res.redirect(`/admin/category-offers/edit/${id}`);
+    }
+
+    // Validate discount type
+    if (discountType !== 'percentage' && discountType !== 'fixed') {
+      req.flash('error', 'Invalid discount type. Must be percentage or fixed');
+      return res.redirect(`/admin/category-offers/edit/${id}`);
+    }
+
+    // Validate discount value
+    const discountValueNum = parseFloat(discountValue);
+    if (isNaN(discountValueNum) || discountValueNum <= 0) {
+      req.flash('error', 'Discount value must be a positive number');
+      return res.redirect(`/admin/category-offers/edit/${id}`);
+    }
+
+    // Validate percentage discount (max 100%)
+    if (discountType === 'percentage' && discountValueNum > 100) {
+      req.flash('error', 'Percentage discount cannot exceed 100%');
+      return res.redirect(`/admin/category-offers/edit/${id}`);
+    }
+
+    // Validate max discount amount (if provided)
+    if (maxDiscountAmount) {
+      const maxDiscountAmountNum = parseFloat(maxDiscountAmount);
+      if (isNaN(maxDiscountAmountNum) || maxDiscountAmountNum <= 0) {
+        req.flash('error', 'Maximum discount amount must be a positive number');
+        return res.redirect(`/admin/category-offers/edit/${id}`);
+      }
+    }
+
+    // Validate minimum purchase amount (if provided)
+    const minPurchaseAmountNum = minPurchaseAmount ? parseFloat(minPurchaseAmount) : 0;
+    if (isNaN(minPurchaseAmountNum) || minPurchaseAmountNum < 0) {
+      req.flash('error', 'Minimum purchase amount must be a non-negative number');
+      return res.redirect(`/admin/category-offers/edit/${id}`);
+    }
+
+    // For fixed discount type, ensure minimum purchase amount is greater than the discount value
+    if (discountType === 'fixed' && minPurchaseAmountNum <= discountValueNum) {
+      req.flash('error', 'For fixed discount, minimum purchase amount must be greater than the discount value');
+      return res.redirect(`/admin/category-offers/edit/${id}`);
+    }
+
+    // Validate dates
+    const parsedStartDate = new Date(startDate);
+    const parsedEndDate = new Date(endDate);
+    const now = new Date();
+
+    if (isNaN(parsedStartDate.getTime()) || isNaN(parsedEndDate.getTime())) {
+      req.flash('error', 'Invalid date format');
+      return res.redirect(`/admin/category-offers/edit/${id}`);
+    }
+
+    if (parsedEndDate <= parsedStartDate) {
+      req.flash('error', 'End date must be after start date');
+      return res.redirect(`/admin/category-offers/edit/${id}`);
+    }
+
+    // Validate offer duration (max 90 days)
+    const durationInDays = (parsedEndDate - parsedStartDate) / (1000 * 60 * 60 * 24);
+    if (durationInDays > 90) {
+      req.flash('error', 'Offer duration cannot exceed 90 days');
       return res.redirect(`/admin/category-offers/edit/${id}`);
     }
 

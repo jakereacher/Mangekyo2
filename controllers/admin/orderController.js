@@ -677,16 +677,22 @@ exports.getReturnRequests = async (req, res) => {
       return res.status(StatusCodes.UNAUTHORIZED).redirect("/admin/login");
     }
 
+    // Pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
     // Find all orders with items that have return requests
     const orders = await Order.find({
       "orderedItems.status": "Return Request",
     })
       .populate("userId", "email fullName")
       .populate("orderedItems.product")
+      .sort({ orderDate: -1 })
       .lean();
 
     // Format the return requests for display
-    const returnRequests = [];
+    let returnRequests = [];
     orders.forEach((order) => {
       order.orderedItems.forEach((item) => {
         if (item.status === "Return Request") {
@@ -699,7 +705,7 @@ exports.getReturnRequests = async (req, res) => {
             productName: item.product.productName,
             productImage:
               item.product.productImage && item.product.productImage.length > 0
-                ? item.product.productImage[0]
+                ? `/uploads/product-images/${item.product.productImage[0]}`
                 : "/images/default-product.jpg",
             quantity: item.quantity,
             price: item.price,
@@ -710,11 +716,32 @@ exports.getReturnRequests = async (req, res) => {
       });
     });
 
+    // Get total count for pagination
+    const totalItems = returnRequests.length;
+
+    // Apply pagination to the formatted requests
+    returnRequests = returnRequests.slice(skip, skip + limit);
+
+    // Calculate pagination values
+    const totalPages = Math.ceil(totalItems / limit);
+
+    // Build search params for pagination links
+    const searchParams = req.query.search ? `&search=${encodeURIComponent(req.query.search)}` : '';
+    const searchParamsWithoutLimit = req.query.search ? `&search=${encodeURIComponent(req.query.search)}` : '';
+
     res.render("admin-return-requests", {
       returnRequests,
       admin: { id: adminId },
       csrfToken: req.csrfToken ? req.csrfToken() : "",
       activePage: "returns",
+      pagination: {
+        currentPage: page,
+        totalPages: totalPages,
+        totalItems: totalItems,
+        limit: limit,
+        searchParams: searchParams + (limit !== 10 ? `&limit=${limit}` : ''),
+        searchParamsWithoutLimit: searchParamsWithoutLimit
+      }
     });
   } catch (error) {
     logger.error("Error fetching return requests", { error: error.message, stack: error.stack });

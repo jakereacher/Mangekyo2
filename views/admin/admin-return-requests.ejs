@@ -3,198 +3,227 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Return Requests - Admin Panel</title>
-    <link rel="stylesheet" href="/css/bootstrap.min.css">
-    <link rel="stylesheet" href="/css/admin.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.css">
+    <title>Return Requests | Mangeyko</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f8f9fa;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
+        .status-pending {
+            background-color: #fff9c4;
+            color: #f57f17;
         }
-        .navbar {
-            background-color: #333;
-            color: #fff;
-            padding: 10px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .pagination-link {
+            transition: all 0.3s ease;
         }
-        .navbar a {
-            color: #fff;
-            text-decoration: none;
-            margin-left: 20px;
-            transition: color 0.3s;
-        }
-        .navbar a:hover {
-            color: #f0ad4e;
-        }
-        .nav-links {
-            display: flex;
-            align-items: center;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 2rem auto;
-            padding: 0 15px;
-            flex: 1;
-        }
-        .card {
-            border: none;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            margin-bottom: 1.5rem;
-            background-color: #fff;
-        }
-        .card-header {
-            background-color: #007bff;
-            color: white;
-            font-weight: 500;
-            padding: 1rem;
-            border-radius: 8px 8px 0 0;
-        }
-        .card-body {
-            padding: 1.5rem;
-        }
-        .table {
-            background-color: #fff;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        .table thead th {
-            background-color: #f1f3f5;
-            color: #343a40;
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 0.85rem;
-            padding: 1rem;
-        }
-        .table tbody tr:hover {
-            background-color: #f8f9fa;
-        }
-        .btn-group .btn {
-            margin-right: 5px;
-            padding: 0.5rem 1rem;
-            font-size: 0.9rem;
-            border-radius: 4px;
-            transition: background-color 0.3s ease;
-        }
-        .btn-approve {
-            background-color: #28a745;
-            color: white;
-        }
-        .btn-approve:hover {
-            background-color: #218838;
-        }
-        .btn-reject {
-            background-color: #dc3545;
-            color: white;
-        }
-        .btn-reject:hover {
-            background-color: #c82333;
-        }
-        footer {
-            background-color: #343a40;
-            color: #fff;
-            padding: 1rem 0;
-            text-align: center;
-            font-size: 0.9rem;
-            margin-top: auto;
+        .pagination-link:hover {
+            transform: translateY(-1px);
         }
     </style>
 </head>
-<body>
+<body class="bg-gray-50">
     <!-- Navbar -->
-    <nav class="navbar">
-        <a class="navbar-brand" href="/admin/dashboard">Admin Panel</a>
-        <div class="nav-links">
-            <a href="/admin/orders">Orders</a>
-            <a href="/admin/products">Products</a>
-            <a href="/admin/users">Users</a>
-            <a href="/admin/logout">Logout</a>
+    <nav class="bg-gray-800 text-white py-4">
+        <div class="container mx-auto flex justify-between items-center px-4">
+            <a href="/admin/dashboard" class="text-lg font-bold">Admin Panel</a>
+            <ul class="flex space-x-6">
+                <li><a href="/admin/orders" class="hover:text-gray-300">Orders</a></li>
+                <li><a href="/admin/products" class="hover:text-gray-300">Products</a></li>
+                <li><a href="/admin/category" class="hover:text-gray-300">Categories</a></li>
+                <li><a href="/admin/users" class="hover:text-gray-300">Users</a></li>
+                <li><a href="/admin/return-requests" class="hover:text-gray-300 border-b-2 border-blue-500 pb-1">Return Requests</a></li>
+                <li><a href="/admin/logout" class="hover:text-gray-300">Logout</a></li>
+            </ul>
         </div>
     </nav>
 
-    <!-- Main Content -->
-    <div class="container mt-5">
-        <h2 class="mb-4">Return Requests</h2>
-
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold flex items-center">
+                <i class="fas fa-exchange-alt mr-2"></i> Return Requests
+            </h1>
+            <a href="/admin/orders" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+                <i class="fas fa-shopping-cart mr-2"></i> View All Orders
+            </a>
+        </div>
+        
         <% if (returnRequests.length === 0) { %>
-            <div class="alert alert-info">
-                No return requests found.
+            <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-6 rounded" role="alert">
+                <p class="font-medium">No return requests found.</p>
+                <p>When customers request returns, they will appear here.</p>
             </div>
         <% } else { %>
-            <div class="card">
-                <div class="card-header">
-                    <h5>Pending Return Requests</h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-bordered">
-                            <thead>
-                                <tr>
-                                    <th>Order ID</th>
-                                    <th>Product</th>
-                                    <th>Image</th>
-                                    <th>Customer</th>
-                                    <th>Quantity</th>
-                                    <th>Price</th>
-                                    <th>Return Reason</th>
-                                    <th>Request Date</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <% returnRequests.forEach(request => { %>
-                                    <tr>
-                                        <td><a href="/admin/orders/<%= request.orderId %>"><%= request.orderId %></a></td>
-                                        <td><%= request.productName %></td>
-                                        <td>
-                                            <img src="<%= request.productImage %>" alt="<%= request.productName %>" style="width: 50px; height: auto;">
-                                        </td>
-                                        <td><%= request.customerName %><br><small><%= request.customerEmail %></small></td>
-                                        <td><%= request.quantity %></td>
-                                        <td>₹<%= request.price.toFixed(2) %></td>
-                                        <td><%= request.returnReason %></td>
-                                        <td><%= request.returnRequestDate %></td>
-                                        <td>
-                                            <div class="btn-group">
-                                                <button class="btn btn-approve btn-approve-return" data-order-id="<%= request.orderId %>" data-product-id="<%= request.productId %>">
-                                                    Approve
-                                                </button>
-                                                <button class="btn btn-reject btn-reject-return" data-order-id="<%= request.orderId %>" data-product-id="<%= request.productId %>">
-                                                    Reject
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                <% }) %>
-                            </tbody>
-                        </table>
+            <!-- Return Requests Table -->
+            <div class="bg-white p-6 rounded-lg shadow-sm mb-6 overflow-x-auto">
+                <h2 class="text-xl font-semibold mb-4">Pending Return Requests</h2>
+                <table class="w-full min-w-max">
+                    <thead>
+                        <tr class="border-b">
+                            <th class="py-3 px-2 text-left">Order ID</th>
+                            <th class="py-3 px-2 text-left">Product</th>
+                            <th class="py-3 px-2 text-left">Customer</th>
+                            <th class="py-3 px-2 text-left">Quantity</th>
+                            <th class="py-3 px-2 text-left">Price</th>
+                            <th class="py-3 px-2 text-left">Return Reason</th>
+                            <th class="py-3 px-2 text-left">Request Date</th>
+                            <th class="py-3 px-2 text-left">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% returnRequests.forEach(request => { %>
+                            <tr class="border-b hover:bg-gray-50">
+                                <td class="py-3 px-2">
+                                    <a href="/admin/orders/<%= request.orderId %>" class="text-blue-600 hover:text-blue-800 hover:underline">
+                                        <%= request.orderId %>
+                                    </a>
+                                </td>
+                                <td class="py-3 px-2">
+                                    <div class="flex items-center">
+                                        <img src="<%= request.productImage %>" alt="<%= request.productName %>" class="w-12 h-12 object-cover rounded mr-3">
+                                        <div>
+                                            <div class="font-medium"><%= request.productName %></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-3 px-2">
+                                    <div class="font-medium"><%= request.customerName %></div>
+                                    <div class="text-sm text-gray-500"><%= request.customerEmail %></div>
+                                </td>
+                                <td class="py-3 px-2"><%= request.quantity %></td>
+                                <td class="py-3 px-2">₹<%= request.price.toFixed(2) %></td>
+                                <td class="py-3 px-2">
+                                    <span class="px-3 py-1 rounded-full text-sm font-medium status-pending">
+                                        <%= request.returnReason %>
+                                    </span>
+                                </td>
+                                <td class="py-3 px-2"><%= request.returnRequestDate %></td>
+                                <td class="py-3 px-2">
+                                    <div class="flex flex-col space-y-2">
+                                        <button 
+                                            class="text-green-600 hover:text-green-800 hover:underline flex items-center approve-return-btn"
+                                            data-order-id="<%= request.orderId %>"
+                                            data-product-id="<%= request.productId %>">
+                                            <i class="fas fa-check-circle mr-1"></i> Approve
+                                        </button>
+                                        <button 
+                                            class="text-red-600 hover:text-red-800 hover:underline flex items-center reject-return-btn"
+                                            data-order-id="<%= request.orderId %>"
+                                            data-product-id="<%= request.productId %>">
+                                            <i class="fas fa-times-circle mr-1"></i> Reject
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination (if needed) -->
+            <% if (pagination && pagination.totalPages > 1) { %>
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="text-sm text-gray-600">
+                        Showing <span class="font-medium"><%= (pagination.currentPage - 1) * pagination.limit + 1 %></span> to 
+                        <span class="font-medium"><%= Math.min(pagination.currentPage * pagination.limit, pagination.totalItems) %></span> of 
+                        <span class="font-medium"><%= pagination.totalItems %></span> requests
+                    </div>
+                    
+                    <div class="flex items-center gap-1">
+                        <!-- First Page -->
+                        <% if (pagination.currentPage > 1) { %>
+                            <a href="?page=1<%= pagination.searchParams %>" 
+                               class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
+                                <i class="fas fa-angle-double-left"></i>
+                            </a>
+                        <% } else { %>
+                            <span class="px-3 py-1 rounded border text-gray-400 cursor-not-allowed">
+                                <i class="fas fa-angle-double-left"></i>
+                            </span>
+                        <% } %>
+                        
+                        <!-- Previous Page -->
+                        <% if (pagination.currentPage > 1) { %>
+                            <a href="?page=<%= pagination.currentPage - 1 %><%= pagination.searchParams %>" 
+                               class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
+                                <i class="fas fa-angle-left"></i>
+                            </a>
+                        <% } else { %>
+                            <span class="px-3 py-1 rounded border text-gray-400 cursor-not-allowed">
+                                <i class="fas fa-angle-left"></i>
+                            </span>
+                        <% } %>
+                        
+                        <!-- Page Numbers -->
+                        <% 
+                        const maxVisiblePages = 5;
+                        let startPage = Math.max(1, pagination.currentPage - Math.floor(maxVisiblePages / 2));
+                        let endPage = Math.min(pagination.totalPages, startPage + maxVisiblePages - 1);
+                        
+                        if (endPage - startPage + 1 < maxVisiblePages) {
+                            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                        }
+                        
+                        for (let i = startPage; i <= endPage; i++) { 
+                        %>
+                            <% if (i === pagination.currentPage) { %>
+                                <span class="px-3 py-1 rounded border bg-blue-600 text-white font-medium">
+                                    <%= i %>
+                                </span>
+                            <% } else { %>
+                                <a href="?page=<%= i %><%= pagination.searchParams %>" 
+                                   class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
+                                    <%= i %>
+                                </a>
+                            <% } %>
+                        <% } %>
+                        
+                        <!-- Next Page -->
+                        <% if (pagination.currentPage < pagination.totalPages) { %>
+                            <a href="?page=<%= pagination.currentPage + 1 %><%= pagination.searchParams %>" 
+                               class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
+                                <i class="fas fa-angle-right"></i>
+                            </a>
+                        <% } else { %>
+                            <span class="px-3 py-1 rounded border text-gray-400 cursor-not-allowed">
+                                <i class="fas fa-angle-right"></i>
+                            </span>
+                        <% } %>
+                        
+                        <!-- Last Page -->
+                        <% if (pagination.currentPage < pagination.totalPages) { %>
+                            <a href="?page=<%= pagination.totalPages %><%= pagination.searchParams %>" 
+                               class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
+                                <i class="fas fa-angle-double-right"></i>
+                            </a>
+                        <% } else { %>
+                            <span class="px-3 py-1 rounded border text-gray-400 cursor-not-allowed">
+                                <i class="fas fa-angle-double-right"></i>
+                            </span>
+                        <% } %>
+                    </div>
+                    
+                    <!-- Items per page selector -->
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm text-gray-600">Items per page:</span>
+                        <select onchange="window.location.href='?page=1&limit=' + this.value + '<%= pagination.searchParamsWithoutLimit %>'" 
+                                class="border rounded px-2 py-1 text-sm">
+                            <option value="10" <%= pagination.limit == 10 ? 'selected' : '' %>>10</option>
+                            <option value="25" <%= pagination.limit == 25 ? 'selected' : '' %>>25</option>
+                            <option value="50" <%= pagination.limit == 50 ? 'selected' : '' %>>50</option>
+                            <option value="100" <%= pagination.limit == 100 ? 'selected' : '' %>>100</option>
+                        </select>
                     </div>
                 </div>
-            </div>
+            <% } %>
         <% } %>
     </div>
 
-    <!-- Footer -->
-    <footer class="bg-dark text-white text-center py-3 mt-5">
-        <p>© 2025 Admin Panel. All rights reserved.</p>
-    </footer>
-
-    <!-- Scripts -->
-    <script src="/js/bootstrap.bundle.min.js"></script>
+    <!-- SweetAlert2 for dialogs -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.all.min.js"></script>
     <script>
         // Approve Return Request
-        document.querySelectorAll('.btn-approve-return').forEach(button => {
+        document.querySelectorAll('.approve-return-btn').forEach(button => {
             button.addEventListener('click', async (e) => {
-                const orderId = e.target.dataset.orderId;
-                const productId = e.target.dataset.productId;
+                const orderId = e.target.closest('button').dataset.orderId;
+                const productId = e.target.closest('button').dataset.productId;
 
                 // Show confirmation dialog
                 const result = await Swal.fire({
@@ -202,8 +231,8 @@
                     text: 'This will approve the return request and process a refund to the customer\'s wallet.',
                     icon: 'question',
                     showCancelButton: true,
-                    confirmButtonColor: '#28a745',
-                    cancelButtonColor: '#6c757d',
+                    confirmButtonColor: '#10B981',
+                    cancelButtonColor: '#6B7280',
                     confirmButtonText: 'Yes, approve it!'
                 });
 
@@ -238,7 +267,7 @@
                                 title: 'Return Approved!',
                                 text: 'The return request has been approved and refund processed.',
                                 icon: 'success',
-                                confirmButtonColor: '#28a745'
+                                confirmButtonColor: '#10B981'
                             }).then(() => {
                                 // Reload the page to refresh the list
                                 window.location.reload();
@@ -249,7 +278,7 @@
                                 title: 'Error',
                                 text: result.message || 'Failed to approve return',
                                 icon: 'error',
-                                confirmButtonColor: '#3085d6'
+                                confirmButtonColor: '#3B82F6'
                             });
                         }
                     } catch (error) {
@@ -258,7 +287,7 @@
                             title: 'Error',
                             text: 'Error approving return: ' + error.message,
                             icon: 'error',
-                            confirmButtonColor: '#3085d6'
+                            confirmButtonColor: '#3B82F6'
                         });
                     }
                 }
@@ -266,10 +295,10 @@
         });
 
         // Reject Return Request
-        document.querySelectorAll('.btn-reject-return').forEach(button => {
+        document.querySelectorAll('.reject-return-btn').forEach(button => {
             button.addEventListener('click', async (e) => {
-                const orderId = e.target.dataset.orderId;
-                const productId = e.target.dataset.productId;
+                const orderId = e.target.closest('button').dataset.orderId;
+                const productId = e.target.closest('button').dataset.productId;
 
                 // Show input dialog for rejection reason
                 const { value: adminResponse } = await Swal.fire({
@@ -281,8 +310,8 @@
                         'aria-label': 'Reason for rejection'
                     },
                     showCancelButton: true,
-                    confirmButtonColor: '#dc3545',
-                    cancelButtonColor: '#6c757d',
+                    confirmButtonColor: '#EF4444',
+                    cancelButtonColor: '#6B7280',
                     confirmButtonText: 'Reject Return',
                     inputValidator: (value) => {
                         if (!value) {
@@ -322,7 +351,7 @@
                                 title: 'Return Rejected!',
                                 text: 'The return request has been rejected.',
                                 icon: 'success',
-                                confirmButtonColor: '#28a745'
+                                confirmButtonColor: '#10B981'
                             }).then(() => {
                                 // Reload the page to refresh the list
                                 window.location.reload();
@@ -333,7 +362,7 @@
                                 title: 'Error',
                                 text: result.message || 'Failed to reject return',
                                 icon: 'error',
-                                confirmButtonColor: '#3085d6'
+                                confirmButtonColor: '#3B82F6'
                             });
                         }
                     } catch (error) {
@@ -342,7 +371,7 @@
                             title: 'Error',
                             text: 'Error rejecting return: ' + error.message,
                             icon: 'error',
-                            confirmButtonColor: '#3085d6'
+                            confirmButtonColor: '#3B82F6'
                         });
                     }
                 }
