@@ -218,11 +218,47 @@ const editProduct = async (req, res) => {
       return res.redirect("/admin/products?error=Product+not+found");
     }
 
-    const existingImages = product.productImage || [];
-    const validTypes = ['image/jpeg', 'image/png'];
+    // Handle removed images
+    // Create a completely new array for existing images
+    let existingImages = [];
 
+    // Only if removedImages is present in the request
+    if (req.body.removedImages) {
+      try {
+        const removedIndices = JSON.parse(req.body.removedImages);
+
+        // Loop through the original product images
+        for (let i = 0; i < product.productImage.length; i++) {
+          // If this index is NOT in the removedIndices array, keep the image
+          if (!removedIndices.includes(parseInt(i))) {
+            existingImages.push(product.productImage[i]);
+          }
+          // If this index IS in the removedIndices array, delete the file
+          else if (product.productImage[i]) {
+            const imagePath = path.join("public", "uploads", "product-images", product.productImage[i]);
+            try {
+              await fs.promises.unlink(imagePath);
+              console.log(`Deleted image: ${imagePath}`);
+            } catch (unlinkError) {
+              console.warn(`Failed to delete image ${imagePath}: ${unlinkError.message}`);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error processing removed images:", error);
+        // If there's an error, don't modify the images array
+        existingImages = [...product.productImage];
+      }
+    } else {
+      // If no removedImages in request, keep all existing images
+      existingImages = [...product.productImage];
+    }
+
+    // Process new images
+    const validTypes = ['image/jpeg', 'image/png'];
     const newImages = [];
     const imageFields = ['image1', 'image2', 'image3', 'image4'];
+
     for (let i = 0; i < imageFields.length; i++) {
       const fieldName = imageFields[i];
       const files = req.files && req.files[fieldName];
@@ -245,29 +281,40 @@ const editProduct = async (req, res) => {
           .resize({ width: 440, height: 440 })
           .toFile(resizedImagePath);
 
-        newImages[i] = "resized_" + file.filename;
+        newImages.push("resized_" + file.filename);
 
         try {
           await fs.promises.unlink(originalImagePath);
         } catch (unlinkError) {
           console.warn(`Failed to delete original image ${originalImagePath}: ${unlinkError.message}`);
         }
-
-        if (existingImages[i]) {
-          const oldImagePath = path.join("public", "uploads", "product-images", existingImages[i]);
-          try {
-            await fs.promises.unlink(oldImagePath);
-          } catch (unlinkError) {
-            console.warn(`Failed to delete old image ${oldImagePath}: ${unlinkError.message}`);
-          }
-        }
       }
     }
 
-    product.productImage = existingImages.map((img, index) => newImages[index] || img).filter(Boolean);
+    // Create a completely new array for the product images
+    const finalImages = [];
 
-    if (product.productImage.length < 3) {
-      return res.redirect(`/admin/edit-product/${productId}?error=Product+must+have+at+least+3+images`);
+    // Add only valid existing images
+    for (const img of existingImages) {
+      if (img && typeof img === 'string' && img.trim() !== '') {
+        finalImages.push(img);
+      }
+    }
+
+    // Add only valid new images
+    for (const img of newImages) {
+      if (img && typeof img === 'string' && img.trim() !== '') {
+        finalImages.push(img);
+      }
+    }
+
+    // Directly set the product's image array to our new clean array
+    // This completely replaces the old array, removing any references to deleted images
+    product.productImage = finalImages;
+
+    // Require at least one image
+    if (product.productImage.length < 1) {
+      return res.redirect(`/admin/edit-product/${productId}?error=Product+must+have+at+least+one+image`);
     }
 
     const categoryId = await Category.findOne({ name: products.category });

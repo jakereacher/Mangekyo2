@@ -6,6 +6,7 @@ const Wallet = require("../../models/walletSchema");
 const WalletTransaction = require("../../models/walletTransactionSchema");
 const Coupon = require("../../models/couponSchema");
 const StatusCodes = require("../../utils/httpStatusCodes");
+const { generateOrderNumber } = require("../../utils/orderNumberGenerator");
 const mongoose = require("mongoose");
 const { razorpayKeyId } = require("../../config/razorpay");
 const { processWalletPayment } = require("./walletController");
@@ -396,12 +397,23 @@ exports.placeOrder = async (req, res) => {
       console.log("Coupon data being saved:", orderData.coupon);
     }
 
+    // Generate a user-friendly order number
+    try {
+      const orderNumber = await generateOrderNumber();
+      orderData.orderNumber = orderNumber;
+      console.log("Generated order number:", orderNumber);
+    } catch (orderNumberError) {
+      console.error("Error generating order number:", orderNumberError);
+      // Continue without order number if there's an error
+    }
+
     const order = new Order(orderData);
 
     let newOrder;
     try {
       newOrder = await order.save();
       console.log("Order saved successfully:", newOrder._id);
+      console.log("Order number:", newOrder.orderNumber);
     } catch (saveError) {
       console.error("Error saving order:", saveError);
       return res.status(StatusCodes.BAD_REQUEST).json({
@@ -441,7 +453,7 @@ exports.placeOrder = async (req, res) => {
             userId,
             newOrder._id,
             finalAmount,
-            `Payment for order #${newOrder._id}`
+            `Payment for order ${newOrder.orderNumber || newOrder._id}`
           );
 
           console.log("Wallet payment processed:", paymentResult);

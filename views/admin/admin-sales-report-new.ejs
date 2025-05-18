@@ -6,7 +6,11 @@
         <div class="btn-toolbar mb-2 mb-md-0">
             <a href="/admin/sales-report/download?filter=<%= filters.filter %>&startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>&sortBy=<%= filters.sortBy %>&sortOrder=<%= filters.sortOrder %>"
                class="btn btn-sm btn-outline-secondary me-2">
-                <i class="fas fa-download"></i> Export CSV
+                <i class="fas fa-file-csv"></i> Export CSV
+            </a>
+            <a href="/admin/sales-report/download-pdf?filter=<%= filters.filter %>&startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>&sortBy=<%= filters.sortBy %>&sortOrder=<%= filters.sortOrder %>"
+               class="btn btn-sm btn-outline-danger me-2">
+                <i class="fas fa-file-pdf"></i> Export PDF
             </a>
             <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.print()">
                 <i class="fas fa-print"></i> Print
@@ -87,7 +91,10 @@
                     <button type="submit" class="btn btn-primary">Apply Filters</button>
                     <a href="/admin/sales-report" class="btn btn-secondary">Reset</a>
                     <a href="/admin/sales-report/download?<%= Object.entries(filters).map(([key, value]) => `${key}=${value}`).join('&') %>&limit=<%= pagination.limit %>" class="btn btn-success">
-                        <i class="fas fa-download"></i> Export CSV
+                        <i class="fas fa-file-csv"></i> Export CSV
+                    </a>
+                    <a href="/admin/sales-report/download-pdf?<%= Object.entries(filters).map(([key, value]) => `${key}=${value}`).join('&') %>&limit=<%= pagination.limit %>" class="btn btn-danger">
+                        <i class="fas fa-file-pdf"></i> Export PDF
                     </a>
                 </div>
             </form>

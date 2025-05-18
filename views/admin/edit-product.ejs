@@ -132,9 +132,19 @@
                             <div class="card-body">
                                 <div class="thumbnails-container">
                                     <% product.productImage.forEach((img, index) => { %>
-                                        <img src="/uploads/product-images/<%= img %>" class="existing-image" alt="Product Image <%= index + 1 %>">
+                                        <div class="position-relative" id="image-container-<%= index %>">
+                                            <img src="/uploads/product-images/<%= img %>" class="existing-image" alt="Product Image <%= index + 1 %>">
+                                            <button type="button" class="btn btn-sm btn-danger position-absolute"
+                                                    style="top: 0; right: 0; border-radius: 50%; padding: 0.25rem 0.5rem;"
+                                                    onclick="removeImage(<%= index %>, '<%= img %>')">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                            <input type="hidden" name="existingImages[]" value="<%= img %>">
+                                        </div>
                                     <% }) %>
                                 </div>
+                                <!-- Hidden input to track removed images -->
+                                <input type="hidden" id="removedImages" name="removedImages" value="">
                             </div>
                         </div>
                         <div class="card mb-2">
@@ -198,6 +208,37 @@
 
 <script>
     let currentCropper = null;
+    const removedImages = [];
+
+    // Function to remove an image
+    function removeImage(index, imageName) {
+        console.log(`Removing image at index ${index}: ${imageName}`);
+
+        // Add the index to the removed images array
+        removedImages.push(index);
+
+        // Update the hidden input with the indices of removed images
+        document.getElementById('removedImages').value = JSON.stringify(removedImages);
+
+        // Completely remove the image container from the DOM
+        const container = document.getElementById(`image-container-${index}`);
+        if (container) {
+            container.remove();
+        }
+
+        // Show a message if all images are removed
+        const remainingContainers = document.querySelectorAll('.thumbnails-container .position-relative');
+        if (remainingContainers.length === 0) {
+            // Clear the entire thumbnails container to remove any potential hidden elements
+            const thumbnailsContainer = document.querySelector('.thumbnails-container');
+            thumbnailsContainer.innerHTML = `
+                <div id="no-images-message" class="text-center py-3 w-100">
+                    <i class="fas fa-image fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-0">No images available</p>
+                </div>
+            `;
+        }
+    }
 
     function viewImage(event, index) {
         const input = event.target;

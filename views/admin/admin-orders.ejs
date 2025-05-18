@@ -62,7 +62,7 @@
                 <i class="fas fa-exchange-alt mr-2"></i> View Return Requests
             </a>
         </div>
-        
+
         <!-- Orders Table -->
         <div class="bg-white p-6 rounded-lg shadow-sm mb-6 overflow-x-auto">
             <table class="w-full min-w-max">
@@ -80,7 +80,7 @@
                     <% if (orders.length > 0) { %>
                         <% orders.forEach(order => { %>
                             <tr class="border-b hover:bg-gray-50">
-                                <td class="py-3 px-2"><%= order._id %></td>
+                                <td class="py-3 px-2"><%= order.displayOrderId || (order.orderNumber || order._id) %></td>
                                 <td class="py-3 px-2"><%= order.customerName %> (<%= order.customerEmail %>)</td>
                                 <td class="py-3 px-2"><%= order.formattedOrderDate %></td>
                                 <td class="py-3 px-2">
@@ -90,12 +90,12 @@
                                 </td>
                                 <td class="py-3 px-2">₹<%= order.finalAmount.toFixed(2) %></td>
                                 <td class="py-3 px-2">
-                                    <a href="/admin/orders/<%= order._id %>" 
+                                    <a href="/admin/orders/<%= order._id %>"
                                        class="text-blue-600 hover:text-blue-800 hover:underline flex items-center">
                                         <i class="fas fa-eye mr-1"></i> View
                                     </a>
                                     <% if (order.status === "Return Requested") { %>
-                                        <a href="/admin/return-requests" 
+                                        <a href="/admin/return-requests"
                                            class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded text-sm hover:bg-yellow-200">
                                             Return Requested
                                         </a>
@@ -115,15 +115,15 @@
         <!-- Pagination -->
         <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div class="text-sm text-gray-600">
-                Showing <span class="font-medium"><%= (pagination.currentPage - 1) * limit + 1 %></span> to 
-                <span class="font-medium"><%= Math.min(pagination.currentPage * limit, pagination.totalOrders) %></span> of 
+                Showing <span class="font-medium"><%= (pagination.currentPage - 1) * limit + 1 %></span> to
+                <span class="font-medium"><%= Math.min(pagination.currentPage * limit, pagination.totalOrders) %></span> of
                 <span class="font-medium"><%= pagination.totalOrders %></span> orders
             </div>
-            
+
             <div class="flex items-center gap-1">
                 <!-- First Page -->
                 <% if (pagination.currentPage > 1) { %>
-                    <a href="?page=1&limit=<%= limit %>" 
+                    <a href="?page=1&limit=<%= limit %>"
                        class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
                         <i class="fas fa-angle-double-left"></i>
                     </a>
@@ -132,10 +132,10 @@
                         <i class="fas fa-angle-double-left"></i>
                     </span>
                 <% } %>
-                
+
                 <!-- Previous Page -->
                 <% if (pagination.currentPage > 1) { %>
-                    <a href="?page=<%= pagination.currentPage - 1 %>&limit=<%= limit %>" 
+                    <a href="?page=<%= pagination.currentPage - 1 %>&limit=<%= limit %>"
                        class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
                         <i class="fas fa-angle-left"></i>
                     </a>
@@ -144,32 +144,32 @@
                         <i class="fas fa-angle-left"></i>
                     </span>
                 <% } %>
-                
+
                 <!-- Page Numbers -->
                 <% const maxVisiblePages = 5;
                    let startPage = Math.max(1, pagination.currentPage - Math.floor(maxVisiblePages / 2));
                    let endPage = Math.min(pagination.totalPages, startPage + maxVisiblePages - 1);
-                   
+
                    if (endPage - startPage + 1 < maxVisiblePages) {
                        startPage = Math.max(1, endPage - maxVisiblePages + 1);
                    }
-                   
+
                    for (let i = startPage; i <= endPage; i++) { %>
                     <% if (i === pagination.currentPage) { %>
                         <span class="px-3 py-1 rounded border bg-blue-600 text-white font-medium">
                             <%= i %>
                         </span>
                     <% } else { %>
-                        <a href="?page=<%= i %>&limit=<%= limit %>" 
+                        <a href="?page=<%= i %>&limit=<%= limit %>"
                            class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
                             <%= i %>
                         </a>
                     <% } %>
                 <% } %>
-                
+
                 <!-- Next Page -->
                 <% if (pagination.currentPage < pagination.totalPages) { %>
-                    <a href="?page=<%= pagination.currentPage + 1 %>&limit=<%= limit %>" 
+                    <a href="?page=<%= pagination.currentPage + 1 %>&limit=<%= limit %>"
                        class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
                         <i class="fas fa-angle-right"></i>
                     </a>
@@ -178,10 +178,10 @@
                         <i class="fas fa-angle-right"></i>
                     </span>
                 <% } %>
-                
+
                 <!-- Last Page -->
                 <% if (pagination.currentPage < pagination.totalPages) { %>
-                    <a href="?page=<%= pagination.totalPages %>&limit=<%= limit %>" 
+                    <a href="?page=<%= pagination.totalPages %>&limit=<%= limit %>"
                        class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
                         <i class="fas fa-angle-double-right"></i>
                     </a>
@@ -191,11 +191,11 @@
                     </span>
                 <% } %>
             </div>
-            
+
             <!-- Items per page selector -->
             <div class="flex items-center gap-2">
                 <span class="text-sm text-gray-600">Items per page:</span>
-                <select onchange="window.location.href=`?page=1&limit=${this.value}`" 
+                <select onchange="window.location.href=`?page=1&limit=${this.value}`"
                         class="border rounded px-2 py-1 text-sm">
                     <option value="10" <%= limit == 10 ? 'selected' : '' %>>10</option>
                     <option value="25" <%= limit == 25 ? 'selected' : '' %>>25</option>

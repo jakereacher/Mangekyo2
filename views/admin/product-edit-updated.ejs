@@ -1,0 +1,336 @@
+<%- include('./layouts/admin-layout', {
+    title: 'Edit Product',
+    activePage: 'products',
+    headerButtons: `
+        <a href="/admin/products" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i> Back to Products
+        </a>
+    `
+}) %>
+
+<%- include('./partials/card', {
+    title: 'Edit Product Information',
+    icon: 'fas fa-edit',
+    content: `
+        <form id="editProductForm" action="/admin/edit-product/<%= product._id %>" method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
+            <div class="row">
+                <!-- Basic Information -->
+                <div class="col-md-8">
+                    <h5 class="border-bottom pb-2 mb-3">Basic Information</h5>
+                    
+                    <div class="mb-3">
+                        <label for="productName" class="form-label">Product Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="productName" name="productName" value="<%= product.productName %>" required 
+                               minlength="3" maxlength="100">
+                        <div class="invalid-feedback">
+                            Please enter a valid product name (3-100 characters).
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="category" class="form-label">Category <span class="text-danger">*</span></label>
+                            <select class="form-select" id="category" name="category" required>
+                                <option value="">Select a category</option>
+                                <% categories.forEach(category => { %>
+                                    <option value="<%= category._id %>" <%= product.category && product.category._id.toString() === category._id.toString() ? 'selected' : '' %>>
+                                        <%= category.name %>
+                                    </option>
+                                <% }); %>
+                            </select>
+                            <div class="invalid-feedback">
+                                Please select a category.
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="brand" class="form-label">Brand</label>
+                            <input type="text" class="form-control" id="brand" name="brand" value="<%= product.brand || '' %>" maxlength="50">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="description" name="description" rows="4" required minlength="10" maxlength="2000"><%= product.description %></textarea>
+                        <div class="form-text">
+                            <span id="descriptionCharCount"><%= product.description ? product.description.length : 0 %></span>/2000 characters
+                        </div>
+                        <div class="invalid-feedback">
+                            Please enter a product description (at least 10 characters).
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="price" class="form-label">Price (₹) <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <input type="number" class="form-control" id="price" name="price" value="<%= product.price %>" min="0.01" step="0.01" required>
+                            </div>
+                            <div class="invalid-feedback">
+                                Please enter a valid price.
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="stock" class="form-label">Stock <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="stock" name="stock" value="<%= product.stock || product.quantity %>" min="0" required>
+                            <div class="invalid-feedback">
+                                Please enter a valid stock quantity.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Images and Additional Info -->
+                <div class="col-md-4">
+                    <h5 class="border-bottom pb-2 mb-3">Images</h5>
+                    
+                    <!-- Current Images -->
+                    <div class="mb-3">
+                        <label class="form-label">Current Images</label>
+                        <div id="currentImages" class="row">
+                            <% 
+                            // Determine which property to use for images
+                            const productImages = product.images || product.productImage;
+                            %>
+                            
+                            <% if (productImages && productImages.length > 0) { %>
+                                <% productImages.forEach((image, index) => { %>
+                                    <div class="col-6 mb-2 position-relative" id="image-container-<%= index %>">
+                                        <% 
+                                        // Determine the correct image path
+                                        let imageSrc = image;
+                                        if (typeof image === 'string' && !image.startsWith('http') && !image.startsWith('/')) {
+                                            imageSrc = `/uploads/product-images/${image}`;
+                                        }
+                                        %>
+                                        <img src="<%= imageSrc %>" class="img-thumbnail" style="height: 120px; object-fit: cover;" alt="Product Image <%= index + 1 %>">
+                                        <div class="position-absolute top-0 end-0">
+                                            <button type="button" class="btn btn-sm btn-danger rounded-circle" 
+                                                    onclick="removeImage('<%= index %>')" 
+                                                    data-bs-toggle="tooltip" title="Remove Image">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                        <input type="hidden" name="existingImages[]" value="<%= image %>">
+                                    </div>
+                                <% }); %>
+                            <% } else { %>
+                                <div class="col-12 text-center py-3 bg-light rounded">
+                                    <i class="fas fa-image fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted mb-0">No images available</p>
+                                </div>
+                            <% } %>
+                        </div>
+                    </div>
+                    
+                    <!-- Add New Images -->
+                    <div class="mb-3">
+                        <label for="newImages" class="form-label">Add New Images</label>
+                        <input type="file" class="form-control" id="newImages" name="images" multiple accept="image/jpeg,image/png,image/webp">
+                        <div class="form-text">
+                            You can select multiple images. Max 5 images total, 2MB each. Recommended size: 800x800 pixels.
+                        </div>
+                    </div>
+                    
+                    <div id="newImagePreviewContainer" class="row mt-3 mb-4">
+                        <!-- New image previews will be added here -->
+                    </div>
+                    
+                    <h5 class="border-bottom pb-2 mb-3 mt-4">Additional Information</h5>
+                    
+                    <div class="mb-3">
+                        <label for="sku" class="form-label">SKU</label>
+                        <input type="text" class="form-control" id="sku" name="sku" value="<%= product.sku || '' %>" maxlength="30">
+                    </div>
+                    
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" role="switch" id="isListed" name="isListed" <%= (product.isListed || !product.isBlocked) ? 'checked' : '' %>>
+                        <label class="form-check-label" for="isListed">Active</label>
+                    </div>
+                </div>
+                
+                <div class="col-12 mt-4 text-end">
+                    <button type="button" class="btn btn-secondary me-2" onclick="window.location.href='/admin/products'">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i> Update Product
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Hidden input to track removed images -->
+            <input type="hidden" id="removedImages" name="removedImages" value="">
+        </form>
+    `
+}) %>
+
+<script>
+    // Track removed images
+    const removedImages = [];
+    
+    // Function to remove an image
+    function removeImage(index) {
+        // Add the index to the removed images array
+        removedImages.push(index);
+        
+        // Update the hidden input
+        document.getElementById('removedImages').value = JSON.stringify(removedImages);
+        
+        // Hide the image container
+        const container = document.getElementById(`image-container-${index}`);
+        container.style.display = 'none';
+        
+        // Find the input for this image and disable it
+        const input = container.querySelector('input[name="existingImages[]"]');
+        if (input) {
+            input.disabled = true;
+        }
+        
+        // Check if we need to show a "no images" message
+        const visibleContainers = document.querySelectorAll('#currentImages .col-6:not([style="display: none;"])');
+        if (visibleContainers.length === 0) {
+            const noImagesDiv = document.createElement('div');
+            noImagesDiv.className = 'col-12 text-center py-3 bg-light rounded';
+            noImagesDiv.innerHTML = `
+                <i class="fas fa-image fa-2x text-muted mb-2"></i>
+                <p class="text-muted mb-0">No images available</p>
+            `;
+            document.getElementById('currentImages').appendChild(noImagesDiv);
+        }
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        // Form validation
+        const form = document.getElementById('editProductForm');
+        
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+                
+                // Find the first invalid element and focus it
+                const invalidElement = form.querySelector(':invalid');
+                if (invalidElement) {
+                    invalidElement.focus();
+                }
+                
+                // Show error toast
+                Swal.fire({
+                    title: 'Validation Error',
+                    text: 'Please check the form for errors.',
+                    icon: 'error',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+            }
+            
+            form.classList.add('was-validated');
+        });
+        
+        // Character counter for description
+        const description = document.getElementById('description');
+        const descriptionCharCount = document.getElementById('descriptionCharCount');
+        
+        description.addEventListener('input', function() {
+            descriptionCharCount.textContent = this.value.length;
+        });
+        
+        // New image preview
+        const newImageInput = document.getElementById('newImages');
+        const newPreviewContainer = document.getElementById('newImagePreviewContainer');
+        
+        newImageInput.addEventListener('change', function() {
+            // Clear previous previews
+            newPreviewContainer.innerHTML = '';
+            
+            // Check if files are selected
+            if (this.files && this.files.length > 0) {
+                // Get current image count (excluding removed images)
+                const currentImageCount = document.querySelectorAll('#currentImages .col-6:not([style="display: none;"])').length;
+                
+                // Check if too many files are selected
+                if (currentImageCount + this.files.length > 5) {
+                    Swal.fire({
+                        title: 'Too Many Images',
+                        text: `You can have a maximum of 5 images. You currently have ${currentImageCount} images and are trying to add ${this.files.length} more.`,
+                        icon: 'error'
+                    });
+                    this.value = ''; // Clear the input
+                    return;
+                }
+                
+                // Check file sizes and types
+                let validFiles = true;
+                Array.from(this.files).forEach(file => {
+                    if (file.size > 2 * 1024 * 1024) { // 2MB
+                        Swal.fire({
+                            title: 'File Too Large',
+                            text: `The file "${file.name}" exceeds the maximum size of 2MB.`,
+                            icon: 'error'
+                        });
+                        validFiles = false;
+                    }
+                    
+                    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+                        Swal.fire({
+                            title: 'Invalid File Type',
+                            text: `The file "${file.name}" is not a valid image type. Only JPEG, PNG, and WebP are allowed.`,
+                            icon: 'error'
+                        });
+                        validFiles = false;
+                    }
+                });
+                
+                if (!validFiles) {
+                    this.value = ''; // Clear the input
+                    return;
+                }
+                
+                // Create previews for each file
+                Array.from(this.files).forEach((file, index) => {
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        const col = document.createElement('div');
+                        col.className = 'col-6 mb-2 position-relative';
+                        
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.className = 'img-thumbnail';
+                        img.style.height = '120px';
+                        img.style.objectFit = 'cover';
+                        img.alt = `New Preview ${index + 1}`;
+                        
+                        const removeBtn = document.createElement('div');
+                        removeBtn.className = 'position-absolute top-0 end-0';
+                        removeBtn.innerHTML = `
+                            <button type="button" class="btn btn-sm btn-danger rounded-circle" 
+                                    onclick="this.closest('.col-6').remove()" 
+                                    data-bs-toggle="tooltip" title="Remove Image">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        `;
+                        
+                        col.appendChild(img);
+                        col.appendChild(removeBtn);
+                        newPreviewContainer.appendChild(col);
+                    };
+                    
+                    reader.readAsDataURL(file);
+                });
+            }
+        });
+        
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+    });
+</script>

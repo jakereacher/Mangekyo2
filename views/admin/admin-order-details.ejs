@@ -305,7 +305,7 @@
         <!-- Order Summary -->
         <div class="card mb-4">
             <div class="card-header">
-                <h5>Order #<%= order._id %> - <%= order.status %></h5>
+                <h5>Order #<%= order.displayOrderId || order._id %> - <%= order.status %></h5>
                 <% if (order.allItemsCancelled) { %>
                     <div class="alert alert-danger mt-2 mb-0">
                         <i class="fas fa-exclamation-circle"></i> All items in this order have been cancelled.

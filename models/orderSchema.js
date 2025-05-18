@@ -8,6 +8,11 @@ const orderSchema = new Schema({
     default: () => uuidv4(),
     unique: true,
   },
+  orderNumber: {
+    type: String,
+    unique: true,
+    sparse: true, // Allows null/undefined values (for existing orders)
+  },
   userId: {
     type: Schema.Types.ObjectId,
     ref: "User",

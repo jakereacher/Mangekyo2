@@ -1,0 +1,439 @@
+<%- include('./layouts/admin-layout', {
+    title: 'Category Management',
+    activePage: 'category',
+    headerButtons: `
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+            <i class="fas fa-plus me-1"></i> Add New Category
+        </button>
+    `
+}) %>
+
+<!-- Categories List Card -->
+<%- include('./partials/card', {
+    title: 'All Categories',
+    icon: 'fas fa-th-large',
+    content: `
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">Image</th>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>Products</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% categories.forEach(category => { %>
+                        <tr>
+                            <td>
+                                <% if (category.image) { %>
+                                    <img src="<%= category.image %>" alt="<%= category.name %>" class="img-thumbnail" style="width: 60px; height: 60px; object-fit: cover;">
+                                <% } else { %>
+                                    <div class="bg-light d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                        <i class="fas fa-folder text-muted"></i>
+                                    </div>
+                                <% } %>
+                            </td>
+                            <td>
+                                <div class="fw-bold"><%= category.name %></div>
+                            </td>
+                            <td>
+                                <% if (category.description) { %>
+                                    <%= category.description.substring(0, 50) %><%= category.description.length > 50 ? '...' : '' %>
+                                <% } else { %>
+                                    <span class="text-muted">No description</span>
+                                <% } %>
+                            </td>
+                            <td>
+                                <span class="badge bg-info text-dark"><%= category.productCount || 0 %></span>
+                            </td>
+                            <td>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" 
+                                        id="categoryStatus<%= category._id %>" 
+                                        <%= category.isListed ? 'checked' : '' %>
+                                        onchange="updateCategoryStatus('<%= category._id %>', this.checked)">
+                                </div>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-outline-primary" onclick="editCategory('<%= category._id %>')" data-bs-toggle="tooltip" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <a href="/category/<%= category.slug || category._id %>" target="_blank" class="btn btn-outline-info" data-bs-toggle="tooltip" title="View">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger" onclick="deleteCategory('<%= category._id %>', '<%= category.name %>', <%= category.productCount || 0 %>)" data-bs-toggle="tooltip" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    <% }); %>
+                    
+                    <% if (categories.length === 0) { %>
+                        <tr>
+                            <td colspan="6" class="text-center py-4">
+                                <div class="empty-state">
+                                    <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                                    <p class="text-muted">No categories found. Create your first category to get started.</p>
+                                    <button class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+                                        <i class="fas fa-plus me-1"></i> Add New Category
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    `
+}) %>
+
+<!-- Pagination -->
+<% if (totalPages > 1) { %>
+    <%- include('./partials/pagination', {
+        currentPage: currentPage,
+        totalPages: totalPages,
+        baseUrl: '/admin/category'
+    }) %>
+<% } %>
+
+<!-- Add Category Modal -->
+<%- include('./partials/modal', {
+    id: 'addCategoryModal',
+    title: 'Add New Category',
+    size: 'lg',
+    staticBackdrop: true,
+    content: `
+        <form id="addCategoryForm" action="/admin/addCategory" method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Category Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="name" name="name" required 
+                               minlength="2" maxlength="50" pattern="[A-Za-z0-9\\s\\-&]+" 
+                               title="Category name can only contain letters, numbers, spaces, hyphens, and ampersands">
+                        <div class="invalid-feedback">
+                            Please enter a valid category name (2-50 characters, letters, numbers, spaces, hyphens, and ampersands only).
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="4" maxlength="500"></textarea>
+                        <div class="form-text">
+                            <span id="descriptionCharCount">0</span>/500 characters
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="image" class="form-label">Category Image</label>
+                        <input type="file" class="form-control" id="image" name="image" accept="image/jpeg,image/png,image/webp">
+                        <div class="invalid-feedback">
+                            Please select a valid image file (JPEG, PNG, or WebP).
+                        </div>
+                        <div class="form-text">Recommended size: 800x600 pixels. Max size: 2MB.</div>
+                        <div class="mt-2">
+                            <div id="imagePreview" class="d-none mt-2">
+                                <img src="" alt="Image Preview" class="img-thumbnail" style="max-height: 150px;">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" role="switch" id="isListed" name="isListed" checked>
+                        <label class="form-check-label" for="isListed">Active</label>
+                    </div>
+                </div>
+            </div>
+        </form>
+    `,
+    footer: `
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="saveCategoryBtn">
+            <i class="fas fa-save me-1"></i> Save Category
+        </button>
+    `
+}) %>
+
+<!-- Edit Category Modal -->
+<%- include('./partials/modal', {
+    id: 'editCategoryModal',
+    title: 'Edit Category',
+    size: 'lg',
+    staticBackdrop: true,
+    content: `
+        <form id="editCategoryForm" action="/admin/editCategory" method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
+            <input type="hidden" id="editCategoryId" name="categoryId">
+            
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="mb-3">
+                        <label for="editName" class="form-label">Category Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="editName" name="categoryName" required 
+                               minlength="2" maxlength="50" pattern="[A-Za-z0-9\\s\\-&]+" 
+                               title="Category name can only contain letters, numbers, spaces, hyphens, and ampersands">
+                        <div class="invalid-feedback">
+                            Please enter a valid category name (2-50 characters, letters, numbers, spaces, hyphens, and ampersands only).
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="editDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="editDescription" name="description" rows="4" maxlength="500"></textarea>
+                        <div class="form-text">
+                            <span id="editDescriptionCharCount">0</span>/500 characters
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="editImage" class="form-label">Category Image</label>
+                        <input type="file" class="form-control" id="editImage" name="image" accept="image/jpeg,image/png,image/webp">
+                        <div class="invalid-feedback">
+                            Please select a valid image file (JPEG, PNG, or WebP).
+                        </div>
+                        <div class="form-text">Leave empty to keep current image</div>
+                        <div id="currentImageContainer" class="mt-2 d-none">
+                            <label class="form-label">Current Image:</label>
+                            <img id="currentImage" src="" alt="Current Category Image" class="img-thumbnail" style="max-width: 100%; max-height: 150px;">
+                        </div>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" role="switch" id="editIsListed" name="isListed">
+                        <label class="form-check-label" for="editIsListed">Active</label>
+                    </div>
+                </div>
+            </div>
+        </form>
+    `,
+    footer: `
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="updateCategoryBtn">
+            <i class="fas fa-save me-1"></i> Update Category
+        </button>
+    `
+}) %>
+
+<script>
+    // Form validation
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize validation for all forms with needs-validation class
+        const forms = document.querySelectorAll('.needs-validation');
+        
+        Array.from(forms).forEach(form => {
+            form.addEventListener('submit', event => {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+        
+        // Character counters
+        const description = document.getElementById('description');
+        const descriptionCharCount = document.getElementById('descriptionCharCount');
+        
+        if (description && descriptionCharCount) {
+            description.addEventListener('input', function() {
+                descriptionCharCount.textContent = this.value.length;
+            });
+        }
+        
+        const editDescription = document.getElementById('editDescription');
+        const editDescriptionCharCount = document.getElementById('editDescriptionCharCount');
+        
+        if (editDescription && editDescriptionCharCount) {
+            editDescription.addEventListener('input', function() {
+                editDescriptionCharCount.textContent = this.value.length;
+            });
+        }
+        
+        // Image preview for add category
+        const imageInput = document.getElementById('image');
+        const imagePreview = document.getElementById('imagePreview');
+        
+        if (imageInput && imagePreview) {
+            imageInput.addEventListener('change', function() {
+                if (this.files && this.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        imagePreview.classList.remove('d-none');
+                        imagePreview.querySelector('img').src = e.target.result;
+                    };
+                    reader.readAsDataURL(this.files[0]);
+                } else {
+                    imagePreview.classList.add('d-none');
+                }
+            });
+        }
+        
+        // Image preview for edit category
+        const editImageInput = document.getElementById('editImage');
+        const currentImageContainer = document.getElementById('currentImageContainer');
+        
+        if (editImageInput && currentImageContainer) {
+            editImageInput.addEventListener('change', function() {
+                if (this.files && this.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        document.getElementById('currentImage').src = e.target.result;
+                        currentImageContainer.classList.remove('d-none');
+                    };
+                    reader.readAsDataURL(this.files[0]);
+                }
+            });
+        }
+        
+        // Save category button
+        document.getElementById('saveCategoryBtn').addEventListener('click', function() {
+            const form = document.getElementById('addCategoryForm');
+            if (form.checkValidity()) {
+                form.submit();
+            } else {
+                form.classList.add('was-validated');
+            }
+        });
+        
+        // Update category button
+        document.getElementById('updateCategoryBtn').addEventListener('click', function() {
+            const form = document.getElementById('editCategoryForm');
+            if (form.checkValidity()) {
+                form.submit();
+            } else {
+                form.classList.add('was-validated');
+            }
+        });
+    });
+    
+    // Edit category function
+    function editCategory(categoryId) {
+        // Fetch category data
+        fetch(`/admin/category/${categoryId}`)
+            .then(response => response.json())
+            .then(category => {
+                // Populate form fields
+                document.getElementById('editCategoryId').value = category._id;
+                document.getElementById('editName').value = category.name;
+                document.getElementById('editDescription').value = category.description || '';
+                document.getElementById('editDescriptionCharCount').textContent = (category.description || '').length;
+                document.getElementById('editIsListed').checked = category.isListed;
+                
+                // Show current image if available
+                if (category.image) {
+                    document.getElementById('currentImageContainer').classList.remove('d-none');
+                    document.getElementById('currentImage').src = category.image;
+                } else {
+                    document.getElementById('currentImageContainer').classList.add('d-none');
+                }
+                
+                // Show modal
+                const modal = new bootstrap.Modal(document.getElementById('editCategoryModal'));
+                modal.show();
+            })
+            .catch(error => {
+                console.error('Error fetching category:', error);
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Failed to fetch category details',
+                    icon: 'error'
+                });
+            });
+    }
+    
+    // Delete category function
+    function deleteCategory(categoryId, categoryName, productCount) {
+        let warningText = `Are you sure you want to delete the category "${categoryName}"?`;
+        
+        if (productCount > 0) {
+            warningText += ` This category contains ${productCount} products which will be uncategorized if you delete it.`;
+        }
+        
+        warningText += ' This action cannot be undone.';
+        
+        Swal.fire({
+            title: 'Delete Category?',
+            text: warningText,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Submit delete request
+                fetch(`/admin/delete-category/${categoryId}`, {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        Swal.fire({
+                            title: 'Deleted!',
+                            text: 'Category has been deleted successfully.',
+                            icon: 'success'
+                        }).then(() => {
+                            // Reload page
+                            window.location.reload();
+                        });
+                    } else {
+                        throw new Error(data.error || 'Failed to delete category');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting category:', error);
+                    Swal.fire({
+                        title: 'Error',
+                        text: error.message || 'Failed to delete category',
+                        icon: 'error'
+                    });
+                });
+            }
+        });
+    }
+    
+    // Update category status function
+    function updateCategoryStatus(categoryId, isListed) {
+        const action = isListed ? 'unlistCategory' : 'listCategory';
+        
+        fetch(`/admin/${action}?id=${categoryId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to update category status');
+                }
+                
+                const toast = Swal.mixin({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+                
+                toast.fire({
+                    icon: 'success',
+                    title: `Category ${isListed ? 'activated' : 'deactivated'} successfully`
+                });
+            })
+            .catch(error => {
+                console.error('Error updating category status:', error);
+                Swal.fire({
+                    title: 'Error',
+                    text: error.message || 'Failed to update category status',
+                    icon: 'error'
+                });
+                
+                // Revert the toggle
+                document.getElementById(`categoryStatus${categoryId}`).checked = !isListed;
+            });
+    }
+</script>

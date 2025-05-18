@@ -96,9 +96,9 @@ function generateInvoicePDF(doc, order) {
 
   doc.fontSize(14).text('Order Information', { underline: true });
   doc.moveDown(0.5);
-  doc.fontSize(10).text(`Order ID: ${order._id}`);
+  doc.fontSize(10).text(`Order Number: ${order.orderNumber || order._id}`);
   doc.fontSize(10).text(`Order Date: ${new Date(order.orderDate).toLocaleDateString()}`);
-  doc.fontSize(10).text(`Payment Method: ${order.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Wallet'}`);
+  doc.fontSize(10).text(`Payment Method: ${order.paymentMethod === 'cod' ? 'Cash on Delivery' : (order.paymentMethod === 'razorpay' ? 'Online Payment' : 'Wallet')}`);
   doc.fontSize(10).text(`Payment Status: ${order.paymentStatus}`);
   doc.moveDown();
 
@@ -276,6 +276,8 @@ const getOrderDetails = async (req, res) => {
       status,
       formattedOrderDate,
       formattedDeliveryDate,
+      // Display order number if available, otherwise use the ID
+      displayOrderId: order.orderNumber || order._id.toString(),
       // Include cancellation information
       cancellation_status: order.cancellation_status,
       cancellation_admin_response: order.cancellation_admin_response,
@@ -390,6 +392,8 @@ const getUserOrders = async (req, res) => {
         progressWidth,
         formattedOrderDate: new Date(order.orderDate).toLocaleDateString(),
         formattedDeliveryDate: new Date(order.deliveryDate).toLocaleDateString(),
+        // Display order number if available, otherwise use the ID
+        displayOrderId: order.orderNumber || order._id.toString(),
         // Include coupon information
         couponCode: order.couponCode || null,
         couponApplied: order.couponApplied || false,

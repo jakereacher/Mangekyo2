@@ -49,12 +49,12 @@
                 <i class="fas fa-th-large mr-2"></i> Categories
             </h1>
         </div>
-        
+
         <!-- Search and Filter -->
         <div class="bg-white p-4 rounded-lg shadow-sm mb-6">
             <form action="" method="GET" class="flex flex-col md:flex-row gap-4">
                 <div class="flex-grow">
-                    <input type="text" name="search" placeholder="Search categories..." 
+                    <input type="text" name="search" placeholder="Search categories..."
                            class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                            value="<%= search %>">
                 </div>
@@ -66,34 +66,15 @@
                 </a>
             </form>
         </div>
-        
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <!-- Add Category Form -->
-            <div class="bg-white p-6 rounded-lg shadow-sm">
-                <h2 class="text-xl font-semibold mb-4">Add New Category</h2>
-                <form id="categoryForm" method="post" action="/admin/addCategory" class="space-y-4">
-                    <div>
-                        <label for="product_name" class="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                        <input type="text" name="name" placeholder="Category name" 
-                               class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                               id="product_name" required />
-                        <div id="name-error" class="error-message"></div>
-                    </div>
-                    <div>
-                        <label for="descriptionId" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                        <textarea placeholder="Category description" name="description" 
-                                  class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                                  id="descriptionId" rows="4" required></textarea>
-                        <div id="description-error" class="error-message"></div>
-                    </div>
-                    <button type="submit" class="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
-                        <i class="fas fa-plus mr-2"></i> Create Category
-                    </button>
-                </form>
-            </div>
-            
-            <!-- Categories Table -->
-            <div class="md:col-span-3 bg-white p-6 rounded-lg shadow-sm overflow-x-auto">
+
+        <div class="flex justify-end mb-4">
+            <button type="button" onclick="showAddCategoryModal()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+                <i class="fas fa-plus mr-2"></i> Add New Category
+            </button>
+        </div>
+
+        <!-- Categories Table -->
+        <div class="bg-white p-6 rounded-lg shadow-sm overflow-x-auto">
                 <table class="w-full min-w-max">
                     <thead>
                         <tr class="border-b">
@@ -146,28 +127,28 @@
                                     </td>
                                     <td class="py-3 px-2">
                                         <div class="flex flex-col space-y-2">
-                                            <a href="/admin/editCategory?id=<%= category._id %>" 
-                                               class="text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+                                            <button type="button" onclick="showEditCategoryModal('<%= category._id %>', '<%= category.name %>', '<%= category.description %>', <%= category.isListed %>)"
+                                               class="text-blue-600 hover:text-blue-800 hover:underline flex items-center text-left">
                                                 <i class="fas fa-edit mr-1"></i> Edit
-                                            </a>
-                                            
+                                            </button>
+
                                             <% if (category.isListed) { %>
-                                                <a href="/admin/listCategory?id=<%= category._id %>" 
+                                                <a href="/admin/listCategory?id=<%= category._id %>"
                                                    class="text-red-600 hover:text-red-800 hover:underline flex items-center">
                                                     <i class="fas fa-eye-slash mr-1"></i> Unlist
                                                 </a>
                                             <% } else { %>
-                                                <a href="/admin/unlistCategory?id=<%= category._id %>" 
+                                                <a href="/admin/unlistCategory?id=<%= category._id %>"
                                                    class="text-green-600 hover:text-green-800 hover:underline flex items-center">
                                                     <i class="fas fa-eye mr-1"></i> List
                                                 </a>
                                             <% } %>
-                                            
-                                            <a href="/admin/category-offers/create" 
+
+                                            <a href="/admin/category-offers/create"
                                                class="text-purple-600 hover:text-purple-800 hover:underline flex items-center">
                                                 <i class="fas fa-percent mr-1"></i> Manage Offers
                                             </a>
-                                            
+
                                             <button onclick="confirmDelete('<%= category._id %>', '<%= category.name %>')"
                                                     class="text-red-600 hover:text-red-800 hover:underline flex items-center">
                                                 <i class="fas fa-trash mr-1"></i> Delete
@@ -189,15 +170,15 @@
         <!-- Pagination -->
         <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
             <div class="text-sm text-gray-600">
-                Showing <span class="font-medium"><%= (currentPage - 1) * 4 + 1 %></span> to 
-                <span class="font-medium"><%= Math.min(currentPage * 4, totalCategories) %></span> of 
+                Showing <span class="font-medium"><%= (currentPage - 1) * 4 + 1 %></span> to
+                <span class="font-medium"><%= Math.min(currentPage * 4, totalCategories) %></span> of
                 <span class="font-medium"><%= totalCategories %></span> categories
             </div>
-            
+
             <div class="flex items-center gap-1">
                 <!-- First Page -->
                 <% if (currentPage > 1) { %>
-                    <a href="?page=1&search=<%= search %>" 
+                    <a href="?page=1&search=<%= search %>"
                        class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
                         <i class="fas fa-angle-double-left"></i>
                     </a>
@@ -206,10 +187,10 @@
                         <i class="fas fa-angle-double-left"></i>
                     </span>
                 <% } %>
-                
+
                 <!-- Previous Page -->
                 <% if (currentPage > 1) { %>
-                    <a href="?page=<%= currentPage - 1 %>&search=<%= search %>" 
+                    <a href="?page=<%= currentPage - 1 %>&search=<%= search %>"
                        class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
                         <i class="fas fa-angle-left"></i>
                     </a>
@@ -218,34 +199,34 @@
                         <i class="fas fa-angle-left"></i>
                     </span>
                 <% } %>
-                
+
                 <!-- Page Numbers -->
-                <% 
+                <%
                 const maxVisiblePages = 5;
                 let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
                 let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-                
+
                 if (endPage - startPage + 1 < maxVisiblePages) {
                     startPage = Math.max(1, endPage - maxVisiblePages + 1);
                 }
-                
-                for (let i = startPage; i <= endPage; i++) { 
+
+                for (let i = startPage; i <= endPage; i++) {
                 %>
                     <% if (i === currentPage) { %>
                         <span class="px-3 py-1 rounded border bg-blue-600 text-white font-medium">
                             <%= i %>
                         </span>
                     <% } else { %>
-                        <a href="?page=<%= i %>&search=<%= search %>" 
+                        <a href="?page=<%= i %>&search=<%= search %>"
                            class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
                             <%= i %>
                         </a>
                     <% } %>
                 <% } %>
-                
+
                 <!-- Next Page -->
                 <% if (currentPage < totalPages) { %>
-                    <a href="?page=<%= currentPage + 1 %>&search=<%= search %>" 
+                    <a href="?page=<%= currentPage + 1 %>&search=<%= search %>"
                        class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
                         <i class="fas fa-angle-right"></i>
                     </a>
@@ -254,10 +235,10 @@
                         <i class="fas fa-angle-right"></i>
                     </span>
                 <% } %>
-                
+
                 <!-- Last Page -->
                 <% if (currentPage < totalPages) { %>
-                    <a href="?page=<%= totalPages %>&search=<%= search %>" 
+                    <a href="?page=<%= totalPages %>&search=<%= search %>"
                        class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
                         <i class="fas fa-angle-double-right"></i>
                     </a>
@@ -282,9 +263,89 @@
         </div>
     </div>
 
+    <!-- Add Category Modal -->
+    <div id="addCategoryModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white p-6 rounded-lg w-full max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold">Add New Category</h3>
+                <button type="button" onclick="hideAddCategoryModal()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <form id="addCategoryForm" class="space-y-4">
+                <div>
+                    <label for="add_name" class="block text-sm font-medium text-gray-700 mb-1">Name <span class="text-red-500">*</span></label>
+                    <input type="text" id="add_name" name="name" placeholder="Category name"
+                           class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                    <div id="add_name_error" class="error-message"></div>
+                </div>
+
+                <div>
+                    <label for="add_description" class="block text-sm font-medium text-gray-700 mb-1">Description <span class="text-red-500">*</span></label>
+                    <textarea id="add_description" name="description" placeholder="Category description"
+                              class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              rows="4" required></textarea>
+                    <div id="add_description_error" class="error-message"></div>
+                </div>
+
+                <div class="flex justify-end space-x-2 mt-6">
+                    <button type="button" onclick="hideAddCategoryModal()" class="px-4 py-2 bg-gray-200 rounded">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                        <i class="fas fa-save mr-1"></i> Save Category
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Category Modal -->
+    <div id="editCategoryModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white p-6 rounded-lg w-full max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold">Edit Category</h3>
+                <button type="button" onclick="hideEditCategoryModal()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <form id="editCategoryForm" class="space-y-4">
+                <input type="hidden" id="edit_category_id" name="categoryId">
+
+                <div>
+                    <label for="edit_name" class="block text-sm font-medium text-gray-700 mb-1">Name <span class="text-red-500">*</span></label>
+                    <input type="text" id="edit_name" name="categoryName" placeholder="Category name"
+                           class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                    <div id="edit_name_error" class="error-message"></div>
+                </div>
+
+                <div>
+                    <label for="edit_description" class="block text-sm font-medium text-gray-700 mb-1">Description <span class="text-red-500">*</span></label>
+                    <textarea id="edit_description" name="description" placeholder="Category description"
+                              class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              rows="4" required></textarea>
+                    <div id="edit_description_error" class="error-message"></div>
+                </div>
+
+                <div class="flex items-center">
+                    <input type="checkbox" id="edit_is_listed" name="isListed" class="mr-2">
+                    <label for="edit_is_listed" class="text-sm font-medium text-gray-700">Active</label>
+                </div>
+
+                <div class="flex justify-end space-x-2 mt-6">
+                    <button type="button" onclick="hideEditCategoryModal()" class="px-4 py-2 bg-gray-200 rounded">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                        <i class="fas fa-save mr-1"></i> Update Category
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         let categoryIdToDelete = null;
 
+        // Delete Category Functions
         function confirmDelete(id, name) {
             categoryIdToDelete = id;
             document.getElementById('deleteMessage').textContent = `Are you sure you want to delete "${name}"? This will also delete all products in this category.`;
@@ -323,37 +384,72 @@
             });
         }
 
-        // Form validation
-        document.getElementById('categoryForm').addEventListener('submit', function(event) {
+        // Add Category Modal Functions
+        function showAddCategoryModal() {
+            // Reset form
+            document.getElementById('addCategoryForm').reset();
+            document.getElementById('add_name_error').textContent = '';
+            document.getElementById('add_description_error').textContent = '';
+
+            // Show modal
+            document.getElementById('addCategoryModal').classList.remove('hidden');
+        }
+
+        function hideAddCategoryModal() {
+            document.getElementById('addCategoryModal').classList.add('hidden');
+        }
+
+        // Edit Category Modal Functions
+        function showEditCategoryModal(id, name, description, isListed) {
+            // Set form values
+            document.getElementById('edit_category_id').value = id;
+            document.getElementById('edit_name').value = name;
+            document.getElementById('edit_description').value = description;
+            document.getElementById('edit_is_listed').checked = isListed;
+
+            // Reset errors
+            document.getElementById('edit_name_error').textContent = '';
+            document.getElementById('edit_description_error').textContent = '';
+
+            // Show modal
+            document.getElementById('editCategoryModal').classList.remove('hidden');
+        }
+
+        function hideEditCategoryModal() {
+            document.getElementById('editCategoryModal').classList.add('hidden');
+        }
+
+        // Add Category Form Submission
+        document.getElementById('addCategoryForm').addEventListener('submit', function(event) {
             event.preventDefault();
-            
-            const nameInput = document.getElementById('product_name');
-            const descInput = document.getElementById('descriptionId');
-            const nameError = document.getElementById('name-error');
-            const descError = document.getElementById('description-error');
-            
+
+            const nameInput = document.getElementById('add_name');
+            const descInput = document.getElementById('add_description');
+            const nameError = document.getElementById('add_name_error');
+            const descError = document.getElementById('add_description_error');
+
             // Reset errors
             nameError.textContent = '';
             descError.textContent = '';
-            
+
             let isValid = true;
-            
+
             if (!nameInput.value.trim()) {
                 nameError.textContent = 'Category name is required';
                 isValid = false;
             }
-            
+
             if (!descInput.value.trim()) {
                 descError.textContent = 'Description is required';
                 isValid = false;
             }
-            
+
             if (isValid) {
                 const formData = {
                     name: nameInput.value.trim(),
                     description: descInput.value.trim()
                 };
-                
+
                 fetch('/admin/addCategory', {
                     method: 'POST',
                     headers: {
@@ -373,6 +469,64 @@
                 .catch(error => {
                     console.error('Error:', error);
                     nameError.textContent = 'An error occurred while adding the category';
+                });
+            }
+        });
+
+        // Edit Category Form Submission
+        document.getElementById('editCategoryForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const categoryId = document.getElementById('edit_category_id').value;
+            const nameInput = document.getElementById('edit_name');
+            const descInput = document.getElementById('edit_description');
+            const isListed = document.getElementById('edit_is_listed').checked;
+            const nameError = document.getElementById('edit_name_error');
+            const descError = document.getElementById('edit_description_error');
+
+            // Reset errors
+            nameError.textContent = '';
+            descError.textContent = '';
+
+            let isValid = true;
+
+            if (!nameInput.value.trim()) {
+                nameError.textContent = 'Category name is required';
+                isValid = false;
+            }
+
+            if (!descInput.value.trim()) {
+                descError.textContent = 'Description is required';
+                isValid = false;
+            }
+
+            if (isValid) {
+                const formData = {
+                    categoryId: categoryId,
+                    categoryName: nameInput.value.trim(),
+                    description: descInput.value.trim(),
+                    isListed: isListed
+                };
+
+                fetch(`/admin/editCategory/${categoryId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        alert(data.message);
+                        window.location.reload();
+                    } else {
+                        nameError.textContent = data.error || 'An error occurred';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    nameError.textContent = 'An error occurred while updating the category';
                 });
             }
         });

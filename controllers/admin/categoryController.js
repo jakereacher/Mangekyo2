@@ -117,8 +117,8 @@ const getEditCategory = async (req, res) => {
 };
 const editCategory = async (req, res) => {
   try {
-    const id = req.params.id;
-    const { categoryName, description } = req.body;
+    const id = req.params.id || req.body.categoryId;
+    const { categoryName, description, isListed } = req.body;
 
     // Validate input
     if (!categoryName) {
@@ -141,6 +141,7 @@ const editCategory = async (req, res) => {
       {
         name: categoryName,
         description: description || "", // Default to empty string if undefined
+        isListed: isListed === true || isListed === 'on' || isListed === 'true'
       },
       { new: true, runValidators: true }
     );

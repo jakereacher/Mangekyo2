@@ -71,6 +71,8 @@ exports.getAllOrders = async (req, res) => {
       customerEmail: order.userId.email,
       formattedOrderDate: new Date(order.orderDate).toLocaleDateString(),
       finalAmount: order.finalAmount || order.totalPrice + order.shippingCharge + (order.taxAmount || 0),
+      // Display order number if available, otherwise use the first 8 characters of the ID
+      displayOrderId: order.orderNumber || order._id.toString().substring(0, 8)
     }));
 
     res.render("admin-orders", {
@@ -184,7 +186,9 @@ exports.getAdminOrderDetails = async (req, res) => {
       userEmail: order.userId.email,
       userName: order.userId.fullName,
       paymentStatus: displayPaymentStatus,
-      allItemsCancelled: allItemsCancelled
+      allItemsCancelled: allItemsCancelled,
+      // Display order number if available, otherwise use the ID
+      displayOrderId: order.orderNumber || order._id.toString()
     };
 
     res.render("admin-order-details", {
@@ -541,7 +545,7 @@ exports.approveCancellation = async (req, res) => {
         user: order.userId,
         amount: refundAmount,
         type: "credit",
-        description: `Refund for cancelled item in order #${orderId.substring(0, 8)}`,
+        description: `Refund for cancelled item in order ${order.orderNumber || orderId.substring(0, 8)}`,
         status: "completed",
         orderId: orderId
       });
