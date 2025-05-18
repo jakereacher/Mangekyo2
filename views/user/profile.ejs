@@ -264,7 +264,8 @@
                                                 <span class="${item.status === 'Delivered' ? 'text-green-600' : ''}
                                                     ${item.status === 'Shipped' ? 'text-blue-600' : ''}
                                                     ${item.status === 'Processing' ? 'text-yellow-600' : ''}
-                                                    ${item.status === 'Cancelled' ? 'text-red-600' : ''}">
+                                                    ${item.status === 'Cancelled' ? 'text-red-600' : ''}
+                                                    ${item.status === 'Partially Cancelled' ? 'text-orange-600' : ''}">
                                                     ${item.status}
                                                 </span>
                                             </p>
@@ -278,11 +279,6 @@
                                     <p class="font-medium">Total: ₹${order.finalAmount.toFixed(2)}</p>
                                 </div>
                                 <div class="flex gap-2">
-                                    ${order.paymentStatus === 'Pending' && order.paymentMethod === 'razorpay' ?
-                                        `<button onclick="retryPayment('${order._id}', ${order.finalAmount})" class="px-3 py-1 bg-green-600 text-white hover:bg-green-700 rounded text-sm flex items-center">
-                                            <i class="fas fa-credit-card mr-1"></i> Pay Now
-                                        </button>` : ''
-                                    }
                                     <a href="/orders/${order._id}" class="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm flex items-center">
                                         <i class="fas fa-eye mr-1"></i> View Details
                                     </a>
@@ -319,133 +315,7 @@
                 }
             }
 
-            // Function to retry payment for an order
-            async function retryPayment(orderId, amount) {
-                try {
-                    // Show loading indicator
-                    Swal.fire({
-                        title: 'Processing',
-                        text: 'Initializing payment...',
-                        allowOutsideClick: false,
-                        didOpen: () => {
-                            Swal.showLoading();
-                        }
-                    });
-
-                    // Create Razorpay order
-                    const response = await fetch('/razorpay/create-order', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            orderId: orderId
-                        })
-                    });
-
-                    const result = await response.json();
-
-                    if (!response.ok) {
-                        throw new Error(result.message || result.error || 'Failed to create payment order');
-                    }
-
-                    // Close the loading indicator
-                    Swal.close();
-
-                    // Initialize Razorpay checkout
-                    const options = {
-                        key: '<%= razorpayKeyId %>', // This should be passed from the server
-                        amount: result.order.amount,
-                        currency: result.order.currency || 'INR',
-                        name: 'Mangeyko',
-                        description: 'Complete your pending payment',
-                        order_id: result.order.id,
-                        image: 'https://i.imgur.com/3g7nmJC.png', // Add your logo URL here
-                        handler: async function(response) {
-                            // Show loading indicator
-                            Swal.fire({
-                                title: 'Verifying',
-                                text: 'Confirming your payment...',
-                                allowOutsideClick: false,
-                                didOpen: () => {
-                                    Swal.showLoading();
-                                }
-                            });
-
-                            try {
-                                // Verify payment with server
-                                const verifyResponse = await fetch('/razorpay/verify-payment', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json'
-                                    },
-                                    body: JSON.stringify({
-                                        razorpay_order_id: response.razorpay_order_id,
-                                        razorpay_payment_id: response.razorpay_payment_id,
-                                        razorpay_signature: response.razorpay_signature,
-                                        order_id: orderId
-                                    })
-                                });
-
-                                const verifyResult = await verifyResponse.json();
-
-                                if (verifyResult.success) {
-                                    // Show success message
-                                    Swal.fire({
-                                        title: 'Payment Successful!',
-                                        text: 'Your payment has been processed successfully.',
-                                        icon: 'success',
-                                        confirmButtonText: 'View Order'
-                                    }).then(() => {
-                                        // Redirect to payment success page
-                                        window.location.href = `/payment/success/${orderId}?paymentId=${response.razorpay_payment_id}`;
-                                    });
-                                } else {
-                                    throw new Error(verifyResult.message || 'Payment verification failed');
-                                }
-                            } catch (error) {
-                                console.error('Payment verification error:', error);
-                                Swal.fire({
-                                    title: 'Payment Verification Failed',
-                                    text: error.message || 'Failed to verify payment. Please try again.',
-                                    icon: 'error',
-                                    confirmButtonText: 'OK'
-                                });
-                            }
-                        },
-                        prefill: {
-                            name: '<%= user.name %>',
-                            email: '<%= user.email %>',
-                            contact: '<%= user.mobile || "" %>'
-                        },
-                        theme: {
-                            color: '#000000'
-                        },
-                        modal: {
-                            ondismiss: function() {
-                                Swal.fire({
-                                    title: 'Payment Cancelled',
-                                    text: 'You can retry the payment later.',
-                                    icon: 'info',
-                                    confirmButtonText: 'OK'
-                                });
-                            }
-                        }
-                    };
-
-                    const rzp = new Razorpay(options);
-                    rzp.open();
-
-                } catch (error) {
-                    console.error('Error retrying payment:', error);
-                    Swal.fire({
-                        title: 'Error',
-                        text: error.message || 'Failed to initialize payment. Please try again later.',
-                        icon: 'error',
-                        confirmButtonText: 'OK'
-                    });
-                }
-            }
+            // Order history functions
         </script>
 
         <!-- Wallet Section -->

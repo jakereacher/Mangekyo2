@@ -17,14 +17,18 @@ const logger = winston.createLogger({
 // Helper function to calculate overall order status
 function calculateOverallStatus(orderedItems) {
   if (!orderedItems || orderedItems.length === 0) return "Processing";
+
   if (orderedItems.every((item) => item.status === "Delivered")) {
     return "Delivered";
   }
   if (orderedItems.some((item) => item.status === "Shipped")) {
     return "Shipped";
   }
-  if (orderedItems.some((item) => item.status === "Cancelled")) {
+  if (orderedItems.every((item) => item.status === "Cancelled")) {
     return "Cancelled";
+  }
+  if (orderedItems.some((item) => item.status === "Cancelled")) {
+    return "Partially Cancelled";
   }
   if (orderedItems.some((item) => item.status === "Cancellation Pending")) {
     return "Cancellation Pending";
@@ -122,11 +126,42 @@ exports.getAdminOrderDetails = async (req, res) => {
       });
     }
 
+    // Calculate overall status
     const status = calculateOverallStatus(order.orderedItems);
+
+    // Check if all items are cancelled
+    const allItemsCancelled = order.orderedItems.every(item => item.status === "Cancelled");
+
+    // Get non-cancelled items
+    const nonCancelledItems = order.orderedItems.filter(item => item.status !== "Cancelled");
+
+    // Calculate subtotal for non-cancelled items
+    const subtotal = nonCancelledItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+    // Add shipping and tax
+    const shipping = order.shippingCharge || 0;
+    const tax = order.taxAmount || (subtotal * 0.09); // Default tax rate if not specified
+
+    // Calculate final amount
+    let finalAmount = subtotal + shipping + tax;
+
+    // Apply discount if applicable
+    if (order.discount && order.discount > 0) {
+      finalAmount -= order.discount;
+    }
+
+    // Ensure amount is not negative
+    finalAmount = Math.max(0, finalAmount);
+
+    // If all items are cancelled, update the payment status display
+    let displayPaymentStatus = order.paymentStatus;
+    if (allItemsCancelled && (order.paymentStatus === 'Pending' || order.paymentStatus === 'Failed')) {
+      displayPaymentStatus = 'Cancelled';
+    }
 
     const orderDetails = {
       ...order,
-      status,
+      status: allItemsCancelled ? "Cancelled" : status,
       formattedOrderDate: new Date(order.orderDate).toLocaleDateString(),
       formattedDeliveryDate: order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString() : "Pending",
       items: order.orderedItems.map((item) => ({
@@ -140,14 +175,16 @@ exports.getAdminOrderDetails = async (req, res) => {
         },
         totalPrice: (item.quantity * item.price).toFixed(2),
       })),
-      subtotal: order.totalPrice,
-      discount: order.discount,
+      subtotal: subtotal.toFixed(2),
+      discount: order.discount || 0,
       couponCode: order.couponCode,
-      shipping: order.shippingCharge,
-      tax: order.taxAmount ? order.taxAmount : order.totalPrice * 0.09,
-      total: order.finalAmount,
+      shipping: shipping.toFixed(2),
+      tax: tax.toFixed(2),
+      total: finalAmount.toFixed(2),
       userEmail: order.userId.email,
       userName: order.userId.fullName,
+      paymentStatus: displayPaymentStatus,
+      allItemsCancelled: allItemsCancelled
     };
 
     res.render("admin-order-details", {

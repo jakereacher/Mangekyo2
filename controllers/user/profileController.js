@@ -247,8 +247,11 @@ function getOverallOrderStatus(orderedItems) {
   if (orderedItems.some(item => item.status === 'Processing')) {
     return 'Processing';
   }
-  if (orderedItems.some(item => item.status === 'Cancelled')) {
+  if (orderedItems.every(item => item.status === 'Cancelled')) {
     return 'Cancelled';
+  }
+  if (orderedItems.some(item => item.status === 'Cancelled')) {
+    return 'Partially Cancelled';
   }
   return 'Processing';
 }

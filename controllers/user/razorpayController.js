@@ -64,9 +64,38 @@ const createRazorpayOrder = async (req, res) => {
         });
     }
 
-    // Create a Razorpay order
-    // Ensure the amount is valid (minimum 1 INR = 100 paise)
-    const amount = Math.max(100, Math.round(order.finalAmount * 100)); // amount in the smallest currency unit (paise)
+    // Get non-cancelled items
+    const nonCancelledItems = order.orderedItems.filter(item => item.status !== 'Cancelled');
+
+    // Calculate subtotal for non-cancelled items
+    const subtotal = nonCancelledItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+    // Add shipping and tax
+    const shipping = order.shippingCharge || 0;
+    const tax = order.taxAmount || (subtotal * 0.09); // Default tax rate if not specified
+
+    // Calculate final amount
+    let finalAmount = subtotal + shipping + tax;
+
+    // Apply discount if applicable
+    if (order.discount && order.discount > 0) {
+      finalAmount -= order.discount;
+    }
+
+    // Ensure amount is not negative
+    finalAmount = Math.max(0, finalAmount);
+
+    // Convert to paise (smallest currency unit)
+    const amount = Math.max(100, Math.round(finalAmount * 100));
+
+    console.log('Payment calculation for non-cancelled items:', {
+      subtotal,
+      shipping,
+      tax,
+      discount: order.discount || 0,
+      finalAmount,
+      finalAmountInPaise: amount
+    });
 
     const options = {
       amount: amount,

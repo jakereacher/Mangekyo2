@@ -234,6 +234,42 @@ const getOrderDetails = async (req, res) => {
 
     const status = calculateOverallStatus(order.orderedItems);
 
+    // Check if all items are cancelled
+    const allItemsCancelled = order.orderedItems.every(item => item.status === 'Cancelled');
+
+    // Get non-cancelled items
+    const nonCancelledItems = order.orderedItems.filter(item => item.status !== 'Cancelled');
+
+    // Calculate subtotal for non-cancelled items
+    const subtotal = nonCancelledItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+    // Add shipping and tax
+    const shipping = order.shippingCharge || 0;
+    const tax = subtotal * 0.09; // 9% tax rate
+
+    // Calculate final amount
+    let finalAmount = subtotal + shipping + tax;
+
+    // Apply discount if applicable
+    if (order.discount && order.discount > 0) {
+      finalAmount -= order.discount;
+    }
+
+    // Ensure amount is not negative
+    finalAmount = Math.max(0, finalAmount);
+
+    // Calculate Razorpay amount in paise
+    const razorpayAmount = Math.max(100, Math.round(finalAmount * 100));
+
+    console.log('Order details calculation:', {
+      subtotal,
+      shipping,
+      tax,
+      discount: order.discount || 0,
+      finalAmount,
+      razorpayAmountInPaise: razorpayAmount
+    });
+
     const orderDetails = {
       ...order,
       _id: order._id.toString(),
@@ -258,15 +294,19 @@ const getOrderDetails = async (req, res) => {
         },
         totalPrice: (item.price * item.quantity).toFixed(2),
       })),
-      subtotal: order.totalPrice.toFixed(2),
-      shipping: order.shippingCharge ? order.shippingCharge.toFixed(2) : "0.00",
-      tax: (order.totalPrice * 0.09).toFixed(2),
+      subtotal: subtotal.toFixed(2),
+      shipping: shipping.toFixed(2),
+      tax: tax.toFixed(2),
       discount: order.discount ? order.discount.toFixed(2) : "0.00",
-      total: order.finalAmount.toFixed(2),
+      total: finalAmount.toFixed(2),
       // Include coupon information
       couponCode: order.couponCode || null,
       couponApplied: order.couponApplied || false,
-      couponDetails: order.coupon || null
+      couponDetails: order.coupon || null,
+      // Include Razorpay amount in paise
+      razorpayAmountInPaise: razorpayAmount,
+      // Flag to indicate if all items are cancelled
+      allItemsCancelled: allItemsCancelled
     };
 
     // Get Razorpay key ID for payment retry functionality
@@ -589,11 +629,50 @@ const cancelOrder = async (req, res) => {
     item.order_cancelled_date = new Date();
     item.order_cancel_reason = cancelReason || "User requested cancellation";
 
+    // Calculate the cancelled item amount
+    const cancelledAmount = item.price * item.quantity;
+
+    // Recalculate order totals
+    // Get all non-cancelled items (excluding the current item being cancelled)
+    const nonCancelledItems = order.orderedItems.filter(i => i.status !== "Cancelled" && i._id.toString() !== item._id.toString());
+
+    // Calculate new subtotal
+    const newSubtotal = nonCancelledItems.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+
+    // Update order totals
+    order.totalPrice = newSubtotal;
+
+    // Recalculate tax (assuming 9% tax rate)
+    const newTax = newSubtotal * 0.09;
+    order.taxAmount = newTax;
+
+    // Calculate new final amount (subtotal + shipping + tax - discount)
+    const newFinalAmount = newSubtotal + (order.shippingCharge || 0) + newTax - (order.discount || 0);
+    order.finalAmount = Math.max(0, newFinalAmount); // Ensure it's not negative
+
+    // Check if all items are now cancelled
+    const allItemsCancelled = order.orderedItems.every(i =>
+        i.status === "Cancelled" || i._id.toString() === item._id.toString()
+    );
+
+    // If all items are cancelled, update the order status
+    if (allItemsCancelled) {
+        console.log('All items in order are now cancelled');
+        order.orderStatus = "Cancelled";
+
+        // If payment is pending or failed, mark it as cancelled
+        if (order.paymentStatus === 'Pending' || order.paymentStatus === 'Failed') {
+            order.paymentStatus = 'Cancelled';
+        }
+    }
+
+    console.log(`Order totals updated: subtotal=${newSubtotal}, tax=${newTax}, finalAmount=${order.finalAmount}, allCancelled=${allItemsCancelled}`);
+
     // Process refund for paid orders (Razorpay or Wallet)
     if ((order.paymentMethod === 'razorpay' && order.paymentStatus === 'Paid') || order.paymentMethod === 'wallet') {
       try {
         // Calculate refund amount
-        const refundAmount = item.price * item.quantity;
+        const refundAmount = cancelledAmount;
 
         // Find or create user wallet
         const Wallet = require("../../models/walletSchema");

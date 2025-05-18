@@ -28,6 +28,16 @@ const couponSchema = new mongoose.Schema({
   discountValue: {
     type: Number,
     required: true,
+    validate: {
+      validator: function(value) {
+        // For fixed discount type, ensure discount value is not greater than minimum purchase amount
+        if (this.type === "fixed") {
+          return value <= this.minPrice;
+        }
+        return true;
+      },
+      message: "For fixed discount coupons, discount value cannot be greater than minimum purchase amount."
+    }
   },
   maxPrice: {
     type: Number,

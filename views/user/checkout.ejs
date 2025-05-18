@@ -271,10 +271,10 @@
                                         <div class="flex-1">
                                             <h4 class="font-medium"><%= item.product.productName %></h4>
                                             <p class="text-sm text-gray-600">Quantity: <%= item.quantity %></p>
-                                            <p class="text-sm text-gray-600">Price: $<%= item.price.toFixed(2) %></p>
+                                            <p class="text-sm text-gray-600">Price: ₹<%= item.price.toFixed(2) %></p>
                                         </div>
                                         <div class="text-right">
-                                            <p class="font-medium">$<%= item.totalPrice.toFixed(2) %></p>
+                                            <p class="font-medium">₹<%= item.totalPrice.toFixed(2) %></p>
                                         </div>
                                     </div>
                                 <% }); %>
@@ -305,7 +305,12 @@
 
                     <!-- Coupon Code Section -->
                     <div class="mb-4">
-                        <label for="couponCode" class="block text-sm font-medium text-gray-700">Apply Coupon Code</label>
+                        <div class="flex justify-between items-center">
+                            <label for="couponCode" class="block text-sm font-medium text-gray-700">Apply Coupon Code</label>
+                            <button id="showAvailableCouponsBtn" class="text-sm text-blue-600 hover:text-blue-800 flex items-center">
+                                <i class="fas fa-tags mr-1"></i>See Available Coupons
+                            </button>
+                        </div>
                         <div class="flex mt-2">
                             <input type="text" id="couponCode" class="flex-1 px-3 py-2 border border-gray-300 rounded-l focus:outline-none focus:ring-2 focus:ring-black" placeholder="Enter coupon code">
                             <button id="applyCouponBtn" class="px-4 py-2 bg-black text-white rounded-r hover:bg-gray-800 transition">Apply</button>
@@ -321,20 +326,20 @@
                     <div class="space-y-3 mb-4">
                         <div class="flex justify-between">
                             <span class="text-gray-600">Subtotal (<%= cartCount %> items)</span>
-                            <span>$<%= subtotal %></span>
+                            <span>₹<%= subtotal %></span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-600">Shipping</span>
-                            <span>$<%= shipping %></span>
+                            <span>₹<%= shipping %></span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Tax</span>
-                            <span>$<%= tax %></span>
+                            <span class="text-gray-600">Tax (9%)</span>
+                            <span>₹<%= tax %></span>
                         </div>
                         <div id="discountSection" class="hidden">
                             <div class="flex justify-between">
                                 <span class="text-gray-600">Discount</span>
-                                <span id="discountAmount">$0.00</span>
+                                <span id="discountAmount">₹0.00</span>
                             </div>
                         </div>
                     </div>
@@ -342,7 +347,7 @@
                     <div class="border-t border-gray-200 pt-4 mb-4">
                         <div class="flex justify-between font-bold text-lg">
                             <span>Total</span>
-                            <span id="finalTotal">$<%= total %></span>
+                            <span id="finalTotal">₹<%= total %></span>
                         </div>
                     </div>
 
@@ -360,7 +365,7 @@
                                         <p class="text-xs text-gray-600">Qty: <%= item.quantity %></p>
                                     </div>
                                     <div class="text-sm font-medium">
-                                        $<%= item.totalPrice.toFixed(2) %>
+                                        ₹<%= item.totalPrice.toFixed(2) %>
                                     </div>
                                 </div>
                             <% }); %>
@@ -626,11 +631,13 @@
             const discountSection = document.getElementById('discountSection');
             const discountAmount = document.getElementById('discountAmount');
             const finalTotal = document.getElementById('finalTotal');
+            const showAvailableCouponsBtn = document.getElementById('showAvailableCouponsBtn');
 
             // Initialize variables for coupon application
 
             applyCouponBtn.addEventListener('click', applyCoupon);
             removeCouponBtn.addEventListener('click', removeCoupon);
+            showAvailableCouponsBtn.addEventListener('click', showCouponsModal);
 
             async function applyCoupon() {
                 const couponCode = couponCodeInput.value.trim();
@@ -875,6 +882,169 @@
         // Function to hide address modal
         function hideAddressModal() {
             document.getElementById('addressModal').classList.add('hidden');
+        }
+
+        // Function to show coupons modal
+        function showCouponsModal() {
+            document.getElementById('couponsModal').classList.remove('hidden');
+            fetchAvailableCoupons();
+        }
+
+        // Function to hide coupons modal
+        function hideCouponsModal() {
+            document.getElementById('couponsModal').classList.add('hidden');
+        }
+
+        // Function to fetch available coupons
+        async function fetchAvailableCoupons() {
+            const couponsContainer = document.getElementById('availableCouponsContainer');
+
+            try {
+                const response = await fetch('/user-available-coupons');
+                const data = await response.json();
+
+                if (data.success && data.coupons && data.coupons.length > 0) {
+                    let html = '';
+
+                    data.coupons.forEach(coupon => {
+                        const discountText = coupon.type === 'percentage'
+                            ? `${coupon.discountValue}% OFF`
+                            : `₹${coupon.discountValue} OFF`;
+
+                        const expiryDate = new Date(coupon.expiryDate).toLocaleDateString();
+
+                        html += `
+                            <div class="border border-gray-200 rounded-lg mb-3 overflow-hidden hover:shadow-md transition-shadow">
+                                <div class="bg-gray-50 p-3 border-b border-gray-200 flex justify-between items-center">
+                                    <span class="font-bold text-blue-600">${coupon.code}</span>
+                                    <button
+                                        onclick="copyCouponCode('${coupon.code}')"
+                                        class="px-3 py-1 bg-black text-white text-sm rounded hover:bg-gray-800 transition flex items-center">
+                                        <i class="fas fa-check-circle mr-1"></i> Apply
+                                    </button>
+                                </div>
+                                <div class="p-3">
+                                    <div class="flex items-center mb-2">
+                                        <div class="bg-green-100 text-green-800 px-2 py-1 rounded text-sm font-medium mr-2">
+                                            ${discountText}
+                                        </div>
+                                        <div class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm font-medium">
+                                            Min: ₹${coupon.minPrice}
+                                        </div>
+                                    </div>
+                                    ${coupon.maxPrice ? `
+                                    <div class="mb-2">
+                                        <p class="text-sm text-gray-600">Max. Order: ₹${coupon.maxPrice}</p>
+                                    </div>` : ''}
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-xs text-gray-500">Expires: ${expiryDate}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    couponsContainer.innerHTML = html;
+                } else {
+                    couponsContainer.innerHTML = `
+                        <div class="text-center py-8">
+                            <i class="fas fa-tag text-gray-300 text-5xl mb-3"></i>
+                            <h3 class="text-lg font-medium text-gray-700">No coupons available</h3>
+                            <p class="text-gray-500 mt-1">You don't have any active coupons at the moment.</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error fetching coupons:', error);
+                couponsContainer.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-exclamation-circle text-red-500 text-5xl mb-3"></i>
+                        <h3 class="text-lg font-medium text-gray-700">Failed to load coupons</h3>
+                        <p class="text-gray-500 mt-1">Please try again later.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Function to copy coupon code
+        function copyCouponCode(code) {
+            try {
+                // Fill the coupon input field
+                couponCodeInput.value = code;
+
+                // Try to copy to clipboard using different methods
+                let copySuccess = false;
+
+                // Method 1: Using Clipboard API (modern browsers)
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(code)
+                        .then(() => {
+                            console.log('Clipboard API: Coupon copied successfully');
+                            copySuccess = true;
+                        })
+                        .catch(err => {
+                            console.warn('Clipboard API failed:', err);
+                            // Will fall back to other methods
+                        });
+                }
+
+                // Method 2: Using document.execCommand (fallback)
+                if (!copySuccess) {
+                    // Create a temporary input element
+                    const tempInput = document.createElement('input');
+                    tempInput.value = code;
+                    document.body.appendChild(tempInput);
+                    tempInput.select();
+
+                    // Try to copy
+                    try {
+                        const success = document.execCommand('copy');
+                        if (success) {
+                            console.log('execCommand: Coupon copied successfully');
+                            copySuccess = true;
+                        } else {
+                            console.warn('execCommand copy failed');
+                        }
+                    } catch (err) {
+                        console.error('execCommand error:', err);
+                    }
+
+                    // Remove the temporary element
+                    document.body.removeChild(tempInput);
+                }
+
+                // Show success message
+                Swal.fire({
+                    title: 'Coupon Applied!',
+                    text: `Coupon code "${code}" has been applied to your order`,
+                    icon: 'success',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+
+                // Hide the modal
+                hideCouponsModal();
+
+                // Apply the coupon automatically
+                applyCoupon();
+
+            } catch (err) {
+                console.error('Failed to handle coupon code:', err);
+
+                // Show error message
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Failed to apply coupon code. Please try again.',
+                    icon: 'error',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+            }
         }
 
         // Function to place the order
@@ -1194,5 +1364,34 @@
             }
         }
     </script>
+
+    <!-- Available Coupons Modal -->
+    <div id="couponsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] flex flex-col">
+            <div class="p-6 border-b">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold flex items-center">
+                        <i class="fas fa-tags mr-2"></i>Available Coupons
+                    </h2>
+                    <button onclick="hideCouponsModal()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-4 overflow-y-auto flex-grow" id="availableCouponsContainer">
+                <!-- Coupons will be loaded here -->
+                <div class="flex justify-center items-center h-32">
+                    <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-black"></div>
+                </div>
+            </div>
+
+            <div class="p-4 border-t">
+                <button onclick="hideCouponsModal()" class="w-full py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

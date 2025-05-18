@@ -7,15 +7,17 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <style>
         .status-processing { @apply bg-yellow-100 text-yellow-800; }
         .status-shipped { @apply bg-blue-100 text-blue-800; }
         .status-out-for-delivery { @apply bg-indigo-100 text-indigo-800; }
         .status-delivered { @apply bg-green-100 text-green-800; }
         .status-cancelled { @apply bg-red-100 text-red-800; }
+        .status-partially-cancelled { @apply bg-orange-100 text-orange-800; }
         .status-return-requested { @apply bg-purple-100 text-purple-800; }
         .status-returned { @apply bg-gray-100 text-gray-800; }
-        .status-partially-cancelled { @apply bg-orange-100 text-orange-800; }
+        .status-cancellation-pending { @apply bg-yellow-100 text-yellow-800; }
         .order-item { @apply border-b border-gray-200 last:border-0; }
         .order-card { @apply transition-all duration-300 hover:shadow-md; }
     </style>
@@ -41,6 +43,21 @@
     </nav>
 
     <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- Payment Alert for Failed or Pending Payments -->
+        <% if (order.paymentMethod === 'razorpay' && (order.paymentStatus === 'Failed' || order.paymentStatus === 'Pending') && !order.allItemsCancelled) { %>
+            <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded shadow-sm">
+                <div class="flex items-center">
+                    <div class="py-1 mr-3">
+                        <i class="fas fa-exclamation-circle text-2xl text-red-500"></i>
+                    </div>
+                    <div>
+                        <p class="font-bold">Payment Required</p>
+                        <p>Your payment for this order has failed. Please complete the payment to process your order.</p>
+                    </div>
+                </div>
+            </div>
+        <% } %>
+
         <!-- Header -->
         <div class="bg-white p-6 rounded-lg shadow-sm mb-8">
             <h1 class="text-2xl font-bold flex items-center">
@@ -76,7 +93,7 @@
                     </h2>
                     <div class="space-y-4">
                         <% order.items.forEach(item => { %>
-                            <div class="flex items-start py-4 order-item">
+                            <div class="flex items-start py-4 order-item" data-product-id="<%= item.product._id %>">
                                 <div class="w-16 h-16 bg-gray-100 rounded overflow-hidden mr-4">
                                     <img src="<%= item.product.productImage && item.product.productImage.length > 0 ? '/uploads/product-images/' + item.product.productImage[0] : '/images/placeholder-product.jpg' %>"
                                          alt="<%= item.product.productName %>"
@@ -86,7 +103,7 @@
                                     <h3 class="font-medium"><%= item.product.productName %></h3>
                                     <p class="text-sm text-gray-600">Quantity: <%= item.quantity %></p>
                                     <p class="text-sm text-gray-600">Price: ₹<%= item.price.toFixed(2) %></p>
-                                    <p class="text-sm text-gray-600">Status: <%= item.status %></p>
+                                    <p class="text-sm text-gray-600">Status: <span class="item-status <%= item.status === 'Cancelled' ? 'text-red-600' : '' %>"><%= item.status %></span></p>
                                     <% if (item.status === 'Delivered' && item.order_return_status === 'Rejected' && item.returnReason) { %>
                                         <div class="bg-red-100 text-red-800 p-4 rounded mt-4">
                                             <strong>Return Rejected:</strong>
@@ -104,13 +121,6 @@
                                         </button>
                                     <% } %>
                                     <% if (item.status === 'Processing') { %>
-                                        <% if (order.paymentMethod === 'razorpay' && order.paymentStatus === 'Failed') { %>
-                                            <button onclick="retryPayment('<%= order._id %>', <%= order.finalAmount %>)"
-                                                    class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition flex items-center mb-2">
-                                                <i class="fas fa-credit-card mr-2"></i> Pay Now
-                                            </button>
-                                        <% } %>
-
                                         <button onclick="cancelOrder('<%= order._id %>','<%= item.product._id %>')"
                                                 class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition flex items-center">
                                             <i class="fas fa-times-circle mr-2"></i> Cancel Order
@@ -129,27 +139,27 @@
             <!-- Right Column: Order Summary and Shipping -->
             <div class="lg:w-1/3">
                 <!-- Order Summary -->
-                <div class="bg-white p-6 rounded-lg shadow-sm sticky top-4 order-card">
+                <div id="orderSummary" class="bg-white p-6 rounded-lg shadow-sm sticky top-4 order-card">
                     <h2 class="text-xl font-bold mb-4 flex items-center">
                         <i class="fas fa-receipt mr-2"></i> Order Summary
                     </h2>
                     <div class="space-y-3 mb-4">
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Subtotal (<%= order.items.length %> items)</span>
-                            <span>₹<%= order.subtotal %></span>
+                            <span class="text-gray-600">Subtotal (<span id="itemCount"><%= order.items.length %></span> items)</span>
+                            <span id="subtotal">₹<%= order.subtotal %></span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-600">Shipping</span>
-                            <span>₹<%= order.shipping %></span>
+                            <span id="shipping">₹<%= order.shipping %></span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-600">Tax</span>
-                            <span>₹<%= order.tax %></span>
+                            <span id="tax">₹<%= order.tax %></span>
                         </div>
                         <% if (order.discount > 0) { %>
                             <div class="flex justify-between">
                                 <span class="text-gray-600">Discount</span>
-                                <span>-₹<%= order.discount %></span>
+                                <span id="discount">-₹<%= order.discount %></span>
                             </div>
                             <% if (order.couponCode) { %>
                                 <div class="flex justify-between text-sm text-green-600">
@@ -161,7 +171,7 @@
                     <div class="border-t border-gray-200 pt-4">
                         <div class="flex justify-between font-bold text-lg">
                             <span>Total</span>
-                            <span>₹<%= order.total %></span>
+                            <span id="total">₹<%= order.total %></span>
                         </div>
                     </div>
                 </div>
@@ -185,8 +195,23 @@
                     <h2 class="text-xl font-bold mb-4 flex items-center">
                         <i class="fas fa-credit-card mr-2"></i> Payment Information
                     </h2>
-                    <p class="text-gray-600">Method: <%= order.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Wallet' %></p>
-                    <p class="text-gray-600">Status: <%= order.paymentStatus %></p>
+                    <p class="text-gray-600">Method: <%= order.paymentMethod === 'cod' ? 'Cash on Delivery' : (order.paymentMethod === 'razorpay' ? 'Online Payment' : 'Wallet') %></p>
+                    <div class="flex items-center mt-2">
+                        <p class="text-gray-600 mr-2">Status:</p>
+                        <% if (order.paymentStatus === 'Paid') { %>
+                            <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+                                <i class="fas fa-check-circle mr-1"></i> Paid
+                            </span>
+                        <% } else if (order.paymentStatus === 'Failed' || order.paymentStatus === 'Pending') { %>
+                            <span class="px-2 py-1 <%= order.paymentStatus === 'Failed' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800' %> rounded-full text-sm font-medium">
+                                <i class="<%= order.paymentStatus === 'Failed' ? 'fas fa-times-circle' : 'fas fa-clock' %> mr-1"></i> <%= order.paymentStatus %>
+                            </span>
+                        <% } else { %>
+                            <span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
+                                <i class="fas fa-clock mr-1"></i> <%= order.paymentStatus %>
+                            </span>
+                        <% } %>
+                    </div>
                 </div>
 
                 <% if (order.couponCode) { %>
@@ -204,9 +229,18 @@
 
         <!-- Action Buttons -->
         <div class="bg-white p-6 rounded-lg shadow-sm mt-6 flex flex-wrap justify-between gap-4 order-card">
-            <a href="/profile" class="bg-gray-200 text-gray-800 px-6 py-2 rounded hover:bg-gray-300 transition flex items-center">
-                <i class="fas fa-arrow-left mr-2"></i> Back to Profile
-            </a>
+            <div class="flex flex-wrap gap-3">
+                <a href="/profile" class="bg-gray-200 text-gray-800 px-6 py-2 rounded hover:bg-gray-300 transition flex items-center">
+                    <i class="fas fa-arrow-left mr-2"></i> Back to Profile
+                </a>
+
+                <% if (order.items.some(item => item.status === 'Processing')) { %>
+                    <button onclick="cancelAllItems('<%= order._id %>')"
+                            class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition flex items-center">
+                        <i class="fas fa-times-circle mr-2"></i> Cancel All
+                    </button>
+                <% } %>
+            </div>
 
             <div class="flex flex-wrap gap-3">
                 <a href="/orders/<%= order._id %>/track" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition flex items-center">
@@ -217,19 +251,12 @@
                     <i class="fas fa-file-invoice mr-2"></i> Download Invoice
                 </a>
 
-                <!-- <% if (order.status === 'Processing') { %>
-                    <button onclick="cancelOrder('<%= order._id %>')"
-                            class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition flex items-center">
-                        <i class="fas fa-times-circle mr-2"></i> Cancel Order
+                <% if (order.paymentMethod === 'razorpay' && (order.paymentStatus === 'Failed' || order.paymentStatus === 'Pending') && !order.allItemsCancelled) { %>
+                    <button id="payNowBtn" onclick="calculateAndPayNonCancelledItems('<%= order._id %>')"
+                            class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition flex items-center">
+                        <i class="fas fa-credit-card mr-2"></i> Pay Now
                     </button>
                 <% } %>
-                 -->
-                <!-- <% if (order.status === 'Delivered') { %>
-                    <button onclick="returnOrder('<%= order._id %>')"
-                            class="bg-purple-600 text-white px-6 py-2 rounded hover:bg-purple-700 transition flex items-center">
-                        <i class="fas fa-undo-alt mr-2"></i> Return Order
-                    </button>
-                <% } %> -->
             </div>
         </div>
     </div>
@@ -250,8 +277,207 @@
 
 
     <script>
+        // Calculate and pay for only non-cancelled items
+        function calculateAndPayNonCancelledItems(orderId) {
+            // If no non-cancelled items, hide all Pay Now elements
+            const allCancelled = document.querySelectorAll('.item-status').length ===
+                                document.querySelectorAll('.item-status.text-red-600').length;
+
+            if (allCancelled) {
+                // Hide the error message flash
+                console.log('No items to pay - all items cancelled');
+
+                // Hide the Pay Now button
+                const payNowBtn = document.getElementById('payNowBtn');
+                if (payNowBtn) {
+                    payNowBtn.style.display = 'none';
+                }
+
+                // Hide the payment alert at the top
+                const paymentAlert = document.querySelector('.bg-red-100.border-l-4.border-red-500');
+                if (paymentAlert) {
+                    paymentAlert.style.display = 'none';
+                }
+
+                return;
+            }
+
+            // Call retryPayment with orderId only - the server will calculate the correct amount
+            retryPayment(orderId);
+        }
+
+        // Cancel all items in the order
+        async function cancelAllItems(orderId) {
+            const confirmation = await Swal.fire({
+                title: 'Cancel All Items?',
+                text: 'Are you sure you want to cancel all items in this order?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, cancel all!'
+            });
+
+            if (!confirmation.isConfirmed) return;
+
+            // Show loading indicator
+            Swal.fire({
+                title: 'Processing',
+                text: 'Cancelling all items...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            try {
+                // Get all processing items
+                const processingItems = [];
+
+                // Debug log to check what items are found
+                console.log('Looking for items with Processing status...');
+
+                // Get all order items from the page
+                document.querySelectorAll('.order-item').forEach(item => {
+                    // Find the status element within this item
+                    const statusElement = item.querySelector('.item-status');
+                    console.log('Found item with status:', statusElement ? statusElement.textContent : 'No status element');
+
+                    // Check if the status is "Processing"
+                    if (statusElement && statusElement.textContent.trim() === 'Processing') {
+                        // Get the product ID from the data attribute
+                        const productId = item.getAttribute('data-product-id');
+                        console.log('Found Processing item with product ID:', productId);
+
+                        if (productId) {
+                            processingItems.push(productId);
+                        }
+                    }
+                });
+
+                console.log('Total processing items found:', processingItems.length);
+                console.log('Processing items:', processingItems);
+
+                if (processingItems.length === 0) {
+                    Swal.fire('No Items to Cancel', 'There are no items that can be cancelled.', 'info');
+                    return;
+                }
+
+                // Cancel each item one by one
+                let allSuccessful = true;
+                let lastCancelledItem = null;
+
+                for (const productId of processingItems) {
+                    try {
+                        console.log(`Sending cancel request for product ID: ${productId}`);
+                        const response = await fetch(`/orders/${orderId}/cancel`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                productId: productId,
+                                cancelReason: 'Customer requested cancellation'
+                            })
+                        });
+
+                        // Check if the response is ok before trying to parse JSON
+                        if (!response.ok) {
+                            const errorText = await response.text();
+                            console.error(`Server error (${response.status}):`, errorText);
+                            throw new Error(`Server error: ${response.status} ${response.statusText}`);
+                        }
+
+                        const result = await response.json();
+                        console.log(`Cancel response for product ID ${productId}:`, result);
+
+                        if (result.success) {
+                            // Update the status of the cancelled item in the UI
+                            const itemElement = document.querySelector(`[data-product-id="${productId}"]`);
+                            if (itemElement) {
+                                const statusElement = itemElement.querySelector('.item-status');
+                                if (statusElement) {
+                                    statusElement.textContent = 'Cancelled';
+                                    statusElement.className = 'item-status text-red-600';
+                                }
+
+                                // Remove the cancel button
+                                const cancelButton = itemElement.querySelector('button[onclick*="cancelOrder"]');
+                                if (cancelButton) {
+                                    cancelButton.remove();
+                                }
+                            }
+
+                            // Store the last successfully cancelled item
+                            lastCancelledItem = productId;
+                        } else {
+                            allSuccessful = false;
+                            console.error(`Failed to cancel item ${productId}:`, result.message);
+                        }
+                    } catch (error) {
+                        allSuccessful = false;
+                        console.error(`Error cancelling item ${productId}:`, error);
+                    }
+                }
+
+                // If at least one item was cancelled successfully
+                if (lastCancelledItem) {
+                    // Hide the Pay Now button immediately
+                    const payNowBtn = document.getElementById('payNowBtn');
+                    if (payNowBtn) {
+                        payNowBtn.style.display = 'none';
+                    }
+
+                    // Hide the payment alert at the top
+                    const paymentAlert = document.querySelector('.bg-red-100.border-l-4.border-red-500');
+                    if (paymentAlert) {
+                        paymentAlert.style.display = 'none';
+                    }
+
+                    // Show success message
+                    if (allSuccessful) {
+                        await Swal.fire({
+                            title: 'All Items Cancelled',
+                            text: 'All items have been cancelled successfully. The page will reload to update the order details.',
+                            icon: 'success',
+                            confirmButtonText: 'OK'
+                        });
+                    } else {
+                        // Show warning for partial cancellation
+                        await Swal.fire({
+                            title: 'Partial Cancellation',
+                            text: 'Some items could not be cancelled. The page will reload with the updated order details.',
+                            icon: 'warning',
+                            confirmButtonText: 'OK'
+                        });
+                    }
+
+                    // Reload the page to get the updated order details from the server
+                    window.location.reload();
+                } else {
+                    // No items were cancelled
+                    await Swal.fire('No Changes', 'No items were cancelled.', 'info');
+                }
+            } catch (error) {
+                console.error('Error cancelling all items:', error);
+
+                // Provide more detailed error message
+                let errorMessage = 'Failed to cancel all items.';
+                if (error.message) {
+                    errorMessage += ' Error: ' + error.message;
+                }
+
+                Swal.fire({
+                    title: 'Error',
+                    text: errorMessage,
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            }
+        }
+
         // Retry payment for failed Razorpay orders
-        async function retryPayment(orderId, amount) {
+        async function retryPayment(orderId) {
             try {
                 // Show loading indicator
                 Swal.fire({
@@ -263,7 +489,7 @@
                     }
                 });
 
-                // Create Razorpay order
+                // Create Razorpay order - the server will calculate the correct amount based on non-cancelled items
                 const response = await fetch('/razorpay/create-order', {
                     method: 'POST',
                     headers: {
@@ -394,6 +620,71 @@
             }
         }
 
+        // Update order summary with new calculations
+        function updateOrderSummary() {
+            // Get all order items
+            const orderItems = [
+                <% order.items.forEach(item => { %>
+                    {
+                        id: '<%= item.product._id %>',
+                        status: '<%= item.status %>',
+                        price: <%= item.price %>,
+                        quantity: <%= item.quantity %>,
+                        totalPrice: <%= parseFloat(item.totalPrice) %>
+                    },
+                <% }); %>
+            ];
+
+            // Filter out cancelled items
+            const nonCancelledItems = orderItems.filter(item => item.status !== 'Cancelled');
+
+            // Calculate subtotal for non-cancelled items
+            const subtotal = nonCancelledItems.reduce((sum, item) => sum + item.totalPrice, 0);
+
+            // Get shipping and tax
+            const shipping = <%= parseFloat(order.shipping) %>;
+            const tax = <%= parseFloat(order.tax) %>;
+
+            // Calculate final amount
+            let finalAmount = subtotal + shipping + tax;
+
+            // Apply discount if applicable
+            <% if (order.discount && parseFloat(order.discount) > 0) { %>
+                const discount = <%= parseFloat(order.discount) %>;
+                finalAmount -= discount;
+            <% } %>
+
+            // Ensure amount is not negative
+            finalAmount = Math.max(finalAmount, 0);
+
+            // Round to 2 decimal places to match Razorpay's calculation
+            finalAmount = Math.round(finalAmount * 100) / 100;
+
+            // Update the UI
+            document.getElementById('itemCount').textContent = nonCancelledItems.length;
+            document.getElementById('subtotal').textContent = `₹${subtotal.toFixed(2)}`;
+            document.getElementById('shipping').textContent = `₹${shipping.toFixed(2)}`;
+            document.getElementById('tax').textContent = `₹${tax.toFixed(2)}`;
+            <% if (order.discount && parseFloat(order.discount) > 0) { %>
+                document.getElementById('discount').textContent = `-₹${parseFloat(order.discount).toFixed(2)}`;
+            <% } %>
+            document.getElementById('total').textContent = `₹${finalAmount.toFixed(2)}`;
+
+            // Log the exact amount that will be sent to Razorpay (in paise)
+            const razorpayAmount = Math.max(100, Math.round(finalAmount * 100));
+            console.log('Amount to be charged by Razorpay (in paise):', razorpayAmount);
+            console.log('Amount to be charged by Razorpay (in rupees):', razorpayAmount / 100);
+
+            return {
+                nonCancelledItems,
+                subtotal,
+                shipping,
+                tax,
+                finalAmount,
+                razorpayAmount
+            };
+        }
+
         // Cancel Order (for COD orders)
         async function cancelOrder(orderId, productId) {
             const confirmation = await Swal.fire({
@@ -409,6 +700,16 @@
             if (!confirmation.isConfirmed) return;
 
             try {
+                // Show loading indicator
+                Swal.fire({
+                    title: 'Processing',
+                    text: 'Cancelling item...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
                 const response = await fetch(`/orders/${orderId}/cancel`, {
                     method: 'POST',
                     headers: {
@@ -438,7 +739,41 @@
                 }
 
                 if (result.success) {
-                    await Swal.fire('Cancelled!', 'Your order has been cancelled.', 'success');
+                    // Check if all products are now cancelled
+                    const allCancelled = document.querySelectorAll('.item-status').length ===
+                                        document.querySelectorAll('.item-status.text-red-600').length + 1; // +1 for the current item
+
+                    // If all products are cancelled, update the UI immediately before reload
+                    if (allCancelled) {
+                        // Hide the Pay Now button
+                        const payNowBtn = document.getElementById('payNowBtn');
+                        if (payNowBtn) {
+                            payNowBtn.style.display = 'none';
+                        }
+
+                        // Hide the payment alert at the top
+                        const paymentAlert = document.querySelector('.bg-red-100.border-l-4.border-red-500');
+                        if (paymentAlert) {
+                            paymentAlert.style.display = 'none';
+                        }
+
+                        await Swal.fire({
+                            title: 'All Items Cancelled',
+                            text: 'All items in this order have been cancelled. The page will reload to update the order details.',
+                            icon: 'success',
+                            confirmButtonText: 'OK'
+                        });
+                    } else {
+                        // Show a success message for single item cancellation
+                        await Swal.fire({
+                            title: 'Item Cancelled',
+                            text: 'The item has been cancelled successfully. The page will reload to update the order details.',
+                            icon: 'success',
+                            confirmButtonText: 'OK'
+                        });
+                    }
+
+                    // Reload the page to get the updated order details from the server
                     window.location.reload();
                 } else {
                     Swal.fire('Error', result.message || 'Failed to cancel order', 'error');

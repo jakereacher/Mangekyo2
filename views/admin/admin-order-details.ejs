@@ -184,6 +184,10 @@
             background-color: #dc3545;
             color: white;
         }
+        .status-partially-cancelled {
+            background-color: #fd7e14;
+            color: white;
+        }
         .status-return-request {
             background-color: #ffc107;
             color: black;
@@ -302,6 +306,11 @@
         <div class="card mb-4">
             <div class="card-header">
                 <h5>Order #<%= order._id %> - <%= order.status %></h5>
+                <% if (order.allItemsCancelled) { %>
+                    <div class="alert alert-danger mt-2 mb-0">
+                        <i class="fas fa-exclamation-circle"></i> All items in this order have been cancelled.
+                    </div>
+                <% } %>
             </div>
             <div class="card-body">
                 <div class="row">
@@ -312,7 +321,14 @@
                     </div>
                     <div class="col-md-6">
                         <p><strong>Payment Method:</strong> <%= order.paymentMethod %></p>
-                        <p><strong>Payment Status:</strong> <%= order.paymentStatus %></p>
+                        <p>
+                            <strong>Payment Status:</strong>
+                            <% if (order.allItemsCancelled && (order.paymentStatus === 'Cancelled' || order.paymentStatus === 'Failed' || order.paymentStatus === 'Pending')) { %>
+                                <span class="badge bg-danger">Cancelled</span>
+                            <% } else { %>
+                                <%= order.paymentStatus %>
+                            <% } %>
+                        </p>
                         <p><strong>Shipping Address:</strong></p>
                         <address>
                             <%= order.shippingAddress.fullName %><br>
@@ -359,6 +375,7 @@
                                     <% if (item.status === 'Shipped') { statusClass = 'status-shipped'; } %>
                                     <% if (item.status === 'Delivered') { statusClass = 'status-delivered'; } %>
                                     <% if (item.status === 'Cancelled') { statusClass = 'status-cancelled'; } %>
+                                    <% if (item.status === 'Partially Cancelled') { statusClass = 'status-partially-cancelled'; } %>
                                     <% if (item.status === 'Return Request') { statusClass = 'status-return-request'; } %>
                                     <% if (item.status === 'Returned') { statusClass = 'status-returned'; } %>
                                     <% if (item.status === 'Cancellation Pending') { statusClass = 'status-cancellation-pending'; } %>

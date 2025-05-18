@@ -119,6 +119,14 @@ const applyCoupon = async (req, res) => {
       });
     }
 
+    // For fixed discount type, ensure discount is not greater than minimum purchase amount
+    if (coupon.type === "fixed" && coupon.discountValue > coupon.minPrice) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: `Invalid coupon: Discount amount (₹${coupon.discountValue}) cannot be greater than minimum purchase amount (₹${coupon.minPrice})`,
+      });
+    }
+
     let discount = 0;
     if (coupon.type === "percentage") {
       discount = (numericCartTotal * coupon.discountValue) / 100;
@@ -127,6 +135,10 @@ const applyCoupon = async (req, res) => {
       }
     } else {
       discount = coupon.discountValue;
+      // Ensure discount doesn't exceed cart total
+      if (discount > numericCartTotal) {
+        discount = numericCartTotal;
+      }
     }
 
     const finalAmount = numericCartTotal - discount;
@@ -177,9 +189,67 @@ const removeAppliedCoupon = async (req, res) => {
   }
 };
 
+// ========================================================================================
+// GET USER AVAILABLE COUPONS (API ENDPOINT)
+// ========================================================================================
+const getUserAvailableCoupons = async (req, res) => {
+  try {
+    const userId = req.session.user;
+
+    if (!userId) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: "User not authenticated",
+      });
+    }
+
+    // Fetch available coupons for the user
+    const now = new Date();
+    const availableCoupons = await Coupon.find({
+      isActive: true,
+      isDelete: false,
+      startDate: { $lte: now },
+      expiryDate: { $gte: now }
+    });
+
+    // Filter coupons based on user usage
+    const userCoupons = availableCoupons.map(coupon => {
+      const userUsage = coupon.users.find(u => u.userId.toString() === userId.toString());
+      const usedCount = userUsage ? userUsage.usedCount : 0;
+      const remainingUses = coupon.usageLimit - usedCount;
+
+      return {
+        _id: coupon._id,
+        code: coupon.code,
+        type: coupon.type,
+        discountValue: coupon.discountValue,
+        minPrice: coupon.minPrice,
+        maxPrice: coupon.maxPrice,
+        expiryDate: coupon.expiryDate,
+        usageLimit: coupon.usageLimit,
+        remainingUses: remainingUses > 0 ? remainingUses : 0,
+        isUsable: remainingUses > 0 && coupon.totalUsedCount < coupon.totalUsageLimit
+      };
+    }).filter(coupon => coupon.isUsable);
+
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      coupons: userCoupons
+    });
+  } catch (error) {
+    console.error("Error fetching user available coupons:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Failed to fetch available coupons",
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   renderCouponsPage,
   getCouponByCode,
   applyCoupon,
   removeAppliedCoupon,
+  getUserAvailableCoupons,
 };

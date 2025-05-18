@@ -65,7 +65,7 @@ exports.renderCheckoutPage = async (req, res) => {
 
     const subtotal = validCartItems.reduce((sum, item) => sum + item.totalPrice, 0);
     const shipping = 5.99;
-    const tax = subtotal * 0.08;
+    const tax = subtotal * 0.09; // Using 9% tax rate consistently across the application
     const total = subtotal + shipping + tax;
 
     let defaultAddress = null;
@@ -245,7 +245,7 @@ exports.placeOrder = async (req, res) => {
       0
     );
     const shipping = 5.99;
-    const tax = subtotal * 0.08;
+    const tax = subtotal * 0.09; // Using 9% tax rate consistently across the application
 
     // Enhanced coupon validation logic
     let coupon = null;
@@ -373,7 +373,7 @@ exports.placeOrder = async (req, res) => {
       },
       paymentMethod,
       paymentStatus: paymentMethod === "cod" ? "Pending" :
-                    (paymentMethod === "razorpay" ? "Pending" : "Paid"),
+                    (paymentMethod === "razorpay" ? "Failed" : "Paid"),
       orderDate: new Date(),
       deliveryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     };

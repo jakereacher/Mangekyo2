@@ -101,6 +101,7 @@ router.get('/wishlist/count', wishlistController.getWishlistCount);
 // Coupons
 router.get("/active-coupons", couponController.renderCouponsPage);
 router.get("/coupon/:code", couponController.getCouponByCode);
+router.get("/user-available-coupons", couponController.getUserAvailableCoupons);
 router.post("/apply-coupon", couponController.applyCoupon);
 router.post("/remove-coupon", couponController.removeAppliedCoupon);
 
