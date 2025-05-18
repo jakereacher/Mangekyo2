@@ -485,6 +485,53 @@
             couponCode: null
         };
 
+        // Global references to DOM elements for coupon handling
+        const couponCodeInput = document.getElementById('couponCode');
+        const couponMessage = document.getElementById('couponMessage');
+        const discountSection = document.getElementById('discountSection');
+        const discountAmount = document.getElementById('discountAmount');
+        const finalTotal = document.getElementById('finalTotal');
+        const removeCouponBtn = document.getElementById('removeCouponBtn');
+        const applyCouponBtn = document.getElementById('applyCouponBtn');
+
+        // Global function to update order summary with coupon discount
+        function updateOrderSummary(discount, finalAmount) {
+            discountSection.classList.remove('hidden');
+            discountAmount.textContent = `-₹${discount.toFixed(2)}`;
+            finalTotal.textContent = `₹${finalAmount.toFixed(2)}`;
+
+            // Show the remove coupon button
+            removeCouponBtn.classList.remove('hidden');
+
+            // Disable the coupon input and apply button
+            couponCodeInput.disabled = true;
+            applyCouponBtn.disabled = true;
+        }
+
+        // Global function to reset order summary when coupon is removed
+        function resetOrderSummary() {
+            // Hide the discount section
+            discountSection.classList.add('hidden');
+
+            // Reset the final total
+            finalTotal.textContent = `₹${(parseFloat('<%= subtotal %>') + parseFloat('<%= shipping %>') + parseFloat('<%= tax %>')).toFixed(2)}`;
+
+            // Reset the coupon data
+            appliedCoupon = null;
+            checkoutData.couponCode = null;
+
+            // Enable the coupon input and apply button
+            couponCodeInput.disabled = false;
+            applyCouponBtn.disabled = false;
+        }
+
+        // Global function to show coupon error
+        function showCouponError(message) {
+            couponMessage.textContent = message;
+            couponMessage.className = "text-sm text-red-600";
+            resetOrderSummary();
+        }
+
         // Global function to hide the loading overlay
         function hideLoadingOverlay() {
             document.getElementById('loadingOverlay').style.display = 'none';
@@ -624,13 +671,6 @@
             });
 
             // Coupon code application
-            const applyCouponBtn = document.getElementById('applyCouponBtn');
-            const removeCouponBtn = document.getElementById('removeCouponBtn');
-            const couponCodeInput = document.getElementById('couponCode');
-            const couponMessage = document.getElementById('couponMessage');
-            const discountSection = document.getElementById('discountSection');
-            const discountAmount = document.getElementById('discountAmount');
-            const finalTotal = document.getElementById('finalTotal');
             const showAvailableCouponsBtn = document.getElementById('showAvailableCouponsBtn');
 
             // Initialize variables for coupon application
@@ -640,6 +680,7 @@
             showAvailableCouponsBtn.addEventListener('click', showCouponsModal);
 
             async function applyCoupon() {
+                console.log('applyCoupon function called');
                 const couponCode = couponCodeInput.value.trim();
                 const subtotal = parseFloat('<%= subtotal %>');
                 const shipping = parseFloat('<%= shipping %>');
@@ -651,7 +692,12 @@
                     return;
                 }
 
+                // Show loading indicator
+                couponMessage.textContent = 'Applying coupon...';
+                couponMessage.className = "text-sm text-blue-600";
+
                 try {
+                    console.log('Sending coupon application request for code:', couponCode);
                     const response = await fetch('/apply-coupon', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -662,7 +708,14 @@
                         }),
                     });
 
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('Server error response:', errorText);
+                        throw new Error('Server error: ' + response.status);
+                    }
+
                     const data = await response.json();
+                    console.log('Coupon application response:', data);
 
                     if (data.success) {
                         appliedCoupon = {
@@ -743,40 +796,9 @@
                 }
             }
 
-            function updateOrderSummary(discount, finalAmount) {
-                discountSection.classList.remove('hidden');
-                discountAmount.textContent = `-$${discount.toFixed(2)}`;
-                finalTotal.textContent = `$${finalAmount.toFixed(2)}`;
 
-                // Show the remove coupon button
-                removeCouponBtn.classList.remove('hidden');
 
-                // Disable the coupon input and apply button
-                couponCodeInput.disabled = true;
-                applyCouponBtn.disabled = true;
-            }
 
-            function resetOrderSummary() {
-                // Hide the discount section
-                discountSection.classList.add('hidden');
-
-                // Reset the final total
-                finalTotal.textContent = `$${(parseFloat('<%= subtotal %>') + parseFloat('<%= shipping %>') + parseFloat('<%= tax %>')).toFixed(2)}`;
-
-                // Reset the coupon data
-                appliedCoupon = null;
-                checkoutData.couponCode = null;
-
-                // Enable the coupon input and apply button
-                couponCodeInput.disabled = false;
-                applyCouponBtn.disabled = false;
-            }
-
-            function showCouponError(message) {
-                couponMessage.textContent = message;
-                couponMessage.className = "text-sm text-red-600";
-                resetOrderSummary();
-            }
         });
 
         // Function to select an address
@@ -966,70 +988,104 @@
             }
         }
 
-        // Function to copy coupon code
-        function copyCouponCode(code) {
+        // Function to copy coupon code and apply it
+        async function copyCouponCode(code) {
             try {
+                console.log('Applying coupon from modal:', code);
+
                 // Fill the coupon input field
                 couponCodeInput.value = code;
 
-                // Try to copy to clipboard using different methods
-                let copySuccess = false;
-
-                // Method 1: Using Clipboard API (modern browsers)
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(code)
-                        .then(() => {
-                            console.log('Clipboard API: Coupon copied successfully');
-                            copySuccess = true;
-                        })
-                        .catch(err => {
-                            console.warn('Clipboard API failed:', err);
-                            // Will fall back to other methods
-                        });
-                }
-
-                // Method 2: Using document.execCommand (fallback)
-                if (!copySuccess) {
-                    // Create a temporary input element
-                    const tempInput = document.createElement('input');
-                    tempInput.value = code;
-                    document.body.appendChild(tempInput);
-                    tempInput.select();
-
-                    // Try to copy
-                    try {
-                        const success = document.execCommand('copy');
-                        if (success) {
-                            console.log('execCommand: Coupon copied successfully');
-                            copySuccess = true;
-                        } else {
-                            console.warn('execCommand copy failed');
-                        }
-                    } catch (err) {
-                        console.error('execCommand error:', err);
-                    }
-
-                    // Remove the temporary element
-                    document.body.removeChild(tempInput);
-                }
-
-                // Show success message
-                Swal.fire({
-                    title: 'Coupon Applied!',
-                    text: `Coupon code "${code}" has been applied to your order`,
-                    icon: 'success',
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 3000,
-                    timerProgressBar: true
-                });
-
-                // Hide the modal
+                // Hide the modal first
                 hideCouponsModal();
 
-                // Apply the coupon automatically
-                applyCoupon();
+                // Show loading indicator
+                couponMessage.textContent = 'Applying coupon...';
+                couponMessage.className = "text-sm text-blue-600";
+
+                // Get values needed for coupon application
+                const subtotal = parseFloat('<%= subtotal %>');
+
+                // Apply the coupon directly via API call
+                try {
+                    console.log('Sending direct coupon application request for code:', code);
+                    const response = await fetch('/apply-coupon', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            code: code,
+                            cartTotal: subtotal,
+                            userId: '<%= user._id %>'
+                        }),
+                    });
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('Server error response:', errorText);
+                        throw new Error('Server error: ' + response.status);
+                    }
+
+                    const data = await response.json();
+                    console.log('Direct coupon application response:', data);
+
+                    if (data.success) {
+                        // Update global variables
+                        appliedCoupon = {
+                            code: data.coupon.code,
+                            couponId: data.coupon.id,
+                            discount: data.discount,
+                            finalAmount: (subtotal + parseFloat('<%= shipping %>') + parseFloat('<%= tax %>')) - data.discount
+                        };
+
+                        // Update checkout data
+                        checkoutData.couponCode = data.coupon.code;
+
+                        // Update UI
+                        updateOrderSummary(data.discount, appliedCoupon.finalAmount);
+                        couponMessage.textContent = data.message;
+                        couponMessage.className = "text-sm text-green-600";
+
+                        // Show success message
+                        Swal.fire({
+                            title: 'Coupon Applied!',
+                            text: `Coupon code "${code}" has been applied to your order`,
+                            icon: 'success',
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 3000,
+                            timerProgressBar: true
+                        });
+                    } else {
+                        // Show error message
+                        couponMessage.textContent = data.message || 'Failed to apply coupon';
+                        couponMessage.className = "text-sm text-red-600";
+
+                        Swal.fire({
+                            title: 'Error',
+                            text: data.message || 'Failed to apply coupon',
+                            icon: 'error',
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 3000
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error applying coupon directly:', error);
+                    couponMessage.textContent = error.message || 'Failed to apply coupon';
+                    couponMessage.className = "text-sm text-red-600";
+
+                    Swal.fire({
+                        title: 'Error',
+                        text: error.message || 'Failed to apply coupon',
+                        icon: 'error',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 3000
+                    });
+                }
 
             } catch (err) {
                 console.error('Failed to handle coupon code:', err);
