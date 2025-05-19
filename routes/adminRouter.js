@@ -42,7 +42,7 @@ router.get("/orders", adminAuth, orderController.getAllOrders);
 router.get("/orders/:orderId", adminAuth, orderController.getAdminOrderDetails);
 router.post("/orders/:orderId/update-status", adminAuth, orderController.updateOrderItemStatus);
 
-// Return management routes
+// Return management routes with pagination
 router.get("/return-requests", adminAuth, orderController.getReturnRequests);
 router.post("/orders/:orderId/approve-return", adminAuth, orderController.approveReturn);
 router.post("/orders/:orderId/reject-return", adminAuth, orderController.rejectReturn);

@@ -276,7 +276,7 @@ exports.updateOrderItemStatus = async (req, res) => {
     try {
       const product = await Product.findById(productId);
 
-      // If changing to Cancelled and not already cancelled, restore quantity
+      // If changing to Cancelled and not already cancelled, restore quantity and process refund automatically
       if (status === "Cancelled" && item.status !== "Cancelled") {
         const updatedProduct = await Product.findByIdAndUpdate(
           productId,
@@ -291,12 +291,12 @@ exports.updateOrderItemStatus = async (req, res) => {
         }
         logger.info("Restored product quantity", { productId, quantity: item.quantity });
 
-        // If payment was made, refund to wallet
-        if (order.paymentStatus === "Paid") {
+        // Process refund automatically for all payment methods
+        if (order.paymentStatus === "Paid" || order.paymentMethod === "razorpay" || order.paymentMethod === "wallet") {
           const refundAmount = item.price * item.quantity;
           let wallet = await Wallet.findOne({ user: order.userId });
           if (!wallet) {
-            wallet = new Wallet({ user: order.userId, balance: 0, transactions: [] });
+            wallet = new Wallet({ user: order.userId, balance: 0 });
           }
 
           wallet.balance += refundAmount;
@@ -307,7 +307,7 @@ exports.updateOrderItemStatus = async (req, res) => {
             user: order.userId,
             amount: refundAmount,
             type: "credit",
-            description: `Refund for cancelled item in order #${orderId} by admin`,
+            description: `Refund for cancelled item in order #${order.orderNumber || orderId.substring(0, 8)}`,
             status: "completed",
             orderId: orderId
           });
@@ -319,6 +319,42 @@ exports.updateOrderItemStatus = async (req, res) => {
         // Mark as cancelled by admin
         order.cancelledBy = "admin";
         order.cancelledAt = new Date();
+
+        // Recalculate order totals
+        // Get all non-cancelled items (excluding the current item being cancelled)
+        const nonCancelledItems = order.orderedItems.filter(i =>
+          i.status !== "Cancelled" && i._id.toString() !== item._id.toString()
+        );
+
+        // Calculate new subtotal
+        const newSubtotal = nonCancelledItems.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+
+        // Update order totals
+        order.totalPrice = newSubtotal;
+
+        // Recalculate tax (assuming 9% tax rate)
+        const newTax = newSubtotal * 0.09;
+        order.taxAmount = newTax;
+
+        // Calculate new final amount (subtotal + shipping + tax - discount)
+        const newFinalAmount = newSubtotal + (order.shippingCharge || 0) + newTax - (order.discount || 0);
+        order.finalAmount = Math.max(0, newFinalAmount); // Ensure it's not negative
+
+        // Check if all items are now cancelled
+        const allItemsCancelled = order.orderedItems.every(i =>
+          i.status === "Cancelled" || i._id.toString() === item._id.toString()
+        );
+
+        // If all items are cancelled, update the order status
+        if (allItemsCancelled) {
+          console.log('All items in order are now cancelled');
+          order.orderStatus = "Cancelled";
+
+          // If payment is pending or failed, mark it as cancelled
+          if (order.paymentStatus === 'Pending' || order.paymentStatus === 'Failed') {
+            order.paymentStatus = 'Cancelled';
+          }
+        }
       }
 
       // If changing from Cancelled to another status, reduce quantity
@@ -356,6 +392,7 @@ exports.updateOrderItemStatus = async (req, res) => {
         item.order_shipped_date = new Date();
       } else if (status === "Cancelled" && item.status !== "Cancelled") {
         item.order_cancelled_date = new Date();
+        item.order_cancel_reason = "Cancelled by admin";
       }
 
       // Update the status
@@ -403,313 +440,10 @@ exports.updateOrderItemStatus = async (req, res) => {
   }
 };
 
-// Get all cancellation requests for admin
-exports.getCancellationRequests = async (req, res) => {
-  try {
-    const adminId = req.session.admin;
-    if (!adminId) {
-      logger.error("Unauthorized access to /admin/cancellation-requests", { adminId: null });
-      return res.status(StatusCodes.UNAUTHORIZED).redirect("/admin/login");
-    }
+// Cancellation requests functionality has been removed as per requirements
+// All cancellations are now processed automatically without requiring admin approval
 
-    // Find all orders with items that have cancellation requests
-    const orders = await Order.find({
-      "orderedItems.status": "Cancellation Pending",
-      cancellation_status: "Pending"
-    })
-      .populate("userId", "email fullName")
-      .populate("orderedItems.product")
-      .lean();
-
-    // Format the cancellation requests for display
-    const cancellationRequests = [];
-    orders.forEach((order) => {
-      order.orderedItems.forEach((item) => {
-        if (item.status === "Cancellation Pending") {
-          cancellationRequests.push({
-            orderId: order._id,
-            orderDate: new Date(order.orderDate).toLocaleDateString(),
-            customerName: order.userId.fullName,
-            customerEmail: order.userId.email,
-            productId: item.product._id,
-            productName: item.product.productName,
-            productImage:
-              item.product.productImage && item.product.productImage.length > 0
-                ? item.product.productImage[0]
-                : "/images/default-product.jpg",
-            quantity: item.quantity,
-            price: item.price,
-            paymentMethod: order.paymentMethod,
-            cancellationReason: item.order_cancel_reason || order.cancellation_reason,
-            requestDate: new Date(order.cancellation_requested_at).toLocaleDateString(),
-          });
-        }
-      });
-    });
-
-    res.render("admin-cancellation-requests", {
-      cancellationRequests,
-      admin: { id: adminId },
-      csrfToken: req.csrfToken ? req.csrfToken() : "",
-      activePage: "cancellations",
-    });
-  } catch (error) {
-    logger.error("Error fetching cancellation requests", { error: error.message, stack: error.stack });
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).render("admin-error", {
-      message: "Failed to load cancellation requests",
-      activePage: "cancellations",
-    });
-  }
-};
-
-// Approve a cancellation request
-exports.approveCancellation = async (req, res) => {
-  try {
-    const { orderId } = req.params;
-    const { productId } = req.body;
-    const adminId = req.session.admin;
-
-    console.log("Admin approve cancellation request:", { orderId, productId, adminId });
-
-    if (!adminId) {
-      logger.error("Unauthorized attempt to approve cancellation", { orderId, productId, adminId: null });
-      return res.status(StatusCodes.UNAUTHORIZED).json({
-        success: false,
-        message: "Admin not authenticated",
-      });
-    }
-
-    // Validate ObjectIds
-    if (!mongoose.Types.ObjectId.isValid(orderId) || !mongoose.Types.ObjectId.isValid(productId)) {
-      logger.error("Invalid orderId or productId format", { orderId, productId });
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        success: false,
-        message: "Invalid order or product ID",
-      });
-    }
-
-    // Find the order
-    const order = await Order.findById(orderId);
-    if (!order) {
-      logger.error("Order not found for cancellation approval", { orderId });
-      return res.status(StatusCodes.NOT_FOUND).json({
-        success: false,
-        message: "Order not found",
-      });
-    }
-
-    // Find the order item
-    const item = order.orderedItems.find((item) => item.product.toString() === productId);
-    if (!item) {
-      logger.error("Item not found in order", { orderId, productId });
-      return res.status(StatusCodes.NOT_FOUND).json({
-        success: false,
-        message: "Item not found in order",
-      });
-    }
-
-    // Check if item has a pending cancellation request
-    if (item.status !== "Cancellation Pending") {
-      logger.error("Item does not have a pending cancellation request", { orderId, productId, status: item.status });
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        success: false,
-        message: "Item does not have a pending cancellation request",
-      });
-    }
-
-    // Update item status
-    item.status = "Cancelled";
-    order.cancellation_status = "Approved";
-    order.cancellation_processed_at = new Date();
-
-    // Calculate refund amount
-    const refundAmount = item.price * item.quantity;
-
-    // Add the refund amount to the user's wallet
-    try {
-      // Find or create user wallet
-      let wallet = await Wallet.findOne({ user: order.userId });
-      if (!wallet) {
-        wallet = new Wallet({
-          user: order.userId,
-          balance: 0
-        });
-      }
-
-      // Add refund to wallet
-      wallet.balance += refundAmount;
-      await wallet.save();
-
-      // Create a wallet transaction record
-      const transaction = new WalletTransaction({
-        user: order.userId,
-        amount: refundAmount,
-        type: "credit",
-        description: `Refund for cancelled item in order ${order.orderNumber || orderId.substring(0, 8)}`,
-        status: "completed",
-        orderId: orderId
-      });
-
-      // Save the transaction
-      await transaction.save();
-
-      logger.info("Added refund to user wallet", {
-        userId: order.userId,
-        amount: refundAmount,
-      });
-
-      logger.info("Transaction recorded for refund", {
-        transactionId: transaction._id,
-        userId: order.userId,
-      });
-
-      // Restore product quantity
-      await Product.findByIdAndUpdate(
-        productId,
-        { $inc: { quantity: item.quantity } },
-        { new: true }
-      );
-
-      logger.info("Restored product quantity", {
-        productId,
-        quantity: item.quantity
-      });
-
-      // Save the order
-      await order.save();
-
-      res.status(StatusCodes.OK).json({
-        success: true,
-        message: "Cancellation approved and refund processed to wallet",
-      });
-    } catch (error) {
-      logger.error("Error processing refund", {
-        orderId,
-        productId,
-        userId: order.userId,
-        error: error.message
-      });
-
-      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Error processing refund",
-      });
-    }
-  } catch (error) {
-    logger.error("Error approving cancellation", {
-      orderId: req.params.orderId,
-      productId: req.body.productId,
-      error: error.message,
-      stack: error.stack,
-    });
-
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      success: false,
-      message: "Failed to approve cancellation",
-    });
-  }
-};
-
-// Reject a cancellation request
-exports.rejectCancellation = async (req, res) => {
-  try {
-    const { orderId } = req.params;
-    const { productId, rejectionReason } = req.body;
-    const adminId = req.session.admin;
-
-    console.log("Admin reject cancellation request:", { orderId, productId, adminId });
-
-    if (!adminId) {
-      logger.error("Unauthorized attempt to reject cancellation", { orderId, productId, adminId: null });
-      return res.status(StatusCodes.UNAUTHORIZED).json({
-        success: false,
-        message: "Admin not authenticated",
-      });
-    }
-
-    if (!rejectionReason) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        success: false,
-        message: "Rejection reason is required",
-      });
-    }
-
-    // Validate ObjectIds
-    if (!mongoose.Types.ObjectId.isValid(orderId) || !mongoose.Types.ObjectId.isValid(productId)) {
-      logger.error("Invalid orderId or productId format", { orderId, productId });
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        success: false,
-        message: "Invalid order or product ID",
-      });
-    }
-
-    // Find the order
-    const order = await Order.findById(orderId);
-    if (!order) {
-      logger.error("Order not found for cancellation rejection", { orderId });
-      return res.status(StatusCodes.NOT_FOUND).json({
-        success: false,
-        message: "Order not found",
-      });
-    }
-
-    // Find the order item
-    const item = order.orderedItems.find((item) => item.product.toString() === productId);
-    if (!item) {
-      logger.error("Item not found in order", { orderId, productId });
-      return res.status(StatusCodes.NOT_FOUND).json({
-        success: false,
-        message: "Item not found in order",
-      });
-    }
-
-    // Check if item has a pending cancellation request
-    if (item.status !== "Cancellation Pending") {
-      logger.error("Item does not have a pending cancellation request", { orderId, productId, status: item.status });
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        success: false,
-        message: "Item does not have a pending cancellation request",
-      });
-    }
-
-    // Update item status back to Processing
-    item.status = "Processing";
-    item.order_cancel_status = "Rejected"; // Add rejection status to the item
-    order.cancellation_status = "Rejected";
-    order.cancellation_admin_response = rejectionReason;
-    order.cancellation_processed_at = new Date();
-
-    // Log the rejection
-    logger.info("Cancellation request rejected", {
-      orderId,
-      productId,
-      rejectionReason,
-      adminId
-    });
-
-    // Save the order
-    await order.save();
-
-    res.status(StatusCodes.OK).json({
-      success: true,
-      message: "Cancellation request rejected",
-    });
-  } catch (error) {
-    logger.error("Error rejecting cancellation", {
-      orderId: req.params.orderId,
-      productId: req.body.productId,
-      error: error.message,
-      stack: error.stack,
-    });
-
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      success: false,
-      message: "Failed to reject cancellation",
-    });
-  }
-};
-
-// Get all return requests for admin
+// Get all return requests for admin with pagination
 exports.getReturnRequests = async (req, res) => {
   try {
     const adminId = req.session.admin;
@@ -720,7 +454,7 @@ exports.getReturnRequests = async (req, res) => {
 
     // Pagination parameters
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 2; // Default to 2 requests per page
     const skip = (page - 1) * limit;
 
     // Find all orders with items that have return requests
@@ -760,15 +494,24 @@ exports.getReturnRequests = async (req, res) => {
     // Get total count for pagination
     const totalItems = returnRequests.length;
 
+    // Calculate pagination values
+    const totalPages = Math.ceil(totalItems / limit) || 1; // Ensure at least 1 page even if no items
+
     // Apply pagination to the formatted requests
     returnRequests = returnRequests.slice(skip, skip + limit);
-
-    // Calculate pagination values
-    const totalPages = Math.ceil(totalItems / limit);
 
     // Build search params for pagination links
     const searchParams = req.query.search ? `&search=${encodeURIComponent(req.query.search)}` : '';
     const searchParamsWithoutLimit = req.query.search ? `&search=${encodeURIComponent(req.query.search)}` : '';
+
+    // Log pagination info for debugging
+    console.log('Return Requests Pagination:', {
+      page,
+      limit,
+      totalItems,
+      totalPages,
+      returnRequestsCount: returnRequests.length
+    });
 
     res.render("admin-return-requests", {
       returnRequests,
@@ -780,13 +523,13 @@ exports.getReturnRequests = async (req, res) => {
         totalPages: totalPages,
         totalItems: totalItems,
         limit: limit,
-        searchParams: searchParams + (limit !== 10 ? `&limit=${limit}` : ''),
+        searchParams: searchParams + (limit !== 2 ? `&limit=${limit}` : ''), // Changed default from 10 to 2
         searchParamsWithoutLimit: searchParamsWithoutLimit
       }
     });
   } catch (error) {
     logger.error("Error fetching return requests", { error: error.message, stack: error.stack });
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).render("admin/error", {
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).render("admin-error", {
       message: "Failed to load return requests",
       activePage: "returns",
     });

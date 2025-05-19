@@ -296,9 +296,6 @@
                 <a href="/admin/return-requests" class="btn-returns">
                     <i class="fas fa-exchange-alt"></i> View All Return Requests
                 </a>
-                <a href="/admin/cancellation-requests" class="btn-returns" style="background-color: #dc3545;">
-                    <i class="fas fa-times-circle"></i> View All Cancellation Requests
-                </a>
             </div>
         </div>
 
@@ -378,7 +375,6 @@
                                     <% if (item.status === 'Partially Cancelled') { statusClass = 'status-partially-cancelled'; } %>
                                     <% if (item.status === 'Return Request') { statusClass = 'status-return-request'; } %>
                                     <% if (item.status === 'Returned') { statusClass = 'status-returned'; } %>
-                                    <% if (item.status === 'Cancellation Pending') { statusClass = 'status-cancellation-pending'; } %>
 
                                     <span class="status-badge <%= statusClass %>"><%= item.status %></span>
 
@@ -400,23 +396,7 @@
                                         </div>
                                     <% } %>
 
-                                    <% if (item.status === 'Cancellation Pending' && item.order_cancel_reason) { %>
-                                        <div class="return-reason" style="background-color: #ffe5d0; border-left-color: #fd7e14;">
-                                            <strong>Cancellation Reason:</strong> <%= item.order_cancel_reason %>
-                                            <div class="return-actions">
-                                                <button class="btn btn-sm btn-approve btn-approve-cancellation"
-                                                        data-order-id="<%= order._id %>"
-                                                        data-product-id="<%= item.product._id %>">
-                                                    Approve Cancellation
-                                                </button>
-                                                <button class="btn btn-sm btn-reject btn-reject-cancellation"
-                                                        data-order-id="<%= order._id %>"
-                                                        data-product-id="<%= item.product._id %>">
-                                                    Reject Cancellation
-                                                </button>
-                                            </div>
-                                        </div>
-                                    <% } %>
+
 
                                     <% if (item.status === 'Returned' && item.returnReason) { %>
                                         <div class="return-completed">
@@ -724,164 +704,7 @@
             });
         });
 
-        // Approve Cancellation
-        document.querySelectorAll('.btn-approve-cancellation').forEach(button => {
-            button.addEventListener('click', async (e) => {
-                const orderId = e.target.dataset.orderId;
-                const productId = e.target.dataset.productId;
 
-                // Show confirmation dialog
-                const result = await Swal.fire({
-                    title: 'Approve Cancellation?',
-                    text: 'This will approve the cancellation request and process a refund to the customer\'s wallet.',
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonColor: '#28a745',
-                    cancelButtonColor: '#6c757d',
-                    confirmButtonText: 'Yes, approve it!'
-                });
-
-                if (result.isConfirmed) {
-                    // Show loading state
-                    Swal.fire({
-                        title: 'Processing...',
-                        text: 'Approving cancellation request',
-                        icon: 'info',
-                        allowOutsideClick: false,
-                        showConfirmButton: false,
-                        didOpen: () => {
-                            Swal.showLoading();
-                        }
-                    });
-
-                    try {
-                        const response = await fetch(`/admin/orders/${orderId}/approve-cancellation`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'CSRF-Token': '<%= csrfToken %>'
-                            },
-                            body: JSON.stringify({ productId })
-                        });
-
-                        const result = await response.json();
-
-                        if (result.success) {
-                            // Show success message
-                            Swal.fire({
-                                title: 'Cancellation Approved!',
-                                text: 'The cancellation request has been approved and refund processed.',
-                                icon: 'success',
-                                confirmButtonColor: '#28a745'
-                            }).then(() => {
-                                // Reload the page to refresh the status
-                                window.location.reload();
-                            });
-                        } else {
-                            // Show error message
-                            Swal.fire({
-                                title: 'Error',
-                                text: result.message || 'Failed to approve cancellation',
-                                icon: 'error',
-                                confirmButtonColor: '#3085d6'
-                            });
-                        }
-                    } catch (error) {
-                        // Show error message
-                        Swal.fire({
-                            title: 'Error',
-                            text: 'Error approving cancellation: ' + error.message,
-                            icon: 'error',
-                            confirmButtonColor: '#3085d6'
-                        });
-                    }
-                }
-            });
-        });
-
-        // Reject Cancellation
-        document.querySelectorAll('.btn-reject-cancellation').forEach(button => {
-            button.addEventListener('click', async (e) => {
-                const orderId = e.target.dataset.orderId;
-                const productId = e.target.dataset.productId;
-
-                // Show input dialog for rejection reason
-                const { value: rejectionReason } = await Swal.fire({
-                    title: 'Reject Cancellation',
-                    input: 'textarea',
-                    inputLabel: 'Reason for rejection',
-                    inputPlaceholder: 'Enter the reason for rejecting this cancellation request...',
-                    inputAttributes: {
-                        'aria-label': 'Reason for rejection'
-                    },
-                    showCancelButton: true,
-                    confirmButtonColor: '#dc3545',
-                    cancelButtonColor: '#6c757d',
-                    confirmButtonText: 'Reject Cancellation',
-                    inputValidator: (value) => {
-                        if (!value) {
-                            return 'You need to provide a reason for rejection!';
-                        }
-                    }
-                });
-
-                if (rejectionReason) {
-                    // Show loading state
-                    Swal.fire({
-                        title: 'Processing...',
-                        text: 'Rejecting cancellation request',
-                        icon: 'info',
-                        allowOutsideClick: false,
-                        showConfirmButton: false,
-                        didOpen: () => {
-                            Swal.showLoading();
-                        }
-                    });
-
-                    try {
-                        const response = await fetch(`/admin/orders/${orderId}/reject-cancellation`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'CSRF-Token': '<%= csrfToken %>'
-                            },
-                            body: JSON.stringify({ productId, rejectionReason })
-                        });
-
-                        const result = await response.json();
-
-                        if (result.success) {
-                            // Show success message
-                            Swal.fire({
-                                title: 'Cancellation Rejected!',
-                                text: 'The cancellation request has been rejected.',
-                                icon: 'success',
-                                confirmButtonColor: '#28a745'
-                            }).then(() => {
-                                // Reload the page to refresh the status
-                                window.location.reload();
-                            });
-                        } else {
-                            // Show error message
-                            Swal.fire({
-                                title: 'Error',
-                                text: result.message || 'Failed to reject cancellation',
-                                icon: 'error',
-                                confirmButtonColor: '#3085d6'
-                            });
-                        }
-                    } catch (error) {
-                        // Show error message
-                        Swal.fire({
-                            title: 'Error',
-                            text: 'Error rejecting cancellation: ' + error.message,
-                            icon: 'error',
-                            confirmButtonColor: '#3085d6'
-                        });
-                    }
-                }
-            });
-        });
     </script>
 </body>
 </html>
