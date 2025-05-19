@@ -341,258 +341,82 @@
             });
 
             try {
-                // Get all non-cancelled items
-                const itemsToCancel = [];
+                console.log(`Sending cancel-all request for order: ${orderId}`);
 
-                // Debug log to check what items are found
-                console.log('Looking for items that are not cancelled...');
-
-                // Log all order items to check their structure
-                const orderItems = document.querySelectorAll('.order-item');
-                console.log('Total order items found:', orderItems.length);
-
-                // Log each item's data attributes
-                orderItems.forEach((item, index) => {
-                    console.log(`Item ${index + 1}:`, {
-                        dataProductId: item.getAttribute('data-product-id'),
-                        innerHTML: item.innerHTML.substring(0, 100) + '...' // Log first 100 chars of HTML
-                    });
-                });
-
-                // Get all order items from the page
-                orderItems.forEach(item => {
-                    // Find the status element within this item
-                    const statusElement = item.querySelector('.item-status');
-                    console.log('Found item with status:', statusElement ? statusElement.textContent : 'No status element');
-
-                    // Get the status text and log it with more details
-                    const statusText = statusElement ? statusElement.textContent.trim() : '';
-                    const statusTextLower = statusText.toLowerCase();
-
-                    console.log('Status text:', statusText);
-                    console.log('Status text lowercase:', statusTextLower);
-                    console.log('Status element HTML:', statusElement ? statusElement.outerHTML : 'No status element');
-                    console.log('Status comparison result:', statusTextLower === 'processing');
-
-                    // Try a more flexible approach to detect "Processing" status
-                    const isProcessing = statusTextLower.includes('process') ||
-                                        statusText === 'Processing' ||
-                                        statusElement?.classList.contains('status-processing');
-
-                    console.log('Is processing (flexible check):', isProcessing);
-
-                    // Get the product ID regardless of status for logging
-                    const productId = item.getAttribute('data-product-id');
-                    console.log('Item product ID:', productId);
-
-                    // Check if the item has status "Processing" - this is the only status that can be cancelled
-                    if (isProcessing) {
-                        console.log('Found Processing item with product ID:', productId);
-
-                        if (productId) {
-                            itemsToCancel.push(productId);
-                        }
-                    } else {
-                        console.log(`Skipping item with status "${statusText}" as it cannot be cancelled`);
-                    }
-                });
-
-                console.log('Total items to cancel:', itemsToCancel.length);
-                console.log('Items to cancel:', itemsToCancel);
-
-                if (itemsToCancel.length === 0) {
-                    Swal.fire('No Items to Cancel', 'There are no items that can be cancelled.', 'info');
-                    return;
-                }
-
-                // Instead of cancelling one by one, let's cancel all at once
-                // This is a more reliable approach
-
-                // Create a single cancellation request for all items
-                const cancelAllRequest = {
+                // Use the new endpoint that cancels all items at once
+                const response = await fetch(`/orders/${orderId}/cancel-all`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        productIds: itemsToCancel,
                         cancelReason: 'Customer requested cancellation of all items'
                     })
-                };
-
-                // Send the request to a new endpoint that will handle cancelling all items at once
-                console.log('Sending cancel all request for order:', orderId);
-                console.log('Items to cancel:', itemsToCancel);
-
-                // Since we don't have a specific endpoint for cancelling all items at once,
-                // we'll use the existing endpoint and handle each item sequentially
-
-                let allSuccessful = true;
-                let successCount = 0;
-                let failCount = 0;
-
-                // Let's try a different approach - find all cancel buttons and click them programmatically
-                console.log('Trying to find all cancel buttons...');
-                const cancelButtons = document.querySelectorAll('button[onclick*="cancelOrder"]');
-                console.log('Found cancel buttons:', cancelButtons.length);
-
-                // Extract product IDs from the cancel buttons
-                const productIdsFromButtons = [];
-                cancelButtons.forEach(button => {
-                    const onclickAttr = button.getAttribute('onclick');
-                    console.log('Button onclick attribute:', onclickAttr);
-
-                    // Extract the product ID from the onclick attribute
-                    // The format is: cancelOrder('orderId','productId')
-                    const match = onclickAttr.match(/cancelOrder\(['"].*?['"],['"](.+?)['"]\)/);
-                    if (match && match[1]) {
-                        const productId = match[1];
-                        console.log('Extracted product ID from button:', productId);
-                        productIdsFromButtons.push(productId);
-                    }
                 });
 
-                console.log('Product IDs from buttons:', productIdsFromButtons);
+                console.log(`Received response with status: ${response.status}`);
+                console.log(`Response headers:`, response.headers);
 
-                // Use the product IDs from buttons if available, otherwise use the ones we found earlier
-                const finalItemsToCancel = productIdsFromButtons.length > 0 ? productIdsFromButtons : itemsToCancel;
-                console.log('Final items to cancel:', finalItemsToCancel);
+                // Check if the response is ok before trying to parse JSON
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error(`Server error (${response.status}):`, errorText);
 
-                // Process each cancellation sequentially to ensure they all complete
-                for (let i = 0; i < finalItemsToCancel.length; i++) {
-                    const productId = finalItemsToCancel[i];
-
+                    // Try to parse the error response if possible
                     try {
-                        // Update the loading message to show progress
-                        Swal.update({
-                            title: 'Processing',
-                            text: `Cancelling item ${i + 1} of ${finalItemsToCancel.length}...`,
-                        });
+                        const errorJson = JSON.parse(errorText);
+                        console.error(`Server error details:`, errorJson);
 
-                        console.log(`Sending cancel request for product ID: ${productId} (${i + 1}/${finalItemsToCancel.length})`);
-
-                        const response = await fetch(`/orders/${orderId}/cancel`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                productId: productId,
-                                cancelReason: 'Customer requested cancellation'
-                            })
-                        });
-
-                        // Check if the response is ok before trying to parse JSON
-                        if (!response.ok) {
-                            const errorText = await response.text();
-                            console.error(`Server error (${response.status}):`, errorText);
-
-                            // Try to parse the error response if possible
-                            try {
-                                const errorJson = JSON.parse(errorText);
-                                console.error(`Server error details:`, errorJson);
-
-                                // Log specific error message
-                                if (errorJson.message) {
-                                    console.error(`Error message: ${errorJson.message}`);
-                                }
-                            } catch (e) {
-                                // If it's not JSON, just log the raw text
-                                console.error(`Raw error response: ${errorText}`);
-                            }
-
-                            failCount++;
-                            allSuccessful = false;
-
-                            // Wait a bit longer before the next request if there was an error
-                            await new Promise(resolve => setTimeout(resolve, 500));
-                            continue; // Continue with the next item even if this one failed
-                        }
-
-                        let result;
-                        try {
-                            result = await response.json();
-                            console.log(`Cancel response for product ID ${productId}:`, result);
-                        } catch (e) {
-                            console.error(`Error parsing JSON response for product ID ${productId}:`, e);
-                            failCount++;
-                            allSuccessful = false;
-                            continue;
-                        }
-
-                        if (result.success) {
-                            successCount++;
-
-                            // Update the status of the cancelled item in the UI
-                            const itemElement = document.querySelector(`[data-product-id="${productId}"]`);
-                            if (itemElement) {
-                                const statusElement = itemElement.querySelector('.item-status');
-                                if (statusElement) {
-                                    statusElement.textContent = 'Cancelled';
-                                    statusElement.className = 'item-status text-red-600';
-                                }
-
-                                // Remove the cancel button
-                                const cancelButton = itemElement.querySelector('button[onclick*="cancelOrder"]');
-                                if (cancelButton) {
-                                    cancelButton.remove();
-                                }
-                            }
-                        } else {
-                            failCount++;
-                            allSuccessful = false;
-                            console.error(`Failed to cancel item ${productId}:`, result.message);
-
-                            // Log more details about the failed cancellation
-                            console.error(`Item status: ${document.querySelector(`[data-product-id="${productId}"] .item-status`).textContent}`);
-                            console.error(`Failure reason: ${result.message || 'Unknown reason'}`);
-                        }
-                    } catch (error) {
-                        failCount++;
-                        allSuccessful = false;
-                        console.error(`Error cancelling item ${productId}:`, error);
-                    }
-
-                    // Add a small delay between requests to avoid overwhelming the server
-                    await new Promise(resolve => setTimeout(resolve, 300));
-                }
-
-                // After all cancellation requests are processed
-                // Hide the Pay Now button immediately if all items were cancelled
-                if (successCount > 0 && successCount === finalItemsToCancel.length) {
-                    const payNowBtn = document.getElementById('payNowBtn');
-                    if (payNowBtn) {
-                        payNowBtn.style.display = 'none';
-                    }
-
-                    // Hide the payment alert at the top
-                    const paymentAlert = document.querySelector('.bg-red-100.border-l-4.border-red-500');
-                    if (paymentAlert) {
-                        paymentAlert.style.display = 'none';
-                    }
-                }
-
-                // Show appropriate message based on results
-                if (successCount > 0) {
-                    if (allSuccessful && finalItemsToCancel.length > 0) {
-                        await Swal.fire({
-                            title: 'All Items Cancelled',
-                            text: `All ${successCount} items have been cancelled successfully. The page will reload to update the order details.`,
-                            icon: 'success',
+                        // Show specific error message
+                        Swal.fire({
+                            title: 'Error',
+                            text: errorJson.message || 'Failed to cancel items',
+                            icon: 'error',
                             confirmButtonText: 'OK'
                         });
-                    } else if (successCount < finalItemsToCancel.length) {
-                        // Show warning for partial cancellation
+                    } catch (e) {
+                        // If it's not JSON, just show the raw text
+                        console.error('Error parsing response:', e);
+                        console.error('Raw response text:', errorText);
+
+                        Swal.fire({
+                            title: 'Error',
+                            text: 'Failed to cancel items. Please try again.',
+                            icon: 'error',
+                            confirmButtonText: 'OK'
+                        });
+                    }
+                    return;
+                }
+
+                // Parse the response
+                const result = await response.json();
+                console.log('Cancel all response:', result);
+
+                if (result.success) {
+                    // If all items were cancelled, hide the Pay Now button
+                    if (result.allCancelled) {
+                        const payNowBtn = document.getElementById('payNowBtn');
+                        if (payNowBtn) {
+                            payNowBtn.style.display = 'none';
+                        }
+
+                        // Hide the payment alert at the top
+                        const paymentAlert = document.querySelector('.bg-red-100.border-l-4.border-red-500');
+                        if (paymentAlert) {
+                            paymentAlert.style.display = 'none';
+                        }
+
                         await Swal.fire({
-                            title: 'Partial Cancellation',
-                            text: `${successCount} items were cancelled, but ${failCount} items could not be cancelled. Only items with "Processing" status can be cancelled. The page will reload with the updated order details.`,
-                            icon: 'warning',
+                            title: 'All Items Cancelled',
+                            text: `All ${result.cancelledCount} items have been cancelled successfully. The page will reload to update the order details.`,
+                            icon: 'success',
                             confirmButtonText: 'OK'
                         });
                     } else {
                         await Swal.fire({
                             title: 'Items Cancelled',
-                            text: `${successCount} items have been cancelled successfully. The page will reload to update the order details.`,
+                            text: `${result.cancelledCount} items have been cancelled successfully. The page will reload to update the order details.`,
                             icon: 'success',
                             confirmButtonText: 'OK'
                         });
@@ -600,25 +424,26 @@
 
                     // Reload the page to get the updated order details from the server
                     window.location.reload();
-                } else if (finalItemsToCancel.length === 0) {
-                    // No items to cancel
-                    await Swal.fire({
-                        title: 'No Items to Cancel',
-                        text: 'There are no items with "Processing" status that can be cancelled.',
-                        icon: 'info',
-                        confirmButtonText: 'OK'
-                    });
                 } else {
-                    // No items were cancelled
-                    await Swal.fire({
-                        title: 'No Changes',
-                        text: 'No items were cancelled. Only items with "Processing" status can be cancelled.',
-                        icon: 'info',
+                    // Show error message
+                    Swal.fire({
+                        title: 'Error',
+                        text: result.message || 'Failed to cancel items',
+                        icon: 'error',
                         confirmButtonText: 'OK'
                     });
                 }
             } catch (error) {
                 console.error('Error cancelling all items:', error);
+                console.error('Error stack:', error.stack);
+
+                // Log more details about the error
+                console.error('Error details:', {
+                    name: error.name,
+                    message: error.message,
+                    // Include orderId only if it's defined
+                    ...(typeof orderId !== 'undefined' ? { orderId } : {})
+                });
 
                 // Provide more detailed error message
                 let errorMessage = 'Failed to cancel all items.';
@@ -632,6 +457,76 @@
                     icon: 'error',
                     confirmButtonText: 'OK'
                 });
+
+                // Try the old method as a fallback
+                const shouldTryFallback = await Swal.fire({
+                    title: 'Try Alternative Method?',
+                    text: 'Would you like to try an alternative method to cancel the items?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, try alternative',
+                    cancelButtonText: 'No, cancel'
+                });
+
+                if (shouldTryFallback.isConfirmed) {
+                    // Find all cancel buttons and click them programmatically
+                    const cancelButtons = document.querySelectorAll('button[onclick*="cancelOrder"]');
+                    console.log(`Found ${cancelButtons.length} cancel buttons to try as fallback`);
+
+                    if (cancelButtons.length > 0) {
+                        // Show loading indicator
+                        Swal.fire({
+                            title: 'Processing',
+                            text: 'Trying alternative cancellation method...',
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+
+                        let successCount = 0;
+
+                        for (const button of cancelButtons) {
+                            try {
+                                // Simulate a click on each cancel button
+                                button.click();
+                                // Add a small delay between clicks
+                                await new Promise(resolve => setTimeout(resolve, 500));
+                                successCount++;
+                            } catch (clickError) {
+                                console.error('Error clicking cancel button:', clickError);
+                            }
+                        }
+
+                        if (successCount > 0) {
+                            Swal.fire({
+                                title: 'Cancellation Initiated',
+                                text: `Alternative method initiated for ${successCount} items. The page will reload shortly.`,
+                                icon: 'info',
+                                confirmButtonText: 'OK'
+                            }).then(() => {
+                                // Reload the page after a short delay
+                                setTimeout(() => {
+                                    window.location.reload();
+                                }, 1000);
+                            });
+                        } else {
+                            Swal.fire({
+                                title: 'Alternative Method Failed',
+                                text: 'Could not cancel items using the alternative method.',
+                                icon: 'error',
+                                confirmButtonText: 'OK'
+                            });
+                        }
+                    } else {
+                        Swal.fire({
+                            title: 'No Cancel Buttons Found',
+                            text: 'Could not find any cancel buttons to use as an alternative method.',
+                            icon: 'error',
+                            confirmButtonText: 'OK'
+                        });
+                    }
+                }
             }
         }
 

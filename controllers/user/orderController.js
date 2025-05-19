@@ -664,10 +664,9 @@ const cancelOrder = async (req, res) => {
         console.log('All items in order are now cancelled');
         order.orderStatus = "Cancelled";
 
-        // If payment is pending or failed, mark it as cancelled
-        if (order.paymentStatus === 'Pending' || order.paymentStatus === 'Failed') {
-            order.paymentStatus = 'Cancelled';
-        }
+        // Don't change payment status as "Cancelled" is not a valid enum value
+        // Valid values are only: "Pending", "Paid", "Failed"
+        console.log(`Order payment status remains as: ${order.paymentStatus}`);
     }
 
     console.log(`Order totals updated: subtotal=${newSubtotal}, tax=${newTax}, finalAmount=${order.finalAmount}, allCancelled=${allItemsCancelled}`);
@@ -1021,11 +1020,259 @@ const completePayment = async (req, res) => {
   }
 };
 
+/**
+ * Cancel all items in an order at once.
+ * This is a specialized endpoint for the "Cancel All" button.
+ */
+const cancelAllItems = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const userId = req.session.user;
+    const { cancelReason } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User not authenticated",
+      });
+    }
+
+    console.log(`Looking for order with ID: ${orderId} and userId: ${userId}`);
+
+    // First try to find by _id and populate the product references
+    let order = await Order.findOne({ _id: orderId, userId })
+      .populate("orderedItems.product")
+      .exec();
+
+    // If not found, try to find by orderId field
+    if (!order) {
+      console.log(`Order not found by _id, trying orderId field`);
+      order = await Order.findOne({ orderId: orderId, userId })
+        .populate("orderedItems.product")
+        .exec();
+    }
+
+    // If still not found, try to find by orderNumber
+    if (!order) {
+      console.log(`Order not found by orderId field, trying orderNumber field`);
+      order = await Order.findOne({ orderNumber: orderId, userId })
+        .populate("orderedItems.product")
+        .exec();
+    }
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    console.log(`Processing cancellation for all items in order: ${orderId}`);
+
+    // Log the order structure to help debug
+    console.log('Order structure:', {
+      id: order._id,
+      orderNumber: order.orderNumber,
+      paymentMethod: order.paymentMethod,
+      paymentStatus: order.paymentStatus,
+      itemCount: order.orderedItems ? order.orderedItems.length : 0
+    });
+
+    // Check if orderedItems exists and is an array
+    if (!order.orderedItems || !Array.isArray(order.orderedItems)) {
+      console.error('orderedItems is not an array:', order.orderedItems);
+      return res.status(400).json({
+        success: false,
+        message: "Order items data is invalid",
+      });
+    }
+
+    // Get all items that are in "Processing" status (only these can be cancelled)
+    const itemsToCancel = order.orderedItems.filter(item => item.status === "Processing");
+
+    console.log(`Found ${itemsToCancel.length} items with "Processing" status out of ${order.orderedItems.length} total items`);
+
+    // Log the items to be cancelled
+    itemsToCancel.forEach((item, index) => {
+      console.log(`Item ${index + 1} to cancel:`, {
+        id: item._id,
+        productId: item.product,
+        status: item.status,
+        quantity: item.quantity,
+        price: item.price
+      });
+    });
+
+    if (itemsToCancel.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No items in this order can be cancelled",
+      });
+    }
+
+    // Track cancelled amounts for potential refunds
+    let totalCancelledAmount = 0;
+
+    // Cancel all eligible items
+    for (const item of itemsToCancel) {
+      // Update item status
+      item.status = "Cancelled";
+      item.order_cancelled_date = new Date();
+      item.order_cancel_reason = cancelReason || "User requested cancellation of all items";
+
+      // Calculate the cancelled item amount
+      const cancelledAmount = item.price * item.quantity;
+      totalCancelledAmount += cancelledAmount;
+
+      // Restore product quantity - handle different product reference formats
+      let productId;
+
+      if (typeof item.product === 'object') {
+        // If it's a populated product object
+        if (item.product._id) {
+          productId = item.product._id.toString();
+        } else {
+          productId = item.product.toString();
+        }
+      } else {
+        // If it's a string ID
+        productId = item.product;
+      }
+
+      console.log(`Restoring quantity for product: ${productId}, quantity: ${item.quantity}`);
+
+      try {
+        // Make sure we have a valid product ID
+        if (!productId || productId === 'undefined' || productId === 'null') {
+          console.error(`Invalid product ID: ${productId}`);
+          continue; // Skip this item
+        }
+
+        const result = await Product.findByIdAndUpdate(productId, {
+          $inc: { quantity: item.quantity },
+        });
+
+        if (result) {
+          console.log(`Successfully restored quantity for product: ${productId}`);
+        } else {
+          console.error(`Product not found for ID: ${productId}`);
+        }
+      } catch (productError) {
+        console.error(`Error restoring product quantity for ${productId}:`, productError);
+        // Continue with cancellation even if product update fails
+      }
+    }
+
+    // Recalculate order totals
+    // Get all non-cancelled items after the cancellations
+    const nonCancelledItems = order.orderedItems.filter(i => i.status !== "Cancelled");
+
+    // Calculate new subtotal
+    const newSubtotal = nonCancelledItems.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+
+    // Update order totals
+    order.totalPrice = newSubtotal;
+
+    // Recalculate tax (assuming 9% tax rate)
+    const newTax = newSubtotal * 0.09;
+    order.taxAmount = newTax;
+
+    // Calculate new final amount (subtotal + shipping + tax - discount)
+    const newFinalAmount = newSubtotal + (order.shippingCharge || 0) + newTax - (order.discount || 0);
+    order.finalAmount = Math.max(0, newFinalAmount); // Ensure it's not negative
+
+    // Check if all items are now cancelled
+    const allItemsCancelled = order.orderedItems.every(i => i.status === "Cancelled");
+
+    // If all items are cancelled, update the order status
+    if (allItemsCancelled) {
+      console.log('All items in order are now cancelled');
+      order.orderStatus = "Cancelled";
+
+      // If payment is pending, keep it as pending
+      // If payment is failed, keep it as failed
+      // We don't need to change the payment status as "Cancelled" is not a valid enum value
+      console.log(`Order payment status remains as: ${order.paymentStatus}`);
+    }
+
+    console.log(`Order totals updated: subtotal=${newSubtotal}, tax=${newTax}, finalAmount=${order.finalAmount}, allCancelled=${allItemsCancelled}`);
+
+    // Process refund for paid orders (Razorpay or Wallet)
+    if ((order.paymentMethod === 'razorpay' && order.paymentStatus === 'Paid') || order.paymentMethod === 'wallet') {
+      try {
+        // Find or create user wallet
+        const Wallet = require("../../models/walletSchema");
+        const WalletTransaction = require("../../models/walletTransactionSchema");
+
+        let wallet = await Wallet.findOne({ user: userId });
+        if (!wallet) {
+          wallet = new Wallet({
+            user: userId,
+            balance: 0
+          });
+        }
+
+        // Add refund to wallet
+        wallet.balance += totalCancelledAmount;
+        await wallet.save();
+
+        // Create a wallet transaction record
+        const transaction = new WalletTransaction({
+          user: userId,
+          amount: totalCancelledAmount,
+          type: "credit",
+          description: `Refund for cancelled items in order #${orderId.substring(0, 8)}`,
+          status: "completed",
+          orderId: orderId
+        });
+
+        // Save the transaction
+        await transaction.save();
+
+        console.log(`Refund processed: ${totalCancelledAmount} added to wallet for user ${userId}`);
+      } catch (refundError) {
+        console.error("Error processing refund:", refundError);
+        // Continue with cancellation even if refund fails
+        // We'll log the error but not fail the cancellation
+      }
+    }
+
+    await order.save();
+
+    res.status(200)
+      .header('Content-Type', 'application/json')
+      .json({
+        success: true,
+        message: `Successfully cancelled ${itemsToCancel.length} items in the order`,
+        cancelledCount: itemsToCancel.length,
+        allCancelled: allItemsCancelled
+      });
+
+  } catch (error) {
+    console.error("Error cancelling all items in order:", error);
+    console.error("Error stack:", error.stack);
+
+    // Don't reference variables that might be out of scope in the catch block
+    console.error("Error details:", JSON.stringify({
+      message: error.message,
+      errorName: error.name
+    }));
+
+    res.status(500)
+      .header('Content-Type', 'application/json')
+      .json({
+        success: false,
+        message: "Failed to cancel items in order: " + error.message,
+      });
+  }
+};
+
 module.exports = {
   getOrderDetails,
   getUserOrders,
   trackOrder,
   cancelOrder,
+  cancelAllItems,
   requestReturn,
   downloadInvoice,
   completePayment
