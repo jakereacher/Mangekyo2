@@ -17,21 +17,21 @@
                 <!-- Basic Information -->
                 <div class="col-md-8">
                     <h5 class="border-bottom pb-2 mb-3">Basic Information</h5>
-                    
+
                     <div class="mb-3">
                         <label for="productName" class="form-label">Product Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="productName" name="productName" required 
+                        <input type="text" class="form-control" id="productName" name="productName" required
                                minlength="3" maxlength="100">
                         <div class="invalid-feedback">
                             Please enter a valid product name (3-100 characters).
                         </div>
                     </div>
-                    
+
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="category" class="form-label">Category <span class="text-danger">*</span></label>
                             <select class="form-select" id="category" name="category" required>
-                                <option value="" selected>Select a category</option>
+                                <option value="" selected>Categories</option>
                                 <% categories.forEach(category => { %>
                                     <option value="<%= category._id %>"><%= category.name %></option>
                                 <% }); %>
@@ -40,13 +40,13 @@
                                 Please select a category.
                             </div>
                         </div>
-                        
+
                         <div class="col-md-6 mb-3">
                             <label for="brand" class="form-label">Brand</label>
                             <input type="text" class="form-control" id="brand" name="brand" maxlength="50">
                         </div>
                     </div>
-                    
+
                     <div class="mb-3">
                         <label for="description" class="form-label">Description <span class="text-danger">*</span></label>
                         <textarea class="form-control" id="description" name="description" rows="4" required minlength="10" maxlength="2000"></textarea>
@@ -57,7 +57,7 @@
                             Please enter a product description (at least 10 characters).
                         </div>
                     </div>
-                    
+
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="price" class="form-label">Price (₹) <span class="text-danger">*</span></label>
@@ -69,7 +69,7 @@
                                 Please enter a valid price.
                             </div>
                         </div>
-                        
+
                         <div class="col-md-6 mb-3">
                             <label for="stock" class="form-label">Stock <span class="text-danger">*</span></label>
                             <input type="number" class="form-control" id="stock" name="stock" min="0" required>
@@ -79,11 +79,11 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Images and Additional Info -->
                 <div class="col-md-4">
                     <h5 class="border-bottom pb-2 mb-3">Images</h5>
-                    
+
                     <div class="mb-3">
                         <label for="productImages" class="form-label">Product Images <span class="text-danger">*</span></label>
                         <input type="file" class="form-control" id="productImages" name="images" multiple accept="image/jpeg,image/png,image/webp" required>
@@ -94,24 +94,24 @@
                             Please select at least one product image.
                         </div>
                     </div>
-                    
+
                     <div id="imagePreviewContainer" class="row mt-3 mb-4">
                         <!-- Image previews will be added here -->
                     </div>
-                    
+
                     <h5 class="border-bottom pb-2 mb-3 mt-4">Additional Information</h5>
-                    
+
                     <div class="mb-3">
                         <label for="sku" class="form-label">SKU</label>
                         <input type="text" class="form-control" id="sku" name="sku" maxlength="30">
                     </div>
-                    
+
                     <div class="form-check form-switch mb-3">
                         <input class="form-check-input" type="checkbox" role="switch" id="isListed" name="isListed" checked>
                         <label class="form-check-label" for="isListed">Active</label>
                     </div>
                 </div>
-                
+
                 <div class="col-12 mt-4 text-end">
                     <button type="button" class="btn btn-secondary me-2" onclick="window.location.href='/admin/products'">
                         Cancel
@@ -129,18 +129,18 @@
     document.addEventListener('DOMContentLoaded', function() {
         // Form validation
         const form = document.getElementById('addProductForm');
-        
+
         form.addEventListener('submit', function(event) {
             if (!form.checkValidity()) {
                 event.preventDefault();
                 event.stopPropagation();
-                
+
                 // Find the first invalid element and focus it
                 const invalidElement = form.querySelector(':invalid');
                 if (invalidElement) {
                     invalidElement.focus();
                 }
-                
+
                 // Show error toast
                 Swal.fire({
                     title: 'Validation Error',
@@ -153,26 +153,26 @@
                     timerProgressBar: true
                 });
             }
-            
+
             form.classList.add('was-validated');
         });
-        
+
         // Character counter for description
         const description = document.getElementById('description');
         const descriptionCharCount = document.getElementById('descriptionCharCount');
-        
+
         description.addEventListener('input', function() {
             descriptionCharCount.textContent = this.value.length;
         });
-        
+
         // Image preview
         const imageInput = document.getElementById('productImages');
         const previewContainer = document.getElementById('imagePreviewContainer');
-        
+
         imageInput.addEventListener('change', function() {
             // Clear previous previews
             previewContainer.innerHTML = '';
-            
+
             // Check if files are selected
             if (this.files && this.files.length > 0) {
                 // Check if too many files are selected
@@ -185,7 +185,7 @@
                     this.value = ''; // Clear the input
                     return;
                 }
-                
+
                 // Check file sizes and types
                 let validFiles = true;
                 Array.from(this.files).forEach(file => {
@@ -197,7 +197,7 @@
                         });
                         validFiles = false;
                     }
-                    
+
                     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
                         Swal.fire({
                             title: 'Invalid File Type',
@@ -207,41 +207,41 @@
                         validFiles = false;
                     }
                 });
-                
+
                 if (!validFiles) {
                     this.value = ''; // Clear the input
                     return;
                 }
-                
+
                 // Create previews for each file
                 Array.from(this.files).forEach((file, index) => {
                     const reader = new FileReader();
-                    
+
                     reader.onload = function(e) {
                         const col = document.createElement('div');
                         col.className = 'col-6 mb-2';
-                        
+
                         const img = document.createElement('img');
                         img.src = e.target.result;
                         img.className = 'img-thumbnail';
                         img.style.height = '150px';
                         img.style.objectFit = 'cover';
                         img.alt = `Preview ${index + 1}`;
-                        
+
                         col.appendChild(img);
                         previewContainer.appendChild(col);
                     };
-                    
+
                     reader.readAsDataURL(file);
                 });
             }
         });
-        
+
         // Generate SKU automatically based on product name and category
         const productName = document.getElementById('productName');
         const category = document.getElementById('category');
         const sku = document.getElementById('sku');
-        
+
         function generateSKU() {
             if (productName.value && category.value) {
                 const categoryText = category.options[category.selectedIndex].text;
@@ -250,14 +250,14 @@
                     .map(word => word.charAt(0))
                     .join('')
                     .toUpperCase();
-                
+
                 const categoryInitial = categoryText.charAt(0).toUpperCase();
                 const randomNum = Math.floor(1000 + Math.random() * 9000);
-                
+
                 sku.value = `${categoryInitial}${nameInitials}-${randomNum}`;
             }
         }
-        
+
         // Generate SKU when product name or category changes
         productName.addEventListener('blur', generateSKU);
         category.addEventListener('change', generateSKU);

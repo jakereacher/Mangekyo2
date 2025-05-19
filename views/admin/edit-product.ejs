@@ -114,6 +114,7 @@
                                     <div class="col-sm-6 mb-3">
                                         <label class="form-label">Category</label>
                                         <select class="form-select border" style="width: 150px;" name="category">
+                                            <option value="">Categories</option>
                                             <% categories.forEach(cat => { %>
                                                 <option value="<%= cat.name %>" <%= cat.name === product.category.name ? 'selected' : '' %>>
                                                     <%= cat.name %>

@@ -294,10 +294,13 @@
 
     <!-- Top Products Table -->
     <div class="card shadow mb-4">
-        <div class="card-header py-3">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h6 class="m-0 font-weight-bold text-primary">Top Selling Products</h6>
+            <% if (productsPagination.totalPages > 1) { %>
+                <span class="small text-muted">Page <%= productsPagination.page %> of <%= productsPagination.totalPages %></span>
+            <% } %>
         </div>
-        <div class="card-body">
+        <div id="top-products-container" class="card-body">
             <div class="table-responsive">
                 <table class="table table-bordered" width="100%" cellspacing="0">
                     <thead>
@@ -342,15 +345,70 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- Pagination for Top Products -->
+            <% if (productsPagination.totalPages > 1 || productsPagination.totalItems > 0) { %>
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <div class="d-flex align-items-center">
+                    <div class="me-3">
+                        Showing <%= (productsPagination.page - 1) * productsPagination.limit + 1 %> to
+                        <%= Math.min(productsPagination.page * productsPagination.limit, productsPagination.totalItems) %>
+                        of <%= productsPagination.totalItems %> products
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <label for="productsLimit" class="me-2 mb-0">Show:</label>
+                        <select id="productsLimit" class="form-select form-select-sm" style="width: auto;">
+                            <option value="5" <%= productsPagination.limit === 5 ? 'selected' : '' %>>5</option>
+                            <option value="10" <%= productsPagination.limit === 10 ? 'selected' : '' %>>10</option>
+                            <option value="25" <%= productsPagination.limit === 25 ? 'selected' : '' %>>25</option>
+                            <option value="50" <%= productsPagination.limit === 50 ? 'selected' : '' %>>50</option>
+                        </select>
+                    </div>
+                </div>
+                <nav aria-label="Page navigation" class="products-pagination">
+                    <ul class="pagination">
+                        <li class="page-item <%= productsPagination.page === 1 ? 'disabled' : '' %>">
+                            <a class="page-link" href="?productsPage=<%= productsPagination.page - 1 %>&page=<%= pagination.page %>&filter=<%= filters.filter %>&startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>&sortBy=<%= filters.sortBy %>&sortOrder=<%= filters.sortOrder %>&limit=<%= pagination.limit %>&productsLimit=<%= productsPagination.limit %>">Previous</a>
+                        </li>
+
+                        <% for(let i = 1; i <= productsPagination.totalPages; i++) { %>
+                            <% if (
+                                i === 1 ||
+                                i === productsPagination.totalPages ||
+                                (i >= productsPagination.page - 1 && i <= productsPagination.page + 1)
+                            ) { %>
+                                <li class="page-item <%= productsPagination.page === i ? 'active' : '' %>">
+                                    <a class="page-link" href="?productsPage=<%= i %>&page=<%= pagination.page %>&filter=<%= filters.filter %>&startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>&sortBy=<%= filters.sortBy %>&sortOrder=<%= filters.sortOrder %>&limit=<%= pagination.limit %>&productsLimit=<%= productsPagination.limit %>"><%= i %></a>
+                                </li>
+                            <% } else if (
+                                (i === 2 && productsPagination.page > 3) ||
+                                (i === productsPagination.totalPages - 1 && productsPagination.page < productsPagination.totalPages - 2)
+                            ) { %>
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            <% } %>
+                        <% } %>
+
+                        <li class="page-item <%= productsPagination.page === productsPagination.totalPages ? 'disabled' : '' %>">
+                            <a class="page-link" href="?productsPage=<%= productsPagination.page + 1 %>&page=<%= pagination.page %>&filter=<%= filters.filter %>&startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>&sortBy=<%= filters.sortBy %>&sortOrder=<%= filters.sortOrder %>&limit=<%= pagination.limit %>&productsLimit=<%= productsPagination.limit %>">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+            <% } %>
         </div>
     </div>
 
     <!-- Orders Table -->
     <div class="card shadow mb-4">
-        <div class="card-header py-3">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h6 class="m-0 font-weight-bold text-primary">Order Details</h6>
+            <% if (pagination.totalPages > 1) { %>
+                <span class="small text-muted">Page <%= pagination.page %> of <%= pagination.totalPages %></span>
+            <% } %>
         </div>
-        <div class="card-body">
+        <div id="orders-container" class="card-body">
             <div class="table-responsive">
                 <table class="table table-bordered" width="100%" cellspacing="0">
                     <thead>
@@ -369,7 +427,10 @@
                         <% if (orders && orders.length > 0) { %>
                             <% orders.forEach(order => { %>
                                 <tr>
-                                    <td><%= order.orderId %></td>
+                                    <td>
+                                        <span class="fw-medium">Order #<%= order.orderNumber || order.orderId %></span>
+                                        <div class="small text-muted">ID: <%= order._id.toString().substring(0, 8) %></div>
+                                    </td>
                                     <td><%= order.formattedOrderDate %></td>
                                     <td><%= order.customerName %></td>
                                     <td><%= order.paymentMethod ? order.paymentMethod.toUpperCase() : 'UNKNOWN' %></td>
@@ -419,15 +480,26 @@
                 <!-- Pagination -->
                 <% if (pagination.totalPages > 1) { %>
                 <div class="d-flex justify-content-between align-items-center mt-4">
-                    <div>
-                        Showing <%= (pagination.page - 1) * pagination.limit + 1 %> to
-                        <%= Math.min(pagination.page * pagination.limit, pagination.totalItems) %>
-                        of <%= pagination.totalItems %> entries
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            Showing <%= (pagination.page - 1) * pagination.limit + 1 %> to
+                            <%= Math.min(pagination.page * pagination.limit, pagination.totalItems) %>
+                            of <%= pagination.totalItems %> entries
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <label for="ordersLimit" class="me-2 mb-0">Show:</label>
+                            <select id="ordersLimit" class="form-select form-select-sm" style="width: auto;">
+                                <option value="10" <%= pagination.limit === 10 ? 'selected' : '' %>>10</option>
+                                <option value="25" <%= pagination.limit === 25 ? 'selected' : '' %>>25</option>
+                                <option value="50" <%= pagination.limit === 50 ? 'selected' : '' %>>50</option>
+                                <option value="100" <%= pagination.limit === 100 ? 'selected' : '' %>>100</option>
+                            </select>
+                        </div>
                     </div>
-                    <nav aria-label="Page navigation">
+                    <nav aria-label="Page navigation" class="orders-pagination">
                         <ul class="pagination">
                             <li class="page-item <%= pagination.page === 1 ? 'disabled' : '' %>">
-                                <a class="page-link" href="?page=<%= pagination.page - 1 %>&filter=<%= filters.filter %>&startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>&sortBy=<%= filters.sortBy %>&sortOrder=<%= filters.sortOrder %>&limit=<%= pagination.limit %>">Previous</a>
+                                <a class="page-link" href="?page=<%= pagination.page - 1 %>&productsPage=<%= productsPagination.page %>&filter=<%= filters.filter %>&startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>&sortBy=<%= filters.sortBy %>&sortOrder=<%= filters.sortOrder %>&limit=<%= pagination.limit %>&productsLimit=<%= productsPagination.limit %>">Previous</a>
                             </li>
 
                             <% for(let i = 1; i <= pagination.totalPages; i++) { %>
@@ -437,7 +509,7 @@
                                     (i >= pagination.page - 1 && i <= pagination.page + 1)
                                 ) { %>
                                     <li class="page-item <%= pagination.page === i ? 'active' : '' %>">
-                                        <a class="page-link" href="?page=<%= i %>&filter=<%= filters.filter %>&startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>&sortBy=<%= filters.sortBy %>&sortOrder=<%= filters.sortOrder %>&limit=<%= pagination.limit %>"><%= i %></a>
+                                        <a class="page-link" href="?page=<%= i %>&productsPage=<%= productsPagination.page %>&filter=<%= filters.filter %>&startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>&sortBy=<%= filters.sortBy %>&sortOrder=<%= filters.sortOrder %>&limit=<%= pagination.limit %>&productsLimit=<%= productsPagination.limit %>"><%= i %></a>
                                     </li>
                                 <% } else if (
                                     (i === 2 && pagination.page > 3) ||
@@ -450,7 +522,7 @@
                             <% } %>
 
                             <li class="page-item <%= pagination.page === pagination.totalPages ? 'disabled' : '' %>">
-                                <a class="page-link" href="?page=<%= pagination.page + 1 %>&filter=<%= filters.filter %>&startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>&sortBy=<%= filters.sortBy %>&sortOrder=<%= filters.sortOrder %>&limit=<%= pagination.limit %>">Next</a>
+                                <a class="page-link" href="?page=<%= pagination.page + 1 %>&productsPage=<%= productsPagination.page %>&filter=<%= filters.filter %>&startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>&sortBy=<%= filters.sortBy %>&sortOrder=<%= filters.sortOrder %>&limit=<%= pagination.limit %>&productsLimit=<%= productsPagination.limit %>">Next</a>
                             </li>
                         </ul>
                     </nav>
@@ -462,3 +534,147 @@
 </div>
 
 <%- include("partials/footer") %>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize AJAX pagination for top products
+        initializeAjaxPagination('products-pagination', 'top-products-container', 'productsPage');
+
+        // Initialize AJAX pagination for orders
+        initializeAjaxPagination('orders-pagination', 'orders-container', 'page');
+
+        // Initialize AJAX for products limit change
+        document.getElementById('productsLimit')?.addEventListener('change', function() {
+            loadPageWithAjax({
+                productsLimit: this.value,
+                productsPage: 1
+            });
+        });
+
+        // Initialize AJAX for orders limit change
+        document.getElementById('ordersLimit')?.addEventListener('change', function() {
+            loadPageWithAjax({
+                limit: this.value,
+                page: 1
+            });
+        });
+    });
+
+    // Function to initialize AJAX pagination for a container
+    function initializeAjaxPagination(paginationContainerClass, contentContainerId, pageParamName) {
+        document.querySelectorAll(`.${paginationContainerClass} .page-link`).forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                // Extract page number from URL
+                const url = new URL(this.href);
+                const pageNumber = url.searchParams.get(pageParamName);
+
+                // Create params object with just the page parameter
+                const params = {};
+                params[pageParamName] = pageNumber;
+
+                // Load the page with AJAX
+                loadPageWithAjax(params);
+            });
+        });
+    }
+
+    // Function to load page content with AJAX
+    function loadPageWithAjax(params) {
+        // Show loading spinner
+        document.body.classList.add('loading');
+
+        // Get current URL and update with new params
+        const currentUrl = new URL(window.location.href);
+
+        // Update URL with new params
+        Object.keys(params).forEach(key => {
+            currentUrl.searchParams.set(key, params[key]);
+        });
+
+        // Update browser history without refreshing
+        window.history.pushState({}, '', currentUrl.toString());
+
+        // Fetch the new content
+        fetch(currentUrl.toString(), {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.text())
+        .then(html => {
+            // Create a temporary element to parse the HTML
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+
+            // Update top products content if it exists
+            const newTopProductsContent = tempDiv.querySelector('#top-products-container');
+            if (newTopProductsContent) {
+                document.getElementById('top-products-container').innerHTML = newTopProductsContent.innerHTML;
+
+                // Re-initialize pagination for top products
+                initializeAjaxPagination('products-pagination', 'top-products-container', 'productsPage');
+            }
+
+            // Update orders content if it exists
+            const newOrdersContent = tempDiv.querySelector('#orders-container');
+            if (newOrdersContent) {
+                document.getElementById('orders-container').innerHTML = newOrdersContent.innerHTML;
+
+                // Re-initialize pagination for orders
+                initializeAjaxPagination('orders-pagination', 'orders-container', 'page');
+            }
+
+            // Hide loading spinner
+            document.body.classList.remove('loading');
+        })
+        .catch(error => {
+            console.error('Error loading content:', error);
+            document.body.classList.remove('loading');
+
+            // Show error message
+            Swal.fire({
+                title: 'Error',
+                text: 'Failed to load content. Please try again.',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        });
+    }
+</script>
+
+<style>
+    /* Loading spinner styles */
+    body.loading::after {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.7);
+        z-index: 9999;
+    }
+
+    body.loading::before {
+        content: '';
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        width: 50px;
+        height: 50px;
+        margin-top: -25px;
+        margin-left: -25px;
+        border-radius: 50%;
+        border: 5px solid #f3f3f3;
+        border-top-color: #3498db;
+        animation: spin 1s linear infinite;
+        z-index: 10000;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>

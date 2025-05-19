@@ -29,10 +29,15 @@ exports.renderSalesReport = async (req, res) => {
     const sortBy = req.query.sortBy || 'date';
     const sortOrder = req.query.sortOrder || 'desc';
 
-    // Pagination parameters
+    // Pagination parameters for orders
     const page = Math.max(parseInt(req.query.page) || 1, 1); // Ensure page is at least 1
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
+
+    // Pagination parameters for top products
+    const productsPage = Math.max(parseInt(req.query.productsPage) || 1, 1);
+    const productsLimit = parseInt(req.query.productsLimit) || 5;
+    const productsSkip = (productsPage - 1) * productsLimit;
 
     // Date filtering logic
     let startDate, endDate;
@@ -112,6 +117,7 @@ exports.renderSalesReport = async (req, res) => {
         $group: {
           _id: "$_id",
           orderId: { $first: "$orderId" },
+          orderNumber: { $first: "$orderNumber" }, // Include orderNumber field
           orderDate: { $first: "$orderDate" },
           userId: { $first: "$userId" },
           userName: { $first: "$userDetails.name" },
@@ -282,7 +288,21 @@ exports.renderSalesReport = async (req, res) => {
         }
       },
       { $sort: { revenue: -1 } },
-      { $limit: 5 }
+      { $skip: productsSkip },
+      { $limit: productsLimit }
+    ];
+
+    // Top products count pipeline for pagination
+    const topProductsCountPipeline = [
+      { $match: matchStage },
+      { $unwind: "$orderedItems" },
+      ...(orderStatus !== 'all' ? [{ $match: { "orderedItems.status": orderStatus } }] : []),
+      {
+        $group: {
+          _id: "$orderedItems.product"
+        }
+      },
+      { $count: "total" }
     ];
 
     // Status distribution pipeline
@@ -300,12 +320,13 @@ exports.renderSalesReport = async (req, res) => {
     ];
 
     // Execute all aggregations in parallel
-    const [orders, countResult, summaryResult, paymentMethodData, topProducts, statusDistribution] = await Promise.all([
+    const [orders, countResult, summaryResult, paymentMethodData, topProducts, topProductsCountResult, statusDistribution] = await Promise.all([
       Order.aggregate(ordersPipeline),
       Order.aggregate(countPipeline),
       Order.aggregate(summaryPipeline),
       Order.aggregate(paymentMethodPipeline),
       Order.aggregate(topProductsPipeline),
+      Order.aggregate(topProductsCountPipeline),
       Order.aggregate(statusDistributionPipeline)
     ]);
 
@@ -358,6 +379,7 @@ exports.renderSalesReport = async (req, res) => {
       return {
         _id: order._id,
         orderId: order.orderId || order._id.toString().slice(-6).toUpperCase(),
+        orderNumber: order.orderNumber, // Include the order number for display
         orderDate: order.orderDate,
         formattedOrderDate: moment(order.orderDate).format('YYYY-MM-DD HH:mm'),
         customerName: order.userName || 'Unknown',
@@ -374,9 +396,13 @@ exports.renderSalesReport = async (req, res) => {
       };
     });
 
-    // Get pagination data
+    // Get pagination data for orders
     const totalItems = countResult.length > 0 ? countResult[0].total : 0;
     const totalPages = Math.ceil(totalItems / limit);
+
+    // Get pagination data for top products
+    const totalProductItems = topProductsCountResult.length > 0 ? topProductsCountResult[0].total : 0;
+    const totalProductPages = Math.ceil(totalProductItems / productsLimit);
 
     // Format status distribution data
     const formattedStatusDistribution = statusDistribution.map(status => ({
@@ -385,8 +411,8 @@ exports.renderSalesReport = async (req, res) => {
       revenue: status.revenue
     }));
 
-    // Render the page with all data
-    res.render("admin-sales-report-new", {
+    // Prepare data for rendering
+    const renderData = {
       orders: formattedOrders,
       summary,
       paymentSummary,
@@ -409,8 +435,27 @@ exports.renderSalesReport = async (req, res) => {
         hasNextPage: page < totalPages,
         hasPrevPage: page > 1
       },
-      activePage: "reports"
-    });
+      productsPagination: {
+        page: productsPage,
+        limit: productsLimit,
+        totalItems: totalProductItems,
+        totalPages: totalProductPages,
+        hasNextPage: productsPage < totalProductPages,
+        hasPrevPage: productsPage > 1
+      },
+      activePage: "reports",
+      isAjaxRequest: req.xhr || (req.headers['x-requested-with'] === 'XMLHttpRequest')
+    };
+
+    // Check if this is an AJAX request
+    if (renderData.isAjaxRequest) {
+      // For AJAX requests, render the page normally
+      // The client-side JS will extract only the needed parts
+      res.render("admin-sales-report-new", renderData);
+    } else {
+      // For regular requests, render the full page
+      res.render("admin-sales-report-new", renderData);
+    }
   } catch (error) {
     console.error("Error generating sales report:", error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).render("admin/error", {
