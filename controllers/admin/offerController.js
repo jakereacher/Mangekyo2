@@ -4,20 +4,46 @@ const Category = require('../../models/categorySchema');
 const offerService = require('../../services/offerService');
 
 /**
- * Render all offers list page
+ * Render all offers list page with pagination
  */
 exports.renderOffersPage = async (req, res) => {
   try {
+    // Get pagination parameters from query string
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 2; // Default to 2 offers per page
+    const skip = (page - 1) * limit;
+
+    // Get total count for pagination
+    const totalOffers = await Offer.countDocuments();
+
+    // Get paginated offers
     const offers = await Offer.find()
       .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
       .lean();
+
+    // Calculate total pages
+    const totalPages = Math.ceil(totalOffers / limit) || 1; // Ensure at least 1 page even if no items
+
+    // Build search params for pagination links
+    const searchParams = req.query.search ? `&search=${encodeURIComponent(req.query.search)}` : '';
+    const searchParamsWithoutLimit = req.query.search ? `&search=${encodeURIComponent(req.query.search)}` : '';
 
     res.render('admin-offers', {
       title: 'All Offers',
       activePage: 'offers',
       offers,
       success: req.flash('success'),
-      error: req.flash('error')
+      error: req.flash('error'),
+      pagination: {
+        currentPage: page,
+        totalPages: totalPages,
+        totalItems: totalOffers,
+        limit: limit,
+        searchParams: searchParams + (limit !== 2 ? `&limit=${limit}` : ''),
+        searchParamsWithoutLimit: searchParamsWithoutLimit
+      }
     });
   } catch (error) {
     console.error('Error rendering offers page:', error);
@@ -27,20 +53,46 @@ exports.renderOffersPage = async (req, res) => {
 };
 
 /**
- * Render product offers list page
+ * Render product offers list page with pagination
  */
 exports.renderProductOffersPage = async (req, res) => {
   try {
+    // Get pagination parameters from query string
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 2; // Default to 2 offers per page
+    const skip = (page - 1) * limit;
+
+    // Get total count for pagination
+    const totalOffers = await Offer.countDocuments({ type: 'product' });
+
+    // Get paginated offers
     const offers = await Offer.find({ type: 'product' })
       .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
       .lean();
+
+    // Calculate total pages
+    const totalPages = Math.ceil(totalOffers / limit) || 1; // Ensure at least 1 page even if no items
+
+    // Build search params for pagination links
+    const searchParams = req.query.search ? `&search=${encodeURIComponent(req.query.search)}` : '';
+    const searchParamsWithoutLimit = req.query.search ? `&search=${encodeURIComponent(req.query.search)}` : '';
 
     res.render('admin-product-offers', {
       title: 'Product Offers',
       activePage: 'product-offers',
       offers,
       success: req.flash('success'),
-      error: req.flash('error')
+      error: req.flash('error'),
+      pagination: {
+        currentPage: page,
+        totalPages: totalPages,
+        totalItems: totalOffers,
+        limit: limit,
+        searchParams: searchParams + (limit !== 2 ? `&limit=${limit}` : ''),
+        searchParamsWithoutLimit: searchParamsWithoutLimit
+      }
     });
   } catch (error) {
     console.error('Error rendering product offers page:', error);
@@ -50,20 +102,46 @@ exports.renderProductOffersPage = async (req, res) => {
 };
 
 /**
- * Render category offers list page
+ * Render category offers list page with pagination
  */
 exports.renderCategoryOffersPage = async (req, res) => {
   try {
+    // Get pagination parameters from query string
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 2; // Default to 2 offers per page
+    const skip = (page - 1) * limit;
+
+    // Get total count for pagination
+    const totalOffers = await Offer.countDocuments({ type: 'category' });
+
+    // Get paginated offers
     const offers = await Offer.find({ type: 'category' })
       .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
       .lean();
+
+    // Calculate total pages
+    const totalPages = Math.ceil(totalOffers / limit) || 1; // Ensure at least 1 page even if no items
+
+    // Build search params for pagination links
+    const searchParams = req.query.search ? `&search=${encodeURIComponent(req.query.search)}` : '';
+    const searchParamsWithoutLimit = req.query.search ? `&search=${encodeURIComponent(req.query.search)}` : '';
 
     res.render('admin-category-offers', {
       title: 'Category Offers',
       activePage: 'category-offers',
       offers,
       success: req.flash('success'),
-      error: req.flash('error')
+      error: req.flash('error'),
+      pagination: {
+        currentPage: page,
+        totalPages: totalPages,
+        totalItems: totalOffers,
+        limit: limit,
+        searchParams: searchParams + (limit !== 2 ? `&limit=${limit}` : ''),
+        searchParamsWithoutLimit: searchParamsWithoutLimit
+      }
     });
   } catch (error) {
     console.error('Error rendering category offers page:', error);
