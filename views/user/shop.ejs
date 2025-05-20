@@ -189,8 +189,14 @@
                                             <% if (product.isNew) { %>
                                                 <div class="absolute top-2 right-2 bg-white text-black text-xs font-bold px-2 py-1 rounded">NEW</div>
                                             <% } %>
-                                            <% if (product.discount > 0) { %>
-                                                <div class="absolute top-2 left-2 bg-gray-700 text-white text-xs font-bold px-2 py-1 rounded border border-white">-<%= product.discount %>%</div>
+                                            <% if (product.hasOffer && product.discount > 0) { %>
+                                                <div class="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded">
+                                                    <% if (product.discountType === 'fixed') { %>
+                                                        ₹<%= Math.round(product.discountAmount) %> OFF
+                                                    <% } else { %>
+                                                        <%= Math.round(product.discount) %>% OFF
+                                                    <% } %>
+                                                </div>
                                             <% } %>
                                         </div>
                                         <div class="p-4">
@@ -202,9 +208,6 @@
                                                         <div class="flex items-center">
                                                             <span class="text-white font-bold">₹<%= product.displayPrice ? product.displayPrice.toFixed(2) : '0.00' %></span>
                                                             <span class="text-gray-400 line-through text-sm ml-2">₹<%= product.price ? product.price.toFixed(2) : '0.00' %></span>
-                                                            <span class="ml-2 bg-red-600 text-white text-xs px-1 py-0.5 rounded">
-                                                                <%= product.discount ? Math.round(product.discount) : '0' %>% OFF
-                                                            </span>
                                                         </div>
                                                     <% } else { %>
                                                         <span class="text-white font-bold">₹<%= product.price ? product.price.toFixed(2) : '0.00' %></span>
@@ -300,8 +303,14 @@
                                 <% if (product.isNew) { %>
                                     <div class="absolute top-2 right-2 bg-white text-black text-xs font-bold px-2 py-1 rounded">NEW</div>
                                 <% } %>
-                                <% if (product.discount > 0) { %>
-                                    <div class="absolute top-2 left-2 bg-gray-700 text-white text-xs font-bold px-2 py-1 rounded border border-white">-<%= product.discount %>%</div>
+                                <% if (product.hasOffer && product.discount > 0) { %>
+                                    <div class="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded">
+                                        <% if (product.discountType === 'fixed') { %>
+                                            ₹<%= Math.round(product.discountAmount) %> OFF
+                                        <% } else { %>
+                                            <%= Math.round(product.discount) %>% OFF
+                                        <% } %>
+                                    </div>
                                 <% } %>
                             </div>
                             <div class="p-4">
@@ -313,9 +322,6 @@
                                             <div class="flex items-center">
                                                 <span class="text-white font-bold">₹<%= product.displayPrice ? product.displayPrice.toFixed(2) : '0.00' %></span>
                                                 <span class="text-gray-400 line-through text-sm ml-2">₹<%= product.price ? product.price.toFixed(2) : '0.00' %></span>
-                                                <span class="ml-2 bg-red-600 text-white text-xs px-1 py-0.5 rounded">
-                                                    <%= product.discount ? Math.round(product.discount) : '0' %>% OFF
-                                                </span>
                                             </div>
                                         <% } else { %>
                                             <span class="text-white font-bold">₹<%= product.price ? product.price.toFixed(2) : '0.00' %></span>

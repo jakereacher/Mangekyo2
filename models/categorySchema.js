@@ -25,6 +25,11 @@ const categorySchema = new Schema({
     ref: 'Offer',
     default: null
   },
+  offerType: {
+    type: String,
+    enum: ['category', null],
+    default: null
+  },
   offerEndDate: {
     type: Date,
     default: null,
@@ -46,11 +51,12 @@ categorySchema.methods.updateOfferDetails = async function() {
     isActive: true,
     startDate: { $lte: now },
     endDate: { $gte: now }
-  });
+  }).sort({ createdAt: -1 }); // Get the newest offer first
 
   if (categoryOffer) {
     // Update category with offer details
     this.offer = categoryOffer._id;
+    this.offerType = 'category';
 
     // Calculate offer percentage based on discount type
     if (categoryOffer.discountType === 'percentage') {
@@ -78,6 +84,7 @@ categorySchema.methods.updateOfferDetails = async function() {
     // Clear offer details if no valid offer
     this.offer = null;
     this.categoryOffer = 0;
+    this.offerType = null;
     this.offerEndDate = null;
 
     await this.save();

@@ -81,11 +81,11 @@ const getCategoryById = async (req, res) => {
   try {
     const categoryId = req.params.id;
     const category = await Category.findById(categoryId);
-    
+
     if (!category) {
       return res.status(404).json({ error: "Category not found" });
     }
-    
+
     res.json(category);
   } catch (error) {
     console.error("Error in getCategoryById:", error);
@@ -99,10 +99,16 @@ const getCategoryById = async (req, res) => {
 const addCategory = async (req, res) => {
   try {
     const { name, description, isListed } = req.body;
-    
+
     // Validate input
     if (!name) {
       return res.status(400).json({ error: "Category name is required" });
+    }
+
+    // Validate that category name contains only letters and spaces
+    const nameRegex = /^[A-Za-z\s]+$/;
+    if (!nameRegex.test(name)) {
+      return res.status(400).json({ error: "Category name can only contain letters and spaces (no numbers or special characters)" });
     }
 
     // Check if category already exists
@@ -123,7 +129,7 @@ const addCategory = async (req, res) => {
       // Generate unique filename
       const filename = `category_${Date.now()}_${path.basename(req.file.originalname)}`;
       imagePath = `/uploads/categories/${filename}`;
-      
+
       // Resize and save image
       await sharp(req.file.buffer)
         .resize(800, 600, { fit: 'inside' })
@@ -139,7 +145,7 @@ const addCategory = async (req, res) => {
     });
 
     await newCategory.save();
-    
+
     // Redirect back to category page
     res.redirect("/admin/category");
   } catch (error) {
@@ -186,6 +192,12 @@ const editCategory = async (req, res) => {
       return res.status(400).json({ error: "Category name is required" });
     }
 
+    // Validate that category name contains only letters and spaces
+    const nameRegex = /^[A-Za-z\s]+$/;
+    if (!nameRegex.test(categoryName)) {
+      return res.status(400).json({ error: "Category name can only contain letters and spaces (no numbers or special characters)" });
+    }
+
     // Check for existing category with the same name (excluding current category)
     const existingCategory = await Category.findOne({
       name: { $regex: new RegExp(`^${categoryName}$`, 'i') },
@@ -213,15 +225,15 @@ const editCategory = async (req, res) => {
       // Generate unique filename
       const filename = `category_${Date.now()}_${path.basename(req.file.originalname)}`;
       const imagePath = `/uploads/categories/${filename}`;
-      
+
       // Resize and save image
       await sharp(req.file.buffer)
         .resize(800, 600, { fit: 'inside' })
         .toFile(path.join(uploadDir, filename));
-      
+
       // Add image path to update data
       updateData.image = imagePath;
-      
+
       // Delete old image if exists
       const category = await Category.findById(id);
       if (category && category.image) {

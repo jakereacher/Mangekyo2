@@ -1,8 +1,10 @@
+/**
+ * Category Controller
+ * Handles category management operations including listing, adding, editing, and deleting categories
+ */
+
 const Category = require("../../models/categorySchema");
 const Product = require("../../models/productSchema");
-
-
-
 
 const categoryInfo = async (req, res) => {
   try {
@@ -15,14 +17,12 @@ const categoryInfo = async (req, res) => {
       ? { name: { $regex: search, $options: "i" } }
       : {};
 
-    // Fetch categories with populated offer
     const categoryData = await Category.find(query)
       .populate("offer")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
-    // Process categories to include offer information
     const categoriesWithOffers = categoryData.map(category => {
       const hasOffer = category.offer !== null;
 
@@ -68,12 +68,22 @@ const categoryInfo = async (req, res) => {
 const addCategory = async (req, res) => {
   const { name, description } = req.body;
   try {
+    // Validate input
+    if (!name) {
+      return res.status(400).json({ error: "Category name is required" });
+    }
+
+    // Validate that category name contains only letters and spaces
+    const nameRegex = /^[A-Za-z\s]+$/;
+    if (!nameRegex.test(name)) {
+      return res.status(400).json({ error: "Category name can only contain letters and spaces (no numbers or special characters)" });
+    }
+
     const existingCategory = await Category.findOne({ name });
     if (existingCategory) {
       return res.status(400).json({ error: "Category already exists" });
-
-
     }
+
     const newCategory = new Category({
       name,
       description,
@@ -123,6 +133,12 @@ const editCategory = async (req, res) => {
     // Validate input
     if (!categoryName) {
       return res.status(400).json({ error: "Category name is required" });
+    }
+
+    // Validate that category name contains only letters and spaces
+    const nameRegex = /^[A-Za-z\s]+$/;
+    if (!nameRegex.test(categoryName)) {
+      return res.status(400).json({ error: "Category name can only contain letters and spaces (no numbers or special characters)" });
     }
 
     // Check for existing category with the same name (excluding current category)

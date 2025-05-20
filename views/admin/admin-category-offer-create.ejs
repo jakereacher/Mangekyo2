@@ -32,12 +32,13 @@
             <input type="text" class="form-control" id="name" name="name" required>
           </div>
           <div class="col-md-6">
-            <label for="discountType" class="form-label">Discount Type <span class="text-danger">*</span></label>
+            <label for="discountType" class="form-label">How to Calculate Discount <span class="text-danger">*</span></label>
             <select class="form-select" id="discountType" name="discountType" required>
-              <option value="">Select Discount Type</option>
-              <option value="percentage">Percentage</option>
-              <option value="fixed">Fixed Amount</option>
+              <option value="">Select Calculation Method</option>
+              <option value="percentage">Percentage Off (e.g., 10% off)</option>
+              <option value="fixed">Fixed Amount Off (e.g., ₹100 off)</option>
             </select>
+            <small class="form-text text-muted">Choose how the discount will be calculated</small>
           </div>
         </div>
 
@@ -48,35 +49,39 @@
 
         <div class="row mb-3">
           <div class="col-md-4">
-            <label for="discountValue" class="form-label">Discount Value <span class="text-danger">*</span></label>
+            <label for="discountValue" class="form-label">Discount Amount <span class="text-danger">*</span></label>
             <input type="number" class="form-control" id="discountValue" name="discountValue" min="0" step="0.01" required>
-            <small class="form-text text-muted">For percentage, enter value between 0-100</small>
+            <small class="form-text text-muted">For percentage: enter 10 for 10% off | For fixed: enter 100 for ₹100 off</small>
           </div>
           <div class="col-md-4">
-            <label for="maxDiscountAmount" class="form-label">Maximum Discount Amount</label>
+            <label for="maxDiscountAmount" class="form-label">Maximum Discount Cap (Optional)</label>
             <input type="number" class="form-control" id="maxDiscountAmount" name="maxDiscountAmount" min="0" step="0.01">
-            <small class="form-text text-muted">Only applicable for percentage discounts</small>
+            <small class="form-text text-muted">For percentage discounts: Limit the maximum amount (e.g., 10% off up to ₹500)</small>
           </div>
           <div class="col-md-4">
-            <label for="minPurchaseAmount" class="form-label">Minimum Purchase Amount</label>
+            <label for="minPurchaseAmount" class="form-label">Minimum Order Value (Optional)</label>
             <input type="number" class="form-control" id="minPurchaseAmount" name="minPurchaseAmount" min="0" step="0.01">
+            <small class="form-text text-muted">Offer applies only if order value is at least this amount</small>
           </div>
         </div>
 
         <div class="row mb-3">
           <div class="col-md-6">
-            <label for="startDate" class="form-label">Start Date & Time <span class="text-danger">*</span></label>
+            <label for="startDate" class="form-label">Offer Start Date & Time <span class="text-danger">*</span></label>
             <input type="text" class="form-control" id="startDate" name="startDate" placeholder="Select date and time" required>
+            <small class="form-text text-muted">When this offer becomes active</small>
           </div>
           <div class="col-md-6">
-            <label for="endDate" class="form-label">End Date & Time <span class="text-danger">*</span></label>
+            <label for="endDate" class="form-label">Offer End Date & Time <span class="text-danger">*</span></label>
             <input type="text" class="form-control" id="endDate" name="endDate" placeholder="Select date and time" required>
+            <small class="form-text text-muted">When this offer expires</small>
           </div>
         </div>
 
         <!-- Category Selection -->
         <div class="mb-4">
-          <label class="form-label fw-bold">Select Categories <span class="text-danger">*</span></label>
+          <label class="form-label fw-bold">Choose Categories for This Offer <span class="text-danger">*</span></label>
+          <p class="text-muted">Select which categories will receive this discount (applies to all products in these categories)</p>
 
           <div class="mb-3">
             <input type="text" class="form-control" id="categorySearch" placeholder="Search categories by name...">
@@ -151,9 +156,8 @@
     const selectedCategoriesCount = document.getElementById('selectedCategoriesCount');
     const categoryOfferPreview = document.getElementById('categoryOfferPreview');
 
-    // Set min date for start date to today
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('startDate').min = today;
+    // No longer requiring start date to be in the future
+    // Removed restriction that prevents past start dates
 
     // Set min date for end date to start date
     document.getElementById('startDate').addEventListener('change', function() {
@@ -297,7 +301,7 @@
       enableTime: true,
       dateFormat: "Y-m-d H:i",
       time_24hr: true,
-      minDate: "today",
+      // Allow selecting dates in the past
       onChange: function(selectedDates, dateStr) {
         // Update end date min date when start date changes
         endDatePicker.set("minDate", dateStr);
@@ -309,7 +313,7 @@
       enableTime: true,
       dateFormat: "Y-m-d H:i",
       time_24hr: true,
-      minDate: document.getElementById('startDate').value || "today"
+      // minDate will be set by the onChange function of startDatePicker
     });
   });
 </script>

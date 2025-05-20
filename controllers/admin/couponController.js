@@ -173,6 +173,10 @@ const addCoupon = async (req, res) => {
       });
     }
 
+    // Check if the start date is in the past or present
+    const now = new Date();
+    const isActive = parsedStartDate <= now && parsedExpiryDate > now;
+
     const newCoupon = new Coupon({
       code,
       type: discountType,
@@ -182,6 +186,7 @@ const addCoupon = async (req, res) => {
       minPrice,
       maxPrice: discountType === "percentage" ? maxPrice : undefined,
       usageLimit: limit,
+      isActive: isActive, // Set to true if start date is in the past or present and not expired
       created_at: new Date(),
       updated_at: new Date(),
     });
@@ -435,9 +440,16 @@ const editCoupon = async (req, res) => {
     coupon.expiryDate = parsedExpiryDate;
     coupon.updated_at = new Date();
 
-    // Reset isActive if new startDate is in the future
+    // Set isActive based on current date relative to start and expiry dates
     const now = new Date();
-    if (parsedStartDate > now) {
+    if (parsedStartDate <= now && parsedExpiryDate > now) {
+      // If start date is in the past/present and expiry date is in the future, activate the coupon
+      coupon.isActive = true;
+    } else if (parsedStartDate > now) {
+      // If start date is in the future, deactivate the coupon
+      coupon.isActive = false;
+    } else if (parsedExpiryDate <= now) {
+      // If expiry date is in the past/present, deactivate the coupon
       coupon.isActive = false;
     }
 

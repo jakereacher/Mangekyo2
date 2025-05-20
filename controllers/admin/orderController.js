@@ -175,6 +175,9 @@ exports.getAdminOrderDetails = async (req, res) => {
               ? item.product.productImage[0]
               : "/images/default-product.jpg",
         },
+        // Include original price and discount percentage if available
+        originalPrice: item.originalPrice || item.price,
+        discountPercentage: item.discountPercentage || 0,
         totalPrice: (item.quantity * item.price).toFixed(2),
       })),
       subtotal: subtotal.toFixed(2),

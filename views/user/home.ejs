@@ -46,9 +46,13 @@
                 <div class="bg-gray-900 rounded-xl overflow-hidden shadow-lg hover:shadow-white transition">
                     <div class="relative">
                         <img src="uploads/product-images/<%= product.productImage[0] %>" alt="<%= product.productName %>" class="w-full h-64 object-cover filter grayscale">
-                        <% if (product.productOffer && product.offerPercentage > 0) { %>
+                        <% if (product.hasOffer && product.discount > 0) { %>
                             <div class="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded">
-                                <%= product.offerPercentage.toFixed(0) %>% OFF
+                                <% if (product.discountType === 'fixed') { %>
+                                    ₹<%= Math.round(product.discountAmount) %> OFF
+                                <% } else { %>
+                                    <%= Math.round(product.discount) %>% OFF
+                                <% } %>
                             </div>
                         <% } else if (new Date() - product.createdAt < 7 * 24 * 60 * 60 * 1000) { %>
                             <div class="absolute top-2 right-2 bg-white text-black text-xs font-bold px-2 py-1 rounded">NEW</div>
@@ -63,9 +67,6 @@
                                     <div class="flex items-center">
                                         <span class="text-white font-bold">₹<%= product.displayPrice ? product.displayPrice.toFixed(2) : '0.00' %></span>
                                         <span class="text-gray-400 line-through ml-2 text-sm">₹<%= product.price ? product.price.toFixed(2) : '0.00' %></span>
-                                        <span class="ml-2 bg-red-600 text-white text-xs px-1 py-0.5 rounded">
-                                            <%= product.discount ? Math.round(product.discount) : '0' %>% OFF
-                                        </span>
                                     </div>
                                 <% } else { %>
                                     <span class="text-white font-bold">₹<%= product.price ? product.price.toFixed(2) : '0.00' %></span>

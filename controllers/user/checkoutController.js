@@ -43,6 +43,9 @@ exports.renderCheckoutPage = async (req, res) => {
       return res.redirect('/cart');
     }
 
+    // Get the offerService to calculate best offer prices
+    const offerService = require('../../services/offerService');
+
     const cartItems = await Promise.all(
       cart.products.map(async (item) => {
         const product = await Product.findById(item.productId).lean();
@@ -52,11 +55,47 @@ exports.renderCheckoutPage = async (req, res) => {
           ? product.productImage[0]
           : '/images/default-product.jpg';
 
+        // Get the best offer for this product
+        const basePrice = product.price || 0;
+        const offerResult = await offerService.getBestOfferForProduct(product._id, basePrice);
+
+        // Use the price from cart (which should already have the best offer applied)
+        // but double-check it against the current best offer price
+        const currentBestPrice = offerResult.finalPrice;
+
+        // If there's a significant difference between cart price and current best price,
+        // use the current best price (this handles cases where offers changed after adding to cart)
+        const priceDifference = Math.abs(item.price - currentBestPrice);
+        const shouldUpdatePrice = priceDifference > 0.01; // 1 cent threshold for floating point comparison
+
+        if (shouldUpdatePrice) {
+          console.log(`Price difference detected for ${product.productName}: Cart price: ${item.price}, Current best price: ${currentBestPrice}`);
+          // Update the item price and total price
+          item.price = currentBestPrice;
+          item.totalPrice = currentBestPrice * item.quantity;
+
+          // Also update the cart in the database
+          await Cart.updateOne(
+            { userId, "products.productId": item.productId },
+            {
+              $set: {
+                "products.$.price": currentBestPrice,
+                "products.$.totalPrice": currentBestPrice * item.quantity
+              }
+            }
+          );
+        }
+
         return {
           ...item,
           product: {
             ...product,
-            mainImage
+            mainImage,
+            hasOffer: offerResult.hasOffer,
+            discountAmount: offerResult.discountAmount,
+            discountPercentage: offerResult.hasOffer ? (offerResult.discountAmount / basePrice) * 100 : 0,
+            originalPrice: basePrice,
+            finalPrice: currentBestPrice
           }
         };
       })
@@ -64,6 +103,7 @@ exports.renderCheckoutPage = async (req, res) => {
 
     const validCartItems = cartItems.filter(item => item !== null);
 
+    // Calculate subtotal based on the updated prices
     const subtotal = validCartItems.reduce((sum, item) => sum + item.totalPrice, 0);
     const shipping = 5.99;
     const tax = subtotal * 0.09; // Using 9% tax rate consistently across the application
@@ -195,6 +235,9 @@ exports.placeOrder = async (req, res) => {
       });
     }
 
+    // Get the offerService to calculate best offer prices
+    const offerService = require('../../services/offerService');
+
     const orderedItems = await Promise.all(
       cart.products.map(async (item) => {
         const product = await Product.findById(item.productId);
@@ -202,11 +245,23 @@ exports.placeOrder = async (req, res) => {
           return null;
         }
 
+        // Get the best offer for this product
+        const basePrice = product.price || 0;
+        const offerResult = await offerService.getBestOfferForProduct(product._id, basePrice);
+
+        // Use the current best price
+        const currentBestPrice = offerResult.finalPrice;
+
+        // Calculate discount percentage
+        const discountPercentage = offerResult.hasOffer ? (offerResult.discountAmount / basePrice) * 100 : 0;
+
         if (product.quantity < item.quantity) {
           return {
             product: item.productId,
             quantity: product.quantity,
-            price: item.price,
+            price: currentBestPrice,
+            originalPrice: basePrice,
+            discountPercentage: discountPercentage,
             status: "Processing",
             stockIssue: true,
           };
@@ -215,7 +270,9 @@ exports.placeOrder = async (req, res) => {
         return {
           product: item.productId,
           quantity: item.quantity,
-          price: item.price,
+          price: currentBestPrice,
+          originalPrice: basePrice,
+          discountPercentage: discountPercentage,
           status: "Processing",
         };
       })

@@ -193,9 +193,24 @@
                                     </div>
                                 </td>
                                 <td class="align-middle"><%= item.quantity %></td>
-                                <td class="align-middle">₹<%= item.price.toFixed(2) %></td>
                                 <td class="align-middle">
-                                    <strong>₹<%= item.totalPrice %></strong>
+                                    <% if (item.originalPrice && item.originalPrice > item.price) { %>
+                                        <span class="text-decoration-line-through text-muted">₹<%= item.originalPrice.toFixed(2) %></span><br>
+                                        <strong class="text-success">₹<%= item.price.toFixed(2) %></strong>
+                                        <% if (item.discountPercentage > 0) { %>
+                                            <span class="badge bg-danger ms-1"><%= Math.round(item.discountPercentage) %>% OFF</span>
+                                        <% } %>
+                                    <% } else { %>
+                                        ₹<%= item.price.toFixed(2) %>
+                                    <% } %>
+                                </td>
+                                <td class="align-middle">
+                                    <% if (item.originalPrice && item.originalPrice > item.price) { %>
+                                        <span class="text-decoration-line-through text-muted">₹<%= (item.originalPrice * item.quantity).toFixed(2) %></span><br>
+                                        <strong class="text-success">₹<%= (item.price * item.quantity).toFixed(2) %></strong>
+                                    <% } else { %>
+                                        <strong>₹<%= (item.price * item.quantity).toFixed(2) %></strong>
+                                    <% } %>
                                 </td>
                                 <td class="align-middle status-cell">
                                     <%

@@ -311,7 +311,7 @@
       enableTime: true,
       dateFormat: "Y-m-d H:i",
       time_24hr: true,
-      minDate: "today",
+      // Allow selecting dates in the past
       onChange: function(selectedDates, dateStr) {
         // Update end date min date when start date changes
         endDatePicker.set("minDate", dateStr);
@@ -323,7 +323,7 @@
       enableTime: true,
       dateFormat: "Y-m-d H:i",
       time_24hr: true,
-      minDate: document.getElementById('startDate').value || "today"
+      // minDate will be set by the onChange function of startDatePicker
     });
   });
 </script>

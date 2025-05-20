@@ -22,7 +22,6 @@ const productSchema = new Schema({
   },
   productOffer: {
     type: Boolean,
-    required: true,
     default: false,
   },
   offer: {
@@ -45,6 +44,11 @@ const productSchema = new Schema({
   offerPercentage: {
     type: Number,
     default: 0,
+  },
+  offerType: {
+    type: String,
+    enum: ['product', 'category', null],
+    default: null
   },
   offerEndDate: {
     type: Date,
@@ -93,6 +97,7 @@ productSchema.methods.updateOfferDetails = async function() {
       this.offerPercentage = 0;
       this.offer = null;
       this.productOffer = false;
+      this.offerType = null;
       this.offerEndDate = null;
       await this.save();
     }
@@ -110,6 +115,7 @@ productSchema.methods.updateOfferDetails = async function() {
       this.offerPercentage = 0;
       this.offer = null;
       this.productOffer = false;
+      this.offerType = null;
       this.offerEndDate = null;
       await this.save();
       return false;
@@ -122,6 +128,7 @@ productSchema.methods.updateOfferDetails = async function() {
     this.offerPercentage = parseFloat(offerPercentage.toFixed(2));
     this.offer = offerResult.offer._id;
     this.productOffer = true;
+    this.offerType = offerResult.offer.type; // Store the type of offer (product or category)
 
     // Set offer end date
     if (offerResult.offer.endDate) {
@@ -135,6 +142,7 @@ productSchema.methods.updateOfferDetails = async function() {
     this.offerPercentage = 0;
     this.offer = null;
     this.productOffer = false;
+    this.offerType = null;
     this.offerEndDate = null;
 
     await this.save();

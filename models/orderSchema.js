@@ -33,6 +33,14 @@ const orderSchema = new Schema({
         type: Number,
         default: 0,
       },
+      originalPrice: {
+        type: Number,
+        default: 0,
+      },
+      discountPercentage: {
+        type: Number,
+        default: 0,
+      },
       status: {
         type: String,
         required: true,

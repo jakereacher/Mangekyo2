@@ -1,7 +1,7 @@
 const Offer = require('../../models/offerSchema');
 const Product = require('../../models/productSchema');
 const Category = require('../../models/categorySchema');
-const offerService = require('../../services/offerService');
+const offerService = require('../../services/newOfferService');
 
 /**
  * Render all offers list page with pagination
@@ -368,10 +368,7 @@ exports.createProductOffer = async (req, res) => {
       return res.redirect('/admin/product-offers/create');
     }
 
-    if (parsedStartDate < now) {
-      req.flash('error', 'Start date cannot be in the past');
-      return res.redirect('/admin/product-offers/create');
-    }
+    // Removed validation that prevents past start dates
 
     if (parsedEndDate <= parsedStartDate) {
       req.flash('error', 'End date must be after start date');
@@ -526,10 +523,7 @@ exports.createCategoryOffer = async (req, res) => {
       return res.redirect('/admin/category-offers/create');
     }
 
-    if (parsedStartDate < now) {
-      req.flash('error', 'Start date cannot be in the past');
-      return res.redirect('/admin/category-offers/create');
-    }
+    // Removed validation that prevents past start dates
 
     if (parsedEndDate <= parsedStartDate) {
       req.flash('error', 'End date must be after start date');

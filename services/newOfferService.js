@@ -1,3 +1,7 @@
+/**
+ * New Offer Service
+ * Handles all offer-related operations
+ */
 const Offer = require('../models/offerSchema');
 const Product = require('../models/productSchema');
 const Category = require('../models/categorySchema');
@@ -51,11 +55,6 @@ const getValidOffersForProduct = async (productId) => {
     endDate: { $gte: now }
   }).sort({ createdAt: -1 }); // Sort by creation date, newest first
 
-  // Double-check each product offer to ensure it's not expired
-  const validProductOffers = productOffers.filter(offer => {
-    return offer.isActive && offer.startDate <= now && offer.endDate >= now;
-  });
-
   // Get category offers for the product's category
   const categoryOffers = await Offer.find({
     type: 'category',
@@ -65,51 +64,43 @@ const getValidOffersForProduct = async (productId) => {
     endDate: { $gte: now }
   }).sort({ createdAt: -1 }); // Sort by creation date, newest first
 
-  // Double-check each category offer to ensure it's not expired
-  const validCategoryOffers = categoryOffers.filter(offer => {
-    return offer.isActive && offer.startDate <= now && offer.endDate >= now;
-  });
-
-  // If we have multiple product offers, find the one with the highest discount
-  // If discounts are equal, take the newest one (already sorted by createdAt)
+  // Find the best product offer (highest discount)
   let bestProductOffer = null;
-  if (validProductOffers.length > 0) {
-    // Start with the newest offer (first in the array)
-    bestProductOffer = validProductOffers[0];
-
-    // Calculate its discount for a sample price of 1000 (for comparison)
-    const samplePrice = 1000;
+  if (productOffers.length > 0) {
+    // Use a sample price to compare discounts
+    const samplePrice = product.price || 1000;
+    
+    // Start with the first offer
+    bestProductOffer = productOffers[0];
     let maxDiscount = bestProductOffer.calculateDiscount(samplePrice);
-
+    
     // Compare with other offers
-    for (let i = 1; i < validProductOffers.length; i++) {
-      const currentOffer = validProductOffers[i];
+    for (let i = 1; i < productOffers.length; i++) {
+      const currentOffer = productOffers[i];
       const currentDiscount = currentOffer.calculateDiscount(samplePrice);
-
-      // If this offer gives a higher discount, use it instead
+      
       if (currentDiscount > maxDiscount) {
         maxDiscount = currentDiscount;
         bestProductOffer = currentOffer;
       }
     }
   }
-
-  // Same for category offers
+  
+  // Find the best category offer (highest discount)
   let bestCategoryOffer = null;
-  if (validCategoryOffers.length > 0) {
-    // Start with the newest offer (first in the array)
-    bestCategoryOffer = validCategoryOffers[0];
-
-    // Calculate its discount for a sample price of 1000 (for comparison)
-    const samplePrice = 1000;
+  if (categoryOffers.length > 0) {
+    // Use a sample price to compare discounts
+    const samplePrice = product.price || 1000;
+    
+    // Start with the first offer
+    bestCategoryOffer = categoryOffers[0];
     let maxDiscount = bestCategoryOffer.calculateDiscount(samplePrice);
-
+    
     // Compare with other offers
-    for (let i = 1; i < validCategoryOffers.length; i++) {
-      const currentOffer = validCategoryOffers[i];
+    for (let i = 1; i < categoryOffers.length; i++) {
+      const currentOffer = categoryOffers[i];
       const currentDiscount = currentOffer.calculateDiscount(samplePrice);
-
-      // If this offer gives a higher discount, use it instead
+      
       if (currentDiscount > maxDiscount) {
         maxDiscount = currentDiscount;
         bestCategoryOffer = currentOffer;
@@ -117,7 +108,6 @@ const getValidOffersForProduct = async (productId) => {
     }
   }
 
-  // Return the best offers of each type
   return {
     productOffers: bestProductOffer ? [bestProductOffer] : [],
     categoryOffers: bestCategoryOffer ? [bestCategoryOffer] : []
@@ -131,7 +121,6 @@ const getValidOffersForProduct = async (productId) => {
  */
 const getBestOfferForProduct = async (productId, price) => {
   const { productOffers, categoryOffers } = await getValidOffersForProduct(productId);
-  const now = new Date();
 
   // If no offers at all, return no offer
   if (productOffers.length === 0 && categoryOffers.length === 0) {
@@ -143,47 +132,25 @@ const getBestOfferForProduct = async (productId, price) => {
     };
   }
 
-  // Find the best product offer (if any)
+  // Calculate best product offer discount
   let bestProductOffer = null;
   let maxProductDiscount = 0;
 
-  for (const offer of productOffers) {
-    // Double-check offer validity before calculating discount
-    if (!offer.isActive || offer.startDate > now || offer.endDate < now) {
-      console.log(`Skipping expired or inactive product offer: ${offer.name} (${offer._id})`);
-      continue;
-    }
-
-    const discountAmount = offer.calculateDiscount(price);
-
-    if (discountAmount > maxProductDiscount) {
-      maxProductDiscount = discountAmount;
-      bestProductOffer = offer;
-    }
+  if (productOffers.length > 0) {
+    bestProductOffer = productOffers[0];
+    maxProductDiscount = bestProductOffer.calculateDiscount(price);
   }
 
-  // Find the best category offer (if any)
+  // Calculate best category offer discount
   let bestCategoryOffer = null;
   let maxCategoryDiscount = 0;
 
-  for (const offer of categoryOffers) {
-    // Double-check offer validity before calculating discount
-    if (!offer.isActive || offer.startDate > now || offer.endDate < now) {
-      console.log(`Skipping expired or inactive category offer: ${offer.name} (${offer._id})`);
-      continue;
-    }
-
-    const discountAmount = offer.calculateDiscount(price);
-
-    if (discountAmount > maxCategoryDiscount) {
-      maxCategoryDiscount = discountAmount;
-      bestCategoryOffer = offer;
-    }
+  if (categoryOffers.length > 0) {
+    bestCategoryOffer = categoryOffers[0];
+    maxCategoryDiscount = bestCategoryOffer.calculateDiscount(price);
   }
 
-  // Determine the final best offer based on the requirements:
-  // 1. If both product and category offers exist, use the one with greater discount
-  // 2. If discounts are equal, prefer the newest offer (which is already sorted by createdAt)
+  // Determine the best offer (product or category)
   let bestOffer = null;
   let maxDiscount = 0;
 
@@ -193,20 +160,10 @@ const getBestOfferForProduct = async (productId, price) => {
       // Product offer has greater discount, use it
       bestOffer = bestProductOffer;
       maxDiscount = maxProductDiscount;
-    } else if (maxProductDiscount < maxCategoryDiscount) {
-      // Category offer has greater discount, use it
+    } else {
+      // Category offer has greater or equal discount, use it
       bestOffer = bestCategoryOffer;
       maxDiscount = maxCategoryDiscount;
-    } else {
-      // Discounts are equal, use the newer one (already sorted by createdAt, newest first)
-      // Compare creation dates to determine which is newer
-      if (bestProductOffer.createdAt >= bestCategoryOffer.createdAt) {
-        bestOffer = bestProductOffer;
-        maxDiscount = maxProductDiscount;
-      } else {
-        bestOffer = bestCategoryOffer;
-        maxDiscount = maxCategoryDiscount;
-      }
     }
   } else if (bestProductOffer) {
     // Only product offer exists
@@ -242,7 +199,8 @@ const applyOffersToProducts = async (products) => {
       offerPrice: offerResult.finalPrice,
       discountAmount: offerResult.discountAmount,
       hasOffer: offerResult.hasOffer,
-      appliedOffer: offerResult.offer
+      appliedOffer: offerResult.offer,
+      offerType: offerResult.offer ? offerResult.offer.type : null
     });
   }
 
@@ -268,11 +226,8 @@ const applyProductOffer = async (productId, offerId) => {
     $addToSet: { applicableProducts: productId }
   });
 
-  // Update product's offer reference
-  await Product.findByIdAndUpdate(productId, {
-    offer: offerId,
-    productOffer: true
-  });
+  // Update product with offer details
+  await product.updateOfferDetails();
 
   return true;
 };
@@ -296,10 +251,8 @@ const applyCategoryOffer = async (categoryId, offerId) => {
     $addToSet: { applicableCategories: categoryId }
   });
 
-  // Update category's offer reference
-  await Category.findByIdAndUpdate(categoryId, {
-    offer: offerId
-  });
+  // Update category with offer details
+  await category.updateOfferDetails();
 
   return true;
 };
@@ -320,11 +273,13 @@ const removeProductOffer = async (productId) => {
     $pull: { applicableProducts: productId }
   });
 
-  // Remove offer reference from product
-  await Product.findByIdAndUpdate(productId, {
-    offer: null,
-    productOffer: false
-  });
+  // Clear offer details from product
+  product.offer = null;
+  product.productOffer = false;
+  product.offerPercentage = 0;
+  product.offerType = null;
+  product.offerEndDate = null;
+  await product.save();
 
   return true;
 };
@@ -345,10 +300,18 @@ const removeCategoryOffer = async (categoryId) => {
     $pull: { applicableCategories: categoryId }
   });
 
-  // Remove offer reference from category
-  await Category.findByIdAndUpdate(categoryId, {
-    offer: null
-  });
+  // Clear offer details from category
+  category.offer = null;
+  category.categoryOffer = 0;
+  category.offerType = null;
+  category.offerEndDate = null;
+  await category.save();
+
+  // Update all products in this category
+  const products = await Product.find({ category: categoryId });
+  for (const product of products) {
+    await product.updateOfferDetails();
+  }
 
   return true;
 };

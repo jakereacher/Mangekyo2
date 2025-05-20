@@ -46,6 +46,7 @@ module.exports = {
   renderCartPage: cartController.renderCartPage,
   removeFromCart: cartController.removeFromCart,
   validateCart: cartController.validateCart,
+  refreshCartPrices: cartController.refreshCartPrices,
 
 // Profile related
 

@@ -4,7 +4,7 @@ const passport = require("passport");
 const { uploadProfileImage } = require("../helpers/multer");
 const { userAuth } = require("../middlewares/auth");
 const { validateInventory } = require("../middlewares/inventoryMiddleware");
-const { checkExpiredOffers, updateProductOffers } = require("../middlewares/offerMiddleware");
+const { checkExpiredOffers, updateProductOffers } = require("../middlewares/newOfferMiddleware");
 const wishlistController = require("../controllers/user/wishlistController");
 const checkoutController = require("../controllers/user/checkoutController");
 const orderController = require("../controllers/user/orderController");
@@ -36,6 +36,7 @@ const {
   renderCartPage,
   removeFromCart,
   validateCart,
+  refreshCartPrices,
   handleProfileUpdate,
   renderProfilePage,
   handleAddress,
@@ -64,6 +65,7 @@ router.post("/add-to-cart",addToCart)
 router.get("/cart", renderCartPage)
 router.patch("/remove-from-cart", removeFromCart);
 router.post("/validate-cart", validateInventory, validateCart);
+router.post("/refresh-cart-prices", refreshCartPrices);
 
 
 router.get("/checkout", validateInventory, checkoutController.renderCheckoutPage);

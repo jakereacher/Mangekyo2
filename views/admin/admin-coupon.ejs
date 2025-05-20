@@ -558,11 +558,27 @@
                     return;
                 }
 
+                // Check if the coupon should be active based on dates
+                const now = new Date();
+                const parsedStartDate = new Date(startDate);
+                const parsedExpiryDate = new Date(expiryDate);
+
+                // Prepare form data with isActive status
+                const data = $(this).serializeArray();
+
+                if (parsedStartDate <= now && parsedExpiryDate > now) {
+                    // If start date is in the past/present and expiry date is in the future, activate the coupon
+                    data.push({ name: 'isActive', value: true });
+                } else if (parsedStartDate > now || parsedExpiryDate <= now) {
+                    // If start date is in the future or expiry date is in the past/present, deactivate the coupon
+                    data.push({ name: 'isActive', value: false });
+                }
+
                 // Submit form if validation passes
                 $.ajax({
                     url: '/admin/add-coupon',
                     method: 'POST',
-                    data: $(this).serialize(),
+                    data: $.param(data),
                     success: function(response) {
                         if (response.success) {
                             alert('Coupon added successfully!');
@@ -650,7 +666,7 @@
             const startDatePicker = flatpickr("#startDate", {
                 enableTime: true,
                 dateFormat: "Y-m-d H:i",
-                minDate: "today",
+                // Allow selecting dates in the past
                 onChange: function (selectedDates, dateStr) {
                     expiryDatePicker.set("minDate", dateStr);
                 }
@@ -659,14 +675,14 @@
             const expiryDatePicker = flatpickr("#expiryDate", {
                 enableTime: true,
                 dateFormat: "Y-m-d H:i",
-                minDate: "today"
+                // minDate will be set by the onChange function of startDatePicker
             });
 
             // Initialize Flatpickr for edit modal
             const editStartDatePicker = flatpickr("#editStartDate", {
                 enableTime: true,
                 dateFormat: "Y-m-d H:i",
-                minDate: "today",
+                // Allow selecting dates in the past
                 onChange: function (selectedDates, dateStr) {
                     editExpiryDatePicker.set("minDate", dateStr);
                 }
@@ -675,7 +691,7 @@
             const editExpiryDatePicker = flatpickr("#editExpiryDate", {
                 enableTime: true,
                 dateFormat: "Y-m-d H:i",
-                minDate: "today"
+                // minDate will be set by the onChange function of editStartDatePicker
             });
 
             // Open edit modal and populate fields
@@ -789,10 +805,16 @@
 
                 const now = new Date();
                 const parsedStartDate = new Date(startDate);
+                const parsedExpiryDate = new Date(expiryDate);
 
-                // Add isActive reset logic
+                // Add isActive logic based on dates
                 const data = $(this).serializeArray();
-                if (parsedStartDate > now) {
+
+                if (parsedStartDate <= now && parsedExpiryDate > now) {
+                    // If start date is in the past/present and expiry date is in the future, activate the coupon
+                    data.push({ name: 'isActive', value: true });
+                } else if (parsedStartDate > now || parsedExpiryDate <= now) {
+                    // If start date is in the future or expiry date is in the past/present, deactivate the coupon
                     data.push({ name: 'isActive', value: false });
                 }
 

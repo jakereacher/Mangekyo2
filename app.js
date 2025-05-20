@@ -8,7 +8,7 @@ const flash = require('connect-flash');
 const db = require("./config/db");
 const userRouter = require("./routes/userRouter");
 const adminRouter = require("./routes/adminRouter");
-const { initOfferCronJobs } = require('./services/offerCronService');
+const { initOfferCronJobs } = require('./services/newOfferCronService');
 
 
 

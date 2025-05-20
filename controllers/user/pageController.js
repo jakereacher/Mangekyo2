@@ -45,6 +45,7 @@ const loadHome = async (req, res) => {
     const userId = req.session.user;
     const userData = await User.findById(userId);
     const now = new Date();
+    const offerService = require('../../services/newOfferService');
 
     // Fetch products with populated offer information
     const products = await Product.find({
@@ -64,6 +65,7 @@ const loadHome = async (req, res) => {
             offer: null,
             productOffer: false,
             offerPercentage: 0,
+            offerType: null,
             offerEndDate: null
           }
         });
@@ -71,57 +73,53 @@ const loadHome = async (req, res) => {
         product.offer = null;
         product.productOffer = false;
         product.offerPercentage = 0;
+        product.offerType = null;
         product.offerEndDate = null;
       }
     }
 
     // Process products to include offer information
-    const processedProducts = products.map(product => {
-      // Log the product price for debugging
-      console.log("Home product price data:", {
-        id: product._id,
-        productName: product.productName,
-        price: product.price,
-        toJSON: product.toJSON ? product.toJSON().price : 'N/A',
-        toObject: product.toObject ? product.toObject().price : 'N/A'
-      });
-
+    const processedProducts = await Promise.all(products.map(async (product) => {
       // Ensure price is available and not zero
       if (!product.price || product.price === 0) {
         console.log("Warning: Product has no price or price is zero:", product._id);
       }
 
-      // Calculate final price after offer
       const basePrice = product.price || 0;
-      let discountPercentage = 0;
-      let hasOffer = false;
-      let finalPrice = basePrice;
 
-      // Check if product has an offer
-      if (product.productOffer && product.offer) {
-        hasOffer = true;
+      // Get the best offer for this product (either product or category offer)
+      const offerResult = await offerService.getBestOfferForProduct(product._id, basePrice);
 
-        // Get discount percentage based on offer type
-        if (product.offer.discountType === 'percentage') {
-          discountPercentage = product.offer.discountValue;
-        } else if (product.offer.discountType === 'fixed') {
-          // For fixed discount, calculate percentage based on price
-          discountPercentage = (product.offer.discountValue / basePrice) * 100;
-        }
+      // Extract offer information
+      const hasOffer = offerResult.hasOffer;
+      const finalPrice = offerResult.finalPrice;
+      const discountAmount = offerResult.discountAmount;
+      const bestOffer = offerResult.offer;
 
-        // Calculate final price with discount
-        if (product.offer.discountType === 'percentage') {
-          finalPrice = basePrice * (1 - product.offer.discountValue / 100);
-        } else {
-          finalPrice = basePrice - product.offer.discountValue;
-          if (finalPrice < 0) finalPrice = 0;
-        }
-      } else {
-        // Use offerPercentage as fallback
-        discountPercentage = product.offerPercentage || 0;
-        hasOffer = product.productOffer && discountPercentage > 0;
-        finalPrice = hasOffer ? basePrice * (1 - discountPercentage / 100) : basePrice;
+      // Calculate discount percentage
+      const discountPercentage = hasOffer ? (discountAmount / basePrice) * 100 : 0;
+
+      // Format offer information if available
+      let offerInfo = null;
+      if (hasOffer && bestOffer) {
+        offerInfo = {
+          name: bestOffer.name,
+          type: bestOffer.type, // 'product' or 'category'
+          discountType: bestOffer.discountType,
+          discountValue: bestOffer.discountValue,
+          endDate: bestOffer.endDate,
+          createdAt: bestOffer.createdAt
+        };
       }
+
+      // Log the offer information for debugging
+      console.log(`Product ${product.productName} (${product._id}) offer info:`, {
+        hasOffer,
+        offerType: offerInfo?.type,
+        discountPercentage: discountPercentage.toFixed(2) + '%',
+        originalPrice: basePrice,
+        finalPrice
+      });
 
       return {
         ...product.toObject({ virtuals: true }),
@@ -130,9 +128,12 @@ const loadHome = async (req, res) => {
         price: basePrice,
         hasOffer,
         discount: discountPercentage,
-        originalPrice: hasOffer ? basePrice : null
+        discountAmount: discountAmount,
+        discountType: bestOffer ? bestOffer.discountType : null,
+        originalPrice: hasOffer ? basePrice : null,
+        offerInfo: offerInfo
       };
-    });
+    }));
 
     res.render("home", {
       user: userData,
@@ -170,6 +171,7 @@ const loadShop = async (req, res) => {
     const userId = req.session.user;
     const userData = await User.findById(userId);
     const now = new Date();
+    const offerService = require('../../services/newOfferService');
     const {
       search = '',
       sort = 'default',
@@ -273,52 +275,47 @@ const loadShop = async (req, res) => {
     const totalProducts = await Product.countDocuments(query);
     const totalPages = Math.ceil(totalProducts / perPage);
 
-    const productData = products.map(product => {
-      // Log the product price for debugging
-      console.log("Shop product price data:", {
-        id: product._id,
-        productName: product.productName,
-        price: product.price,
-        toJSON: product.toJSON ? product.toJSON().price : 'N/A',
-        toObject: product.toObject ? product.toObject().price : 'N/A'
-      });
-
+    const productData = await Promise.all(products.map(async (product) => {
       // Ensure price is available and not zero
       if (!product.price || product.price === 0) {
         console.log("Warning: Product has no price or price is zero:", product._id);
       }
 
-      // Calculate final price after offer
       const basePrice = product.price || 0;
-      let discountPercentage = 0;
-      let hasOffer = false;
-      let finalPrice = basePrice;
 
-      // Check if product has an offer
-      if (product.productOffer && product.offer) {
-        hasOffer = true;
+      // Get the best offer for this product (either product or category offer)
+      const offerResult = await offerService.getBestOfferForProduct(product._id, basePrice);
 
-        // Get discount percentage based on offer type
-        if (product.offer.discountType === 'percentage') {
-          discountPercentage = product.offer.discountValue;
-        } else if (product.offer.discountType === 'fixed') {
-          // For fixed discount, calculate percentage based on price
-          discountPercentage = (product.offer.discountValue / basePrice) * 100;
-        }
+      // Extract offer information
+      const hasOffer = offerResult.hasOffer;
+      const finalPrice = offerResult.finalPrice;
+      const discountAmount = offerResult.discountAmount;
+      const bestOffer = offerResult.offer;
 
-        // Calculate final price with discount
-        if (product.offer.discountType === 'percentage') {
-          finalPrice = basePrice * (1 - product.offer.discountValue / 100);
-        } else {
-          finalPrice = basePrice - product.offer.discountValue;
-          if (finalPrice < 0) finalPrice = 0;
-        }
-      } else {
-        // Use offerPercentage as fallback
-        discountPercentage = product.offerPercentage || 0;
-        hasOffer = product.productOffer && discountPercentage > 0;
-        finalPrice = hasOffer ? basePrice * (1 - discountPercentage / 100) : basePrice;
+      // Calculate discount percentage
+      const discountPercentage = hasOffer ? (discountAmount / basePrice) * 100 : 0;
+
+      // Format offer information if available
+      let offerInfo = null;
+      if (hasOffer && bestOffer) {
+        offerInfo = {
+          name: bestOffer.name,
+          type: bestOffer.type, // 'product' or 'category'
+          discountType: bestOffer.discountType,
+          discountValue: bestOffer.discountValue,
+          endDate: bestOffer.endDate,
+          createdAt: bestOffer.createdAt
+        };
       }
+
+      // Log the offer information for debugging
+      console.log(`Shop product ${product.productName} (${product._id}) offer info:`, {
+        hasOffer,
+        offerType: offerInfo?.type,
+        discountPercentage: discountPercentage.toFixed(2) + '%',
+        originalPrice: basePrice,
+        finalPrice
+      });
 
       return {
         _id: product._id,
@@ -329,59 +326,57 @@ const loadShop = async (req, res) => {
         displayPrice: finalPrice,
         originalPrice: hasOffer ? basePrice : null,
         discount: discountPercentage,
+        discountAmount: discountAmount,
+        discountType: bestOffer ? bestOffer.discountType : null,
         hasOffer: hasOffer,
-        offerName: hasOffer && product.offer ? product.offer.name : null,
-        offerType: hasOffer && product.offer ? product.offer.type : null,
+        offerInfo: offerInfo,
+        offerName: hasOffer && bestOffer ? bestOffer.name : null,
+        offerType: hasOffer && bestOffer ? bestOffer.type : null,
         isNew: (Date.now() - new Date(product.createdAt)) < (7 * 24 * 60 * 60 * 1000)
       };
-    });
+    }));
 
-    const recommendedProductData = recommendedProducts.map(product => {
-      // Log the product price for debugging
-      console.log("Recommended product price data:", {
-        id: product._id,
-        productName: product.productName,
-        price: product.price,
-        toJSON: product.toJSON ? product.toJSON().price : 'N/A',
-        toObject: product.toObject ? product.toObject().price : 'N/A'
-      });
-
+    const recommendedProductData = await Promise.all(recommendedProducts.map(async (product) => {
       // Ensure price is available and not zero
       if (!product.price || product.price === 0) {
         console.log("Warning: Recommended product has no price or price is zero:", product._id);
       }
 
-      // Calculate final price after offer
       const basePrice = product.price || 0;
-      let discountPercentage = 0;
-      let hasOffer = false;
-      let finalPrice = basePrice;
 
-      // Check if product has an offer
-      if (product.productOffer && product.offer) {
-        hasOffer = true;
+      // Get the best offer for this product (either product or category offer)
+      const offerResult = await offerService.getBestOfferForProduct(product._id, basePrice);
 
-        // Get discount percentage based on offer type
-        if (product.offer.discountType === 'percentage') {
-          discountPercentage = product.offer.discountValue;
-        } else if (product.offer.discountType === 'fixed') {
-          // For fixed discount, calculate percentage based on price
-          discountPercentage = (product.offer.discountValue / basePrice) * 100;
-        }
+      // Extract offer information
+      const hasOffer = offerResult.hasOffer;
+      const finalPrice = offerResult.finalPrice;
+      const discountAmount = offerResult.discountAmount;
+      const bestOffer = offerResult.offer;
 
-        // Calculate final price with discount
-        if (product.offer.discountType === 'percentage') {
-          finalPrice = basePrice * (1 - product.offer.discountValue / 100);
-        } else {
-          finalPrice = basePrice - product.offer.discountValue;
-          if (finalPrice < 0) finalPrice = 0;
-        }
-      } else {
-        // Use offerPercentage as fallback
-        discountPercentage = product.offerPercentage || 0;
-        hasOffer = product.productOffer && discountPercentage > 0;
-        finalPrice = hasOffer ? basePrice * (1 - discountPercentage / 100) : basePrice;
+      // Calculate discount percentage
+      const discountPercentage = hasOffer ? (discountAmount / basePrice) * 100 : 0;
+
+      // Format offer information if available
+      let offerInfo = null;
+      if (hasOffer && bestOffer) {
+        offerInfo = {
+          name: bestOffer.name,
+          type: bestOffer.type, // 'product' or 'category'
+          discountType: bestOffer.discountType,
+          discountValue: bestOffer.discountValue,
+          endDate: bestOffer.endDate,
+          createdAt: bestOffer.createdAt
+        };
       }
+
+      // Log the offer information for debugging
+      console.log(`Recommended product ${product.productName} (${product._id}) offer info:`, {
+        hasOffer,
+        offerType: offerInfo?.type,
+        discountPercentage: discountPercentage.toFixed(2) + '%',
+        originalPrice: basePrice,
+        finalPrice
+      });
 
       return {
         _id: product._id,
@@ -392,12 +387,15 @@ const loadShop = async (req, res) => {
         displayPrice: finalPrice,
         originalPrice: hasOffer ? basePrice : null,
         discount: discountPercentage,
+        discountAmount: discountAmount,
+        discountType: bestOffer ? bestOffer.discountType : null,
         hasOffer: hasOffer,
-        offerName: hasOffer && product.offer ? product.offer.name : null,
-        offerType: hasOffer && product.offer ? product.offer.type : null,
+        offerInfo: offerInfo,
+        offerName: hasOffer && bestOffer ? bestOffer.name : null,
+        offerType: hasOffer && bestOffer ? bestOffer.type : null,
         isNew: (Date.now() - new Date(product.createdAt)) < (7 * 24 * 60 * 60 * 1000)
       };
-    });
+    }));
 
     res.render("shop", {
       user: userData,
@@ -421,6 +419,7 @@ const loadProductDetail = async (req, res) => {
     const userData = await User.findById(userId);
     const productId = req.params.id;
     const now = new Date();
+    const offerService = require('../../services/newOfferService');
 
 
     if (!mongoose.Types.ObjectId.isValid(productId)) {
@@ -456,63 +455,46 @@ const loadProductDetail = async (req, res) => {
       console.log(`Updated product status to Out of Stock for ${product.productName} (${product._id})`);
     }
 
-    // Log the product price for debugging
-    console.log("Product price data:", {
-      id: product._id,
-      productName: product.productName,
-      price: product.price,
-      toJSON: product.toJSON ? product.toJSON().price : 'N/A',
-      toObject: product.toObject ? product.toObject().price : 'N/A'
-    });
-
     // Ensure price is available and not zero
     if (!product.price || product.price === 0) {
       console.log("Warning: Product has no price or price is zero:", product._id);
     }
 
-    // Calculate final price after offer
     const basePrice = product.price || 0;
-    let discountPercentage = 0;
-    let hasOffer = false;
-    let finalPrice = basePrice;
 
-    // Check if product has an offer
-    if (product.productOffer && product.offer) {
-      hasOffer = true;
+    // Get the best offer for this product (either product or category offer)
+    const offerResult = await offerService.getBestOfferForProduct(product._id, basePrice);
 
-      // Get discount percentage based on offer type
-      if (product.offer.discountType === 'percentage') {
-        discountPercentage = product.offer.discountValue;
-      } else if (product.offer.discountType === 'fixed') {
-        // For fixed discount, calculate percentage based on price
-        discountPercentage = (product.offer.discountValue / basePrice) * 100;
-      }
+    // Extract offer information
+    const hasOffer = offerResult.hasOffer;
+    const finalPrice = offerResult.finalPrice;
+    const discountAmount = offerResult.discountAmount;
+    const bestOffer = offerResult.offer;
 
-      // Calculate final price with discount
-      if (product.offer.discountType === 'percentage') {
-        finalPrice = basePrice * (1 - product.offer.discountValue / 100);
-      } else {
-        finalPrice = basePrice - product.offer.discountValue;
-        if (finalPrice < 0) finalPrice = 0;
-      }
-    } else {
-      // Use offerPercentage as fallback
-      discountPercentage = product.offerPercentage || 0;
-      hasOffer = product.productOffer && discountPercentage > 0;
-      finalPrice = hasOffer ? basePrice * (1 - discountPercentage / 100) : basePrice;
-    }
+    // Calculate discount percentage
+    const discountPercentage = hasOffer ? (discountAmount / basePrice) * 100 : 0;
 
-    // Format offer information
+    // Format offer information if available
     let offerInfo = null;
-    if (hasOffer && product.offer) {
+    if (hasOffer && bestOffer) {
       offerInfo = {
-        name: product.offer.name,
-        type: product.offer.type,
-        discountType: product.offer.discountType,
-        discountValue: product.offer.discountValue,
-        endDate: product.offerEndDate
+        name: bestOffer.name,
+        type: bestOffer.type, // 'product' or 'category'
+        discountType: bestOffer.discountType,
+        discountValue: bestOffer.discountValue,
+        endDate: bestOffer.endDate,
+        createdAt: bestOffer.createdAt
       };
     }
+
+    // Log the offer information for debugging
+    console.log(`Product detail ${product.productName} (${product._id}) offer info:`, {
+      hasOffer,
+      offerType: offerInfo?.type,
+      discountPercentage: discountPercentage.toFixed(2) + '%',
+      originalPrice: basePrice,
+      finalPrice
+    });
 
     const productData = {
       _id: product._id,
@@ -525,6 +507,8 @@ const loadProductDetail = async (req, res) => {
       displayPrice: finalPrice,
       originalPrice: hasOffer ? basePrice : null,
       discount: discountPercentage,
+      discountAmount: discountAmount,
+      discountType: bestOffer ? bestOffer.discountType : null,
       hasOffer: hasOffer,
       offerInfo: offerInfo,
       stock: product.quantity,
@@ -570,48 +554,57 @@ const loadProductDetail = async (req, res) => {
         console.log("Warning: Related product has no price or price is zero:", related._id);
       }
 
-      // Get the full product with offer details
-      const fullProduct = await Product.findById(related._id).populate('offer');
-
-      // Calculate final price after offer
       const basePrice = related.price || 0;
-      let discountPercentage = related.offerPercentage || 0;
-      let hasOffer = related.productOffer && discountPercentage > 0;
-      let finalPrice = basePrice;
 
-      // If we have the full product with offer details
-      if (fullProduct && fullProduct.productOffer && fullProduct.offer) {
-        hasOffer = true;
+      // Get the best offer for this product (either product or category offer)
+      const offerResult = await offerService.getBestOfferForProduct(related._id, basePrice);
 
-        // Get discount percentage based on offer type
-        if (fullProduct.offer.discountType === 'percentage') {
-          discountPercentage = fullProduct.offer.discountValue;
-        } else if (fullProduct.offer.discountType === 'fixed') {
-          // For fixed discount, calculate percentage based on price
-          discountPercentage = (fullProduct.offer.discountValue / basePrice) * 100;
-        }
+      // Extract offer information
+      const hasOffer = offerResult.hasOffer;
+      const finalPrice = offerResult.finalPrice;
+      const discountAmount = offerResult.discountAmount;
+      const bestOffer = offerResult.offer;
 
-        // Calculate final price with discount
-        if (fullProduct.offer.discountType === 'percentage') {
-          finalPrice = basePrice * (1 - fullProduct.offer.discountValue / 100);
-        } else {
-          finalPrice = basePrice - fullProduct.offer.discountValue;
-          if (finalPrice < 0) finalPrice = 0;
-        }
-      } else {
-        // Use offerPercentage as fallback
-        finalPrice = hasOffer ? basePrice * (1 - discountPercentage / 100) : basePrice;
+      // Calculate discount percentage
+      const discountPercentage = hasOffer ? (discountAmount / basePrice) * 100 : 0;
+
+      // Format offer information if available
+      let offerInfo = null;
+      if (hasOffer && bestOffer) {
+        offerInfo = {
+          name: bestOffer.name,
+          type: bestOffer.type, // 'product' or 'category'
+          discountType: bestOffer.discountType,
+          discountValue: bestOffer.discountValue,
+          endDate: bestOffer.endDate,
+          createdAt: bestOffer.createdAt
+        };
       }
+
+      // Log the offer information for debugging
+      console.log(`Related product ${related.productName} (${related._id}) offer info:`, {
+        hasOffer,
+        offerType: offerInfo?.type,
+        discountPercentage: discountPercentage.toFixed(2) + '%',
+        originalPrice: basePrice,
+        finalPrice
+      });
 
       return {
         _id: related._id,
         name: related.productName,
         image: related.productImage && related.productImage.length > 0 ? `/uploads/product-images/${related.productImage[0]}` : '/images/placeholder.jpg',
+        category: related.category?.name || 'Uncategorized',
         price: basePrice,
         displayPrice: finalPrice,
         originalPrice: hasOffer ? basePrice : null,
         discount: discountPercentage,
+        discountAmount: discountAmount,
+        discountType: bestOffer ? bestOffer.discountType : null,
         hasOffer: hasOffer,
+        offerInfo: offerInfo,
+        offerName: hasOffer && bestOffer ? bestOffer.name : null,
+        offerType: hasOffer && bestOffer ? bestOffer.type : null,
         rating: related.averageRating || 0,
         reviewCount: 0,
         isNew: (Date.now() - new Date(related.createdAt)) < (7 * 24 * 60 * 60 * 1000),

@@ -65,9 +65,13 @@
             <img id="mainProductImage" src="<%= product.image %>" alt="<%= product.name %>" class="w-full h-auto object-cover">
           </div>
 
-          <% if (product.discount> 0) { %>
+          <% if (product.hasOffer && product.discount > 0) { %>
           <div class="absolute top-4 left-4 bg-red-500 text-white text-sm font-bold px-3 py-1 rounded-full">
-            -<%= product.discount %>% OFF
+            <% if (product.discountType === 'fixed') { %>
+              ₹<%= Math.round(product.discountAmount) %> OFF
+            <% } else { %>
+              <%= Math.round(product.discount) %>% OFF
+            <% } %>
           </div>
           <% } %>
 
@@ -140,10 +144,10 @@
               <span class="text-3xl font-bold text-[#00ffff]">₹<%= product.displayPrice ? product.displayPrice.toFixed(2) : '0.00' %></span>
               <span class="text-gray-400 line-through text-xl ml-3">₹<%= product.price ? product.price.toFixed(2) : '0.00' %></span>
               <span class="ml-3 bg-red-600 text-white text-sm px-2 py-1 rounded">
-                <% if (product.offerInfo && product.offerInfo.discountType === 'percentage') { %>
-                  <%= product.offerInfo.discountValue ? product.offerInfo.discountValue.toFixed(0) : '0' %>% OFF
+                <% if (product.discountType === 'fixed') { %>
+                  ₹<%= Math.round(product.discountAmount) %> OFF
                 <% } else { %>
-                  <%= product.discount ? product.discount.toFixed(0) : '0' %>% OFF
+                  <%= Math.round(product.discount) %>% OFF
                 <% } %>
               </span>
             </div>
@@ -544,7 +548,11 @@
 
             <% if (relatedProduct.hasOffer && relatedProduct.discount > 0) { %>
             <div class="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full">
-              <%= Math.round(relatedProduct.discount) %>% OFF
+              <% if (relatedProduct.discountType === 'fixed') { %>
+                ₹<%= Math.round(relatedProduct.discountAmount) %> OFF
+              <% } else { %>
+                <%= Math.round(relatedProduct.discount) %>% OFF
+              <% } %>
             </div>
             <% } %>
 

@@ -1,10 +1,15 @@
+/**
+ * Admin Controller
+ * Handles admin authentication and dashboard functionality
+ */
+
 const User = require("../../models/userSchema");
 const mongoose = require("mongoose");
 const bcrypt = require('bcrypt');
 
 const DEMO_ADMIN = {
   email: "demo_admin@example.com",
-  password: "$2b$10$9mX.3dR7fGp5YQ6d8lzZpeY0YRfJQ9b3m8X1uD0vLk9rKs6VJ5XaC", // demoAdmin123 (pre-hashed)
+  password: "$2b$10$9mX.3dR7fGp5YQ6d8lzZpeY0YRfJQ9b3m8X1uD0vLk9rKs6VJ5XaC",
   name: "Demo Admin",
   isAdmin: true,
   isDemo: true,
@@ -21,7 +26,6 @@ const login = async (req, res) => {
     const { email, password } = req.body;
 
 
-    // Regular Admin Login
     const admin = await User.findOne({ email, isAdmin: true });
     if (!admin || !(await bcrypt.compare(password, admin.password))) {
       return res.render('admin-login', { message: 'Invalid credentials' });

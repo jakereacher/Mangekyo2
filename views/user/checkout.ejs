@@ -271,7 +271,17 @@
                                         <div class="flex-1">
                                             <h4 class="font-medium"><%= item.product.productName %></h4>
                                             <p class="text-sm text-gray-600">Quantity: <%= item.quantity %></p>
-                                            <p class="text-sm text-gray-600">Price: ₹<%= item.price.toFixed(2) %></p>
+                                            <p class="text-sm text-gray-600">
+                                                <% if (item.product.hasOffer && item.product.originalPrice > item.price) { %>
+                                                    Price: <span class="line-through text-gray-400">₹<%= item.product.originalPrice.toFixed(2) %></span>
+                                                    <span class="text-green-600 font-medium">₹<%= item.price.toFixed(2) %></span>
+                                                    <% if (item.product.discountPercentage > 0) { %>
+                                                        <span class="bg-red-600 text-white text-xs px-2 py-0.5 rounded ml-1"><%= Math.round(item.product.discountPercentage) %>% OFF</span>
+                                                    <% } %>
+                                                <% } else { %>
+                                                    Price: ₹<%= item.price.toFixed(2) %>
+                                                <% } %>
+                                            </p>
                                         </div>
                                         <div class="text-right">
                                             <p class="font-medium">₹<%= item.totalPrice.toFixed(2) %></p>
@@ -345,9 +355,13 @@
                     </div>
 
                     <div class="border-t border-gray-200 pt-4 mb-4">
-                        <div class="flex justify-between font-bold text-lg">
+                        <div id="originalTotalSection" class="flex justify-between font-bold text-lg">
                             <span>Total</span>
                             <span id="finalTotal">₹<%= total %></span>
+                        </div>
+                        <div id="discountedTotalSection" class="flex justify-between font-bold text-lg text-green-600 hidden">
+                            <span>Total After Discount</span>
+                            <span id="discountedTotal">₹<%= total %></span>
                         </div>
                     </div>
 
@@ -363,6 +377,13 @@
                                     <div class="flex-1">
                                         <p class="text-sm font-medium"><%= item.product.productName %></p>
                                         <p class="text-xs text-gray-600">Qty: <%= item.quantity %></p>
+                                        <% if (item.product.hasOffer && item.product.originalPrice > item.price) { %>
+                                            <p class="text-xs text-gray-600">
+                                                <span class="line-through text-gray-400">₹<%= item.product.originalPrice.toFixed(2) %></span>
+                                                <span class="text-green-600">₹<%= item.price.toFixed(2) %></span>
+                                                <span class="bg-red-600 text-white text-xs px-1 py-0.5 rounded ml-1"><%= Math.round(item.product.discountPercentage) %>%</span>
+                                            </p>
+                                        <% } %>
                                     </div>
                                     <div class="text-sm font-medium">
                                         ₹<%= item.totalPrice.toFixed(2) %>
@@ -496,9 +517,20 @@
 
         // Global function to update order summary with coupon discount
         function updateOrderSummary(discount, finalAmount) {
+            // Show discount section
             discountSection.classList.remove('hidden');
             discountAmount.textContent = `-₹${discount.toFixed(2)}`;
-            finalTotal.textContent = `₹${finalAmount.toFixed(2)}`;
+
+            // Get the original total
+            const originalAmount = parseFloat('<%= total %>');
+
+            // Update the original total with strikethrough style
+            document.getElementById('originalTotalSection').classList.add('line-through', 'text-gray-500');
+            finalTotal.textContent = `₹${originalAmount.toFixed(2)}`;
+
+            // Show the discounted total section
+            document.getElementById('discountedTotalSection').classList.remove('hidden');
+            document.getElementById('discountedTotal').textContent = `₹${finalAmount.toFixed(2)}`;
 
             // Show the remove coupon button
             removeCouponBtn.classList.remove('hidden');
@@ -512,6 +544,12 @@
         function resetOrderSummary() {
             // Hide the discount section
             discountSection.classList.add('hidden');
+
+            // Reset the original total styling
+            document.getElementById('originalTotalSection').classList.remove('line-through', 'text-gray-500');
+
+            // Hide the discounted total section
+            document.getElementById('discountedTotalSection').classList.add('hidden');
 
             // Reset the final total
             finalTotal.textContent = `₹${(parseFloat('<%= subtotal %>') + parseFloat('<%= shipping %>') + parseFloat('<%= tax %>')).toFixed(2)}`;

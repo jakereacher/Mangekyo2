@@ -114,9 +114,9 @@
                 <% products.forEach(product => { %>
                   <div class="col-md-6 mb-2 product-item">
                     <div class="form-check">
-                      <input class="form-check-input product-checkbox" type="checkbox" 
-                        value="<%= product._id %>" 
-                        id="product_<%= product._id %>" 
+                      <input class="form-check-input product-checkbox" type="checkbox"
+                        value="<%= product._id %>"
+                        id="product_<%= product._id %>"
                         name="applicableProducts"
                         <%= offer.applicableProducts && offer.applicableProducts.some(p => p.toString() === product._id.toString()) ? 'checked' : '' %>>
                       <label class="form-check-label" for="product_<%= product._id %>">
@@ -131,7 +131,7 @@
               <span id="selectedProductsCount">0</span> products selected
             </div>
           </div>
-          
+
           <div class="mt-3" id="productOfferPreview" style="display: none;">
             <div class="card border-primary">
               <div class="card-header bg-primary text-white">
@@ -165,7 +165,7 @@
     const discountSymbol = document.querySelector('.discount-symbol');
     const maxDiscountContainer = document.querySelector('.max-discount-container');
     const maxDiscountAmountInput = document.getElementById('maxDiscountAmount');
-    
+
     // Product selection elements
     const productSearch = document.getElementById('productSearch');
     const productItems = document.querySelectorAll('.product-item');
@@ -174,7 +174,7 @@
     const clearAllProductsBtn = document.querySelector('.clear-all-products');
     const selectedProductsCount = document.getElementById('selectedProductsCount');
     const productOfferPreview = document.getElementById('productOfferPreview');
-    
+
     // Toggle max discount amount field based on discount type
     discountTypeSelect.addEventListener('change', function() {
       if (this.value === 'percentage') {
@@ -186,28 +186,28 @@
       }
       updateProductOfferPreview();
     });
-    
+
     // Update discount symbol when discount type changes
     discountTypeSelect.addEventListener('change', function() {
       discountSymbol.textContent = this.value === 'percentage' ? '%' : '₹';
     });
-    
+
     // Update product selection count
     function updateProductSelectionCount() {
       const selectedCount = document.querySelectorAll('.product-checkbox:checked').length;
       selectedProductsCount.textContent = selectedCount;
     }
-    
+
     // Update product offer preview
     function updateProductOfferPreview() {
       const discountType = discountTypeSelect.value;
       const discountValue = parseFloat(discountValueInput.value) || 0;
       const maxDiscountAmount = parseFloat(maxDiscountAmountInput.value) || 0;
       const samplePrice = 1000;
-      
+
       if (discountType && discountValue > 0) {
         let discountAmount = 0;
-        
+
         if (discountType === 'percentage') {
           discountAmount = (samplePrice * discountValue) / 100;
           if (maxDiscountAmount > 0 && discountAmount > maxDiscountAmount) {
@@ -218,30 +218,30 @@
           discountAmount = Math.min(discountValue, samplePrice);
           document.getElementById('productDiscountExample').textContent = `₹${discountAmount}`;
         }
-        
+
         const finalPrice = samplePrice - discountAmount;
         document.getElementById('productFinalPriceExample').textContent = finalPrice.toFixed(2);
-        
+
         productOfferPreview.style.display = 'block';
       } else {
         productOfferPreview.style.display = 'none';
       }
     }
-    
+
     // Update offer preview when discount value changes
     discountValueInput.addEventListener('input', function() {
       updateProductOfferPreview();
     });
-    
+
     // Update offer preview when max discount amount changes
     maxDiscountAmountInput.addEventListener('input', function() {
       updateProductOfferPreview();
     });
-    
+
     // Product search functionality
     productSearch.addEventListener('input', function() {
       const searchTerm = this.value.toLowerCase();
-      
+
       productItems.forEach(item => {
         const productName = item.querySelector('.form-check-label').textContent.trim().toLowerCase();
         if (productName.includes(searchTerm)) {
@@ -251,7 +251,7 @@
         }
       });
     });
-    
+
     // Select all products
     selectAllProductsBtn.addEventListener('click', function() {
       productCheckboxes.forEach(checkbox => {
@@ -263,7 +263,7 @@
       updateProductSelectionCount();
       updateProductOfferPreview();
     });
-    
+
     // Clear all products
     clearAllProductsBtn.addEventListener('click', function() {
       productCheckboxes.forEach(checkbox => {
@@ -272,7 +272,7 @@
       updateProductSelectionCount();
       updateProductOfferPreview();
     });
-    
+
     // Update product selection count when checkboxes change
     productCheckboxes.forEach(checkbox => {
       checkbox.addEventListener('change', function() {
@@ -280,7 +280,7 @@
         updateProductOfferPreview();
       });
     });
-    
+
     // Initialize
     updateProductSelectionCount();
     updateProductOfferPreview();
@@ -298,7 +298,7 @@
       enableTime: true,
       dateFormat: "Y-m-d H:i",
       time_24hr: true,
-      minDate: "today",
+      // Allow selecting dates in the past
       onChange: function(selectedDates, dateStr) {
         // Update end date min date when start date changes
         endDatePicker.set("minDate", dateStr);
@@ -310,7 +310,7 @@
       enableTime: true,
       dateFormat: "Y-m-d H:i",
       time_24hr: true,
-      minDate: document.getElementById('startDate').value || "today"
+      // minDate will be set by the onChange function of startDatePicker
     });
   });
 </script>

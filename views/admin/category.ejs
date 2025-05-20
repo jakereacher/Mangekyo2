@@ -439,6 +439,13 @@
                 isValid = false;
             }
 
+            // Validate that category name contains only letters and spaces
+            const nameRegex = /^[A-Za-z\s]+$/;
+            if (nameInput.value.trim() && !nameRegex.test(nameInput.value.trim())) {
+                nameError.textContent = 'Category name can only contain letters and spaces (no numbers or special characters)';
+                isValid = false;
+            }
+
             if (!descInput.value.trim()) {
                 descError.textContent = 'Description is required';
                 isValid = false;
@@ -492,6 +499,13 @@
 
             if (!nameInput.value.trim()) {
                 nameError.textContent = 'Category name is required';
+                isValid = false;
+            }
+
+            // Validate that category name contains only letters and spaces
+            const nameRegex = /^[A-Za-z\s]+$/;
+            if (nameInput.value.trim() && !nameRegex.test(nameInput.value.trim())) {
+                nameError.textContent = 'Category name can only contain letters and spaces (no numbers or special characters)';
                 isValid = false;
             }
 

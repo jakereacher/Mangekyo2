@@ -14,14 +14,28 @@ const getValidOffersForProduct = async (product) => {
 
   // Get product offers
   let productOffers = [];
+
+  // Get all product offers, sorted by creation date (newest first)
+  const allProductOffers = await Offer.find({
+    type: 'product',
+    applicableProducts: product._id,
+    isActive: true,
+    startDate: { $lte: now },
+    endDate: { $gte: now }
+  }).sort({ createdAt: -1 }); // Sort by creation date, newest first
+
+  // Only take the latest (first) product offer
+  if (allProductOffers.length > 0) {
+    productOffers = [allProductOffers[0]];
+  }
+
+  // If product has a direct offer reference but it's not the latest, update it
   if (product.offer) {
-    const offer = await Offer.findById(product.offer);
-    // Double-check offer validity
-    if (offer && offer.isActive && offer.startDate <= now && offer.endDate >= now) {
-      productOffers.push(offer);
-    } else if (offer && (offer.endDate < now || !offer.isActive)) {
-      // If offer is expired or inactive, clear it from the product
-      console.log(`Clearing expired offer from product ${product._id}: Offer ${offer._id} expired on ${offer.endDate}`);
+    const currentOffer = await Offer.findById(product.offer);
+
+    // If the current offer is expired or inactive, clear it
+    if (currentOffer && (currentOffer.endDate < now || !currentOffer.isActive)) {
+      console.log(`Clearing expired offer from product ${product._id}: Offer ${currentOffer._id} expired on ${currentOffer.endDate}`);
       await Product.findByIdAndUpdate(product._id, {
         $set: {
           offer: null,
@@ -31,21 +45,16 @@ const getValidOffersForProduct = async (product) => {
         }
       });
     }
-  }
-
-  // Get additional product offers (in case there are multiple)
-  const additionalProductOffers = await Offer.find({
-    type: 'product',
-    applicableProducts: product._id,
-    isActive: true,
-    startDate: { $lte: now },
-    endDate: { $gte: now }
-  }).sort({ createdAt: -1 }); // Sort by creation date, newest first
-
-  // Add any additional offers not already included
-  for (const offer of additionalProductOffers) {
-    if (!productOffers.some(po => po._id.toString() === offer._id.toString())) {
-      productOffers.push(offer);
+    // If there's a newer offer available, update the product's offer reference
+    else if (productOffers.length > 0 && currentOffer &&
+             productOffers[0]._id.toString() !== currentOffer._id.toString()) {
+      console.log(`Updating product ${product._id} with newer offer: ${productOffers[0]._id}`);
+      await Product.findByIdAndUpdate(product._id, {
+        $set: {
+          offer: productOffers[0]._id,
+          productOffer: true
+        }
+      });
     }
   }
 
@@ -54,7 +63,7 @@ const getValidOffersForProduct = async (product) => {
   if (product.category) {
     const categoryId = typeof product.category === 'object' ? product.category._id : product.category;
 
-    // Get all category offers, not just the one directly linked to the category
+    // Get all category offers, sorted by creation date (newest first)
     const allCategoryOffers = await Offer.find({
       type: 'category',
       applicableCategories: categoryId,
@@ -63,26 +72,29 @@ const getValidOffersForProduct = async (product) => {
       endDate: { $gte: now }
     }).sort({ createdAt: -1 }); // Sort by creation date, newest first
 
-    categoryOffers = allCategoryOffers;
+    // Only take the latest (first) category offer
+    if (allCategoryOffers.length > 0) {
+      categoryOffers = [allCategoryOffers[0]];
+    }
 
-    // Also check if category has a direct offer reference
+    // If category has a direct offer reference but it's not the latest, update it
     if (typeof product.category === 'object' && product.category.offer) {
       const category = await Category.findById(categoryId).populate('offer');
 
+      // If the current offer is expired or inactive, clear it
       if (category && category.offer &&
-          category.offer.isActive &&
-          category.offer.startDate <= now &&
-          category.offer.endDate >= now) {
-        // Check if this offer is already in our list
-        if (!categoryOffers.some(co => co._id.toString() === category.offer._id.toString())) {
-          categoryOffers.push(category.offer);
-        }
-      } else if (category && category.offer &&
-                (category.offer.endDate < now || !category.offer.isActive)) {
-        // If category offer is expired or inactive, clear it from the category
+          (category.offer.endDate < now || !category.offer.isActive)) {
         console.log(`Clearing expired offer from category ${category._id}: Offer ${category.offer._id} expired on ${category.offer.endDate}`);
         await Category.findByIdAndUpdate(category._id, {
           $set: { offer: null }
+        });
+      }
+      // If there's a newer offer available, update the category's offer reference
+      else if (categoryOffers.length > 0 && category && category.offer &&
+               categoryOffers[0]._id.toString() !== category.offer._id.toString()) {
+        console.log(`Updating category ${category._id} with newer offer: ${categoryOffers[0]._id}`);
+        await Category.findByIdAndUpdate(category._id, {
+          $set: { offer: categoryOffers[0]._id }
         });
       }
     }
@@ -175,12 +187,12 @@ const calculateBestOfferPrice = async (product) => {
 
   if (bestProductOffer && bestCategoryOffer) {
     // Both types of offers exist, compare discounts
-    if (maxProductDiscount >= maxCategoryDiscount) {
-      // Product offer has greater or equal discount, use it
+    if (maxProductDiscount > maxCategoryDiscount) {
+      // Product offer has greater discount, use it
       bestOffer = bestProductOffer;
       maxDiscount = maxProductDiscount;
     } else {
-      // Category offer has greater discount, use it
+      // Category offer has greater or equal discount, use it
       bestOffer = bestCategoryOffer;
       maxDiscount = maxCategoryDiscount;
     }

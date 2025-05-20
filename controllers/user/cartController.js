@@ -58,24 +58,18 @@ exports.addToCart = async (req, res) => {
 
     let cart = await Cart.findOne({ userId });
 
-    // Calculate price based on offer if available
-    let price = product.price || 0;
+    // Get the best offer price using offerService
+    const offerService = require('../../services/offerService');
+    const basePrice = product.price || 0;
 
-    // Apply discount if product has an offer
-    if (product.productOffer && product.offer) {
-      // Handle different discount types
-      if (product.offer.discountType === 'percentage') {
-        const discountAmount = (price * product.offer.discountValue) / 100;
-        price = price - discountAmount;
-      } else if (product.offer.discountType === 'fixed') {
-        price = price - product.offer.discountValue;
-        if (price < 0) price = 0;
-      }
-    } else if (product.productOffer && product.offerPercentage > 0) {
-      // Fallback to offerPercentage if offer object is not available
-      const discountAmount = (price * product.offerPercentage) / 100;
-      price = price - discountAmount;
-    }
+    // Get the best offer for this product
+    const offerResult = await offerService.getBestOfferForProduct(product._id, basePrice);
+
+    // Use the final price after applying the best offer
+    let price = offerResult.finalPrice;
+
+    // Ensure price is not negative
+    if (price < 0) price = 0;
 
     const totalPrice = price * quantity;
 
@@ -144,6 +138,54 @@ exports.addToCart = async (req, res) => {
   }
 };
 
+// Helper function to refresh cart prices based on current offers
+const refreshCartPrices = async (userId) => {
+  try {
+    const cart = await Cart.findOne({ userId });
+    if (!cart || !cart.products || cart.products.length === 0) {
+      return { updated: false, cart: null };
+    }
+
+    const offerService = require('../../services/offerService');
+    let pricesUpdated = false;
+
+    // Check each product in the cart for price changes
+    for (const item of cart.products) {
+      const product = await Product.findById(item.productId);
+      if (!product) continue;
+
+      // Get current best offer price
+      const basePrice = product.price || 0;
+      const offerResult = await offerService.getBestOfferForProduct(product._id, basePrice);
+      const currentBestPrice = offerResult.finalPrice;
+
+      // Check if price has changed (using small threshold for floating point comparison)
+      const priceDifference = Math.abs(item.price - currentBestPrice);
+      const shouldUpdatePrice = priceDifference > 0.01; // 1 cent threshold
+
+      if (shouldUpdatePrice) {
+        console.log(`Updating cart price for ${product.productName}: Old price: ${item.price}, New price: ${currentBestPrice}`);
+
+        // Update item price and total price
+        item.price = currentBestPrice;
+        item.totalPrice = currentBestPrice * item.quantity;
+        pricesUpdated = true;
+      }
+    }
+
+    // Save cart if any prices were updated
+    if (pricesUpdated) {
+      await cart.save();
+      console.log(`Cart prices updated for user ${userId}`);
+    }
+
+    return { updated: pricesUpdated, cart };
+  } catch (error) {
+    console.error('Error refreshing cart prices:', error);
+    return { updated: false, error };
+  }
+};
+
 exports.renderCartPage = async (req, res) => {
   try {
     const userId = req.session.user;
@@ -152,12 +194,16 @@ exports.renderCartPage = async (req, res) => {
       return res.redirect("/login");
     }
 
-    const cart = await Cart.findOne({ userId });
+    // Refresh cart prices based on current offers
+    const { updated, cart, error } = await refreshCartPrices(userId);
+
+    // If there was an error refreshing prices, just proceed with the current cart
+    const currentCart = error ? await Cart.findOne({ userId }) : cart;
     const allProducts = await Product.find({ isDeleted: false });
     let cartProducts = [];
 
-    if (cart && cart.products && cart.products.length > 0) {
-      const sortedCartProducts = cart.products.sort(
+    if (currentCart && currentCart.products && currentCart.products.length > 0) {
+      const sortedCartProducts = currentCart.products.sort(
         (a, b) => new Date(b.added_at) - new Date(a.added_at)
       );
 
@@ -166,12 +212,19 @@ exports.renderCartPage = async (req, res) => {
           const productDetails = await Product.findById(item.productId);
           if (!productDetails) return null;
 
+          // Get the current offer price to compare with the stored cart price
+          const offerService = require('../../services/offerService');
+          const basePrice = productDetails.price || 0;
+          const offerResult = await offerService.getBestOfferForProduct(productDetails._id, basePrice);
+
           return {
             product: productDetails,
             quantity: item.quantity,
             added_at: item.added_at,
             price: item.price,
             totalPrice: item.totalPrice,
+            currentPrice: offerResult.finalPrice,
+            priceChanged: Math.abs(item.price - offerResult.finalPrice) > 0.01
           };
         })
       );
@@ -179,7 +232,8 @@ exports.renderCartPage = async (req, res) => {
       cartProducts = cartProducts.filter((item) => item !== null);
     }
 
-    const cartCount = cart ? cart.products.length : 0;
+    const cartCount = currentCart ? currentCart.products.length : 0;
+    const pricesUpdated = updated;
 
     return res.render("cart", {
       name: "", // Can't access user name if session only stores userId
@@ -187,6 +241,7 @@ exports.renderCartPage = async (req, res) => {
       cartProducts,
       products: allProducts,
       cartCount,
+      pricesUpdated
     });
   } catch (error) {
     console.error("Error rendering cart page:", error);
@@ -243,6 +298,48 @@ exports.removeFromCart = async (req, res) => {
   }
 };
 
+// API endpoint to refresh cart prices
+exports.refreshCartPrices = async (req, res) => {
+  try {
+    const userId = req.session?.user;
+
+    if (!userId) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: "Not authenticated",
+      });
+    }
+
+    const { updated, cart, error } = await refreshCartPrices(userId);
+
+    if (error) {
+      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Failed to refresh cart prices",
+      });
+    }
+
+    if (!cart) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: "Cart not found or empty",
+      });
+    }
+
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      updated,
+      message: updated ? "Cart prices updated successfully" : "Cart prices are already up to date",
+    });
+  } catch (error) {
+    console.error("Error refreshing cart prices:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Error refreshing cart prices",
+    });
+  }
+};
+
 exports.validateCart = async (req, res) => {
   try {
     const userId = req.session?.user;
@@ -254,6 +351,9 @@ exports.validateCart = async (req, res) => {
         message: "Not authenticated",
       });
     }
+
+    // First refresh cart prices to ensure we're working with the latest prices
+    await refreshCartPrices(userId);
 
     console.log(`User ${userId} authenticated. Fetching cart...`);
     const cart = await Cart.findOne({ userId }).lean();
