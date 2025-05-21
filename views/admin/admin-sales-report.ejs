@@ -1,10 +1,10 @@
-<%- include("../../views/admin/partials/header", { activePage: 'reports' }) %>
+<%- include("partials/header", { activePage: 'reports' }) %>
 
 <div class="main-content">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h1 class="h2">Sales Report</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
-            <a href="/admin/sales-report/download?startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>" 
+            <a href="/admin/sales-report/download?startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>"
                class="btn btn-sm btn-outline-secondary me-2">
                 <i class="fas fa-download"></i> Export CSV
             </a>
@@ -238,12 +238,12 @@
                                     <td><%= order.orderedItems.length %> items</td>
                                     <td>₹<%= order.finalAmount.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %></td>
                                     <td>
-                                        <% 
+                                        <%
                                         let statusCounts = {};
                                         order.orderedItems.forEach(item => {
                                             statusCounts[item.status] = (statusCounts[item.status] || 0) + 1;
                                         });
-                                        
+
                                         Object.entries(statusCounts).forEach(([status, count]) => {
                                             let badgeClass = 'bg-secondary';
                                             if (status === 'Delivered') badgeClass = 'bg-success';
@@ -282,7 +282,7 @@
     const salesData = <%= salesByDate %>;
     const labels = Object.keys(salesData);
     const data = Object.values(salesData);
-    
+
     const ctx = document.getElementById('salesTrendChart').getContext('2d');
     new Chart(ctx, {
         type: 'line',
@@ -329,7 +329,7 @@
             }
         }
     });
-    
+
     // Payment Method Chart
     const paymentCtx = document.getElementById('paymentMethodChart').getContext('2d');
     new Chart(paymentCtx, {
@@ -338,8 +338,8 @@
             labels: ['COD', 'Razorpay', 'Wallet'],
             datasets: [{
                 data: [
-                    <%= salesByPaymentMethod.cod %>, 
-                    <%= salesByPaymentMethod.razorpay %>, 
+                    <%= salesByPaymentMethod.cod %>,
+                    <%= salesByPaymentMethod.razorpay %>,
                     <%= salesByPaymentMethod.wallet %>
                 ],
                 backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc'],
@@ -366,7 +366,7 @@
             cutout: '70%'
         }
     });
-    
+
     // DataTable initialization
     $(document).ready(function() {
         $('#ordersTable').DataTable({
@@ -375,4 +375,4 @@
     });
 </script>
 
-<%- include("../../views/admin/partials/footer") %>
+<%- include("partials/footer") %>

@@ -96,7 +96,9 @@ function generateInvoicePDF(doc, order) {
 
   doc.fontSize(14).text('Order Information', { underline: true });
   doc.moveDown(0.5);
-  doc.fontSize(10).text(`Order Number: ${order.orderNumber || order._id}`);
+  // Use orderNumber if available, otherwise use a shortened version of the ID
+  const displayOrderId = order.orderNumber || `MK${order._id.toString().slice(-6)}`;
+  doc.fontSize(10).text(`Order Number: ${displayOrderId}`);
   doc.fontSize(10).text(`Order Date: ${new Date(order.orderDate).toLocaleDateString()}`);
   doc.fontSize(10).text(`Payment Method: ${order.paymentMethod === 'cod' ? 'Cash on Delivery' : (order.paymentMethod === 'razorpay' ? 'Online Payment' : 'Wallet')}`);
   doc.fontSize(10).text(`Payment Status: ${order.paymentStatus}`);
@@ -217,7 +219,13 @@ const getOrderDetails = async (req, res) => {
     }
 
     const order = await Order.findOne({ _id: orderId, userId })
-      .populate("orderedItems.product")
+      .populate({
+        path: "orderedItems.product",
+        populate: {
+          path: "offer",
+          model: "Offer"
+        }
+      })
       .lean();
 
     if (!order) {
@@ -297,6 +305,8 @@ const getOrderDetails = async (req, res) => {
         // Include original price and discount percentage if available
         originalPrice: item.originalPrice || item.price,
         discountPercentage: item.discountPercentage || 0,
+        // Add offer type - default to 'percentage' if not specified
+        offerType: item.product.offer && item.product.offer.discountType ? item.product.offer.discountType : 'percentage',
         totalPrice: (item.price * item.quantity).toFixed(2),
       })),
       subtotal: subtotal.toFixed(2),
@@ -948,8 +958,11 @@ const downloadInvoice = async (req, res) => {
 
     const doc = new PDFDocument({ margin: 50 });
 
+    // Use orderNumber if available, otherwise use a shortened version of the ID
+    const displayOrderId = order.orderNumber || `MK${order._id.toString().slice(-6)}`;
+
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=invoice-${orderId}.pdf`);
+    res.setHeader('Content-Disposition', `attachment; filename=invoice-${displayOrderId}.pdf`);
 
     doc.pipe(res);
 

@@ -68,6 +68,13 @@ const renderPaymentFailure = async (req, res) => {
     // Check if it's a wallet payment failure
     const isWalletFailure = order.paymentMethod === 'wallet' || (error && error.toLowerCase().includes('wallet'));
 
+    // Update the order payment status to Failed if it's not already Paid
+    if (order.paymentStatus !== 'Paid') {
+      console.log(`Updating payment status to Failed for order ${orderId}`);
+      order.paymentStatus = 'Failed';
+      await order.save();
+    }
+
     // Render the payment failure page
     res.render('payment-failure', {
       orderId: order._id,

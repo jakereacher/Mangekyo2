@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Favicon Generator for Mangeyko</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .instructions {
+            background-color: #f5f5f5;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .step {
+            margin-bottom: 15px;
+        }
+        code {
+            background-color: #eee;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        .note {
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <h1>Favicon Generator for Mangeyko</h1>
+    
+    <div class="instructions">
+        <h2>Instructions to Create Favicon Files</h2>
+        
+        <div class="step">
+            <h3>Step 1: Generate Favicon Files</h3>
+            <p>Visit one of these favicon generator websites:</p>
+            <ul>
+                <li><a href="https://realfavicongenerator.net/" target="_blank">Real Favicon Generator</a> (recommended)</li>
+                <li><a href="https://favicon.io/" target="_blank">Favicon.io</a></li>
+            </ul>
+            <p>Upload your logo or create a simple text-based favicon with your site's initial "M".</p>
+        </div>
+        
+        <div class="step">
+            <h3>Step 2: Download and Extract</h3>
+            <p>Download the generated favicon package and extract the files.</p>
+        </div>
+        
+        <div class="step">
+            <h3>Step 3: Place Files in the Correct Directory</h3>
+            <p>Copy the following files to the <code>public/images/favicon/</code> directory:</p>
+            <ul>
+                <li>favicon.ico</li>
+                <li>favicon-16x16.png</li>
+                <li>favicon-32x32.png</li>
+                <li>apple-touch-icon.png</li>
+                <li>android-chrome-192x192.png</li>
+                <li>android-chrome-512x512.png</li>
+            </ul>
+            <p>The site.webmanifest file has already been created for you.</p>
+        </div>
+        
+        <div class="step">
+            <h3>Step 4: Restart Your Server</h3>
+            <p>After placing the files in the correct directory, restart your Node.js server to ensure the changes take effect.</p>
+        </div>
+    </div>
+    
+    <div class="note">
+        <p><strong>Note:</strong> The favicon links have already been added to your website's HTML. You just need to create and place the actual favicon files in the correct directory.</p>
+    </div>
+</body>
+</html>

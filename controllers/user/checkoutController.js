@@ -430,8 +430,7 @@ exports.placeOrder = async (req, res) => {
         phone: selectedAddress.mobile,
       },
       paymentMethod,
-      paymentStatus: paymentMethod === "cod" ? "Pending" :
-                    (paymentMethod === "razorpay" ? "Failed" : "Paid"),
+      paymentStatus: paymentMethod === "wallet" ? "Paid" : "Pending", // Set both COD and Razorpay to Pending by default
       orderDate: new Date(),
       deliveryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     };

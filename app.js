@@ -23,6 +23,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
+// Serve favicon.ico from root path
+app.get('/favicon.ico', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/images/favicon/favicon.ico'));
+});
+
 app.use(
   session({
     secret: process.env.SESSION_SECRET,
@@ -68,6 +73,7 @@ app.set("view engine", "ejs");
 app.set("views", [
   path.join(__dirname, "views/user"),
   path.join(__dirname, "views/admin"),
+  path.join(__dirname, "views"), // Add root views directory
 ]);
 
 

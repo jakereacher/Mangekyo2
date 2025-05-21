@@ -376,10 +376,14 @@ exports.renderSalesReport = async (req, res) => {
         };
       });
 
+      // Use orderNumber if available, otherwise use a shortened version of the ID
+      const displayOrderId = order.orderNumber || `MK${order._id.toString().slice(-6)}`;
+
       return {
         _id: order._id,
         orderId: order.orderId || order._id.toString().slice(-6).toUpperCase(),
         orderNumber: order.orderNumber, // Include the order number for display
+        displayOrderId: displayOrderId, // Add a display-friendly order ID
         orderDate: order.orderDate,
         formattedOrderDate: moment(order.orderDate).format('YYYY-MM-DD HH:mm'),
         customerName: order.userName || 'Unknown',
@@ -411,6 +415,42 @@ exports.renderSalesReport = async (req, res) => {
       revenue: status.revenue
     }));
 
+    // Prepare sales by date data for chart
+    const salesByDateMap = {};
+    const dateFormat = 'YYYY-MM-DD';
+
+    // Initialize with all dates in the range
+    let currentDate = moment(startDate);
+    const endMoment = moment(endDate);
+
+    while (currentDate.isSameOrBefore(endMoment)) {
+      const dateKey = currentDate.format(dateFormat);
+      salesByDateMap[dateKey] = 0;
+      currentDate.add(1, 'days');
+    }
+
+    // Fill in actual sales data
+    orders.forEach(order => {
+      const orderDate = moment(order.orderDate).format(dateFormat);
+      if (salesByDateMap[orderDate] !== undefined) {
+        salesByDateMap[orderDate] += order.finalAmount || 0;
+      }
+    });
+
+    // Prepare payment method data for chart
+    const salesByPaymentMethod = {
+      cod: 0,
+      razorpay: 0,
+      wallet: 0
+    };
+
+    // Fill in payment method data
+    Object.keys(paymentSummary).forEach(method => {
+      if (salesByPaymentMethod[method] !== undefined) {
+        salesByPaymentMethod[method] = paymentSummary[method].total || 0;
+      }
+    });
+
     // Prepare data for rendering
     const renderData = {
       orders: formattedOrders,
@@ -418,6 +458,11 @@ exports.renderSalesReport = async (req, res) => {
       paymentSummary,
       topProducts,
       statusDistribution: formattedStatusDistribution,
+      totalSales: summary.totalSales || 0,
+      totalOrders: summary.totalOrders || 0,
+      totalProducts: summary.totalProducts || 0,
+      salesByDate: JSON.stringify(salesByDateMap),
+      salesByPaymentMethod,
       filters: {
         filter,
         startDate: moment(startDate).format('YYYY-MM-DD'),
@@ -451,14 +496,14 @@ exports.renderSalesReport = async (req, res) => {
     if (renderData.isAjaxRequest) {
       // For AJAX requests, render the page normally
       // The client-side JS will extract only the needed parts
-      res.render("admin-sales-report-new", renderData);
+      res.render("admin/admin-sales-report", renderData);
     } else {
       // For regular requests, render the full page
-      res.render("admin-sales-report-new", renderData);
+      res.render("admin/admin-sales-report", renderData);
     }
   } catch (error) {
     console.error("Error generating sales report:", error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).render("admin/error", {
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).render("admin/admin-error", {
       message: "Failed to generate sales report",
       activePage: "reports"
     });
@@ -605,7 +650,8 @@ exports.downloadSalesReport = async (req, res) => {
     let csvContent = "Order ID,Date,Customer,Email,Payment Method,Payment Status,Product,Category,Quantity,Original Price,Discounted Price,Discount Amount,Status,Total Amount\n";
 
     orderItems.forEach(item => {
-      const orderId = item.orderId || item._id.toString().slice(-6).toUpperCase();
+      // Use orderNumber if available, otherwise use a shortened version of the ID
+      const orderId = item.orderNumber || `MK${item._id.toString().slice(-6)}`;
       const date = moment(item.orderDate).format('YYYY-MM-DD HH:mm');
       const customerName = item.customerName || 'Unknown';
       const customerEmail = item.customerEmail || 'No email';
@@ -640,8 +686,11 @@ exports.downloadSalesReport = async (req, res) => {
     console.log("CSV report generated and sent successfully");
   } catch (error) {
     console.error("Error downloading sales report CSV:", error);
-    // Send a simple error response
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).send("Failed to generate CSV sales report. Please try again later.");
+    // Render the error page instead of sending a plain text response
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).render("admin/admin-error", {
+      message: "Failed to generate CSV sales report",
+      activePage: "reports"
+    });
   }
 };
 
@@ -1089,10 +1138,8 @@ exports.downloadSalesReportPDF = async (req, res) => {
         tableRow += 15;
       }
 
-      // Truncate long order IDs and customer names to prevent overlap
-      const displayOrderId = (order.orderNumber || order.orderId).toString();
-      const truncatedOrderId = displayOrderId.length > 15 ?
-        displayOrderId.substring(0, 12) + '...' : displayOrderId;
+      // Use the display-friendly order ID
+      const truncatedOrderId = order.displayOrderId || order.orderNumber || `MK${order._id.toString().slice(-6)}`;
 
       const truncatedCustomerName = order.customerName.length > 15 ?
         order.customerName.substring(0, 12) + '...' : order.customerName;
@@ -1160,8 +1207,11 @@ exports.downloadSalesReportPDF = async (req, res) => {
 
   } catch (error) {
     console.error("Error generating PDF sales report:", error);
-    // Send a simple error response instead of rendering a view
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).send("Failed to generate PDF sales report. Please try again later.");
+    // Render the error page instead of sending a plain text response
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).render("admin/admin-error", {
+      message: "Failed to generate PDF sales report",
+      activePage: "reports"
+    });
   }
 };
 
