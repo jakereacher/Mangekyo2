@@ -168,7 +168,12 @@
                             <span id="subtotal">₹<%= order.subtotal %></span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Shipping</span>
+                            <span class="text-gray-600">
+                                Shipping
+                                <% if (order.deliveryDescription) { %>
+                                    <span class="text-xs text-blue-600 block">(<%= order.deliveryDescription %>)</span>
+                                <% } %>
+                            </span>
                             <span id="shipping">₹<%= order.shipping %></span>
                         </div>
                         <div class="flex justify-between">

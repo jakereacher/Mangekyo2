@@ -10,6 +10,7 @@ const orderController = require("../controllers/admin/orderController");
 const couponController = require("../controllers/admin/couponController");
 const offerController = require("../controllers/admin/offerController");
 const reportController = require("../controllers/admin/reportController");
+const deliveryChargeController = require("../controllers/admin/deliveryChargeController");
 
 const { userAuth, adminAuth } = require("../middlewares/auth");
 
@@ -87,5 +88,11 @@ router.post("/category-offers/update/:id", adminAuth, offerController.updateCate
 router.get("/sales-report", adminAuth, reportController.renderSalesReport);
 router.get("/sales-report/download", adminAuth, reportController.downloadSalesReport);
 router.get("/sales-report/download-pdf", adminAuth, reportController.downloadSalesReportPDF);
+
+// Delivery Charge routes
+router.get("/delivery-charges", adminAuth, deliveryChargeController.getAllDeliveryCharges);
+router.post("/delivery-charges", adminAuth, deliveryChargeController.addDeliveryCharge);
+router.put("/delivery-charges/:id", adminAuth, deliveryChargeController.updateDeliveryCharge);
+router.delete("/delivery-charges/:id", adminAuth, deliveryChargeController.deleteDeliveryCharge);
 
 module.exports = router;

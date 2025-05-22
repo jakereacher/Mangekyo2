@@ -106,6 +106,10 @@ const orderSchema = new Schema({
     type: Number,
     required: false,
   },
+  deliveryDescription: {
+    type: String,
+    default: 'Standard Delivery'
+  },
   discount: {
     type: Number,
     required: true,

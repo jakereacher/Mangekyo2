@@ -174,6 +174,14 @@ function generateInvoicePDF(doc, order) {
 
   doc.fontSize(10).text('Shipping:', 350, tableRow);
   doc.fontSize(10).text(`₹${order.shippingCharge ? order.shippingCharge.toFixed(2) : '0.00'}`, amountX, tableRow);
+
+  // Add delivery description if available
+  if (order.deliveryDescription) {
+    tableRow += 10;
+    doc.fontSize(8).fillColor('#3b82f6').text(`(${order.deliveryDescription})`, 350, tableRow);
+    doc.fillColor('#000000'); // Reset to black
+  }
+
   tableRow += 15;
 
   doc.fontSize(10).text('Tax:', 350, tableRow);

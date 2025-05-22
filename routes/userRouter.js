@@ -13,6 +13,7 @@ const razorpayController = require("../controllers/user/razorpayController");
 const paymentController = require("../controllers/user/paymentController");
 const walletController = require("../controllers/user/walletController");
 const referralController = require("../controllers/user/referralController");
+const deliveryController = require("../controllers/user/deliveryController");
 
 const {
   loadLandingpage,
@@ -100,6 +101,9 @@ router.post('/wishlist/toggle', wishlistController.toggleWishlist);
 router.delete('/wishlist/remove/:productId', wishlistController.removeFromWishlist);
 router.get('/wishlist/status/:productId', wishlistController.getWishlistStatus);
 router.get('/wishlist/count', wishlistController.getWishlistCount);
+
+// Delivery Charges
+router.post("/calculate-delivery-charge", deliveryController.calculateDeliveryCharge);
 
 // Coupons
 router.get("/active-coupons", couponController.renderCouponsPage);

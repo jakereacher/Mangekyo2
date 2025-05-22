@@ -5,11 +5,13 @@ const User = require("../../models/userSchema");
 const Wallet = require("../../models/walletSchema");
 const WalletTransaction = require("../../models/walletTransactionSchema");
 const Coupon = require("../../models/couponSchema");
+const DeliveryCharge = require("../../models/deliveryChargeSchema");
 const StatusCodes = require("../../utils/httpStatusCodes");
 const { generateOrderNumber } = require("../../utils/orderNumberGenerator");
 const mongoose = require("mongoose");
 const { razorpayKeyId } = require("../../config/razorpay");
 const { processWalletPayment } = require("./walletController");
+const deliveryChargeController = require("../admin/deliveryChargeController");
 
 exports.renderCheckoutPage = async (req, res) => {
   try {
@@ -105,14 +107,40 @@ exports.renderCheckoutPage = async (req, res) => {
 
     // Calculate subtotal based on the updated prices
     const subtotal = validCartItems.reduce((sum, item) => sum + item.totalPrice, 0);
-    const shipping = 5.99;
-    const tax = subtotal * 0.09; // Using 9% tax rate consistently across the application
-    const total = subtotal + shipping + tax;
 
+    // Get default address for delivery charge calculation
     let defaultAddress = null;
     if (Array.isArray(user.address) && user.address.length > 0) {
       defaultAddress = user.address.find((addr, idx) => addr && idx > 0 && addr.isDefault) || user.address[1];
     }
+
+    // Calculate delivery charge based on location
+    let shippingInfo = deliveryChargeController.getDefaultDeliveryCharge(); // Default charge
+    let shipping = shippingInfo.charge;
+    let deliveryDescription = shippingInfo.description;
+
+    if (defaultAddress && defaultAddress.city) {
+      // Get delivery charge based on city
+      const cityDeliveryInfo = await deliveryChargeController.getDeliveryChargeByLocation(defaultAddress.city);
+
+      if (cityDeliveryInfo !== null) {
+        shipping = cityDeliveryInfo.charge;
+        deliveryDescription = cityDeliveryInfo.description || 'Standard Delivery';
+      } else {
+        // If no city-specific charge, try state
+        const stateCharge = await deliveryChargeController.getDeliveryChargeByState(defaultAddress.state);
+        if (stateCharge !== null) {
+          shipping = stateCharge;
+          deliveryDescription = 'State-based Delivery';
+        }
+      }
+    }
+
+    const tax = subtotal * 0.09; // Using 9% tax rate consistently across the application
+    const total = subtotal + shipping + tax;
+
+    // Check if order is eligible for COD (not allowed for orders above Rs 1000)
+    const isCodAllowed = total <= 1000;
 
     // Make sure we have a valid Razorpay key ID
     const safeRazorpayKeyId = razorpayKeyId || 'rzp_test_UkVZCj9Q9Jy9Ja';
@@ -128,6 +156,8 @@ exports.renderCheckoutPage = async (req, res) => {
       addresses: user.address ? user.address.filter(addr => addr !== null) : [],
       defaultAddress,
       currentStep: 1,
+      isCodAllowed, // Pass COD eligibility to the frontend
+      deliveryDescription, // Pass delivery description to the frontend
       razorpayKeyId: safeRazorpayKeyId // Pass Razorpay key ID to the frontend
     });
 
@@ -302,7 +332,39 @@ exports.placeOrder = async (req, res) => {
       (sum, item) => sum + item.price * item.quantity,
       0
     );
-    const shipping = 5.99;
+
+    // Get the selected address for delivery charge calculation
+    // Use the already found selectedAddress or find it again if needed
+    if (!selectedAddress) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Selected address not found",
+        redirect: "/checkout"
+      });
+    }
+
+    // Calculate delivery charge based on location
+    let shippingInfo = deliveryChargeController.getDefaultDeliveryCharge(); // Default charge
+    let shipping = shippingInfo.charge;
+    let deliveryDescription = shippingInfo.description;
+
+    if (selectedAddress && selectedAddress.city) {
+      // Get delivery charge based on city
+      const cityDeliveryInfo = await deliveryChargeController.getDeliveryChargeByLocation(selectedAddress.city);
+
+      if (cityDeliveryInfo !== null) {
+        shipping = cityDeliveryInfo.charge;
+        deliveryDescription = cityDeliveryInfo.description || 'Standard Delivery';
+      } else {
+        // If no city-specific charge, try state
+        const stateCharge = await deliveryChargeController.getDeliveryChargeByState(selectedAddress.state);
+        if (stateCharge !== null) {
+          shipping = stateCharge;
+          deliveryDescription = 'State-based Delivery';
+        }
+      }
+    }
+
     const tax = subtotal * 0.09; // Using 9% tax rate consistently across the application
 
     // Enhanced coupon validation logic
@@ -394,6 +456,18 @@ exports.placeOrder = async (req, res) => {
     // Calculate final amount with discount
     const finalAmount = (subtotal + shipping + tax) - discount;
 
+    // Check if order is eligible for COD (not allowed for orders above Rs 1000)
+    const isCodAllowed = finalAmount <= 1000;
+
+    // Validate payment method
+    if (paymentMethod === "cod" && !isCodAllowed) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Cash on Delivery is not available for orders above ₹1000. Please choose another payment method.",
+        errorType: "COD_NOT_ALLOWED"
+      });
+    }
+
     // Check wallet balance for wallet payment
     if (paymentMethod === "wallet") {
       // Get wallet balance from Wallet collection
@@ -439,6 +513,7 @@ exports.placeOrder = async (req, res) => {
       orderedItems: validItems,
       totalPrice: subtotal,
       shippingCharge: shipping,
+      deliveryDescription: deliveryDescription, // Add delivery description
       taxAmount: tax,
       discount,
       finalAmount,
