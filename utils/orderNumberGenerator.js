@@ -40,8 +40,8 @@ async function generateOrderNumber() {
     return `${prefix}${formattedSequence}`;
   } catch (error) {
     console.error('Error generating order number:', error);
-    // Fallback to a timestamp-based number if there's an error
-    const timestamp = Date.now().toString().slice(-6);
+    // Fallback to a timestamp-based number if there's an error (5 digits)
+    const timestamp = Date.now().toString().slice(-5);
     return `MK${timestamp}`;
   }
 }

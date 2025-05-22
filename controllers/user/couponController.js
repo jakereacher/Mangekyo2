@@ -72,12 +72,13 @@ const applyCoupon = async (req, res) => {
     if (!code || !cartTotal || !userId) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
-        message: "Coupon code, cart total, and user ID are required.",
+        message: "Coupon code, cart total, and user ID are required to apply a coupon.",
         missingFields: {
           code: !code,
           cartTotal: !cartTotal,
           userId: !userId,
         },
+        errorType: "MISSING_FIELDS"
       });
     }
 
@@ -85,7 +86,8 @@ const applyCoupon = async (req, res) => {
     if (isNaN(numericCartTotal)) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
-        message: "Invalid cart total value",
+        message: "The cart total value is invalid. Please refresh the page and try again.",
+        errorType: "INVALID_CART_VALUE"
       });
     }
 
@@ -101,6 +103,7 @@ const applyCoupon = async (req, res) => {
       return res.status(StatusCodes.NOT_FOUND).json({
         success: false,
         message: "Invalid or expired coupon code",
+        errorType: "INVALID_COUPON"
       });
     }
 
@@ -109,6 +112,11 @@ const applyCoupon = async (req, res) => {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
         message: "You have reached the usage limit for this coupon.",
+        errorType: "USAGE_LIMIT_REACHED",
+        details: {
+          usageLimit: coupon.usageLimit,
+          couponCode: coupon.code
+        }
       });
     }
 
@@ -116,6 +124,12 @@ const applyCoupon = async (req, res) => {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
         message: `Minimum cart value for this coupon is ₹${coupon.minPrice}`,
+        errorType: "MINIMUM_CART_VALUE_NOT_MET",
+        details: {
+          minPrice: coupon.minPrice,
+          currentTotal: numericCartTotal,
+          difference: coupon.minPrice - numericCartTotal
+        }
       });
     }
 
@@ -124,6 +138,16 @@ const applyCoupon = async (req, res) => {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
         message: `Invalid coupon: Discount amount (₹${coupon.discountValue}) cannot be greater than minimum purchase amount (₹${coupon.minPrice})`,
+        errorType: "INVALID_COUPON_CONFIGURATION"
+      });
+    }
+
+    // Check if the coupon has reached its total usage limit
+    if (coupon.totalUsedCount >= coupon.totalUsageLimit) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "This coupon has reached its maximum usage limit",
+        errorType: "TOTAL_USAGE_LIMIT_REACHED"
       });
     }
 

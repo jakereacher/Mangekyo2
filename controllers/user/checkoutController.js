@@ -322,6 +322,7 @@ exports.placeOrder = async (req, res) => {
         return res.status(StatusCodes.BAD_REQUEST).json({
           success: false,
           message: "Invalid or expired coupon code",
+          errorType: "INVALID_COUPON"
         });
       }
 
@@ -329,6 +330,12 @@ exports.placeOrder = async (req, res) => {
         return res.status(StatusCodes.BAD_REQUEST).json({
           success: false,
           message: `Cart value must be at least ₹${coupon.minPrice} to use this coupon`,
+          errorType: "MINIMUM_CART_VALUE_NOT_MET",
+          details: {
+            minPrice: coupon.minPrice,
+            currentTotal: subtotal,
+            difference: coupon.minPrice - subtotal
+          }
         });
       }
 
@@ -336,6 +343,11 @@ exports.placeOrder = async (req, res) => {
         return res.status(StatusCodes.BAD_REQUEST).json({
           success: false,
           message: `Cart value must be less than ₹${coupon.maxPrice} to use this coupon`,
+          errorType: "MAXIMUM_CART_VALUE_EXCEEDED",
+          details: {
+            maxPrice: coupon.maxPrice,
+            currentTotal: subtotal
+          }
         });
       }
 
@@ -348,6 +360,11 @@ exports.placeOrder = async (req, res) => {
         return res.status(StatusCodes.BAD_REQUEST).json({
           success: false,
           message: "You have reached the usage limit for this coupon",
+          errorType: "USAGE_LIMIT_REACHED",
+          details: {
+            usageLimit: coupon.usageLimit,
+            usedCount: userCoupon.usedCount
+          }
         });
       }
 
@@ -355,6 +372,11 @@ exports.placeOrder = async (req, res) => {
         return res.status(StatusCodes.BAD_REQUEST).json({
           success: false,
           message: "This coupon has reached its maximum usage limit",
+          errorType: "TOTAL_USAGE_LIMIT_REACHED",
+          details: {
+            totalUsageLimit: coupon.totalUsageLimit,
+            totalUsedCount: coupon.totalUsedCount
+          }
         });
       }
 

@@ -563,11 +563,33 @@
             applyCouponBtn.disabled = false;
         }
 
-        // Global function to show coupon error
-        function showCouponError(message) {
+        // Global function to show coupon error modal
+        function showCouponError(message, title = "Unable to Apply Coupon", suggestion = "") {
+            // Still update the inline message for accessibility
             couponMessage.textContent = message;
             couponMessage.className = "text-sm text-red-600";
             resetOrderSummary();
+
+            // Set modal content
+            document.getElementById('couponErrorTitle').textContent = title;
+            document.getElementById('couponErrorMessage').textContent = message;
+
+            // Show or hide suggestion based on whether one was provided
+            const suggestionElement = document.getElementById('couponErrorSuggestion');
+            if (suggestion) {
+                document.getElementById('couponErrorSuggestionText').textContent = suggestion;
+                suggestionElement.classList.remove('hidden');
+            } else {
+                suggestionElement.classList.add('hidden');
+            }
+
+            // Show the modal
+            document.getElementById('couponErrorModal').classList.remove('hidden');
+        }
+
+        // Function to hide coupon error modal
+        function hideCouponErrorModal() {
+            document.getElementById('couponErrorModal').classList.add('hidden');
         }
 
         // Global function to hide the loading overlay
@@ -726,7 +748,11 @@
                 const currentTotal = subtotal + shipping + tax;
 
                 if (!couponCode) {
-                    showCouponError('Please enter a coupon code.');
+                    showCouponError(
+                        'Please enter a coupon code to apply a discount.',
+                        'No Coupon Code Entered',
+                        'You can view available coupons by clicking "See Available Coupons" above.'
+                    );
                     return;
                 }
 
@@ -785,11 +811,49 @@
                             couponMessage.textContent = '';
                         }, 3000);
                     } else {
-                        showCouponError(data.message);
+                        // Handle specific error cases with more detailed messages
+                        if (data.message.includes("Invalid or expired")) {
+                            showCouponError(
+                                'The coupon code you entered is invalid or has expired.',
+                                'Invalid Coupon Code',
+                                'Check for typos or try another coupon from the available coupons list.'
+                            );
+                        }
+                        else if (data.message.includes("usage limit")) {
+                            showCouponError(
+                                'You have already used this coupon the maximum number of times allowed.',
+                                'Usage Limit Reached',
+                                'Try another coupon or continue without a discount.'
+                            );
+                        }
+                        else if (data.message.includes("Minimum cart value")) {
+                            const minAmount = data.message.match(/₹(\d+)/);
+                            const minAmountValue = minAmount ? minAmount[1] : '';
+                            showCouponError(
+                                data.message,
+                                'Minimum Purchase Requirement Not Met',
+                                `Add more items to your cart to reach the minimum purchase amount of ₹${minAmountValue}.`
+                            );
+                        }
+                        else if (data.message.includes("maximum usage limit")) {
+                            showCouponError(
+                                'This coupon has been used by too many customers and is no longer available.',
+                                'Coupon Fully Redeemed',
+                                'Check out our other available coupons for discounts.'
+                            );
+                        }
+                        else {
+                            // Generic error for other cases
+                            showCouponError(data.message);
+                        }
                     }
                 } catch (error) {
                     console.error('Error applying coupon:', error);
-                    showCouponError('Something went wrong. Try again later.');
+                    showCouponError(
+                        'We encountered a technical issue while applying your coupon. Please try again later.',
+                        'Technical Error',
+                        'If this problem persists, please contact customer support.'
+                    );
                 }
             }
 
@@ -1095,49 +1159,61 @@
                             timerProgressBar: true
                         });
                     } else {
-                        // Show error message
-                        couponMessage.textContent = data.message || 'Failed to apply coupon';
-                        couponMessage.className = "text-sm text-red-600";
-
-                        Swal.fire({
-                            title: 'Error',
-                            text: data.message || 'Failed to apply coupon',
-                            icon: 'error',
-                            toast: true,
-                            position: 'top-end',
-                            showConfirmButton: false,
-                            timer: 3000
-                        });
+                        // Handle specific error cases with more detailed messages
+                        if (data.message.includes("Invalid or expired")) {
+                            showCouponError(
+                                'The coupon code you selected is invalid or has expired.',
+                                'Invalid Coupon Code',
+                                'This coupon may no longer be available. Try another coupon from the list.'
+                            );
+                        }
+                        else if (data.message.includes("usage limit")) {
+                            showCouponError(
+                                'You have already used this coupon the maximum number of times allowed.',
+                                'Usage Limit Reached',
+                                'Try another coupon or continue without a discount.'
+                            );
+                        }
+                        else if (data.message.includes("Minimum cart value")) {
+                            const minAmount = data.message.match(/₹(\d+)/);
+                            const minAmountValue = minAmount ? minAmount[1] : '';
+                            showCouponError(
+                                data.message,
+                                'Minimum Purchase Requirement Not Met',
+                                `Add more items to your cart to reach the minimum purchase amount of ₹${minAmountValue}.`
+                            );
+                        }
+                        else if (data.message.includes("maximum usage limit")) {
+                            showCouponError(
+                                'This coupon has been used by too many customers and is no longer available.',
+                                'Coupon Fully Redeemed',
+                                'Check out our other available coupons for discounts.'
+                            );
+                        }
+                        else {
+                            // Generic error for other cases
+                            showCouponError(
+                                data.message || 'Failed to apply coupon',
+                                'Coupon Error'
+                            );
+                        }
                     }
                 } catch (error) {
                     console.error('Error applying coupon directly:', error);
-                    couponMessage.textContent = error.message || 'Failed to apply coupon';
-                    couponMessage.className = "text-sm text-red-600";
-
-                    Swal.fire({
-                        title: 'Error',
-                        text: error.message || 'Failed to apply coupon',
-                        icon: 'error',
-                        toast: true,
-                        position: 'top-end',
-                        showConfirmButton: false,
-                        timer: 3000
-                    });
+                    showCouponError(
+                        'We encountered a technical issue while applying your coupon. Please try again later.',
+                        'Technical Error',
+                        'If this problem persists, please contact customer support.'
+                    );
                 }
 
             } catch (err) {
                 console.error('Failed to handle coupon code:', err);
-
-                // Show error message
-                Swal.fire({
-                    title: 'Error',
-                    text: 'Failed to apply coupon code. Please try again.',
-                    icon: 'error',
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 3000
-                });
+                showCouponError(
+                    'We encountered an unexpected error while applying your coupon. Please try again.',
+                    'Application Error',
+                    'If this problem persists, please try a different coupon code.'
+                );
             }
         }
 
@@ -1482,6 +1558,40 @@
 
             <div class="p-4 border-t">
                 <button onclick="hideCouponsModal()" class="w-full py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Coupon Error Modal -->
+    <div id="couponErrorModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div class="p-6 border-b border-red-100 bg-red-50 rounded-t-lg">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-red-600 flex items-center">
+                        <i class="fas fa-exclamation-circle mr-2"></i>Coupon Error
+                    </h2>
+                    <button onclick="hideCouponErrorModal()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <div id="couponErrorIcon" class="flex justify-center mb-4">
+                    <i class="fas fa-times-circle text-red-500 text-5xl"></i>
+                </div>
+                <h3 id="couponErrorTitle" class="text-lg font-medium text-center mb-2">Unable to Apply Coupon</h3>
+                <p id="couponErrorMessage" class="text-gray-600 text-center"></p>
+
+                <div id="couponErrorSuggestion" class="mt-4 p-3 bg-blue-50 rounded-lg text-blue-700 text-sm hidden">
+                    <i class="fas fa-lightbulb mr-1"></i> <span id="couponErrorSuggestionText"></span>
+                </div>
+            </div>
+
+            <div class="p-4 border-t">
+                <button onclick="hideCouponErrorModal()" class="w-full py-2 bg-red-500 text-white rounded hover:bg-red-600 transition">
                     Close
                 </button>
             </div>

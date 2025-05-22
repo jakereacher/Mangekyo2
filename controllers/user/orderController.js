@@ -96,8 +96,8 @@ function generateInvoicePDF(doc, order) {
 
   doc.fontSize(14).text('Order Information', { underline: true });
   doc.moveDown(0.5);
-  // Use orderNumber if available, otherwise use a shortened version of the ID
-  const displayOrderId = order.orderNumber || `MK${order._id.toString().slice(-6)}`;
+  // Use orderNumber if available, otherwise use a shortened version of the ID (5 digits)
+  const displayOrderId = order.orderNumber || `MK${order._id.toString().slice(-5)}`;
   doc.fontSize(10).text(`Order Number: ${displayOrderId}`);
   doc.fontSize(10).text(`Order Date: ${new Date(order.orderDate).toLocaleDateString()}`);
   doc.fontSize(10).text(`Payment Method: ${order.paymentMethod === 'cod' ? 'Cash on Delivery' : (order.paymentMethod === 'razorpay' ? 'Online Payment' : 'Wallet')}`);
@@ -958,8 +958,8 @@ const downloadInvoice = async (req, res) => {
 
     const doc = new PDFDocument({ margin: 50 });
 
-    // Use orderNumber if available, otherwise use a shortened version of the ID
-    const displayOrderId = order.orderNumber || `MK${order._id.toString().slice(-6)}`;
+    // Use orderNumber if available, otherwise use a shortened version of the ID (5 digits)
+    const displayOrderId = order.orderNumber || `MK${order._id.toString().slice(-5)}`;
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=invoice-${displayOrderId}.pdf`);

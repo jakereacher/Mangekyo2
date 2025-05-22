@@ -66,6 +66,17 @@
         @media (min-width: 640px) {
             .sm\:flex-row { flex-direction: row; }
         }
+
+        /* SweetAlert2 custom styles */
+        .swal-text-left {
+            text-align: left !important;
+        }
+        .swal2-html-container {
+            text-align: left !important;
+        }
+        .text-left {
+            text-align: left !important;
+        }
     </style>
 </head>
 <body>
@@ -466,6 +477,8 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Flatpickr JS -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
         $(document).ready(function() {
@@ -554,7 +567,56 @@
                 }
 
                 if (!isValid) {
-                    alert(errorMessage);
+                    // Determine specific error type for SweetAlert
+                    let errorTitle = "Validation Error";
+                    let errorDetails = null;
+                    let errorIcon = 'error';
+                    let errorField = null;
+
+                    if (errorMessage.includes('code')) {
+                        errorTitle = "Invalid Coupon Code";
+                        errorDetails = "Coupon codes must contain only letters and numbers without spaces or special characters.";
+                        errorField = 'code';
+                    }
+                    else if (errorMessage.includes('discount') || errorMessage.includes('percentage')) {
+                        errorTitle = "Invalid Discount Value";
+                        errorDetails = discountType === 'percentage'
+                            ? "Percentage discounts must be between 1% and 100%."
+                            : "Fixed discounts must be a positive number and less than the minimum purchase amount.";
+                        errorField = 'discountValue';
+                    }
+                    else if (errorMessage.includes('minimum price') || errorMessage.includes('maximum price')) {
+                        errorTitle = "Invalid Price Range";
+                        errorDetails = "Ensure minimum price is a non-negative number and maximum price (if provided) is greater than minimum price.";
+                        errorField = errorMessage.includes('minimum') ? 'minPrice' : 'maxPrice';
+                    }
+                    else if (errorMessage.includes('date')) {
+                        errorTitle = "Invalid Date Range";
+                        errorDetails = "Ensure both start and expiry dates are valid, and the expiry date is after the start date.";
+                        errorField = errorMessage.includes('start') ? 'startDate' : 'expiryDate';
+                    }
+                    else if (errorMessage.includes('usage limit')) {
+                        errorTitle = "Invalid Usage Limit";
+                        errorDetails = "Usage limits must be positive numbers. Per user limit cannot exceed total limit.";
+                        errorField = errorMessage.includes('per user') ? 'usageLimit' : 'totalUsageLimit';
+                    }
+
+                    // Highlight the field with error if possible
+                    if (errorField) {
+                        $(`#${errorField}`).addClass('is-invalid').focus();
+                        setTimeout(() => {
+                            $(`#${errorField}`).removeClass('is-invalid');
+                        }, 3000);
+                    }
+
+                    // Show SweetAlert with the specific error message as the main content
+                    Swal.fire({
+                        title: errorMessage, // Use the actual error message as the title
+                        text: errorDetails || '', // Additional details as secondary text
+                        icon: errorIcon,
+                        confirmButtonColor: '#dc3545',
+                        confirmButtonText: 'OK'
+                    });
                     return;
                 }
 
@@ -581,13 +643,63 @@
                     data: $.param(data),
                     success: function(response) {
                         if (response.success) {
-                            alert('Coupon added successfully!');
+                            // Hide the add coupon modal
                             $('#addCouponModal').modal('hide');
-                            location.reload();
+
+                            // Show success modal
+                            showCouponSuccessModal(
+                                `Coupon "${code}" has been successfully added.`,
+                                "Coupon Added Successfully"
+                            );
                         }
                     },
                     error: function(xhr) {
-                        alert('Error adding coupon: ' + (xhr.responseJSON?.message || 'Please try again'));
+                        const errorResponse = xhr.responseJSON || {};
+                        const errorMessage = errorResponse.message || 'An unknown error occurred while adding the coupon.';
+
+                        let errorTitle = "Error Adding Coupon";
+                        let errorDetails = null;
+                        let errorIcon = 'error';
+                        let errorField = null;
+
+                        // Handle specific error cases with more detailed information
+                        if (errorMessage.includes('already exists')) {
+                            errorTitle = "Duplicate Coupon Code";
+                            errorDetails = `The coupon code "${code}" is already in use. Please choose a different code.`;
+                            errorField = 'couponCode';
+                        }
+                        else if (errorMessage.includes('letters and numbers')) {
+                            errorTitle = "Invalid Coupon Code Format";
+                            errorDetails = "Coupon codes must contain only letters and numbers without spaces or special characters.";
+                            errorField = 'couponCode';
+                        }
+                        else if (errorMessage.includes('discount')) {
+                            errorTitle = "Invalid Discount Configuration";
+                            errorDetails = "Please check that your discount value is appropriate for the selected discount type.";
+                            errorField = 'discountValue';
+                        }
+                        else if (errorMessage.includes('date')) {
+                            errorTitle = "Invalid Date Configuration";
+                            errorDetails = "Please check that your start and expiry dates are valid and properly formatted.";
+                            errorField = errorMessage.includes('start') ? 'startDate' : 'expiryDate';
+                        }
+
+                        // Highlight the field with error if possible
+                        if (errorField) {
+                            $(`#${errorField}`).addClass('is-invalid').focus();
+                            setTimeout(() => {
+                                $(`#${errorField}`).removeClass('is-invalid');
+                            }, 3000);
+                        }
+
+                        // Show SweetAlert with the specific error message as the main content
+                        Swal.fire({
+                            title: errorMessage, // Use the actual error message as the title
+                            text: errorDetails || '', // Additional details as secondary text
+                            icon: errorIcon,
+                            confirmButtonColor: '#dc3545',
+                            confirmButtonText: 'OK'
+                        });
                     }
                 });
             });
@@ -595,43 +707,115 @@
             // Delete coupon button
             $('.delete-btn').on('click', function() {
                 const couponId = $(this).data('id');
-                if (confirm('Are you sure you want to delete this coupon?')) {
-                    $.ajax({
-                        url: '/admin/remove-coupon',
-                        method: 'POST',
-                        data: { id: couponId },
-                        success: function(response) {
-                            if (response.success) {
-                                alert('Coupon deleted successfully!');
-                                location.reload();
+                const couponCode = $(this).data('code');
+
+                // Use SweetAlert2 for confirmation
+                Swal.fire({
+                    title: 'Delete Coupon',
+                    html: `Are you sure you want to delete the coupon <strong>"${couponCode}"</strong>?`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, delete it!',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: '/admin/remove-coupon',
+                            method: 'POST',
+                            data: { id: couponId },
+                            success: function(response) {
+                                if (response.success) {
+                                    showCouponSuccessModal(
+                                        `Coupon "${couponCode}" has been successfully deleted.`,
+                                        "Coupon Deleted Successfully"
+                                    );
+                                }
+                            },
+                            error: function(xhr) {
+                                const errorResponse = xhr.responseJSON || {};
+                                const errorMessage = errorResponse.message || 'An error occurred while deleting the coupon.';
+
+                                // Determine specific error type
+                                let errorTitle = "Error Deleting Coupon";
+                                let errorDetails = "The coupon could not be deleted. It may have already been deleted or is being used in active orders.";
+
+                                if (errorMessage.includes('not found')) {
+                                    errorDetails = "The coupon you're trying to delete no longer exists.";
+                                } else if (errorMessage.includes('in use') || errorMessage.includes('active orders')) {
+                                    errorDetails = "This coupon cannot be deleted because it's currently in use by active orders.";
+                                }
+
+                                // Show SweetAlert with the specific error message as the main content
+                                Swal.fire({
+                                    title: errorMessage, // Use the actual error message as the title
+                                    text: errorDetails || '', // Additional details as secondary text
+                                    icon: 'error',
+                                    confirmButtonColor: '#dc3545',
+                                    confirmButtonText: 'OK'
+                                });
                             }
-                        },
-                        error: function() {
-                            alert('Error deleting coupon');
-                        }
-                    });
-                }
+                        });
+                    }
+                });
             });
 
             // Restore coupon button
             $('.restore-btn').on('click', function() {
                 const couponId = $(this).data('id');
-                if (confirm('Are you sure you want to restore this coupon?')) {
-                    $.ajax({
-                        url: '/admin/restore-coupon',
-                        method: 'POST',
-                        data: { id: couponId },
-                        success: function(response) {
-                            if (response.success) {
-                                alert('Coupon restored successfully!');
-                                location.reload();
+                const couponCode = $(this).data('code') || 'this coupon';
+
+                // Use SweetAlert2 for confirmation
+                Swal.fire({
+                    title: 'Restore Coupon',
+                    html: `Are you sure you want to restore the coupon <strong>"${couponCode}"</strong>?`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#28a745',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, restore it!',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: '/admin/restore-coupon',
+                            method: 'POST',
+                            data: { id: couponId },
+                            success: function(response) {
+                                if (response.success) {
+                                    showCouponSuccessModal(
+                                        `Coupon "${couponCode}" has been successfully restored.`,
+                                        "Coupon Restored Successfully"
+                                    );
+                                }
+                            },
+                            error: function(xhr) {
+                                const errorResponse = xhr.responseJSON || {};
+                                const errorMessage = errorResponse.message || 'An error occurred while restoring the coupon.';
+
+                                // Determine specific error type
+                                let errorTitle = "Error Restoring Coupon";
+                                let errorDetails = "The coupon could not be restored. It may have already been restored or no longer exists.";
+
+                                if (errorMessage.includes('not found')) {
+                                    errorDetails = "The coupon you're trying to restore no longer exists in the system.";
+                                } else if (errorMessage.includes('already active')) {
+                                    errorDetails = "This coupon is already active and doesn't need to be restored.";
+                                }
+
+                                // Show SweetAlert with the specific error message as the main content
+                                Swal.fire({
+                                    title: errorMessage, // Use the actual error message as the title
+                                    text: errorDetails || '', // Additional details as secondary text
+                                    icon: 'error',
+                                    confirmButtonColor: '#dc3545',
+                                    confirmButtonText: 'OK'
+                                });
                             }
-                        },
-                        error: function() {
-                            alert('Error restoring coupon');
-                        }
-                    });
-                }
+                        });
+                    }
+                });
             });
 
             // Update help text and validation based on discount type
@@ -799,7 +983,56 @@
                 }
 
                 if (!isValid) {
-                    alert(errorMessage);
+                    // Determine specific error type for SweetAlert
+                    let errorTitle = "Validation Error";
+                    let errorDetails = null;
+                    let errorIcon = 'error';
+                    let errorField = null;
+
+                    if (errorMessage.includes('code')) {
+                        errorTitle = "Invalid Coupon Code";
+                        errorDetails = "Coupon codes must contain only letters and numbers without spaces or special characters.";
+                        errorField = 'editCouponCode';
+                    }
+                    else if (errorMessage.includes('discount') || errorMessage.includes('percentage')) {
+                        errorTitle = "Invalid Discount Value";
+                        errorDetails = discountType === 'percentage'
+                            ? "Percentage discounts must be between 1% and 100%."
+                            : "Fixed discounts must be a positive number and less than the minimum purchase amount.";
+                        errorField = 'editDiscountValue';
+                    }
+                    else if (errorMessage.includes('minimum price') || errorMessage.includes('maximum price')) {
+                        errorTitle = "Invalid Price Range";
+                        errorDetails = "Ensure minimum price is a non-negative number and maximum price (if provided) is greater than minimum price.";
+                        errorField = errorMessage.includes('minimum') ? 'editMinPrice' : 'editMaxPrice';
+                    }
+                    else if (errorMessage.includes('date')) {
+                        errorTitle = "Invalid Date Range";
+                        errorDetails = "Ensure both start and expiry dates are valid, and the expiry date is after the start date.";
+                        errorField = errorMessage.includes('start') ? 'editStartDate' : 'editExpiryDate';
+                    }
+                    else if (errorMessage.includes('usage limit')) {
+                        errorTitle = "Invalid Usage Limit";
+                        errorDetails = "Usage limits must be positive numbers. Per user limit cannot exceed total limit.";
+                        errorField = 'editUsageLimit';
+                    }
+
+                    // Highlight the field with error if possible
+                    if (errorField) {
+                        $(`#${errorField}`).addClass('is-invalid').focus();
+                        setTimeout(() => {
+                            $(`#${errorField}`).removeClass('is-invalid');
+                        }, 3000);
+                    }
+
+                    // Show SweetAlert with the specific error message as the main content
+                    Swal.fire({
+                        title: errorMessage, // Use the actual error message as the title
+                        text: errorDetails || '', // Additional details as secondary text
+                        icon: errorIcon,
+                        confirmButtonColor: '#dc3545',
+                        confirmButtonText: 'OK'
+                    });
                     return;
                 }
 
@@ -824,17 +1057,102 @@
                     data: $.param(data),
                     success: function (response) {
                         if (response.success) {
-                            alert('Coupon updated successfully!');
+                            // Hide the edit coupon modal
                             $('#editCouponModal').modal('hide');
-                            location.reload();
+
+                            // Show success modal
+                            showCouponSuccessModal(
+                                `Coupon "${code}" has been successfully updated.`,
+                                "Coupon Updated Successfully"
+                            );
                         }
                     },
                     error: function (xhr) {
-                        alert('Error updating coupon: ' + (xhr.responseJSON?.message || 'Please try again'));
+                        const errorResponse = xhr.responseJSON || {};
+                        const errorMessage = errorResponse.message || 'An unknown error occurred while updating the coupon.';
+
+                        let errorTitle = "Error Updating Coupon";
+                        let errorDetails = null;
+                        let errorIcon = 'error';
+                        let errorField = null;
+
+                        // Handle specific error cases with more detailed information
+                        if (errorMessage.includes('already exists')) {
+                            errorTitle = "Duplicate Coupon Code";
+                            errorDetails = `The coupon code "${code}" is already in use by another coupon. Please choose a different code.`;
+                            errorField = 'editCouponCode';
+                        }
+                        else if (errorMessage.includes('not found')) {
+                            errorTitle = "Coupon Not Found";
+                            errorDetails = "The coupon you're trying to edit no longer exists. It may have been deleted.";
+                            // No specific field to highlight in this case
+                        }
+                        else if (errorMessage.includes('letters and numbers')) {
+                            errorTitle = "Invalid Coupon Code Format";
+                            errorDetails = "Coupon codes must contain only letters and numbers without spaces or special characters.";
+                            errorField = 'editCouponCode';
+                        }
+                        else if (errorMessage.includes('discount')) {
+                            errorTitle = "Invalid Discount Configuration";
+                            errorDetails = "Please check that your discount value is appropriate for the selected discount type.";
+                            errorField = 'editDiscountValue';
+                        }
+                        else if (errorMessage.includes('date')) {
+                            errorTitle = "Invalid Date Configuration";
+                            errorDetails = "Please check that your start and expiry dates are valid and properly formatted.";
+                            errorField = errorMessage.includes('start') ? 'editStartDate' : 'editExpiryDate';
+                        }
+
+                        // Highlight the field with error if possible
+                        if (errorField) {
+                            $(`#${errorField}`).addClass('is-invalid').focus();
+                            setTimeout(() => {
+                                $(`#${errorField}`).removeClass('is-invalid');
+                            }, 3000);
+                        }
+
+                        // Show SweetAlert with the specific error message as the main content
+                        Swal.fire({
+                            title: errorMessage, // Use the actual error message as the title
+                            text: errorDetails || '', // Additional details as secondary text
+                            icon: errorIcon,
+                            confirmButtonColor: '#dc3545',
+                            confirmButtonText: 'OK'
+                        });
                     }
                 });
             });
+
+            // Function to show error modal with specific messages using SweetAlert2
+            function showCouponErrorModal(message, title = "Error", details = null) {
+                // Show SweetAlert with the specific error message as the main content
+                Swal.fire({
+                    title: message, // Use the actual error message as the title
+                    text: details || '', // Additional details as secondary text
+                    icon: 'error',
+                    confirmButtonColor: '#dc3545',
+                    confirmButtonText: 'OK'
+                });
+            }
+
+            // Function to show success modal using SweetAlert2
+            function showCouponSuccessModal(message, title = "Success") {
+                Swal.fire({
+                    title: title,
+                    text: message,
+                    icon: 'success',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#28a745',
+                    timer: 2000,
+                    timerProgressBar: true
+                }).then(() => {
+                    // Reload the page after the modal is closed
+                    location.reload();
+                });
+            }
         });
     </script>
+
+
 </body>
 </html>

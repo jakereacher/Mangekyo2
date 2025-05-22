@@ -121,6 +121,14 @@ const addCoupon = async (req, res) => {
       });
     }
 
+    // For fixed discount type, ensure discount is not greater than minimum purchase amount
+    if (discountType === 'fixed' && discountValue > minPriceValue) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "For fixed discount coupons, discount value cannot be greater than minimum purchase amount.",
+      });
+    }
+
     // Validate maximum price (if provided)
     let maxPriceValue = null;
     if (maxPrice) {
@@ -199,18 +207,33 @@ const addCoupon = async (req, res) => {
       coupon: newCoupon,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Error adding coupon:", error);
+
+    // Handle different types of errors
     if (error.code === 11000) {
       return res.status(StatusCodes.CONFLICT).json({
         success: false,
-        message: "Coupon code already exists",
+        message: "Coupon code already exists"
       });
     }
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      success: false,
-      message: "Error saving the coupon",
-      error: error.message,
-    });
+    else if (error.name === 'ValidationError') {
+      // Extract the specific validation error message
+      const errorMessage = Object.values(error.errors)
+        .map(err => err.message)
+        .join('. ');
+
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: errorMessage,
+        validationErrors: error.errors
+      });
+    }
+    else {
+      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: error.message || "Error saving the coupon"
+      });
+    }
   }
 };
 
@@ -369,6 +392,14 @@ const editCoupon = async (req, res) => {
       });
     }
 
+    // For fixed discount type, ensure discount is not greater than minimum purchase amount
+    if (discountType === 'fixed' && discountValue > minPriceValue) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "For fixed discount coupons, discount value cannot be greater than minimum purchase amount.",
+      });
+    }
+
     // Validate maximum price (if provided)
     let maxPriceValue = null;
     if (maxPrice) {
@@ -463,19 +494,31 @@ const editCoupon = async (req, res) => {
   } catch (error) {
     console.error("Error editing coupon:", error);
 
-    // If duplicate code
+    // Handle different types of errors
     if (error.code === 11000) {
       return res.status(StatusCodes.CONFLICT).json({
         success: false,
-        message: "Coupon code already exists",
+        message: "Coupon code already exists"
       });
     }
+    else if (error.name === 'ValidationError') {
+      // Extract the specific validation error message
+      const errorMessage = Object.values(error.errors)
+        .map(err => err.message)
+        .join('. ');
 
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      success: false,
-      message: "Internal server error",
-      error: error.message,
-    });
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: errorMessage,
+        validationErrors: error.errors
+      });
+    }
+    else {
+      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: error.message || "Error updating the coupon"
+      });
+    }
   }
 };
 

@@ -4,125 +4,350 @@
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h1 class="h2">Sales Report</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
-            <a href="/admin/sales-report/download?startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>"
-               class="btn btn-sm btn-outline-secondary me-2">
-                <i class="fas fa-download"></i> Export CSV
+            <a href="/admin/sales-report/download-pdf?startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>"
+               class="btn btn-sm btn-danger me-2">
+                <i class="fas fa-file-pdf"></i> Export PDF
             </a>
-            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.print()">
+            <a href="/admin/sales-report/download?startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>"
+               class="btn btn-sm btn-success me-2">
+                <i class="fas fa-file-excel"></i> Export CSV
+            </a>
+            <button type="button" class="btn btn-sm btn-primary" onclick="window.print()">
                 <i class="fas fa-print"></i> Print
             </button>
         </div>
     </div>
 
     <!-- Filter Section -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5 class="card-title mb-0">Filter Sales Data</h5>
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-filter me-2"></i>Report Filters
+            </h6>
+            <button class="btn btn-sm btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="true" aria-controls="filterCollapse">
+                <i class="fas fa-chevron-down"></i>
+            </button>
         </div>
-        <div class="card-body">
-            <form id="filterForm" action="/admin/sales-report" method="GET" class="row g-3">
-                <div class="col-md-3">
-                    <label for="startDate" class="form-label">Start Date</label>
-                    <input type="date" class="form-control" id="startDate" name="startDate" value="<%= filters.startDate %>">
-                </div>
-                <div class="col-md-3">
-                    <label for="endDate" class="form-label">End Date</label>
-                    <input type="date" class="form-control" id="endDate" name="endDate" value="<%= filters.endDate %>">
-                </div>
-                <div class="col-md-3">
-                    <label for="paymentMethod" class="form-label">Payment Method</label>
-                    <select class="form-select" id="paymentMethod" name="paymentMethod">
-                        <option value="all" <%= filters.paymentMethod === 'all' ? 'selected' : '' %>>All Methods</option>
-                        <option value="cod" <%= filters.paymentMethod === 'cod' ? 'selected' : '' %>>Cash on Delivery</option>
-                        <option value="razorpay" <%= filters.paymentMethod === 'razorpay' ? 'selected' : '' %>>Razorpay</option>
-                        <option value="wallet" <%= filters.paymentMethod === 'wallet' ? 'selected' : '' %>>Wallet</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label for="orderStatus" class="form-label">Order Status</label>
-                    <select class="form-select" id="orderStatus" name="orderStatus">
-                        <option value="all" <%= filters.orderStatus === 'all' ? 'selected' : '' %>>All Statuses</option>
-                        <option value="Processing" <%= filters.orderStatus === 'Processing' ? 'selected' : '' %>>Processing</option>
-                        <option value="Shipped" <%= filters.orderStatus === 'Shipped' ? 'selected' : '' %>>Shipped</option>
-                        <option value="Delivered" <%= filters.orderStatus === 'Delivered' ? 'selected' : '' %>>Delivered</option>
-                        <option value="Cancelled" <%= filters.orderStatus === 'Cancelled' ? 'selected' : '' %>>Cancelled</option>
-                        <option value="Returned" <%= filters.orderStatus === 'Returned' ? 'selected' : '' %>>Returned</option>
-                    </select>
-                </div>
-                <div class="col-12">
-                    <button type="submit" class="btn btn-primary">Apply Filters</button>
-                    <a href="/admin/sales-report" class="btn btn-secondary">Reset</a>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Summary Cards -->
-    <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                Total Sales</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">₹<%= totalSales.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %></div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-rupee-sign fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                Total Orders</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800"><%= totalOrders %></div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-shopping-cart fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                Total Products Sold</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800"><%= totalProducts %></div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-box fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                Average Order Value</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                ₹<%= totalOrders > 0 ? (totalSales / totalOrders).toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '0.00' %>
+        <div class="collapse show" id="filterCollapse">
+            <div class="card-body">
+                <form id="filterForm" action="/admin/sales-report" method="GET" class="row g-3">
+                    <!-- Date Range Selector -->
+                    <div class="col-md-6">
+                        <div class="card border-left-primary h-100">
+                            <div class="card-body py-2">
+                                <h6 class="font-weight-bold text-primary mb-2">Date Range</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label for="startDate" class="form-label small">Start Date</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
+                                            <input type="date" class="form-control" id="startDate" name="startDate" value="<%= filters.startDate %>">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="endDate" class="form-label small">End Date</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
+                                            <input type="date" class="form-control" id="endDate" name="endDate" value="<%= filters.endDate %>">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <div class="btn-group btn-group-sm w-100" role="group">
+                                        <button type="button" class="btn btn-outline-secondary" onclick="setDateRange('today')">Today</button>
+                                        <button type="button" class="btn btn-outline-secondary" onclick="setDateRange('week')">This Week</button>
+                                        <button type="button" class="btn btn-outline-secondary" onclick="setDateRange('month')">This Month</button>
+                                        <button type="button" class="btn btn-outline-secondary" onclick="setDateRange('year')">This Year</button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-auto">
-                            <i class="fas fa-calculator fa-2x text-gray-300"></i>
+                    </div>
+
+                    <!-- Status and Payment Filters -->
+                    <div class="col-md-6">
+                        <div class="card border-left-success h-100">
+                            <div class="card-body py-2">
+                                <h6 class="font-weight-bold text-success mb-2">Order Filters</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label for="paymentMethod" class="form-label small">Payment Method</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fas fa-credit-card"></i></span>
+                                            <select class="form-select" id="paymentMethod" name="paymentMethod">
+                                                <option value="all" <%= filters.paymentMethod === 'all' ? 'selected' : '' %>>All Methods</option>
+                                                <option value="cod" <%= filters.paymentMethod === 'cod' ? 'selected' : '' %>>Cash on Delivery</option>
+                                                <option value="razorpay" <%= filters.paymentMethod === 'razorpay' ? 'selected' : '' %>>Razorpay</option>
+                                                <option value="wallet" <%= filters.paymentMethod === 'wallet' ? 'selected' : '' %>>Wallet</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="orderStatus" class="form-label small">Order Status</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fas fa-tasks"></i></span>
+                                            <select class="form-select" id="orderStatus" name="orderStatus">
+                                                <option value="all" <%= filters.orderStatus === 'all' ? 'selected' : '' %>>All Statuses</option>
+                                                <option value="Processing" <%= filters.orderStatus === 'Processing' ? 'selected' : '' %>>Processing</option>
+                                                <option value="Shipped" <%= filters.orderStatus === 'Shipped' ? 'selected' : '' %>>Shipped</option>
+                                                <option value="Delivered" <%= filters.orderStatus === 'Delivered' ? 'selected' : '' %>>Delivered</option>
+                                                <option value="Cancelled" <%= filters.orderStatus === 'Cancelled' ? 'selected' : '' %>>Cancelled</option>
+                                                <option value="Returned" <%= filters.orderStatus === 'Returned' ? 'selected' : '' %>>Returned</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-md-6">
+                                        <label for="sortBy" class="form-label small">Sort By</label>
+                                        <select class="form-select form-select-sm" id="sortBy" name="sortBy">
+                                            <option value="date" <%= filters.sortBy === 'date' ? 'selected' : '' %>>Date</option>
+                                            <option value="amount" <%= filters.sortBy === 'amount' ? 'selected' : '' %>>Amount</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="sortOrder" class="form-label small">Sort Order</label>
+                                        <select class="form-select form-select-sm" id="sortOrder" name="sortOrder">
+                                            <option value="desc" <%= filters.sortOrder === 'desc' ? 'selected' : '' %>>Descending</option>
+                                            <option value="asc" <%= filters.sortOrder === 'asc' ? 'selected' : '' %>>Ascending</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 d-flex justify-content-end mt-3">
+                        <a href="/admin/sales-report" class="btn btn-outline-secondary me-2">
+                            <i class="fas fa-undo me-1"></i>Reset
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search me-1"></i>Apply Filters
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Section -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-chart-line me-2"></i>Sales Summary
+            </h6>
+            <span class="badge bg-primary">
+                <%= filters.startDate %> to <%= filters.endDate %>
+            </span>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <!-- Main Summary Cards -->
+                <div class="col-lg-8">
+                    <div class="row">
+                        <div class="col-xl-4 col-md-6 mb-4">
+                            <div class="card border-left-primary shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                                Original Amount</div>
+                                            <% const originalAmount = summary.totalOriginalValue || totalSales; %>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800">₹<%= originalAmount.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %></div>
+                                            <div class="text-xs text-muted mt-1">
+                                                <i class="fas fa-tag"></i> Before discounts
+                                            </div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-rupee-sign fa-2x text-primary"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-xl-4 col-md-6 mb-4">
+                            <div class="card border-left-success shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                                Total Revenue</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800">₹<%= totalSales.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %></div>
+                                            <% if (summary.totalOriginalValue && summary.totalOriginalValue > totalSales) { %>
+                                                <div class="text-xs text-success mt-1">
+                                                    <i class="fas fa-tags"></i> Saved: ₹<%= (summary.totalOriginalValue - totalSales).toLocaleString('en-IN', { maximumFractionDigits: 2 }) %>
+                                                </div>
+                                            <% } %>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-chart-line fa-2x text-success"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-xl-4 col-md-6 mb-4">
+                            <div class="card border-left-danger shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                                Net Sales</div>
+                                            <% const summaryNetSales = totalSales; %>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800">₹<%= summaryNetSales.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %></div>
+                                            <div class="text-xs text-muted mt-1">
+                                                <i class="fas fa-hand-holding-usd"></i> Revenue after discounts
+                                            </div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-hand-holding-usd fa-2x text-danger"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-xl-6 col-md-6 mb-4">
+                            <div class="card border-left-success shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                                Total Orders</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800"><%= totalOrders %></div>
+                                            <div class="text-xs text-muted mt-1">
+                                                <i class="fas fa-box"></i> <%= totalProducts %> products sold
+                                            </div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-shopping-cart fa-2x text-success"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-xl-6 col-md-6 mb-4">
+                            <div class="card border-left-info shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                                Average Order Value</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                                ₹<%= totalOrders > 0 ? (totalSales / totalOrders).toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '0.00' %>
+                                            </div>
+                                            <div class="text-xs text-muted mt-1">
+                                                <i class="fas fa-calculator"></i> Per order average
+                                            </div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-chart-bar fa-2x text-info"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Method Summary -->
+                <div class="col-lg-4">
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Payment Methods</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Method</th>
+                                            <th>Orders</th>
+                                            <th>Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><i class="fas fa-money-bill-wave text-success me-1"></i> COD</td>
+                                            <td><%= paymentSummary.cod ? paymentSummary.cod.count : 0 %></td>
+                                            <td>₹<%= paymentSummary.cod ? paymentSummary.cod.total.toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '0.00' %></td>
+                                        </tr>
+                                        <tr>
+                                            <td><i class="fas fa-credit-card text-primary me-1"></i> Razorpay</td>
+                                            <td><%= paymentSummary.razorpay ? paymentSummary.razorpay.count : 0 %></td>
+                                            <td>₹<%= paymentSummary.razorpay ? paymentSummary.razorpay.total.toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '0.00' %></td>
+                                        </tr>
+                                        <tr>
+                                            <td><i class="fas fa-wallet text-info me-1"></i> Wallet</td>
+                                            <td><%= paymentSummary.wallet ? paymentSummary.wallet.count : 0 %></td>
+                                            <td>₹<%= paymentSummary.wallet ? paymentSummary.wallet.total.toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '0.00' %></td>
+                                        </tr>
+                                        <tr class="table-active fw-bold">
+                                            <td>Total</td>
+                                            <td><%= totalOrders %></td>
+                                            <td>₹<%= totalSales.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %></td>
+                                        </tr>
+                                        <% const tableNetSales = totalSales; %>
+                                        <tr class="table-info">
+                                            <td><i class="fas fa-hand-holding-usd text-danger me-1"></i> Actual Revenue</td>
+                                            <td></td>
+                                            <td>₹<%= tableNetSales.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Offers Summary -->
+                    <div class="card shadow h-100">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Offers & Discounts</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Type</th>
+                                            <th>Products</th>
+                                            <th>Savings</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><i class="fas fa-tag text-success me-1"></i> Product Offers</td>
+                                            <td><%= offerSummary && offerSummary.productOffers ? offerSummary.productOffers.count : 0 %></td>
+                                            <td>₹<%= offerSummary && offerSummary.productOffers ? offerSummary.productOffers.savings.toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '0.00' %></td>
+                                        </tr>
+                                        <tr>
+                                            <td><i class="fas fa-folder text-primary me-1"></i> Category Offers</td>
+                                            <td><%= offerSummary && offerSummary.categoryOffers ? offerSummary.categoryOffers.count : 0 %></td>
+                                            <td>₹<%= offerSummary && offerSummary.categoryOffers ? offerSummary.categoryOffers.savings.toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '0.00' %></td>
+                                        </tr>
+                                        <tr>
+                                            <td><i class="fas fa-ticket-alt text-info me-1"></i> Coupons</td>
+                                            <td><%= offerSummary && offerSummary.coupons ? offerSummary.coupons.count : 0 %></td>
+                                            <td>₹<%= offerSummary && offerSummary.coupons ? offerSummary.coupons.savings.toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '0.00' %></td>
+                                        </tr>
+                                        <tr class="table-active fw-bold">
+                                            <td>Total Savings</td>
+                                            <td></td>
+                                            <td>₹<%= offerSummary && offerSummary.totalSavings ? offerSummary.totalSavings.toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '0.00' %></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <% if (offerSummary && offerSummary.totalSavings > 0) { %>
+                                <div class="text-center mt-2 small text-success">
+                                    <i class="fas fa-chart-line me-1"></i> Customers saved
+                                    <%= Math.round((offerSummary.totalSavings / (totalSales + offerSummary.totalSavings)) * 100) %>%
+                                    on their purchases
+                                </div>
+                            <% } %>
                         </div>
                     </div>
                 </div>
@@ -130,97 +355,215 @@
         </div>
     </div>
 
-    <!-- Charts Row -->
-    <div class="row mb-4">
-        <!-- Sales Trend Chart -->
-        <div class="col-xl-8 col-lg-7">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">Sales Trend</h6>
-                </div>
-                <div class="card-body">
-                    <div class="chart-area">
-                        <canvas id="salesTrendChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Payment Method Distribution -->
-        <div class="col-xl-4 col-lg-5">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">Payment Methods</h6>
-                </div>
-                <div class="card-body">
-                    <div class="chart-pie pt-4 pb-2">
-                        <canvas id="paymentMethodChart"></canvas>
-                    </div>
-                    <div class="mt-4 text-center small">
-                        <span class="mr-2">
-                            <i class="fas fa-circle text-primary"></i> COD
-                        </span>
-                        <span class="mr-2">
-                            <i class="fas fa-circle text-success"></i> Razorpay
-                        </span>
-                        <span class="mr-2">
-                            <i class="fas fa-circle text-info"></i> Wallet
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Top Products Table -->
+    <!-- Top Products Section -->
     <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Top Selling Products</h6>
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-trophy me-2"></i>Top Selling Products
+            </h6>
+            <div class="d-flex align-items-center">
+                <!-- Sort By Options -->
+                <div class="me-3">
+                    <label for="productsSortBy" class="form-label small mb-0 me-2">Sort by:</label>
+                    <select id="productsSortBy" class="form-select form-select-sm" style="width: auto; display: inline-block;">
+                        <option value="revenue" <%= filters.productsSortBy === 'revenue' ? 'selected' : '' %>>Revenue</option>
+                        <option value="quantity" <%= filters.productsSortBy === 'quantity' ? 'selected' : '' %>>Quantity Sold</option>
+                        <option value="discount" <%= filters.productsSortBy === 'discount' ? 'selected' : '' %>>Discount Amount</option>
+                        <option value="original" <%= filters.productsSortBy === 'original' ? 'selected' : '' %>>Original Revenue</option>
+                    </select>
+                    <select id="productsSortOrder" class="form-select form-select-sm ms-1" style="width: auto; display: inline-block;">
+                        <option value="desc" <%= filters.productsSortOrder === 'desc' ? 'selected' : '' %>>Highest First</option>
+                        <option value="asc" <%= filters.productsSortOrder === 'asc' ? 'selected' : '' %>>Lowest First</option>
+                    </select>
+                </div>
+
+                <!-- Items Per Page -->
+                <div>
+                    <label for="productsLimitSelect" class="form-label small mb-0 me-2">Show:</label>
+                    <select id="productsLimitSelect" class="form-select form-select-sm" style="width: auto; display: inline-block;">
+                        <option value="5" <%= productsPagination.limit === 5 ? 'selected' : '' %>>5 per page</option>
+                        <option value="10" <%= productsPagination.limit === 10 ? 'selected' : '' %>>10 per page</option>
+                        <option value="25" <%= productsPagination.limit === 25 ? 'selected' : '' %>>25 per page</option>
+                    </select>
+                </div>
+            </div>
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered" width="100%" cellspacing="0">
-                    <thead>
+                <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                    <thead class="table-light">
                         <tr>
+                            <th>#</th>
+                            <th>Product Image</th>
                             <th>Product Name</th>
-                            <th>Quantity Sold</th>
-                            <th>Revenue</th>
+                            <th>Category</th>
+                            <th class="text-center">Quantity</th>
+                            <th class="text-center">Offer</th>
+                            <th class="text-center">Unit Price</th>
+                            <th class="text-center">Revenue</th>
+                            <th class="text-center">Original Amount</th>
                         </tr>
                     </thead>
                     <tbody>
                         <% if (topProducts && topProducts.length > 0) { %>
-                            <% topProducts.forEach(product => { %>
+                            <% topProducts.forEach((product, index) => { %>
                                 <tr>
-                                    <td><%= product.name %></td>
-                                    <td><%= product.quantity %></td>
-                                    <td>₹<%= product.revenue.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %></td>
+                                    <td class="align-middle"><%= (productsPagination.page - 1) * productsPagination.limit + index + 1 %></td>
+                                    <td class="align-middle" style="width: 60px;">
+                                        <% if (product.image) { %>
+                                            <img src="<%= product.image %>" alt="<%= product.name %>" class="img-thumbnail" style="max-width: 50px; max-height: 50px;">
+                                        <% } else { %>
+                                            <div class="bg-light text-center p-2 rounded">
+                                                <i class="fas fa-image text-muted"></i>
+                                            </div>
+                                        <% } %>
+                                    </td>
+                                    <td class="align-middle">
+                                        <strong><%= product.name %></strong>
+                                        <% if (product.brand) { %>
+                                            <div class="small text-muted"><%= product.brand %></div>
+                                        <% } %>
+                                    </td>
+                                    <td class="align-middle"><%= product.category || 'Uncategorized' %></td>
+                                    <td class="align-middle text-center">
+                                        <span class="badge bg-primary"><%= product.quantity %></span>
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        <% if (product.offerPercentage && product.offerPercentage > 0) { %>
+                                            <span class="badge bg-success">
+                                                <%= product.offerPercentage %>%
+                                                <% if (product.offerType === 'product') { %>
+                                                    <i class="fas fa-tag" title="Product Offer"></i>
+                                                <% } else if (product.offerType === 'category') { %>
+                                                    <i class="fas fa-folder" title="Category Offer"></i>
+                                                <% } %>
+                                            </span>
+                                        <% } else { %>
+                                            <span class="badge bg-secondary">No Offer</span>
+                                        <% } %>
+                                    </td>
+                                    <td class="align-middle text-end">
+                                        <% if (product.originalPrice && product.originalPrice > (product.revenue / product.quantity)) { %>
+                                            <span class="text-decoration-line-through text-muted">
+                                                ₹<%= product.originalPrice.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %>
+                                            </span>
+                                            <br>
+                                            <span>
+                                                ₹<%= (product.revenue / product.quantity).toLocaleString('en-IN', { maximumFractionDigits: 2 }) %>
+                                            </span>
+                                        <% } else { %>
+                                            ₹<%= (product.revenue / product.quantity).toLocaleString('en-IN', { maximumFractionDigits: 2 }) %>
+                                        <% } %>
+                                    </td>
+                                    <td class="align-middle text-end fw-bold">₹<%= product.revenue.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %></td>
+                                    <td class="align-middle text-end">
+                                        <% if (product.originalPrice && product.quantity) { %>
+                                            <% const originalAmount = product.originalPrice * product.quantity; %>
+                                            ₹<%= originalAmount.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %>
+                                            <% if (originalAmount > product.revenue) { %>
+                                                <small class="text-success">
+                                                    (<%= Math.round((originalAmount - product.revenue) / originalAmount * 100) %>% off)
+                                                </small>
+                                            <% } %>
+                                        <% } else { %>
+                                            ₹<%= product.revenue.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %>
+                                        <% } %>
+                                    </td>
                                 </tr>
                             <% }); %>
                         <% } else { %>
                             <tr>
-                                <td colspan="3" class="text-center">No products found</td>
+                                <td colspan="9" class="text-center py-4">
+                                    <div class="text-muted">
+                                        <i class="fas fa-box fa-3x mb-3"></i>
+                                        <p>No products found for the selected period</p>
+                                    </div>
+                                </td>
                             </tr>
                         <% } %>
                     </tbody>
                 </table>
             </div>
+
+            <!-- Products Pagination -->
+            <% if (productsPagination.totalPages > 1) { %>
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div class="text-muted small">
+                        Showing <%= ((productsPagination.page - 1) * productsPagination.limit) + 1 %> to
+                        <%= Math.min(productsPagination.page * productsPagination.limit, productsPagination.totalItems) %>
+                        of <%= productsPagination.totalItems %> products
+                    </div>
+                    <nav aria-label="Top products pagination">
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item <%= !productsPagination.hasPrevPage ? 'disabled' : '' %>">
+                                <a class="page-link" href="?productsPage=1&page=<%= pagination.page %>&startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>&productsLimit=<%= productsPagination.limit %>&productsSortBy=<%= filters.productsSortBy %>&productsSortOrder=<%= filters.productsSortOrder %>" aria-label="First">
+                                    <span aria-hidden="true">&laquo;&laquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item <%= !productsPagination.hasPrevPage ? 'disabled' : '' %>">
+                                <a class="page-link" href="?productsPage=<%= productsPagination.page - 1 %>&page=<%= pagination.page %>&startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>&productsLimit=<%= productsPagination.limit %>&productsSortBy=<%= filters.productsSortBy %>&productsSortOrder=<%= filters.productsSortOrder %>" aria-label="Previous">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+
+                            <%
+                            let startPage = Math.max(1, productsPagination.page - 2);
+                            let endPage = Math.min(productsPagination.totalPages, startPage + 4);
+
+                            if (endPage - startPage < 4) {
+                                startPage = Math.max(1, endPage - 4);
+                            }
+
+                            for (let i = startPage; i <= endPage; i++) {
+                            %>
+                                <li class="page-item <%= i === productsPagination.page ? 'active' : '' %>">
+                                    <a class="page-link" href="?productsPage=<%= i %>&page=<%= pagination.page %>&startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>&productsLimit=<%= productsPagination.limit %>&productsSortBy=<%= filters.productsSortBy %>&productsSortOrder=<%= filters.productsSortOrder %>">
+                                        <%= i %>
+                                    </a>
+                                </li>
+                            <% } %>
+
+                            <li class="page-item <%= !productsPagination.hasNextPage ? 'disabled' : '' %>">
+                                <a class="page-link" href="?productsPage=<%= productsPagination.page + 1 %>&page=<%= pagination.page %>&startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>&productsLimit=<%= productsPagination.limit %>&productsSortBy=<%= filters.productsSortBy %>&productsSortOrder=<%= filters.productsSortOrder %>" aria-label="Next">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item <%= !productsPagination.hasNextPage ? 'disabled' : '' %>">
+                                <a class="page-link" href="?productsPage=<%= productsPagination.totalPages %>&page=<%= pagination.page %>&startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>&productsLimit=<%= productsPagination.limit %>&productsSortBy=<%= filters.productsSortBy %>&productsSortOrder=<%= filters.productsSortOrder %>" aria-label="Last">
+                                    <span aria-hidden="true">&raquo;&raquo;</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            <% } %>
         </div>
     </div>
 
     <!-- Orders Table -->
     <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Order Details</h6>
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-shopping-cart me-2"></i>Order Details
+            </h6>
+            <div>
+                <select id="orderLimitSelect" class="form-select form-select-sm" style="width: auto; display: inline-block;">
+                    <option value="10" <%= pagination.limit === 10 ? 'selected' : '' %>>10 per page</option>
+                    <option value="25" <%= pagination.limit === 25 ? 'selected' : '' %>>25 per page</option>
+                    <option value="50" <%= pagination.limit === 50 ? 'selected' : '' %>>50 per page</option>
+                </select>
+            </div>
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered" id="ordersTable" width="100%" cellspacing="0">
-                    <thead>
+                <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                    <thead class="table-light">
                         <tr>
                             <th>Order ID</th>
                             <th>Date</th>
                             <th>Customer</th>
                             <th>Payment Method</th>
+                            <th>Payment Status</th>
                             <th>Items</th>
                             <th>Amount</th>
                             <th>Status</th>
@@ -231,13 +574,41 @@
                         <% if (orders && orders.length > 0) { %>
                             <% orders.forEach(order => { %>
                                 <tr>
-                                    <td><%= order.orderId %></td>
-                                    <td><%= order.formattedOrderDate %></td>
-                                    <td><%= order.customerName %></td>
-                                    <td><%= order.paymentMethod.toUpperCase() %></td>
-                                    <td><%= order.orderedItems.length %> items</td>
-                                    <td>₹<%= order.finalAmount.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %></td>
-                                    <td>
+                                    <td class="align-middle"><strong><%= order.orderId %></strong></td>
+                                    <td class="align-middle"><%= order.formattedOrderDate %></td>
+                                    <td class="align-middle">
+                                        <%= order.customerName %>
+                                        <% if (order.customerEmail) { %>
+                                            <div class="small text-muted"><%= order.customerEmail %></div>
+                                        <% } %>
+                                    </td>
+                                    <td class="align-middle">
+                                        <% if (order.paymentMethod === 'cod') { %>
+                                            <span class="badge bg-success">COD</span>
+                                        <% } else if (order.paymentMethod === 'razorpay') { %>
+                                            <span class="badge bg-primary">Razorpay</span>
+                                        <% } else if (order.paymentMethod === 'wallet') { %>
+                                            <span class="badge bg-info">Wallet</span>
+                                        <% } else { %>
+                                            <span class="badge bg-secondary"><%= order.paymentMethod.toUpperCase() %></span>
+                                        <% } %>
+                                    </td>
+                                    <td class="align-middle">
+                                        <% if (order.paymentStatus === 'paid') { %>
+                                            <span class="badge bg-success">Paid</span>
+                                        <% } else if (order.paymentStatus === 'pending') { %>
+                                            <span class="badge bg-warning">Pending</span>
+                                        <% } else if (order.paymentStatus === 'failed') { %>
+                                            <span class="badge bg-danger">Failed</span>
+                                        <% } else { %>
+                                            <span class="badge bg-secondary"><%= order.paymentStatus %></span>
+                                        <% } %>
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        <span class="badge bg-secondary"><%= order.orderedItems.length %></span>
+                                    </td>
+                                    <td class="align-middle text-end fw-bold">₹<%= order.finalAmount.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %></td>
+                                    <td class="align-middle">
                                         <%
                                         let statusCounts = {};
                                         order.orderedItems.forEach(item => {
@@ -255,124 +626,201 @@
                                             <span class="badge <%= badgeClass %> me-1"><%= status %> (<%= count %>)</span>
                                         <% }); %>
                                     </td>
-                                    <td>
-                                        <a href="/admin/orders/<%= order._id %>" class="btn btn-sm btn-info">
-                                            <i class="fas fa-eye"></i>
+                                    <td class="align-middle">
+                                        <a href="/admin/orders/<%= order._id %>" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-eye"></i> View
                                         </a>
                                     </td>
                                 </tr>
                             <% }); %>
                         <% } else { %>
                             <tr>
-                                <td colspan="8" class="text-center">No orders found</td>
+                                <td colspan="9" class="text-center py-4">
+                                    <div class="text-muted">
+                                        <i class="fas fa-shopping-cart fa-3x mb-3"></i>
+                                        <p>No orders found for the selected period</p>
+                                    </div>
+                                </td>
                             </tr>
                         <% } %>
                     </tbody>
                 </table>
             </div>
+
+            <!-- Orders Pagination -->
+            <% if (pagination.totalPages > 1) { %>
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div class="text-muted small">
+                        Showing <%= ((pagination.page - 1) * pagination.limit) + 1 %> to
+                        <%= Math.min(pagination.page * pagination.limit, pagination.totalItems) %>
+                        of <%= pagination.totalItems %> orders
+                    </div>
+                    <nav aria-label="Orders pagination">
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item <%= !pagination.hasPrevPage ? 'disabled' : '' %>">
+                                <a class="page-link" href="?page=1&productsPage=<%= productsPagination.page %>&startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>&limit=<%= pagination.limit %>&productsSortBy=<%= filters.productsSortBy %>&productsSortOrder=<%= filters.productsSortOrder %>" aria-label="First">
+                                    <span aria-hidden="true">&laquo;&laquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item <%= !pagination.hasPrevPage ? 'disabled' : '' %>">
+                                <a class="page-link" href="?page=<%= pagination.page - 1 %>&productsPage=<%= productsPagination.page %>&startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>&limit=<%= pagination.limit %>&productsSortBy=<%= filters.productsSortBy %>&productsSortOrder=<%= filters.productsSortOrder %>" aria-label="Previous">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+
+                            <%
+                            let startPage = Math.max(1, pagination.page - 2);
+                            let endPage = Math.min(pagination.totalPages, startPage + 4);
+
+                            if (endPage - startPage < 4) {
+                                startPage = Math.max(1, endPage - 4);
+                            }
+
+                            for (let i = startPage; i <= endPage; i++) {
+                            %>
+                                <li class="page-item <%= i === pagination.page ? 'active' : '' %>">
+                                    <a class="page-link" href="?page=<%= i %>&productsPage=<%= productsPagination.page %>&startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>&limit=<%= pagination.limit %>&productsSortBy=<%= filters.productsSortBy %>&productsSortOrder=<%= filters.productsSortOrder %>">
+                                        <%= i %>
+                                    </a>
+                                </li>
+                            <% } %>
+
+                            <li class="page-item <%= !pagination.hasNextPage ? 'disabled' : '' %>">
+                                <a class="page-link" href="?page=<%= pagination.page + 1 %>&productsPage=<%= productsPagination.page %>&startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>&limit=<%= pagination.limit %>&productsSortBy=<%= filters.productsSortBy %>&productsSortOrder=<%= filters.productsSortOrder %>" aria-label="Next">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item <%= !pagination.hasNextPage ? 'disabled' : '' %>">
+                                <a class="page-link" href="?page=<%= pagination.totalPages %>&productsPage=<%= productsPagination.page %>&startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>&limit=<%= pagination.limit %>&productsSortBy=<%= filters.productsSortBy %>&productsSortOrder=<%= filters.productsSortOrder %>" aria-label="Last">
+                                    <span aria-hidden="true">&raquo;&raquo;</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            <% } %>
         </div>
     </div>
 </div>
 
-<!-- Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <script>
-    // Sales Trend Chart
-    const salesData = <%= salesByDate %>;
-    const labels = Object.keys(salesData);
-    const data = Object.values(salesData);
+    // Date range selector functionality
+    function setDateRange(range) {
+        const today = new Date();
+        let startDate = new Date();
 
-    const ctx = document.getElementById('salesTrendChart').getContext('2d');
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Sales Amount (₹)',
-                data: data,
-                backgroundColor: 'rgba(78, 115, 223, 0.05)',
-                borderColor: 'rgba(78, 115, 223, 1)',
-                pointRadius: 3,
-                pointBackgroundColor: 'rgba(78, 115, 223, 1)',
-                pointBorderColor: 'rgba(78, 115, 223, 1)',
-                pointHoverRadius: 5,
-                pointHoverBackgroundColor: 'rgba(78, 115, 223, 1)',
-                pointHoverBorderColor: 'rgba(78, 115, 223, 1)',
-                pointHitRadius: 10,
-                pointBorderWidth: 2,
-                tension: 0.3,
-                fill: true
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function(value) {
-                            return '₹' + value.toLocaleString('en-IN');
-                        }
-                    }
+        switch(range) {
+            case 'today':
+                // Start and end are both today
+                break;
+            case 'week':
+                // Start is beginning of current week (Sunday)
+                startDate.setDate(today.getDate() - today.getDay());
+                break;
+            case 'month':
+                // Start is beginning of current month
+                startDate.setDate(1);
+                break;
+            case 'year':
+                // Start is beginning of current year
+                startDate.setMonth(0, 1);
+                break;
+        }
+
+        document.getElementById('startDate').value = formatDate(startDate);
+        document.getElementById('endDate').value = formatDate(today);
+
+        // Auto-submit the form when a date range is selected
+        document.getElementById('filterForm').submit();
+    }
+
+    function formatDate(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    // Handle pagination limit changes
+    document.getElementById('productsLimitSelect').addEventListener('change', function() {
+        const url = new URL(window.location.href);
+        url.searchParams.set('productsLimit', this.value);
+        url.searchParams.set('productsPage', '1'); // Reset to first page when changing limit
+        window.location.href = url.toString();
+    });
+
+    document.getElementById('orderLimitSelect').addEventListener('change', function() {
+        const url = new URL(window.location.href);
+        url.searchParams.set('limit', this.value);
+        url.searchParams.set('page', '1'); // Reset to first page when changing limit
+        window.location.href = url.toString();
+    });
+
+    // Handle product sorting changes
+    document.getElementById('productsSortBy').addEventListener('change', function() {
+        const url = new URL(window.location.href);
+        url.searchParams.set('productsSortBy', this.value);
+        url.searchParams.set('productsPage', '1'); // Reset to first page when changing sort
+        window.location.href = url.toString();
+    });
+
+    document.getElementById('productsSortOrder').addEventListener('change', function() {
+        const url = new URL(window.location.href);
+        url.searchParams.set('productsSortOrder', this.value);
+        url.searchParams.set('productsPage', '1'); // Reset to first page when changing sort order
+        window.location.href = url.toString();
+    });
+
+    // Print functionality enhancement
+    function printReport() {
+        // Create a print-specific stylesheet
+        const style = document.createElement('style');
+        style.innerHTML = `
+            @media print {
+                body * {
+                    visibility: hidden;
                 }
-            },
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return 'Sales: ₹' + context.parsed.y.toLocaleString('en-IN');
-                        }
-                    }
+                .main-content, .main-content * {
+                    visibility: visible;
+                }
+                .main-content {
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    width: 100%;
+                }
+                .btn, .pagination, select, button, .no-print {
+                    display: none !important;
+                }
+                .card {
+                    break-inside: avoid;
+                }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                }
+                th, td {
+                    border: 1px solid #ddd;
+                    padding: 8px;
+                    text-align: left;
+                }
+                thead {
+                    display: table-header-group;
+                }
+                tfoot {
+                    display: table-footer-group;
                 }
             }
-        }
-    });
+        `;
+        document.head.appendChild(style);
 
-    // Payment Method Chart
-    const paymentCtx = document.getElementById('paymentMethodChart').getContext('2d');
-    new Chart(paymentCtx, {
-        type: 'doughnut',
-        data: {
-            labels: ['COD', 'Razorpay', 'Wallet'],
-            datasets: [{
-                data: [
-                    <%= salesByPaymentMethod.cod %>,
-                    <%= salesByPaymentMethod.razorpay %>,
-                    <%= salesByPaymentMethod.wallet %>
-                ],
-                backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc'],
-                hoverBackgroundColor: ['#2e59d9', '#17a673', '#2c9faf'],
-                hoverBorderColor: 'rgba(234, 236, 244, 1)',
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const label = context.label || '';
-                            const value = context.parsed || 0;
-                            const total = context.dataset.data.reduce((acc, data) => acc + data, 0);
-                            const percentage = Math.round((value / total) * 100);
-                            return `${label}: ₹${value.toLocaleString('en-IN')} (${percentage}%)`;
-                        }
-                    }
-                }
-            },
-            cutout: '70%'
-        }
-    });
+        window.print();
 
-    // DataTable initialization
-    $(document).ready(function() {
-        $('#ordersTable').DataTable({
-            order: [[1, 'desc']]
-        });
-    });
+        // Remove the style after printing
+        setTimeout(() => {
+            document.head.removeChild(style);
+        }, 1000);
+    }
 </script>
 
 <%- include("partials/footer") %>
