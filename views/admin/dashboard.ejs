@@ -36,14 +36,30 @@
                         <h1 class="h2">Dashboard</h1>
                         <div class="btn-toolbar mb-2 mb-md-0">
                             <div class="btn-group me-2">
-                                <button type="button" class="btn btn-sm btn-outline-secondary">Export</button>
+                                <a href="/admin/reports" class="btn btn-sm btn-outline-secondary">View Reports</a>
                             </div>
-                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle">
-                                <i class="fas fa-calendar-alt"></i>
-                                This week
-                            </button>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    This week
+                                </button>
+                                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                    <li><a class="dropdown-item" href="?period=today">Today</a></li>
+                                    <li><a class="dropdown-item" href="?period=week">This Week</a></li>
+                                    <li><a class="dropdown-item" href="?period=month">This Month</a></li>
+                                    <li><a class="dropdown-item" href="?period=year">This Year</a></li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
+
+                    <!-- Error Alert -->
+                    <% if (typeof error !== 'undefined' && error) { %>
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <strong>Error!</strong> <%= error %>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    <% } %>
 
                     <!-- Stats Cards -->
                     <div class="row">
@@ -53,7 +69,7 @@
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
                                             <div class="text-xs fw-bold text-uppercase mb-1">Customers</div>
-                                            <div class="h5 mb-0 fw-bold">854</div>
+                                            <div class="h5 mb-0 fw-bold"><%= stats.userCount %></div>
                                         </div>
                                         <div class="card-icon">
                                             <i class="fas fa-users"></i>
@@ -69,7 +85,7 @@
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
                                             <div class="text-xs fw-bold text-uppercase mb-1">Products</div>
-                                            <div class="h5 mb-0 fw-bold">143</div>
+                                            <div class="h5 mb-0 fw-bold"><%= stats.productCount %></div>
                                         </div>
                                         <div class="card-icon">
                                             <i class="fas fa-box"></i>
@@ -85,7 +101,7 @@
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
                                             <div class="text-xs fw-bold text-uppercase mb-1">Orders</div>
-                                            <div class="h5 mb-0 fw-bold">328</div>
+                                            <div class="h5 mb-0 fw-bold"><%= stats.orderCount %></div>
                                         </div>
                                         <div class="card-icon">
                                             <i class="fas fa-shopping-cart"></i>
@@ -101,7 +117,7 @@
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
                                             <div class="text-xs fw-bold text-uppercase mb-1">Categories</div>
-                                            <div class="h5 mb-0 fw-bold">12</div>
+                                            <div class="h5 mb-0 fw-bold"><%= stats.categoryCount %></div>
                                         </div>
                                         <div class="card-icon">
                                             <i class="fas fa-th-large"></i>
@@ -112,10 +128,46 @@
                         </div>
                     </div>
 
+                    <!-- Revenue Cards -->
+                    <div class="row mb-4">
+                        <div class="col-xl-6 col-md-6 mb-4">
+                            <div class="card stat-card bg-danger text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <div class="text-xs fw-bold text-uppercase mb-1">Total Revenue</div>
+                                            <div class="h5 mb-0 fw-bold">₹<%= stats.totalSales.toFixed(2) %></div>
+                                        </div>
+                                        <div class="card-icon">
+                                            <i class="fas fa-rupee-sign"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-xl-6 col-md-6 mb-4">
+                            <div class="card stat-card bg-secondary text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <div class="text-xs fw-bold text-uppercase mb-1">Monthly Revenue (Last 30 Days)</div>
+                                            <div class="h5 mb-0 fw-bold">₹<%= stats.monthlySales.toFixed(2) %></div>
+                                        </div>
+                                        <div class="card-icon">
+                                            <i class="fas fa-chart-line"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Recent Orders Table -->
                     <div class="card mb-4">
-                        <div class="card-header">
-                            <h5 class="card-title">Recent Orders</h5>
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">Recent Orders</h5>
+                            <a href="/admin/orders" class="btn btn-sm btn-outline-primary">View All Orders</a>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive">
@@ -131,71 +183,96 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr>
-                                            <td>#ORD-001</td>
-                                            <td>John Doe</td>
-                                            <td>Mar 15, 2025</td>
-                                            <td>$126.50</td>
-                                            <td><span class="badge bg-success">Completed</span></td>
-                                            <td>
-                                                <button class="btn btn-sm btn-info"><i class="fas fa-eye"></i></button>
-                                                <button class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>#ORD-002</td>
-                                            <td>Jane Smith</td>
-                                            <td>Mar 16, 2025</td>
-                                            <td>$89.25</td>
-                                            <td><span class="badge bg-warning">Processing</span></td>
-                                            <td>
-                                                <button class="btn btn-sm btn-info"><i class="fas fa-eye"></i></button>
-                                                <button class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>#ORD-003</td>
-                                            <td>Robert Johnson</td>
-                                            <td>Mar 17, 2025</td>
-                                            <td>$432.10</td>
-                                            <td><span class="badge bg-primary">Shipped</span></td>
-                                            <td>
-                                                <button class="btn btn-sm btn-info"><i class="fas fa-eye"></i></button>
-                                                <button class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>#ORD-004</td>
-                                            <td>Emily Davis</td>
-                                            <td>Mar 18, 2025</td>
-                                            <td>$78.00</td>
-                                            <td><span class="badge bg-danger">Cancelled</span></td>
-                                            <td>
-                                                <button class="btn btn-sm btn-info"><i class="fas fa-eye"></i></button>
-                                                <button class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>#ORD-005</td>
-                                            <td>Michael Brown</td>
-                                            <td>Mar 19, 2025</td>
-                                            <td>$245.75</td>
-                                            <td><span class="badge bg-warning">Processing</span></td>
-                                            <td>
-                                                <button class="btn btn-sm btn-info"><i class="fas fa-eye"></i></button>
-                                                <button class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></button>
-                                            </td>
-                                        </tr>
+                                        <% if (recentOrders && recentOrders.length > 0) { %>
+                                            <% recentOrders.forEach(order => { %>
+                                                <tr>
+                                                    <td>#<%= order.orderId %></td>
+                                                    <td><%= order.customer %></td>
+                                                    <td><%= order.date %></td>
+                                                    <td><%= order.amount %></td>
+                                                    <td>
+                                                        <%
+                                                        let badgeClass = 'bg-warning';
+                                                        if (order.status === 'Delivered') {
+                                                            badgeClass = 'bg-success';
+                                                        } else if (order.status === 'Shipped') {
+                                                            badgeClass = 'bg-primary';
+                                                        } else if (order.status === 'Cancelled') {
+                                                            badgeClass = 'bg-danger';
+                                                        }
+                                                        %>
+                                                        <span class="badge <%= badgeClass %>"><%= order.status %></span>
+                                                    </td>
+                                                    <td>
+                                                        <a href="/admin/orders/<%= order._id %>" class="btn btn-sm btn-info">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
+                                                        <a href="/admin/orders/edit/<%= order._id %>" class="btn btn-sm btn-warning">
+                                                            <i class="fas fa-edit"></i>
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            <% }); %>
+                                        <% } else { %>
+                                            <tr>
+                                                <td colspan="6" class="text-center">No recent orders found</td>
+                                            </tr>
+                                        <% } %>
                                     </tbody>
                                 </table>
                             </div>
+
+                            <!-- Pagination for Orders -->
+                            <% if (pagination && pagination.orders && pagination.orders.totalPages > 1) { %>
+                                <div class="d-flex justify-content-between align-items-center mt-3">
+                                    <div class="text-muted">
+                                        Showing <%= ((pagination.orders.currentPage - 1) * pagination.orders.limit) + 1 %> to
+                                        <%= Math.min(pagination.orders.currentPage * pagination.orders.limit, pagination.orders.totalItems) %>
+                                        of <%= pagination.orders.totalItems %> orders
+                                    </div>
+                                    <nav aria-label="Orders pagination">
+                                        <ul class="pagination pagination-sm mb-0">
+                                            <!-- Previous Button -->
+                                            <li class="page-item <%= pagination.orders.currentPage === 1 ? 'disabled' : '' %>">
+                                                <a class="page-link" href="?orderPage=<%= pagination.orders.currentPage - 1 %>&productPage=<%= pagination.products.currentPage %>" aria-label="Previous">
+                                                    <span aria-hidden="true">&laquo;</span>
+                                                </a>
+                                            </li>
+
+                                            <!-- Page Numbers -->
+                                            <%
+                                            let startPage = Math.max(1, pagination.orders.currentPage - 2);
+                                            let endPage = Math.min(pagination.orders.totalPages, startPage + 4);
+
+                                            if (endPage - startPage < 4) {
+                                                startPage = Math.max(1, endPage - 4);
+                                            }
+
+                                            for (let i = startPage; i <= endPage; i++) {
+                                            %>
+                                                <li class="page-item <%= pagination.orders.currentPage === i ? 'active' : '' %>">
+                                                    <a class="page-link" href="?orderPage=<%= i %>&productPage=<%= pagination.products.currentPage %>"><%= i %></a>
+                                                </li>
+                                            <% } %>
+
+                                            <!-- Next Button -->
+                                            <li class="page-item <%= pagination.orders.currentPage === pagination.orders.totalPages ? 'disabled' : '' %>">
+                                                <a class="page-link" href="?orderPage=<%= pagination.orders.currentPage + 1 %>&productPage=<%= pagination.products.currentPage %>" aria-label="Next">
+                                                    <span aria-hidden="true">&raquo;</span>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </nav>
+                                </div>
+                            <% } %>
                         </div>
                     </div>
-                    
+
                     <!-- Latest Products -->
                     <div class="card mb-4">
-                        <div class="card-header">
-                            <h5 class="card-title">Latest Products</h5>
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">Latest Products</h5>
+                            <a href="/admin/products" class="btn btn-sm btn-outline-success">View All Products</a>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive">
@@ -211,64 +288,84 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr>
-                                            <td>#PRD-001</td>
-                                            <td>Premium Headphones</td>
-                                            <td>Electronics</td>
-                                            <td>$199.99</td>
-                                            <td>45</td>
-                                            <td>
-                                                <button class="btn btn-sm btn-info"><i class="fas fa-eye"></i></button>
-                                                <button class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>#PRD-002</td>
-                                            <td>Leather Wallet</td>
-                                            <td>Accessories</td>
-                                            <td>$49.99</td>
-                                            <td>120</td>
-                                            <td>
-                                                <button class="btn btn-sm btn-info"><i class="fas fa-eye"></i></button>
-                                                <button class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>#PRD-003</td>
-                                            <td>Smart Watch</td>
-                                            <td>Electronics</td>
-                                            <td>$299.99</td>
-                                            <td>28</td>
-                                            <td>
-                                                <button class="btn btn-sm btn-info"><i class="fas fa-eye"></i></button>
-                                                <button class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>#PRD-004</td>
-                                            <td>Cotton T-Shirt</td>
-                                            <td>Clothing</td>
-                                            <td>$24.99</td>
-                                            <td>200</td>
-                                            <td>
-                                                <button class="btn btn-sm btn-info"><i class="fas fa-eye"></i></button>
-                                                <button class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>#PRD-005</td>
-                                            <td>Wireless Mouse</td>
-                                            <td>Electronics</td>
-                                            <td>$39.99</td>
-                                            <td>85</td>
-                                            <td>
-                                                <button class="btn btn-sm btn-info"><i class="fas fa-eye"></i></button>
-                                                <button class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></button>
-                                            </td>
-                                        </tr>
+                                        <% if (latestProducts && latestProducts.length > 0) { %>
+                                            <% latestProducts.forEach(product => { %>
+                                                <tr>
+                                                    <td>#<%= product.productId %></td>
+                                                    <td><%= product.name %></td>
+                                                    <td><%= product.category %></td>
+                                                    <td><%= product.price %></td>
+                                                    <td>
+                                                        <% if (product.stock > 0) { %>
+                                                            <span class="<%= product.stock < 10 ? 'text-danger' : 'text-success' %>">
+                                                                <%= product.stock %>
+                                                            </span>
+                                                        <% } else { %>
+                                                            <span class="text-danger">Out of Stock</span>
+                                                        <% } %>
+                                                    </td>
+                                                    <td>
+                                                        <a href="/admin/products/<%= product._id %>" class="btn btn-sm btn-info">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
+                                                        <a href="/admin/products/edit/<%= product._id %>" class="btn btn-sm btn-warning">
+                                                            <i class="fas fa-edit"></i>
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            <% }); %>
+                                        <% } else { %>
+                                            <tr>
+                                                <td colspan="6" class="text-center">No products found</td>
+                                            </tr>
+                                        <% } %>
                                     </tbody>
                                 </table>
                             </div>
+
+                            <!-- Pagination for Products -->
+                            <% if (pagination && pagination.products && pagination.products.totalPages > 1) { %>
+                                <div class="d-flex justify-content-between align-items-center mt-3">
+                                    <div class="text-muted">
+                                        Showing <%= ((pagination.products.currentPage - 1) * pagination.products.limit) + 1 %> to
+                                        <%= Math.min(pagination.products.currentPage * pagination.products.limit, pagination.products.totalItems) %>
+                                        of <%= pagination.products.totalItems %> products
+                                    </div>
+                                    <nav aria-label="Products pagination">
+                                        <ul class="pagination pagination-sm mb-0">
+                                            <!-- Previous Button -->
+                                            <li class="page-item <%= pagination.products.currentPage === 1 ? 'disabled' : '' %>">
+                                                <a class="page-link" href="?orderPage=<%= pagination.orders.currentPage %>&productPage=<%= pagination.products.currentPage - 1 %>" aria-label="Previous">
+                                                    <span aria-hidden="true">&laquo;</span>
+                                                </a>
+                                            </li>
+
+                                            <!-- Page Numbers -->
+                                            <%
+                                            let pStartPage = Math.max(1, pagination.products.currentPage - 2);
+                                            let pEndPage = Math.min(pagination.products.totalPages, pStartPage + 4);
+
+                                            if (pEndPage - pStartPage < 4) {
+                                                pStartPage = Math.max(1, pEndPage - 4);
+                                            }
+
+                                            for (let i = pStartPage; i <= pEndPage; i++) {
+                                            %>
+                                                <li class="page-item <%= pagination.products.currentPage === i ? 'active' : '' %>">
+                                                    <a class="page-link" href="?orderPage=<%= pagination.orders.currentPage %>&productPage=<%= i %>"><%= i %></a>
+                                                </li>
+                                            <% } %>
+
+                                            <!-- Next Button -->
+                                            <li class="page-item <%= pagination.products.currentPage === pagination.products.totalPages ? 'disabled' : '' %>">
+                                                <a class="page-link" href="?orderPage=<%= pagination.orders.currentPage %>&productPage=<%= pagination.products.currentPage + 1 %>" aria-label="Next">
+                                                    <span aria-hidden="true">&raquo;</span>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </nav>
+                                </div>
+                            <% } %>
                         </div>
                     </div>
                 </div>
