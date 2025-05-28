@@ -1,8 +1,160 @@
-
-
 <%- include("../../views/admin/partials/header", { activePage: 'dashboard' }) %>
+<style>
+    /* Dashboard Styles */
+    .stat-card {
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s;
+    }
 
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
 
+    .card-icon {
+        font-size: 2rem;
+        opacity: 0.8;
+    }
+
+    .chart-area, .chart-pie, .chart-bar {
+        position: relative;
+        height: 100%;
+        width: 100%;
+    }
+
+    .shadow {
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15) !important;
+    }
+
+    .card-header {
+        background-color: #f8f9fc;
+        border-bottom: 1px solid #e3e6f0;
+    }
+
+    .font-weight-bold {
+        font-weight: 700 !important;
+    }
+
+    .text-primary {
+        color: #4e73df !important;
+    }
+
+    .chart-pie canvas, .chart-bar canvas, .chart-container canvas {
+        max-height: 300px;
+    }
+
+    .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+    }
+
+    /* Chart type selector styling */
+    .btn-check:checked + .btn {
+        background-color: var(--bs-primary);
+        border-color: var(--bs-primary);
+        color: white;
+    }
+
+    .btn-group .btn {
+        border-radius: 0.25rem;
+        margin-right: 2px;
+    }
+
+    .btn-group .btn:first-child {
+        border-top-left-radius: 0.25rem;
+        border-bottom-left-radius: 0.25rem;
+    }
+
+    .btn-group .btn:last-child {
+        border-top-right-radius: 0.25rem;
+        border-bottom-right-radius: 0.25rem;
+        margin-right: 0;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .chart-area, .chart-pie, .chart-bar, .chart-container {
+            height: 250px;
+        }
+
+        .btn-group {
+            flex-wrap: wrap;
+        }
+
+        .btn-group .btn {
+            font-size: 0.8rem;
+            padding: 0.25rem 0.5rem;
+        }
+    }
+
+    .chart-loader {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.8);
+    }
+
+    .chart-area, .chart-pie, .chart-bar {
+        position: relative;
+        min-height: 300px;
+    }
+
+    .card {
+        transition: all 0.3s ease;
+    }
+
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+
+    .stat-card {
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+
+    .stat-card .card-body {
+        padding: 1.5rem;
+    }
+
+    .chart-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+
+    .table th {
+        font-weight: 600;
+        background-color: #f8f9fc;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fc;
+    }
+
+    .badge {
+        padding: 0.5em 0.75em;
+        font-weight: 500;
+    }
+</style>
+
+<%
+function formatCurrency(amount) {
+    // Handle undefined, null, or non-numeric values
+    if (amount === undefined || amount === null || isNaN(amount)) {
+        amount = 0;
+    }
+
+    // Convert to number and format
+    return '₹' + Number(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+%>
 
             <!-- Main Content -->
             <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
@@ -41,13 +193,27 @@
                             <div class="dropdown">
                                 <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="fas fa-calendar-alt"></i>
-                                    This week
+                                    <%
+                                    let periodText = 'This Month';
+                                    if (currentPeriod === 'today') periodText = 'Today';
+                                    else if (currentPeriod === 'week') periodText = 'This Week';
+                                    else if (currentPeriod === 'year') periodText = 'This Year';
+                                    %>
+                                    <%= periodText %>
                                 </button>
                                 <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                                    <li><a class="dropdown-item" href="?period=today">Today</a></li>
-                                    <li><a class="dropdown-item" href="?period=week">This Week</a></li>
-                                    <li><a class="dropdown-item" href="?period=month">This Month</a></li>
-                                    <li><a class="dropdown-item" href="?period=year">This Year</a></li>
+                                    <li><a class="dropdown-item <%= currentPeriod === 'today' ? 'active' : '' %>" href="?period=today">
+                                        <i class="fas fa-clock me-2"></i>Today
+                                    </a></li>
+                                    <li><a class="dropdown-item <%= currentPeriod === 'week' ? 'active' : '' %>" href="?period=week">
+                                        <i class="fas fa-calendar-week me-2"></i>This Week
+                                    </a></li>
+                                    <li><a class="dropdown-item <%= currentPeriod === 'month' ? 'active' : '' %>" href="?period=month">
+                                        <i class="fas fa-calendar-alt me-2"></i>This Month
+                                    </a></li>
+                                    <li><a class="dropdown-item <%= currentPeriod === 'year' ? 'active' : '' %>" href="?period=year">
+                                        <i class="fas fa-calendar me-2"></i>This Year
+                                    </a></li>
                                 </ul>
                             </div>
                         </div>
@@ -60,6 +226,56 @@
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     <% } %>
+
+                    <!-- Dashboard Summary -->
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <h4 class="mb-3">Store Performance Summary</h4>
+                                    <p class="text-muted">
+                                        Welcome to your dashboard! Here's a quick overview of your store's performance.
+                                    </p>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <ul class="list-unstyled">
+                                                <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> <strong><%= stats.orderCount %></strong> total orders processed</li>
+                                                <li class="mb-2"><i class="fas fa-users text-primary me-2"></i> <strong><%= stats.userCount %></strong> registered customers</li>
+                                                <li class="mb-2"><i class="fas fa-box text-warning me-2"></i> <strong><%= stats.productCount %></strong> products in inventory</li>
+                                            </ul>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <ul class="list-unstyled">
+                                                <li class="mb-2"><i class="fas fa-rupee-sign text-danger me-2"></i> <strong><%= formatCurrency(stats.totalSales) %></strong> total revenue</li>
+                                                <li class="mb-2"><i class="fas fa-shopping-cart text-info me-2"></i> <strong><%= formatCurrency(stats.orderCount > 0 ? (stats.totalSales / stats.orderCount) : 0) %></strong> average order value</li>
+                                                <li class="mb-2"><i class="fas fa-th-large text-secondary me-2"></i> <strong><%= stats.categoryCount %></strong> product categories</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 d-flex align-items-center justify-content-center">
+                                    <div class="text-center">
+                                        <div class="display-4 text-primary mb-2">
+                                            <i class="fas fa-chart-line"></i>
+                                        </div>
+                                        <h5><%= periodText %> Revenue</h5>
+                                        <h3 class="text-success"><%= formatCurrency(stats.periodSales) %></h3>
+                                        <p class="text-muted small">
+                                            <% if (currentPeriod === 'today') { %>
+                                                Today's sales
+                                            <% } else if (currentPeriod === 'week') { %>
+                                                Last 7 days
+                                            <% } else if (currentPeriod === 'year') { %>
+                                                This year
+                                            <% } else { %>
+                                                This month
+                                            <% } %>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                     <!-- Stats Cards -->
                     <div class="row">
@@ -130,13 +346,13 @@
 
                     <!-- Revenue Cards -->
                     <div class="row mb-4">
-                        <div class="col-xl-6 col-md-6 mb-4">
-                            <div class="card stat-card bg-danger text-white">
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card stat-card bg-danger text-white h-100">
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
                                             <div class="text-xs fw-bold text-uppercase mb-1">Total Revenue</div>
-                                            <div class="h5 mb-0 fw-bold">₹<%= stats.totalSales.toFixed(2) %></div>
+                                            <div class="h5 mb-0 fw-bold"><%= formatCurrency(stats.totalSales) %></div>
                                         </div>
                                         <div class="card-icon">
                                             <i class="fas fa-rupee-sign"></i>
@@ -146,16 +362,259 @@
                             </div>
                         </div>
 
-                        <div class="col-xl-6 col-md-6 mb-4">
-                            <div class="card stat-card bg-secondary text-white">
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card stat-card bg-secondary text-white h-100">
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
-                                            <div class="text-xs fw-bold text-uppercase mb-1">Monthly Revenue (Last 30 Days)</div>
-                                            <div class="h5 mb-0 fw-bold">₹<%= stats.monthlySales.toFixed(2) %></div>
+                                            <div class="text-xs fw-bold text-uppercase mb-1">
+                                                <% if (currentPeriod === 'today') { %>
+                                                    Today's Revenue
+                                                <% } else if (currentPeriod === 'week') { %>
+                                                    Weekly Revenue
+                                                <% } else if (currentPeriod === 'year') { %>
+                                                    Yearly Revenue
+                                                <% } else { %>
+                                                    Monthly Revenue
+                                                <% } %>
+                                            </div>
+                                            <div class="h5 mb-0 fw-bold"><%= formatCurrency(stats.periodSales) %></div>
                                         </div>
                                         <div class="card-icon">
                                             <i class="fas fa-chart-line"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card stat-card bg-info text-white h-100">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <div class="text-xs fw-bold text-uppercase mb-1">Average Order Value</div>
+                                            <div class="h5 mb-0 fw-bold"><%= formatCurrency(stats.orderCount > 0 ? (stats.totalSales / stats.orderCount) : 0) %></div>
+                                        </div>
+                                        <div class="card-icon">
+                                            <i class="fas fa-shopping-basket"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card stat-card bg-dark text-white h-100">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <div class="text-xs fw-bold text-uppercase mb-1">Conversion Rate</div>
+                                            <div class="h5 mb-0 fw-bold"><%= stats.userCount > 0 ? ((stats.orderCount / stats.userCount) * 100).toFixed(1) : '0.0' %>%</div>
+                                        </div>
+                                        <div class="card-icon">
+                                            <i class="fas fa-percentage"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Section -->
+                    <div class="row mb-4">
+                        <!-- Revenue Trend Chart -->
+                        <div class="col-xl-8 col-lg-7">
+                            <div class="card shadow mb-4">
+                                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                    <h6 class="m-0 font-weight-bold text-primary">
+                                        Revenue Trend -
+                                        <% if (currentPeriod === 'today') { %>
+                                            Today (Hourly)
+                                        <% } else if (currentPeriod === 'week') { %>
+                                            Last 7 Days
+                                        <% } else if (currentPeriod === 'year') { %>
+                                            This Year (Monthly)
+                                        <% } else { %>
+                                            This Month (Daily)
+                                        <% } %>
+                                    </h6>
+                                    <div class="dropdown no-arrow">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton">
+                                            <li><a class="dropdown-item" href="#" onclick="downloadChart('revenueTrendChart', 'Revenue-Trend.png')">Download PNG</a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="printChart('revenueTrendChart')">Print Chart</a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="chart-area">
+                                        <canvas id="revenueTrendChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Payment Methods Chart -->
+                        <div class="col-xl-4 col-lg-5">
+                            <div class="card shadow mb-4">
+                                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                    <h6 class="m-0 font-weight-bold text-primary">Payment Methods</h6>
+                                    <div class="dropdown no-arrow">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="dropdownMenuButton2" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton2">
+                                            <li><a class="dropdown-item" href="#" onclick="downloadChart('paymentMethodsChart', 'Payment-Methods.png')">Download PNG</a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="printChart('paymentMethodsChart')">Print Chart</a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="chart-pie">
+                                        <canvas id="paymentMethodsChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <!-- Top Products Chart -->
+                        <div class="col-xl-6 col-lg-6">
+                            <div class="card shadow mb-4">
+                                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                    <h6 class="m-0 font-weight-bold text-primary">Top Products by Revenue</h6>
+                                    <div class="d-flex align-items-center">
+                                        <!-- Chart Type Selector for Products -->
+                                        <div class="btn-group me-2" role="group" aria-label="Product Chart Type">
+                                            <input type="radio" class="btn-check" name="productChartType" id="productBar" value="bar" checked>
+                                            <label class="btn btn-outline-primary btn-sm" for="productBar" title="Bar Chart">
+                                                <i class="fas fa-chart-bar"></i>
+                                            </label>
+
+                                            <input type="radio" class="btn-check" name="productChartType" id="productLine" value="line">
+                                            <label class="btn btn-outline-primary btn-sm" for="productLine" title="Line Chart">
+                                                <i class="fas fa-chart-line"></i>
+                                            </label>
+
+                                            <input type="radio" class="btn-check" name="productChartType" id="productPie" value="pie">
+                                            <label class="btn btn-outline-primary btn-sm" for="productPie" title="Pie Chart">
+                                                <i class="fas fa-chart-pie"></i>
+                                            </label>
+
+                                            <input type="radio" class="btn-check" name="productChartType" id="productDoughnut" value="doughnut">
+                                            <label class="btn btn-outline-primary btn-sm" for="productDoughnut" title="Doughnut Chart">
+                                                <i class="fas fa-circle-notch"></i>
+                                            </label>
+                                        </div>
+
+                                        <div class="dropdown no-arrow">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="dropdownMenuButton3" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton3">
+                                                <li><a class="dropdown-item" href="#" onclick="downloadChart('topProductsChart', 'Top-Products.png')">Download PNG</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="printChart('topProductsChart')">Print Chart</a></li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li><a class="dropdown-item" href="#" onclick="showProductDetails()">View Details</a></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="chart-container">
+                                        <canvas id="topProductsChart"></canvas>
+                                    </div>
+                                    <!-- Product Details Table (Initially Hidden) -->
+                                    <div id="productDetailsTable" class="mt-3" style="display: none;">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-striped">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Product Name</th>
+                                                        <th>Revenue</th>
+                                                        <th>Units Sold</th>
+                                                        <th>Orders</th>
+                                                        <th>Avg. Price</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="productDetailsBody">
+                                                    <!-- Will be populated by JavaScript -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sales by Category Chart -->
+                        <div class="col-xl-6 col-lg-6">
+                            <div class="card shadow mb-4">
+                                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                    <h6 class="m-0 font-weight-bold text-primary">Sales by Category</h6>
+                                    <div class="d-flex align-items-center">
+                                        <!-- Chart Type Selector for Categories -->
+                                        <div class="btn-group me-2" role="group" aria-label="Category Chart Type">
+                                            <input type="radio" class="btn-check" name="categoryChartType" id="categoryPie" value="pie" checked>
+                                            <label class="btn btn-outline-success btn-sm" for="categoryPie" title="Pie Chart">
+                                                <i class="fas fa-chart-pie"></i>
+                                            </label>
+
+                                            <input type="radio" class="btn-check" name="categoryChartType" id="categoryDoughnut" value="doughnut">
+                                            <label class="btn btn-outline-success btn-sm" for="categoryDoughnut" title="Doughnut Chart">
+                                                <i class="fas fa-circle-notch"></i>
+                                            </label>
+
+                                            <input type="radio" class="btn-check" name="categoryChartType" id="categoryBar" value="bar">
+                                            <label class="btn btn-outline-success btn-sm" for="categoryBar" title="Bar Chart">
+                                                <i class="fas fa-chart-bar"></i>
+                                            </label>
+
+                                            <input type="radio" class="btn-check" name="categoryChartType" id="categoryPolar" value="polarArea">
+                                            <label class="btn btn-outline-success btn-sm" for="categoryPolar" title="Polar Area Chart">
+                                                <i class="fas fa-circle"></i>
+                                            </label>
+                                        </div>
+
+                                        <div class="dropdown no-arrow">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="dropdownMenuButton4" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton4">
+                                                <li><a class="dropdown-item" href="#" onclick="downloadChart('categoryChart', 'Category-Sales.png')">Download PNG</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="printChart('categoryChart')">Print Chart</a></li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li><a class="dropdown-item" href="#" onclick="showCategoryDetails()">View Details</a></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="chart-container">
+                                        <canvas id="categoryChart"></canvas>
+                                    </div>
+                                    <!-- Category Details Table (Initially Hidden) -->
+                                    <div id="categoryDetailsTable" class="mt-3" style="display: none;">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-striped">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Category Name</th>
+                                                        <th>Revenue</th>
+                                                        <th>Items Sold</th>
+                                                        <th>Products</th>
+                                                        <th>Orders</th>
+                                                        <th>Share %</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="categoryDetailsBody">
+                                                    <!-- Will be populated by JavaScript -->
+                                                </tbody>
+                                            </table>
                                         </div>
                                     </div>
                                 </div>
@@ -375,4 +834,521 @@
 
     <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
+    <!-- Initialize Charts -->
+    <script src="/admin/js/charts.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        try {
+            const currentPeriod = '<%= currentPeriod %>';
+
+            // Global chart instances
+            let revenueChart, paymentChart, productChart, categoryChart;
+
+            // Chart data
+            const chartData = {
+                revenue: {
+                    labels: <%- JSON.stringify(revenueData ? revenueData.labels : []) %>,
+                    values: <%- JSON.stringify(revenueData ? revenueData.values : []) %>,
+                    period: currentPeriod
+                },
+                payment: {
+                    labels: <%- JSON.stringify(paymentMethodsData ? paymentMethodsData.labels : []) %>,
+                    values: <%- JSON.stringify(paymentMethodsData ? paymentMethodsData.values : []) %>,
+                    counts: <%- JSON.stringify(paymentMethodsData ? paymentMethodsData.counts : []) %>
+                },
+                products: {
+                    labels: <%- JSON.stringify(topProductsData ? topProductsData.labels : []) %>,
+                    fullNames: <%- JSON.stringify(topProductsData ? topProductsData.fullNames : []) %>,
+                    values: <%- JSON.stringify(topProductsData ? topProductsData.values : []) %>,
+                    quantities: <%- JSON.stringify(topProductsData ? topProductsData.quantities : []) %>,
+                    averagePrices: <%- JSON.stringify(topProductsData ? topProductsData.averagePrices : []) %>,
+                    orderCounts: <%- JSON.stringify(topProductsData ? topProductsData.orderCounts : []) %>
+                },
+                categories: {
+                    labels: <%- JSON.stringify(categoryData ? categoryData.labels : []) %>,
+                    values: <%- JSON.stringify(categoryData ? categoryData.values : []) %>,
+                    quantities: <%- JSON.stringify(categoryData ? categoryData.quantities : []) %>,
+                    productCounts: <%- JSON.stringify(categoryData ? categoryData.productCounts : []) %>,
+                    orderCounts: <%- JSON.stringify(categoryData ? categoryData.orderCounts : []) %>
+                }
+            };
+
+            // Color schemes
+            const colors = {
+                primary: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#858796', '#5a5c69', '#fd7e14', '#6f42c1', '#e83e8c'],
+                gradient: ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe', '#43e97b', '#38f9d7', '#ffecd2', '#fcb69f']
+            };
+
+            // Initialize Revenue Trend Chart
+            function initRevenueChart() {
+                if (document.getElementById('revenueTrendChart')) {
+                    const ctx = document.getElementById('revenueTrendChart').getContext('2d');
+                    revenueChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: chartData.revenue.labels,
+                            datasets: [{
+                                label: 'Revenue (₹)',
+                                data: chartData.revenue.values,
+                                borderColor: '#4e73df',
+                                backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                                borderWidth: 3,
+                                fill: true,
+                                tension: 0.4,
+                                pointBackgroundColor: '#4e73df',
+                                pointBorderColor: '#ffffff',
+                                pointBorderWidth: 2,
+                                pointRadius: 5,
+                                pointHoverRadius: 8
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: 'top'
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    titleColor: '#ffffff',
+                                    bodyColor: '#ffffff',
+                                    borderColor: '#4e73df',
+                                    borderWidth: 1,
+                                    callbacks: {
+                                        label: function(context) {
+                                            return 'Revenue: ₹' + context.parsed.y.toLocaleString('en-IN', {
+                                                minimumFractionDigits: 2,
+                                                maximumFractionDigits: 2
+                                            });
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        callback: function(value) {
+                                            return '₹' + value.toLocaleString('en-IN');
+                                        }
+                                    },
+                                    grid: {
+                                        color: 'rgba(0, 0, 0, 0.1)'
+                                    }
+                                },
+                                x: {
+                                    grid: {
+                                        display: false
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            // Initialize Payment Methods Chart
+            function initPaymentChart() {
+                if (document.getElementById('paymentMethodsChart')) {
+                    const ctx = document.getElementById('paymentMethodsChart').getContext('2d');
+                    paymentChart = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: chartData.payment.labels,
+                            datasets: [{
+                                data: chartData.payment.values,
+                                backgroundColor: colors.primary.slice(0, chartData.payment.labels.length),
+                                borderWidth: 2,
+                                borderColor: '#ffffff'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        padding: 20,
+                                        usePointStyle: true
+                                    }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                            const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                            const count = chartData.payment.counts[context.dataIndex];
+                                            return [
+                                                context.label + ': ₹' + context.parsed.toLocaleString('en-IN'),
+                                                'Orders: ' + count,
+                                                'Percentage: ' + percentage + '%'
+                                            ];
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            // Initialize Product Chart with dynamic type
+            function initProductChart(type = 'bar') {
+                if (productChart) {
+                    productChart.destroy();
+                }
+
+                if (document.getElementById('topProductsChart')) {
+                    const ctx = document.getElementById('topProductsChart').getContext('2d');
+
+                    const config = {
+                        type: type,
+                        data: {
+                            labels: chartData.products.labels,
+                            datasets: [{
+                                label: 'Revenue (₹)',
+                                data: chartData.products.values,
+                                backgroundColor: type === 'bar' || type === 'line' ?
+                                    'rgba(28, 200, 138, 0.8)' :
+                                    colors.primary.slice(0, chartData.products.labels.length),
+                                borderColor: type === 'line' ? '#1cc88a' : '#ffffff',
+                                borderWidth: type === 'line' ? 3 : 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: type === 'bar' || type === 'line',
+                                    position: 'top'
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    titleColor: '#ffffff',
+                                    bodyColor: '#ffffff',
+                                    borderColor: '#1cc88a',
+                                    borderWidth: 1,
+                                    callbacks: {
+                                        title: function(context) {
+                                            const fullName = chartData.products.fullNames[context[0].dataIndex];
+                                            return fullName || 'Product Details';
+                                        },
+                                        label: function(context) {
+                                            const quantity = chartData.products.quantities[context.dataIndex];
+                                            const avgPrice = chartData.products.averagePrices[context.dataIndex];
+                                            const orderCount = chartData.products.orderCounts[context.dataIndex];
+
+                                            if (type === 'pie' || type === 'doughnut') {
+                                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                                const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                                return [
+                                                    'Revenue: ₹' + context.parsed.toLocaleString('en-IN'),
+                                                    'Units Sold: ' + quantity,
+                                                    'Orders: ' + orderCount,
+                                                    'Avg Price: ₹' + avgPrice.toFixed(2),
+                                                    'Market Share: ' + percentage + '%'
+                                                ];
+                                            } else {
+                                                const revenue = context.parsed.y;
+                                                return [
+                                                    'Revenue: ₹' + revenue.toLocaleString('en-IN'),
+                                                    'Units Sold: ' + quantity,
+                                                    'Orders: ' + orderCount,
+                                                    'Avg Price: ₹' + avgPrice.toFixed(2)
+                                                ];
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    };
+
+                    // Add specific options for different chart types
+                    if (type === 'bar') {
+                        config.options.scales = {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '₹' + value.toLocaleString('en-IN');
+                                    }
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    maxRotation: 45,
+                                    minRotation: 0
+                                }
+                            }
+                        };
+                    } else if (type === 'line') {
+                        config.data.datasets[0].fill = true;
+                        config.data.datasets[0].tension = 0.4;
+                        config.options.scales = {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '₹' + value.toLocaleString('en-IN');
+                                    }
+                                }
+                            }
+                        };
+                    } else {
+                        config.options.plugins.legend.position = 'bottom';
+                        config.options.plugins.legend.labels = {
+                            padding: 20,
+                            usePointStyle: true
+                        };
+                    }
+
+                    productChart = new Chart(ctx, config);
+                }
+            }
+
+            // Initialize Category Chart with dynamic type
+            function initCategoryChart(type = 'pie') {
+                if (categoryChart) {
+                    categoryChart.destroy();
+                }
+
+                if (document.getElementById('categoryChart')) {
+                    const ctx = document.getElementById('categoryChart').getContext('2d');
+
+                    const config = {
+                        type: type,
+                        data: {
+                            labels: chartData.categories.labels,
+                            datasets: [{
+                                label: 'Revenue (₹)',
+                                data: chartData.categories.values,
+                                backgroundColor: type === 'bar' ?
+                                    'rgba(54, 185, 204, 0.8)' :
+                                    colors.gradient.slice(0, chartData.categories.labels.length),
+                                borderColor: '#ffffff',
+                                borderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: type !== 'bar',
+                                    position: 'bottom',
+                                    labels: {
+                                        padding: 20,
+                                        usePointStyle: true
+                                    }
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    titleColor: '#ffffff',
+                                    bodyColor: '#ffffff',
+                                    borderColor: '#36b9cc',
+                                    borderWidth: 1,
+                                    callbacks: {
+                                        title: function(context) {
+                                            return context[0].label + ' Category';
+                                        },
+                                        label: function(context) {
+                                            const quantity = chartData.categories.quantities[context.dataIndex];
+                                            const productCount = chartData.categories.productCounts[context.dataIndex];
+                                            const orderCount = chartData.categories.orderCounts[context.dataIndex];
+
+                                            if (type === 'bar') {
+                                                return [
+                                                    'Revenue: ₹' + context.parsed.y.toLocaleString('en-IN'),
+                                                    'Items Sold: ' + quantity,
+                                                    'Products: ' + productCount,
+                                                    'Orders: ' + orderCount
+                                                ];
+                                            } else {
+                                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                                const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                                return [
+                                                    'Revenue: ₹' + context.parsed.toLocaleString('en-IN'),
+                                                    'Items Sold: ' + quantity,
+                                                    'Products: ' + productCount,
+                                                    'Orders: ' + orderCount,
+                                                    'Market Share: ' + percentage + '%'
+                                                ];
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    };
+
+                    // Add scales for bar chart
+                    if (type === 'bar') {
+                        config.options.plugins.legend.display = true;
+                        config.options.plugins.legend.position = 'top';
+                        config.options.scales = {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '₹' + value.toLocaleString('en-IN');
+                                    }
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    maxRotation: 45,
+                                    minRotation: 0
+                                }
+                            }
+                        };
+                    }
+
+                    categoryChart = new Chart(ctx, config);
+                }
+            }
+
+            // Debug: Log chart data
+            console.log('Chart Data:', chartData);
+
+            // Validate data before initializing charts
+            if (chartData.products.labels.length === 0) {
+                console.warn('No product data available');
+                document.getElementById('topProductsChart').parentElement.innerHTML =
+                    '<div class="text-center p-4"><i class="fas fa-info-circle text-muted"></i><br>No product sales data available for the selected period</div>';
+            }
+
+            if (chartData.categories.labels.length === 0) {
+                console.warn('No category data available');
+                document.getElementById('categoryChart').parentElement.innerHTML =
+                    '<div class="text-center p-4"><i class="fas fa-info-circle text-muted"></i><br>No category sales data available for the selected period</div>';
+            }
+
+            // Initialize all charts
+            initRevenueChart();
+            initPaymentChart();
+
+            if (chartData.products.labels.length > 0) {
+                initProductChart('bar');
+            }
+
+            if (chartData.categories.labels.length > 0) {
+                initCategoryChart('pie');
+            }
+
+            // Chart type change handlers
+            document.querySelectorAll('input[name="productChartType"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (this.checked) {
+                        initProductChart(this.value);
+                    }
+                });
+            });
+
+            document.querySelectorAll('input[name="categoryChartType"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (this.checked) {
+                        initCategoryChart(this.value);
+                    }
+                });
+            });
+
+        } catch (error) {
+            console.error('Error initializing charts:', error);
+            // Show error message to user
+            const errorAlert = document.createElement('div');
+            errorAlert.className = 'alert alert-danger alert-dismissible fade show';
+            errorAlert.innerHTML = `
+                <strong>Chart Error!</strong> Failed to load charts: ${error.message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            document.querySelector('.main-content').prepend(errorAlert);
+        }
+    });
+
+    // Add chart utility functions
+    function downloadChart(chartId, filename) {
+        const canvas = document.getElementById(chartId);
+        const link = document.createElement('a');
+        link.download = filename;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    }
+
+    function printChart(chartId) {
+        const canvas = document.getElementById(chartId);
+        const win = window.open('');
+        win.document.write("<img src='" + canvas.toDataURL() + "' onload='window.print();window.close()'/>");
+    }
+
+    // Show product details table
+    function showProductDetails() {
+        const table = document.getElementById('productDetailsTable');
+        const tbody = document.getElementById('productDetailsBody');
+
+        if (table.style.display === 'none') {
+            // Populate table with product data
+            tbody.innerHTML = '';
+            const products = <%- JSON.stringify(topProductsData || {}) %>;
+
+            if (products.fullNames && products.fullNames.length > 0) {
+                products.fullNames.forEach((name, index) => {
+                    const row = tbody.insertRow();
+                    row.innerHTML = `
+                        <td><strong>${name}</strong></td>
+                        <td>₹${products.values[index].toLocaleString('en-IN')}</td>
+                        <td>${products.quantities[index]}</td>
+                        <td>${products.orderCounts[index]}</td>
+                        <td>₹${products.averagePrices[index].toFixed(2)}</td>
+                    `;
+                });
+            }
+
+            table.style.display = 'block';
+        } else {
+            table.style.display = 'none';
+        }
+    }
+
+    // Show category details table
+    function showCategoryDetails() {
+        const table = document.getElementById('categoryDetailsTable');
+        const tbody = document.getElementById('categoryDetailsBody');
+
+        if (table.style.display === 'none') {
+            // Populate table with category data
+            tbody.innerHTML = '';
+            const categories = <%- JSON.stringify(categoryData || {}) %>;
+
+            if (categories.labels && categories.labels.length > 0) {
+                const total = categories.values.reduce((a, b) => a + b, 0);
+
+                categories.labels.forEach((name, index) => {
+                    const percentage = ((categories.values[index] / total) * 100).toFixed(1);
+                    const row = tbody.insertRow();
+                    row.innerHTML = `
+                        <td><strong>${name}</strong></td>
+                        <td>₹${categories.values[index].toLocaleString('en-IN')}</td>
+                        <td>${categories.quantities[index]}</td>
+                        <td>${categories.productCounts[index]}</td>
+                        <td>${categories.orderCounts[index]}</td>
+                        <td>${percentage}%</td>
+                    `;
+                });
+            }
+
+            table.style.display = 'block';
+        } else {
+            table.style.display = 'none';
+        }
+    }
+    </script>
 <%- include("../../views/admin/partials/footer", { activePage: 'dashboard' }) %>
