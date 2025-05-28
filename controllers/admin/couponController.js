@@ -32,7 +32,8 @@ const renderCouponsPage = async (req, res) => {
     const searchParams = `&type=${type}&isActive=${isActive}`;
     const searchParamsWithoutLimit = `&type=${type}&isActive=${isActive}`;
 
-    return res.render("admin-coupon", {
+    return res.render("admin/admin-coupon", {
+      activePage: 'coupons',
       coupons,
       discountTypes,
       pagination: {

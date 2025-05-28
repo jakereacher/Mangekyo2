@@ -1,111 +1,90 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customers | Mangeyko</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-    <style>
-        .status-active {
-            background-color: #c8e6c9;
-            color: #1b5e20;
-        }
-        .status-blocked {
-            background-color: #ffcdd2;
-            color: #b71c1c;
-        }
-        .pagination-link {
-            transition: all 0.3s ease;
-        }
-        .pagination-link:hover {
-            transform: translateY(-1px);
-        }
-    </style>
-</head>
-<body class="bg-gray-50">
-    <!-- Navbar -->
-    <nav class="bg-gray-800 text-white py-4">
-        <div class="container mx-auto flex justify-between items-center px-4">
-            <a href="/admin/dashboard" class="text-lg font-bold">Admin Panel</a>
-            <ul class="flex space-x-6">
-                <li><a href="/admin/orders" class="hover:text-gray-300">Orders</a></li>
-                <li><a href="/admin/products" class="hover:text-gray-300">Products</a></li>
-                <li><a href="/admin/category" class="hover:text-gray-300">Categories</a></li>
-                <li><a href="/admin/users" class="hover:text-gray-300 border-b-2 border-blue-500 pb-1">Customers</a></li>
-                <li><a href="/admin/logout" class="hover:text-gray-300">Logout</a></li>
-            </ul>
-        </div>
-    </nav>
+<%- include("partials/header", { activePage: 'customers' }) %>
 
-    <div class="container mx-auto px-4 py-8 max-w-6xl">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold flex items-center">
-                <i class="fas fa-users mr-2"></i> Customers
-            </h1>
+<!-- Customers Content -->
+<div class="content-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1><i class="fas fa-users me-2"></i>Customers</h1>
+            <p class="text-muted mb-0">Manage customer accounts and status</p>
         </div>
-        
-        <!-- Search and Filter -->
-        <div class="bg-white p-4 rounded-lg shadow-sm mb-6">
-            <form action="/admin/users" method="GET" class="flex flex-col md:flex-row gap-4">
-                <div class="flex-grow">
-                    <input type="text" name="search" placeholder="Search customers..." 
-                           class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                           value="<%= search || '' %>">
-                </div>
-                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
-                    <i class="fas fa-search mr-2"></i> Search
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary btn-sm" onclick="exportCustomers()">
+                <i class="fas fa-download me-1"></i>Export
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Search and Filter -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form action="/admin/users" method="GET" class="row g-3">
+            <div class="col-md-8">
+                <input type="text" name="search" placeholder="Search customers..."
+                       class="form-control" value="<%= search || '' %>">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search me-1"></i> Search
                 </button>
-                <a href="/admin/users" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition">
-                    <i class="fas fa-times mr-2"></i> Clear
+            </div>
+            <div class="col-md-2">
+                <a href="/admin/users" class="btn btn-secondary w-100">
+                    <i class="fas fa-times me-1"></i> Clear
                 </a>
-            </form>
-        </div>
-        
-        <!-- Customers Table -->
-        <div class="bg-white p-6 rounded-lg shadow-sm mb-6 overflow-x-auto">
-            <table class="w-full min-w-max">
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Customers Table -->
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
                 <thead>
-                    <tr class="border-b">
-                        <th class="py-3 px-2 text-left">Name</th>
-                        <th class="py-3 px-2 text-left">Email</th>
-                        <th class="py-3 px-2 text-left">Phone</th>
-                        <th class="py-3 px-2 text-left">Status</th>
-                        <th class="py-3 px-2 text-left">Actions</th>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Status</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     <% if (data && data.length > 0) { %>
                         <% data.forEach(customer => { %>
-                            <tr class="border-b hover:bg-gray-50">
-                                <td class="py-3 px-2">
-                                    <div class="font-medium"><%= customer.name %></div>
+                            <tr>
+                                <td>
+                                    <div class="fw-medium"><%= customer.name %></div>
                                 </td>
-                                <td class="py-3 px-2">
-                                    <div class="text-sm"><%= customer.email %></div>
+                                <td>
+                                    <div class="text-muted"><%= customer.email %></div>
                                 </td>
-                                <td class="py-3 px-2"><%= customer.phone %></td>
-                                <td class="py-3 px-2">
+                                <td><%= customer.phone %></td>
+                                <td>
                                     <% if (customer.isBlocked) { %>
-                                        <span class="px-3 py-1 rounded-full text-sm font-medium status-blocked">
-                                            Blocked
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-ban me-1"></i>Blocked
                                         </span>
                                     <% } else { %>
-                                        <span class="px-3 py-1 rounded-full text-sm font-medium status-active">
-                                            Active
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check-circle me-1"></i>Active
                                         </span>
                                     <% } %>
                                 </td>
-                                <td class="py-3 px-2">
+                                <td>
                                     <% if (customer.isBlocked === false) { %>
-                                        <a href="/admin/blockCustomer?id=<%= customer._id %>" 
-                                           class="text-red-600 hover:text-red-800 hover:underline flex items-center">
-                                            <i class="fas fa-ban mr-1"></i> Block
+                                        <a href="/admin/blockCustomer?id=<%= customer._id %>"
+                                           class="btn btn-sm btn-outline-danger"
+                                           onclick="return confirm('Are you sure you want to block this customer?')">
+                                            <i class="fas fa-ban me-1"></i> Block
                                         </a>
                                     <% } else { %>
-                                        <a href="/admin/unblockCustomer?id=<%= customer._id %>" 
-                                           class="text-green-600 hover:text-green-800 hover:underline flex items-center">
-                                            <i class="fas fa-check-circle mr-1"></i> Unblock
+                                        <a href="/admin/unblockCustomer?id=<%= customer._id %>"
+                                           class="btn btn-sm btn-outline-success"
+                                           onclick="return confirm('Are you sure you want to unblock this customer?')">
+                                            <i class="fas fa-check-circle me-1"></i> Unblock
                                         </a>
                                     <% } %>
                                 </td>
@@ -113,7 +92,10 @@
                         <% }); %>
                     <% } else { %>
                         <tr>
-                            <td colspan="5" class="py-4 text-center text-gray-500">No customers found</td>
+                            <td colspan="5" class="text-center py-4 text-muted">
+                                <i class="fas fa-users fa-2x mb-2"></i>
+                                <div>No customers found</div>
+                            </td>
                         </tr>
                     <% } %>
                 </tbody>
@@ -121,99 +103,88 @@
         </div>
 
         <!-- Pagination -->
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div class="text-sm text-gray-600">
-                Showing <span class="font-medium"><%= (currentPage - 1) * limit + 1 %></span> to 
-                <span class="font-medium"><%= Math.min(currentPage * limit, totalItems) %></span> of 
-                <span class="font-medium"><%= totalItems %></span> customers
+        <% if (totalPages > 1) { %>
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <div class="text-muted">
+                    Showing <strong><%= (currentPage - 1) * limit + 1 %></strong> to
+                    <strong><%= Math.min(currentPage * limit, totalItems) %></strong> of
+                    <strong><%= totalItems %></strong> customers
+                </div>
+
+                <nav aria-label="Customers pagination">
+                    <ul class="pagination mb-0">
+                        <!-- First Page -->
+                        <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
+                            <a class="page-link" href="?page=1<%= searchParams %>" aria-label="First">
+                                <i class="fas fa-angle-double-left"></i>
+                            </a>
+                        </li>
+
+                        <!-- Previous Page -->
+                        <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
+                            <a class="page-link" href="?page=<%= currentPage - 1 %><%= searchParams %>" aria-label="Previous">
+                                <i class="fas fa-angle-left"></i>
+                            </a>
+                        </li>
+
+                        <!-- Page Numbers -->
+                        <%
+                        const maxVisiblePages = 5;
+                        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+                        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+                        if (endPage - startPage + 1 < maxVisiblePages) {
+                            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                        }
+
+                        for (let i = startPage; i <= endPage; i++) {
+                        %>
+                            <li class="page-item <%= i === currentPage ? 'active' : '' %>">
+                                <a class="page-link" href="?page=<%= i %><%= searchParams %>"><%= i %></a>
+                            </li>
+                        <% } %>
+
+                        <!-- Next Page -->
+                        <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
+                            <a class="page-link" href="?page=<%= currentPage + 1 %><%= searchParams %>" aria-label="Next">
+                                <i class="fas fa-angle-right"></i>
+                            </a>
+                        </li>
+
+                        <!-- Last Page -->
+                        <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
+                            <a class="page-link" href="?page=<%= totalPages %><%= searchParams %>" aria-label="Last">
+                                <i class="fas fa-angle-double-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+
+                <!-- Items per page selector -->
+                <div class="d-flex align-items-center">
+                    <span class="text-muted me-2">Items per page:</span>
+                    <select onchange="window.location.href='?page=1&limit=' + this.value + '<%= searchParamsWithoutLimit %>'"
+                            class="form-select form-select-sm" style="width: auto;">
+                        <option value="10" <%= limit == 10 ? 'selected' : '' %>>10</option>
+                        <option value="25" <%= limit == 25 ? 'selected' : '' %>>25</option>
+                        <option value="50" <%= limit == 50 ? 'selected' : '' %>>50</option>
+                        <option value="100" <%= limit == 100 ? 'selected' : '' %>>100</option>
+                    </select>
+                </div>
             </div>
-            
-            <div class="flex items-center gap-1">
-                <!-- First Page -->
-                <% if (currentPage > 1) { %>
-                    <a href="?page=1<%= searchParams %>" 
-                       class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
-                        <i class="fas fa-angle-double-left"></i>
-                    </a>
-                <% } else { %>
-                    <span class="px-3 py-1 rounded border text-gray-400 cursor-not-allowed">
-                        <i class="fas fa-angle-double-left"></i>
-                    </span>
-                <% } %>
-                
-                <!-- Previous Page -->
-                <% if (currentPage > 1) { %>
-                    <a href="?page=<%= currentPage - 1 %><%= searchParams %>" 
-                       class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
-                        <i class="fas fa-angle-left"></i>
-                    </a>
-                <% } else { %>
-                    <span class="px-3 py-1 rounded border text-gray-400 cursor-not-allowed">
-                        <i class="fas fa-angle-left"></i>
-                    </span>
-                <% } %>
-                
-                <!-- Page Numbers -->
-                <% 
-                const maxVisiblePages = 5;
-                let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-                let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-                
-                if (endPage - startPage + 1 < maxVisiblePages) {
-                    startPage = Math.max(1, endPage - maxVisiblePages + 1);
-                }
-                
-                for (let i = startPage; i <= endPage; i++) { 
-                %>
-                    <% if (i === currentPage) { %>
-                        <span class="px-3 py-1 rounded border bg-blue-600 text-white font-medium">
-                            <%= i %>
-                        </span>
-                    <% } else { %>
-                        <a href="?page=<%= i %><%= searchParams %>" 
-                           class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
-                            <%= i %>
-                        </a>
-                    <% } %>
-                <% } %>
-                
-                <!-- Next Page -->
-                <% if (currentPage < totalPages) { %>
-                    <a href="?page=<%= currentPage + 1 %><%= searchParams %>" 
-                       class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
-                        <i class="fas fa-angle-right"></i>
-                    </a>
-                <% } else { %>
-                    <span class="px-3 py-1 rounded border text-gray-400 cursor-not-allowed">
-                        <i class="fas fa-angle-right"></i>
-                    </span>
-                <% } %>
-                
-                <!-- Last Page -->
-                <% if (currentPage < totalPages) { %>
-                    <a href="?page=<%= totalPages %><%= searchParams %>" 
-                       class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
-                        <i class="fas fa-angle-double-right"></i>
-                    </a>
-                <% } else { %>
-                    <span class="px-3 py-1 rounded border text-gray-400 cursor-not-allowed">
-                        <i class="fas fa-angle-double-right"></i>
-                    </span>
-                <% } %>
-            </div>
-            
-            <!-- Items per page selector -->
-            <div class="flex items-center gap-2">
-                <span class="text-sm text-gray-600">Items per page:</span>
-                <select onchange="window.location.href='?page=1&limit=' + this.value + '<%= searchParamsWithoutLimit %>'" 
-                        class="border rounded px-2 py-1 text-sm">
-                    <option value="10" <%= limit == 10 ? 'selected' : '' %>>10</option>
-                    <option value="25" <%= limit == 25 ? 'selected' : '' %>>25</option>
-                    <option value="50" <%= limit == 50 ? 'selected' : '' %>>50</option>
-                    <option value="100" <%= limit == 100 ? 'selected' : '' %>>100</option>
-                </select>
-            </div>
-        </div>
+        <% } %>
     </div>
-</body>
-</html>
+</div>
+
+<script>
+function exportCustomers() {
+    // Add export functionality here
+    Swal.fire({
+        icon: 'info',
+        title: 'Export Feature',
+        text: 'Export functionality will be implemented soon!'
+    });
+}
+</script>
+
+<%- include("partials/footer") %>

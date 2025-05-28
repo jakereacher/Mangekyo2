@@ -1,149 +1,127 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Orders | Mangeyko</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-    <style>
-        .status-processing {
-            background-color: #e0e0e0;
-            color: #424242;
-        }
-        .status-shipped {
-            background-color: #bbdefb;
-            color: #0d47a1;
-        }
-        .status-delivered {
-            background-color: #c8e6c9;
-            color: #1b5e20;
-        }
-        .status-cancelled {
-            background-color: #ffcdd2;
-            color: #b71c1c;
-        }
-        .status-return-requested {
-            background-color: #fff9c4;
-            color: #f57f17;
-        }
-        .status-returned {
-            background-color: #d1c4e9;
-            color: #311b92;
-        }
-        .pagination-link {
-            transition: all 0.3s ease;
-        }
-        .pagination-link:hover {
-            transform: translateY(-1px);
-        }
-    </style>
-</head>
-<body class="bg-gray-50">
-    <!-- Navbar -->
-    <nav class="bg-gray-800 text-white py-4">
-        <div class="container mx-auto flex justify-between items-center px-4">
-            <a href="/admin/dashboard" class="text-lg font-bold">Admin Panel</a>
-            <ul class="flex space-x-6">
-                <li><a href="/admin/orders" class="hover:text-gray-300">Orders</a></li>
-                <li><a href="/admin/products" class="hover:text-gray-300">Products</a></li>
-                <li><a href="/admin/users" class="hover:text-gray-300">Users</a></li>
-                <li><a href="/admin/logout" class="hover:text-gray-300">Logout</a></li>
-            </ul>
-        </div>
-    </nav>
+<%- include("partials/header", { activePage: 'orders' }) %>
 
-    <div class="container mx-auto px-4 py-8 max-w-6xl">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold flex items-center">
-                <i class="fas fa-receipt mr-2"></i> All Orders
-            </h1>
-            <a href="/admin/return-requests" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
-                <i class="fas fa-exchange-alt mr-2"></i> View Return Requests
+<!-- Orders Content -->
+<div class="content-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1><i class="fas fa-shopping-cart me-2"></i>All Orders</h1>
+            <p class="text-muted mb-0">Manage and track customer orders</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/admin/return-requests" class="btn btn-outline-warning">
+                <i class="fas fa-exchange-alt me-1"></i> Return Requests
             </a>
+            <button class="btn btn-outline-primary" onclick="exportOrders()">
+                <i class="fas fa-download me-1"></i> Export
+            </button>
         </div>
+    </div>
+</div>
 
-        <!-- Orders Table -->
-        <div class="bg-white p-6 rounded-lg shadow-sm mb-6 overflow-x-auto">
-            <table class="w-full min-w-max">
+<!-- Orders Table -->
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
                 <thead>
-                    <tr class="border-b">
-                        <th class="py-3 px-2 text-left">Order ID</th>
-                        <th class="py-3 px-2 text-left">Customer</th>
-                        <th class="py-3 px-2 text-left">Date</th>
-                        <th class="py-3 px-2 text-left">Status</th>
-                        <th class="py-3 px-2 text-left">Total</th>
-                        <th class="py-3 px-2 text-left">Actions</th>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Customer</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Total</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     <% if (orders.length > 0) { %>
                         <% orders.forEach(order => { %>
-                            <tr class="border-b hover:bg-gray-50">
-                                <td class="py-3 px-2"><%= order.displayOrderId || (order.orderNumber || order._id) %></td>
-                                <td class="py-3 px-2"><%= order.customerName %> (<%= order.customerEmail %>)</td>
-                                <td class="py-3 px-2"><%= order.formattedOrderDate %></td>
-                                <td class="py-3 px-2">
-                                    <span class="px-3 py-1 rounded-full text-sm font-medium status-<%= order.status.toLowerCase().replace(' ', '-') %>">
-                                        <%= order.status %>
+                            <tr>
+                                <td>
+                                    <strong>#<%= order.displayOrderId || (order.orderNumber || order._id.toString().slice(-8)) %></strong>
+                                </td>
+                                <td>
+                                    <div class="fw-medium"><%= order.customerName %></div>
+                                    <small class="text-muted"><%= order.customerEmail %></small>
+                                </td>
+                                <td><%= order.formattedOrderDate %></td>
+                                <td>
+                                    <%
+                                    let badgeClass = 'bg-warning';
+                                    let statusText = order.status;
+                                    if (order.status === 'Delivered') {
+                                        badgeClass = 'bg-success';
+                                    } else if (order.status === 'Shipped') {
+                                        badgeClass = 'bg-primary';
+                                    } else if (order.status === 'Cancelled') {
+                                        badgeClass = 'bg-danger';
+                                    } else if (order.status === 'Return Requested') {
+                                        badgeClass = 'bg-warning';
+                                    } else if (order.status === 'Returned') {
+                                        badgeClass = 'bg-secondary';
+                                    } else if (order.status === 'Processing') {
+                                        badgeClass = 'bg-info';
+                                    }
+                                    %>
+                                    <span class="badge <%= badgeClass %>">
+                                        <%= statusText %>
                                     </span>
                                 </td>
-                                <td class="py-3 px-2">₹<%= order.finalAmount.toFixed(2) %></td>
-                                <td class="py-3 px-2">
-                                    <a href="/admin/orders/<%= order._id %>"
-                                       class="text-blue-600 hover:text-blue-800 hover:underline flex items-center">
-                                        <i class="fas fa-eye mr-1"></i> View
-                                    </a>
-                                    <% if (order.status === "Return Requested") { %>
-                                        <a href="/admin/return-requests"
-                                           class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded text-sm hover:bg-yellow-200">
-                                            Return Requested
+                                <td>
+                                    <strong>₹<%= order.finalAmount.toFixed(2) %></strong>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="/admin/orders/<%= order._id %>" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-eye me-1"></i> View
                                         </a>
-                                    <% } %>
+                                        <% if (order.status === "Return Requested") { %>
+                                            <a href="/admin/return-requests" class="btn btn-outline-warning btn-sm">
+                                                <i class="fas fa-exchange-alt me-1"></i> Return
+                                            </a>
+                                        <% } %>
+                                    </div>
                                 </td>
                             </tr>
                         <% }); %>
                     <% } else { %>
                         <tr>
-                            <td colspan="6" class="py-4 text-center text-gray-500">No orders found</td>
+                            <td colspan="6" class="text-center py-4 text-muted">
+                                <i class="fas fa-shopping-cart fa-2x mb-2"></i>
+                                <div>No orders found</div>
+                            </td>
                         </tr>
                     <% } %>
                 </tbody>
             </table>
         </div>
+    </div>
+</div>
 
-        <!-- Pagination -->
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div class="text-sm text-gray-600">
-                Showing <span class="font-medium"><%= (pagination.currentPage - 1) * limit + 1 %></span> to
-                <span class="font-medium"><%= Math.min(pagination.currentPage * limit, pagination.totalOrders) %></span> of
-                <span class="font-medium"><%= pagination.totalOrders %></span> orders
-            </div>
+<!-- Pagination -->
+<% if (pagination.totalPages > 1) { %>
+    <div class="d-flex justify-content-between align-items-center mt-4">
+        <div class="text-muted">
+            Showing <strong><%= (pagination.currentPage - 1) * limit + 1 %></strong> to
+            <strong><%= Math.min(pagination.currentPage * limit, pagination.totalOrders) %></strong> of
+            <strong><%= pagination.totalOrders %></strong> orders
+        </div>
 
-            <div class="flex items-center gap-1">
+        <nav aria-label="Orders pagination">
+            <ul class="pagination mb-0">
                 <!-- First Page -->
-                <% if (pagination.currentPage > 1) { %>
-                    <a href="?page=1&limit=<%= limit %>"
-                       class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
+                <li class="page-item <%= pagination.currentPage === 1 ? 'disabled' : '' %>">
+                    <a class="page-link" href="?page=1&limit=<%= limit %>" aria-label="First">
                         <i class="fas fa-angle-double-left"></i>
                     </a>
-                <% } else { %>
-                    <span class="px-3 py-1 rounded border text-gray-400 cursor-not-allowed">
-                        <i class="fas fa-angle-double-left"></i>
-                    </span>
-                <% } %>
+                </li>
 
                 <!-- Previous Page -->
-                <% if (pagination.currentPage > 1) { %>
-                    <a href="?page=<%= pagination.currentPage - 1 %>&limit=<%= limit %>"
-                       class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
+                <li class="page-item <%= pagination.currentPage === 1 ? 'disabled' : '' %>">
+                    <a class="page-link" href="?page=<%= pagination.currentPage - 1 %>&limit=<%= limit %>" aria-label="Previous">
                         <i class="fas fa-angle-left"></i>
                     </a>
-                <% } else { %>
-                    <span class="px-3 py-1 rounded border text-gray-400 cursor-not-allowed">
-                        <i class="fas fa-angle-left"></i>
-                    </span>
-                <% } %>
+                </li>
 
                 <!-- Page Numbers -->
                 <% const maxVisiblePages = 5;
@@ -155,168 +133,185 @@
                    }
 
                    for (let i = startPage; i <= endPage; i++) { %>
-                    <% if (i === pagination.currentPage) { %>
-                        <span class="px-3 py-1 rounded border bg-blue-600 text-white font-medium">
-                            <%= i %>
-                        </span>
-                    <% } else { %>
-                        <a href="?page=<%= i %>&limit=<%= limit %>"
-                           class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
-                            <%= i %>
-                        </a>
-                    <% } %>
+                    <li class="page-item <%= i === pagination.currentPage ? 'active' : '' %>">
+                        <a class="page-link" href="?page=<%= i %>&limit=<%= limit %>"><%= i %></a>
+                    </li>
                 <% } %>
 
                 <!-- Next Page -->
-                <% if (pagination.currentPage < pagination.totalPages) { %>
-                    <a href="?page=<%= pagination.currentPage + 1 %>&limit=<%= limit %>"
-                       class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
+                <li class="page-item <%= pagination.currentPage === pagination.totalPages ? 'disabled' : '' %>">
+                    <a class="page-link" href="?page=<%= pagination.currentPage + 1 %>&limit=<%= limit %>" aria-label="Next">
                         <i class="fas fa-angle-right"></i>
                     </a>
-                <% } else { %>
-                    <span class="px-3 py-1 rounded border text-gray-400 cursor-not-allowed">
-                        <i class="fas fa-angle-right"></i>
-                    </span>
-                <% } %>
+                </li>
 
                 <!-- Last Page -->
-                <% if (pagination.currentPage < pagination.totalPages) { %>
-                    <a href="?page=<%= pagination.totalPages %>&limit=<%= limit %>"
-                       class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
+                <li class="page-item <%= pagination.currentPage === pagination.totalPages ? 'disabled' : '' %>">
+                    <a class="page-link" href="?page=<%= pagination.totalPages %>&limit=<%= limit %>" aria-label="Last">
                         <i class="fas fa-angle-double-right"></i>
                     </a>
-                <% } else { %>
-                    <span class="px-3 py-1 rounded border text-gray-400 cursor-not-allowed">
-                        <i class="fas fa-angle-double-right"></i>
-                    </span>
-                <% } %>
-            </div>
+                </li>
+            </ul>
+        </nav>
 
-            <!-- Items per page selector -->
-            <div class="flex items-center gap-2">
-                <span class="text-sm text-gray-600">Items per page:</span>
-                <select onchange="window.location.href=`?page=1&limit=${this.value}`"
-                        class="border rounded px-2 py-1 text-sm">
-                    <option value="10" <%= limit == 10 ? 'selected' : '' %>>10</option>
-                    <option value="25" <%= limit == 25 ? 'selected' : '' %>>25</option>
-                    <option value="50" <%= limit == 50 ? 'selected' : '' %>>50</option>
-                    <option value="100" <%= limit == 100 ? 'selected' : '' %>>100</option>
-                </select>
-            </div>
+        <!-- Items per page selector -->
+        <div class="d-flex align-items-center">
+            <span class="text-muted me-2">Items per page:</span>
+            <select onchange="window.location.href=`?page=1&limit=${this.value}`"
+                    class="form-select form-select-sm" style="width: auto;">
+                <option value="10" <%= limit == 10 ? 'selected' : '' %>>10</option>
+                <option value="25" <%= limit == 25 ? 'selected' : '' %>>25</option>
+                <option value="50" <%= limit == 50 ? 'selected' : '' %>>50</option>
+                <option value="100" <%= limit == 100 ? 'selected' : '' %>>100</option>
+            </select>
         </div>
     </div>
+<% } %>
 
-    <!-- Approve Modal -->
-    <div id="approveModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
-        <div class="bg-white p-6 rounded-lg w-96">
-            <h3 class="text-lg font-bold mb-4">Approve Return Request</h3>
-            <p id="approveReason" class="text-gray-700 mb-4"></p>
-            <div class="flex justify-end space-x-2">
-                <button type="button" onclick="hideApproveModal()" class="px-4 py-2 bg-gray-200 rounded">Cancel</button>
-                <button type="button" onclick="approveReturn()" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Approve</button>
+<!-- Approve Return Modal -->
+<div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="approveModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="approveModalLabel">
+                    <i class="fas fa-check-circle me-2 text-success"></i>Approve Return Request
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-        </div>
-    </div>
-
-    <!-- Reject Modal -->
-    <div id="rejectModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
-        <div class="bg-white p-6 rounded-lg w-96">
-            <h3 class="text-lg font-bold mb-4">Reject Return Request</h3>
-            <p id="rejectReasonDisplay" class="text-gray-700 mb-4"></p>
-            <form id="rejectForm">
-                <div class="mb-4">
-                    <label class="block text-gray-700 mb-2">Reason for rejection</label>
-                    <textarea id="rejectReasonInput" class="w-full border rounded p-2" rows="4" required></textarea>
+            <div class="modal-body">
+                <p id="approveReason" class="mb-3"></p>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Are you sure you want to approve this return request?
                 </div>
-                <div class="flex justify-end space-x-2">
-                    <button type="button" onclick="hideRejectModal()" class="px-4 py-2 bg-gray-200 rounded">Cancel</button>
-                    <button type="submit" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Reject</button>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" onclick="approveReturn()" class="btn btn-success">
+                    <i class="fas fa-check me-1"></i>Approve Return
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reject Return Modal -->
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="rejectModalLabel">
+                    <i class="fas fa-times-circle me-2 text-danger"></i>Reject Return Request
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="rejectForm">
+                <div class="modal-body">
+                    <p id="rejectReasonDisplay" class="mb-3"></p>
+                    <div class="mb-3">
+                        <label for="rejectReasonInput" class="form-label">Reason for rejection <span class="text-danger">*</span></label>
+                        <textarea id="rejectReasonInput" class="form-control" rows="4"
+                                  placeholder="Please provide a reason for rejecting this return request..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-times me-1"></i>Reject Return
+                    </button>
                 </div>
             </form>
         </div>
     </div>
+</div>
 
-    <script>
-        let currentOrderId = null;
+<script>
+let currentOrderId = null;
 
-        function showApproveModal(orderId, returnReason) {
-            currentOrderId = orderId;
-            document.getElementById('approveReason').textContent = `Reason for return: ${returnReason || 'No reason provided'}`;
-            document.getElementById('approveModal').classList.remove('hidden');
+function exportOrders() {
+    Swal.fire({
+        icon: 'info',
+        title: 'Export Feature',
+        text: 'Export functionality will be implemented soon!'
+    });
+}
+
+function showApproveModal(orderId, returnReason) {
+    currentOrderId = orderId;
+    document.getElementById('approveReason').textContent = `Return reason: ${returnReason || 'No reason provided'}`;
+    const modal = new bootstrap.Modal(document.getElementById('approveModal'));
+    modal.show();
+}
+
+function approveReturn() {
+    if (!currentOrderId) return;
+
+    fetch(`/admin/orders/${currentOrderId}/approve-return`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'CSRF-Token': '<%= typeof csrfToken !== "undefined" ? csrfToken : "" %>'
         }
-
-        function hideApproveModal() {
-            document.getElementById('approveModal').classList.add('hidden');
-            currentOrderId = null;
-        }
-
-        function approveReturn() {
-            fetch(`/admin/orders/${currentOrderId}/approve-return`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'CSRF-Token': '<%= csrfToken %>'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Return approved successfully!');
-                    location.reload();
-                } else {
-                    alert('Error: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred while approving the return');
-            })
-            .finally(() => {
-                hideApproveModal();
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire('Success!', 'Return approved successfully!', 'success').then(() => {
+                location.reload();
             });
+        } else {
+            Swal.fire('Error!', data.message || 'An error occurred', 'error');
         }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire('Error!', 'An error occurred while approving the return', 'error');
+    })
+    .finally(() => {
+        bootstrap.Modal.getInstance(document.getElementById('approveModal')).hide();
+    });
+}
 
-        function showRejectModal(orderId, returnReason) {
-            currentOrderId = orderId;
-            document.getElementById('rejectReasonDisplay').textContent = `Reason for return: ${returnReason || 'No reason provided'}`;
-            document.getElementById('rejectModal').classList.remove('hidden');
-        }
+function showRejectModal(orderId, returnReason) {
+    currentOrderId = orderId;
+    document.getElementById('rejectReasonDisplay').textContent = `Return reason: ${returnReason || 'No reason provided'}`;
+    const modal = new bootstrap.Modal(document.getElementById('rejectModal'));
+    modal.show();
+}
 
-        function hideRejectModal() {
-            document.getElementById('rejectModal').classList.add('hidden');
-            document.getElementById('rejectForm').reset();
-            currentOrderId = null;
-        }
+document.getElementById('rejectForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const rejectReason = document.getElementById('rejectReasonInput').value;
 
-        document.getElementById('rejectForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const rejectReason = document.getElementById('rejectReasonInput').value;
+    if (!currentOrderId) return;
 
-            fetch(`/admin/orders/${currentOrderId}/reject-return`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'CSRF-Token': '<%= csrfToken %>'
-                },
-                body: JSON.stringify({ adminResponse: rejectReason })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Return rejected successfully!');
-                    location.reload();
-                } else {
-                    alert('Error: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred while rejecting the return');
-            })
-            .finally(() => {
-                hideRejectModal();
+    fetch(`/admin/orders/${currentOrderId}/reject-return`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'CSRF-Token': '<%= typeof csrfToken !== "undefined" ? csrfToken : "" %>'
+        },
+        body: JSON.stringify({ adminResponse: rejectReason })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire('Success!', 'Return rejected successfully!', 'success').then(() => {
+                location.reload();
             });
-        });
-    </script>
-</body>
-</html>
+        } else {
+            Swal.fire('Error!', data.message || 'An error occurred', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire('Error!', 'An error occurred while rejecting the return', 'error');
+    })
+    .finally(() => {
+        bootstrap.Modal.getInstance(document.getElementById('rejectModal')).hide();
+        document.getElementById('rejectForm').reset();
+    });
+});
+</script>
+
+<%- include("partials/footer") %>

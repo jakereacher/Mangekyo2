@@ -1,148 +1,45 @@
-<%- include("../../views/admin/partials/header", { activePage: 'dashboard' }) %>
-<style>
-    /* Dashboard Styles */
-    .stat-card {
-        border-radius: 8px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        transition: transform 0.2s;
-    }
+<%- include("partials/header", { activePage: 'dashboard' }) %>
 
-    .stat-card:hover {
-        transform: translateY(-5px);
-    }
-
-    .card-icon {
-        font-size: 2rem;
-        opacity: 0.8;
-    }
-
-    .chart-area, .chart-pie, .chart-bar {
-        position: relative;
-        height: 100%;
-        width: 100%;
-    }
-
-    .shadow {
-        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15) !important;
-    }
-
-    .card-header {
-        background-color: #f8f9fc;
-        border-bottom: 1px solid #e3e6f0;
-    }
-
-    .font-weight-bold {
-        font-weight: 700 !important;
-    }
-
-    .text-primary {
-        color: #4e73df !important;
-    }
-
-    .chart-pie canvas, .chart-bar canvas, .chart-container canvas {
-        max-height: 300px;
-    }
-
-    .chart-container {
-        position: relative;
-        height: 300px;
-        width: 100%;
-    }
-
-    /* Chart type selector styling */
-    .btn-check:checked + .btn {
-        background-color: var(--bs-primary);
-        border-color: var(--bs-primary);
-        color: white;
-    }
-
-    .btn-group .btn {
-        border-radius: 0.25rem;
-        margin-right: 2px;
-    }
-
-    .btn-group .btn:first-child {
-        border-top-left-radius: 0.25rem;
-        border-bottom-left-radius: 0.25rem;
-    }
-
-    .btn-group .btn:last-child {
-        border-top-right-radius: 0.25rem;
-        border-bottom-right-radius: 0.25rem;
-        margin-right: 0;
-    }
-
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-        .chart-area, .chart-pie, .chart-bar, .chart-container {
-            height: 250px;
-        }
-
-        .btn-group {
-            flex-wrap: wrap;
-        }
-
-        .btn-group .btn {
-            font-size: 0.8rem;
-            padding: 0.25rem 0.5rem;
-        }
-    }
-
-    .chart-loader {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(255, 255, 255, 0.8);
-    }
-
-    .chart-area, .chart-pie, .chart-bar {
-        position: relative;
-        min-height: 300px;
-    }
-
-    .card {
-        transition: all 0.3s ease;
-    }
-
-    .card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-    }
-
-    .stat-card {
-        border-radius: 0.5rem;
-        overflow: hidden;
-    }
-
-    .stat-card .card-body {
-        padding: 1.5rem;
-    }
-
-    .chart-title {
-        font-size: 1.1rem;
-        font-weight: 600;
-        margin-bottom: 1rem;
-    }
-
-    .table th {
-        font-weight: 600;
-        background-color: #f8f9fc;
-    }
-
-    .table-hover tbody tr:hover {
-        background-color: #f8f9fc;
-    }
-
-    .badge {
-        padding: 0.5em 0.75em;
-        font-weight: 500;
-    }
-</style>
+<!-- Dashboard Content -->
+<div class="content-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1><i class="fas fa-tachometer-alt me-2"></i>Dashboard</h1>
+            <p class="text-muted mb-0">Welcome to your admin dashboard</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/admin/sales-report" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-chart-bar me-1"></i>View Reports
+            </a>
+            <div class="dropdown">
+                <button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="periodDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-calendar-alt me-1"></i>
+                    <%
+                    let periodText = 'This Month';
+                    if (currentPeriod === 'today') periodText = 'Today';
+                    else if (currentPeriod === 'week') periodText = 'This Week';
+                    else if (currentPeriod === 'year') periodText = 'This Year';
+                    %>
+                    <%= periodText %>
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="periodDropdown">
+                    <li><a class="dropdown-item <%= currentPeriod === 'today' ? 'active' : '' %>" href="?period=today">
+                        <i class="fas fa-clock me-2"></i>Today
+                    </a></li>
+                    <li><a class="dropdown-item <%= currentPeriod === 'week' ? 'active' : '' %>" href="?period=week">
+                        <i class="fas fa-calendar-week me-2"></i>This Week
+                    </a></li>
+                    <li><a class="dropdown-item <%= currentPeriod === 'month' ? 'active' : '' %>" href="?period=month">
+                        <i class="fas fa-calendar-alt me-2"></i>This Month
+                    </a></li>
+                    <li><a class="dropdown-item <%= currentPeriod === 'year' ? 'active' : '' %>" href="?period=year">
+                        <i class="fas fa-calendar me-2"></i>This Year
+                    </a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
 
 <%
 function formatCurrency(amount) {
@@ -156,76 +53,13 @@ function formatCurrency(amount) {
 }
 %>
 
-            <!-- Main Content -->
-            <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-                <nav class="navbar navbar-expand-lg navbar-light bg-light">
-                    <div class="container-fluid">
-                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-                            <span class="navbar-toggler-icon"></span>
-                        </button>
-                        <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                            <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-                                <li class="nav-item dropdown">
-                                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <i class="fas fa-bell"></i>
-                                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                                            3
-                                        </span>
-                                    </a>
-                                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                                        <li><a class="dropdown-item" href="#">New order received</a></li>
-                                        <li><a class="dropdown-item" href="#">New customer registered</a></li>
-                                        <li><a class="dropdown-item" href="#">Inventory alert</a></li>
-                                    </ul>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </nav>
-
-                <div class="main-content">
-                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                        <h1 class="h2">Dashboard</h1>
-                        <div class="btn-toolbar mb-2 mb-md-0">
-                            <div class="btn-group me-2">
-                                <a href="/admin/reports" class="btn btn-sm btn-outline-secondary">View Reports</a>
-                            </div>
-                            <div class="dropdown">
-                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="fas fa-calendar-alt"></i>
-                                    <%
-                                    let periodText = 'This Month';
-                                    if (currentPeriod === 'today') periodText = 'Today';
-                                    else if (currentPeriod === 'week') periodText = 'This Week';
-                                    else if (currentPeriod === 'year') periodText = 'This Year';
-                                    %>
-                                    <%= periodText %>
-                                </button>
-                                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                                    <li><a class="dropdown-item <%= currentPeriod === 'today' ? 'active' : '' %>" href="?period=today">
-                                        <i class="fas fa-clock me-2"></i>Today
-                                    </a></li>
-                                    <li><a class="dropdown-item <%= currentPeriod === 'week' ? 'active' : '' %>" href="?period=week">
-                                        <i class="fas fa-calendar-week me-2"></i>This Week
-                                    </a></li>
-                                    <li><a class="dropdown-item <%= currentPeriod === 'month' ? 'active' : '' %>" href="?period=month">
-                                        <i class="fas fa-calendar-alt me-2"></i>This Month
-                                    </a></li>
-                                    <li><a class="dropdown-item <%= currentPeriod === 'year' ? 'active' : '' %>" href="?period=year">
-                                        <i class="fas fa-calendar me-2"></i>This Year
-                                    </a></li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Error Alert -->
-                    <% if (typeof error !== 'undefined' && error) { %>
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            <strong>Error!</strong> <%= error %>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    <% } %>
+<!-- Error Alert -->
+<% if (typeof error !== 'undefined' && error) { %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong>Error!</strong> <%= error %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+<% } %>
 
                     <!-- Dashboard Summary -->
                     <div class="card mb-4">
@@ -1559,4 +1393,4 @@ function formatCurrency(amount) {
         paginationElement.innerHTML = paginationHTML;
     }
     </script>
-<%- include("../../views/admin/partials/footer", { activePage: 'dashboard' }) %>
+<%- include("partials/footer") %>

@@ -399,7 +399,8 @@ const loadDashboard = async(req, res) => {
     }));
 
     // Render dashboard with all data
-    res.render("dashboard", {
+    res.render("admin/dashboard", {
+      activePage: 'dashboard',
       isDemoAdmin: req.session.isDemoAdmin || false,
       currentPeriod: period,
       stats: {
@@ -434,7 +435,8 @@ const loadDashboard = async(req, res) => {
   } catch (error) {
     console.error("Dashboard error:", error);
     // Provide empty data structures to prevent undefined errors
-    res.render("dashboard", {
+    res.render("admin/dashboard", {
+      activePage: 'dashboard',
       isDemoAdmin: req.session.isDemoAdmin || false,
       error: "Failed to load dashboard data: " + error.message,
       stats: {

@@ -10,173 +10,430 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- DataTables -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
-    <link href="/admin/css/sb-admin-2.min.css" rel="stylesheet">
+    <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 
-    <!-- jQuery and DataTables JS -->
+    <!-- jQuery and other JS libraries -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
-    <!-- Add Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <style>
-        .sidebar {
-            min-height: 100vh;
-            background-color: #212529;
-            color: #fff;
+        :root {
+            --sidebar-width: 280px;
+            --primary-color: #4e73df;
+            --secondary-color: #858796;
+            --success-color: #1cc88a;
+            --info-color: #36b9cc;
+            --warning-color: #f6c23e;
+            --danger-color: #e74a3b;
+            --dark-color: #5a5c69;
+            --light-color: #f8f9fc;
         }
-        .sidebar .nav-link {
+
+        body {
+            font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--light-color);
+        }
+
+        /* Sidebar Styles */
+        .admin-sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: linear-gradient(180deg, #1a1a1a 0%, #000000 100%);
+            color: #fff;
+            overflow-y: auto;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .admin-sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .admin-sidebar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .admin-sidebar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+
+        .sidebar-brand {
+            padding: 1.5rem 1rem;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .sidebar-brand h4 {
+            color: #ffc107;
+            font-weight: 700;
+            margin: 0;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        .sidebar-brand small {
             color: rgba(255, 255, 255, 0.8);
-            padding: 0.8rem 1rem;
-            border-radius: 5px;
-            margin-bottom: 5px;
+            font-size: 0.75rem;
         }
-        .sidebar .nav-link:hover {
+
+        .sidebar-nav {
+            padding: 1rem 0;
+        }
+
+        .nav-item {
+            margin-bottom: 0.25rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-radius: 0;
+        }
+
+        .nav-link:hover {
+            color: #fff;
             background-color: rgba(255, 255, 255, 0.1);
-            color: #fff;
         }
-        .sidebar .nav-link.active {
-            background-color: #0d6efd;
+
+        .nav-link.active {
             color: #fff;
+            background-color: rgba(255, 255, 255, 0.15);
+            border-left: 4px solid #ffc107;
+            font-weight: 600;
         }
+
+        .nav-link i {
+            width: 20px;
+            text-align: center;
+            margin-right: 0.75rem;
+            font-size: 0.9rem;
+        }
+
+        /* Submenu Styles */
+        .submenu {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .submenu .nav-link {
+            padding-left: 3rem;
+            font-size: 0.9rem;
+        }
+
+        /* Main Content Area */
+        .admin-main {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            transition: all 0.3s ease;
+        }
+
         .main-content {
-            padding: 20px;
+            padding: 2rem;
         }
-        .stat-card {
-            border-radius: 10px;
+
+        /* Header Styles */
+        .content-header {
+            background: #fff;
+            padding: 1.5rem 2rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid #e3e6f0;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        }
+
+        .content-header h1 {
+            margin: 0;
+            color: var(--dark-color);
+            font-weight: 400;
+        }
+
+        /* Card Styles */
+        .card {
             border: none;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            transition: transform 0.2s;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            border-radius: 0.35rem;
         }
-        .stat-card:hover {
-            transform: translateY(-5px);
+
+        .card-header {
+            background-color: var(--light-color);
+            border-bottom: 1px solid #e3e6f0;
+            padding: 1rem 1.25rem;
         }
-        .navbar-brand {
-            font-weight: bold;
+
+        .card-body {
+            padding: 1.25rem;
         }
-        .navbar {
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+        /* Button Styles */
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
         }
-        .card-icon {
-            font-size: 2rem;
-            margin-bottom: 10px;
+
+        .btn-primary:hover {
+            background-color: #2e59d9;
+            border-color: #2e59d9;
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+            border-color: var(--success-color);
+        }
+
+        .btn-info {
+            background-color: var(--info-color);
+            border-color: var(--info-color);
+        }
+
+        .btn-warning {
+            background-color: var(--warning-color);
+            border-color: var(--warning-color);
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+            border-color: var(--danger-color);
+        }
+
+        /* Table Styles */
+        .table {
+            color: var(--dark-color);
+        }
+
+        .table thead th {
+            border-bottom: 2px solid #e3e6f0;
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+
+        /* Pagination Styles */
+        .pagination {
+            margin: 0;
+        }
+
+        .page-link {
+            color: var(--primary-color);
+            border-color: #e3e6f0;
+        }
+
+        .page-link:hover {
+            color: #2e59d9;
+            background-color: #e9ecef;
+            border-color: #dee2e6;
+        }
+
+        .page-item.active .page-link {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        /* Status Badge Styles */
+        .badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        /* Utility Classes */
+        .text-primary { color: var(--primary-color) !important; }
+        .text-success { color: var(--success-color) !important; }
+        .text-info { color: var(--info-color) !important; }
+        .text-warning { color: var(--warning-color) !important; }
+        .text-danger { color: var(--danger-color) !important; }
+
+        .bg-primary { background-color: var(--primary-color) !important; }
+        .bg-success { background-color: var(--success-color) !important; }
+        .bg-info { background-color: var(--info-color) !important; }
+        .bg-warning { background-color: var(--warning-color) !important; }
+        .bg-danger { background-color: var(--danger-color) !important; }
+
+        /* Border Utilities */
+        .border-left-primary { border-left: 0.25rem solid var(--primary-color) !important; }
+        .border-left-success { border-left: 0.25rem solid var(--success-color) !important; }
+        .border-left-info { border-left: 0.25rem solid var(--info-color) !important; }
+        .border-left-warning { border-left: 0.25rem solid var(--warning-color) !important; }
+        .border-left-danger { border-left: 0.25rem solid var(--danger-color) !important; }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .admin-sidebar {
+                transform: translateX(-100%);
+            }
+
+            .admin-sidebar.show {
+                transform: translateX(0);
+            }
+
+            .admin-main {
+                margin-left: 0;
+            }
+        }
+
+        /* Loading Spinner */
+        .spinner-border-sm {
+            width: 1rem;
+            height: 1rem;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
         }
     </style>
 </head>
 <body>
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Sidebar -->
-            <div class="col-md-3 col-lg-2 sidebar d-flex flex-column p-3">
-                <a href="/admin/dashboard" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-decoration-none text-white">
-                    <span class="fs-4">Admin Panel</span>
+    <!-- Admin Sidebar -->
+    <nav class="admin-sidebar">
+        <div class="sidebar-brand">
+            <h4><i class="fas fa-crown me-2"></i>MANGEYKO</h4>
+            <small>Admin Panel</small>
+        </div>
+
+        <ul class="nav flex-column sidebar-nav">
+            <li class="nav-item">
+                <a href="/admin/dashboard" class="nav-link <%= activePage === 'dashboard' ? 'active' : '' %>">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Dashboard
                 </a>
-                <hr>
-                <ul class="nav nav-pills flex-column mb-auto">
-                    <li class="nav-item">
-                        <a href="/admin/dashboard" class="nav-link <%= activePage === 'dashboard' ? 'active' : '' %>" aria-current="page">
-                            <i class="fas fa-tachometer-alt me-2"></i>
-                            Dashboard
-                        </a>
-                    </li>
-                    <li>
-                        <a href="/admin/users" class="nav-link <%= activePage === 'customers' ? 'active' : '' %>">
-                            <i class="fas fa-users me-2"></i>
-                            Customers
-                        </a>
-                    </li>
-                    <li>
-                        <a href="/admin/sales-report" class="nav-link <%= activePage === 'reports' ? 'active' : '' %>">
-                            <i class="fas fa-chart-bar me-2"></i>
-                            Sales Report
-                        </a>
-                    </li>
-                    <li>
-                        <a href="/admin/category" class="nav-link <%= activePage === 'category' ? 'active' : '' %>">
-                            <i class="fas fa-th-large me-2"></i>
-                            Category
-                        </a>
-                    </li>
-                    <li>
-                        <a href="/admin/add-products" class="nav-link <%= activePage === 'add-products' ? 'active' : '' %>">
-                            <i class="fas fa-plus-circle me-2"></i>
-                            Add Products
-                        </a>
-                    </li>
-                    <li>
-                        <a href="/admin/products" class="nav-link <%= activePage === 'products' ? 'active' : '' %>">
-                            <i class="fas fa-box me-2"></i>
-                            Products
-                        </a>
-                    </li>
-                    <li>
-                        <a href="/admin/coupons" class="nav-link <%= activePage === 'coupon' ? 'active' : '' %>">
-                            <i class="fas fa-ticket-alt me-2"></i>
-                            Coupon
-                        </a>
-                    </li>
-                    <li>
-                        <a href="/admin/delivery-charges" class="nav-link <%= activePage === 'delivery-charges' ? 'active' : '' %>">
-                            <i class="fas fa-truck me-2"></i>
-                            Delivery Charges
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#offersSubmenu" data-bs-toggle="collapse" class="nav-link <%= ['offers', 'product-offers', 'category-offers'].includes(activePage) ? 'active' : '' %> dropdown-toggle">
-                            <i class="fas fa-percent me-2"></i>
-                            Offers
-                        </a>
-                        <ul class="collapse <%= ['offers', 'product-offers', 'category-offers'].includes(activePage) ? 'show' : '' %> list-unstyled" id="offersSubmenu">
-                            <li>
-                                <a href="/admin/offers" class="nav-link ms-3 <%= activePage === 'offers' ? 'active' : '' %>">
-                                    <i class="fas fa-list-ul me-2"></i>
-                                    All Offers
-                                </a>
-                            </li>
-                            <li>
-                                <a href="/admin/product-offers" class="nav-link ms-3 <%= activePage === 'product-offers' ? 'active' : '' %>">
-                                    <i class="fas fa-box me-2"></i>
-                                    Product Offers
-                                </a>
-                            </li>
-                            <li>
-                                <a href="/admin/category-offers" class="nav-link ms-3 <%= activePage === 'category-offers' ? 'active' : '' %>">
-                                    <i class="fas fa-tags me-2"></i>
-                                    Category Offers
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-                    <li>
-                        <a href="/admin/orders" class="nav-link <%= activePage === 'orders' ? 'active' : '' %>">
-                            <i class="fas fa-shopping-cart me-2"></i>
-                            Orders
-                        </a>
-                    </li>
-                    <li>
-                        <a href="/admin/return-requests" class="nav-link <%= activePage === 'returns' ? 'active' : '' %>">
-                            <i class="fas fa-exchange-alt me-2"></i>
-                            Return Requests
-                        </a>
-                    </li>
-                    <li>
-                        <a href="/admin/delivery-charges" class="nav-link <%= activePage === 'delivery-charges' ? 'active' : '' %>">
-                            <i class="fas fa-truck me-2"></i>
-                            Delivery Charges
-                        </a>
-                    </li>
-                </ul>
-                <hr>
-                <div class="dropdown">
-                    <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle text-white" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
-                        <img src="/images/keychain1.webp" alt="" width="32" height="32" class="rounded-circle me-2">
-                        <strong>Admin</strong>
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-dark text-small shadow" aria-labelledby="dropdownUser1">
-                        <li><a class="dropdown-item" href="#">Profile</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="/admin/logout">Sign out</a></li>
+            </li>
+
+            <li class="nav-item">
+                <a href="/admin/users" class="nav-link <%= activePage === 'customers' ? 'active' : '' %>">
+                    <i class="fas fa-users"></i>
+                    Customers
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a href="/admin/category" class="nav-link <%= activePage === 'category' ? 'active' : '' %>">
+                    <i class="fas fa-th-large"></i>
+                    Categories
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a href="/admin/add-products" class="nav-link <%= activePage === 'add-products' ? 'active' : '' %>">
+                    <i class="fas fa-plus-circle"></i>
+                    Add Products
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a href="/admin/products" class="nav-link <%= activePage === 'products' ? 'active' : '' %>">
+                    <i class="fas fa-box"></i>
+                    Products
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a href="/admin/coupons" class="nav-link <%= activePage === 'coupons' ? 'active' : '' %>">
+                    <i class="fas fa-ticket-alt"></i>
+                    Coupons
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link <%= activePage === 'offers' || activePage === 'product-offers' || activePage === 'category-offers' ? 'active' : '' %>"
+                   data-bs-toggle="collapse" href="#offersSubmenu" role="button"
+                   aria-expanded="<%= activePage === 'offers' || activePage === 'product-offers' || activePage === 'category-offers' ? 'true' : 'false' %>"
+                   aria-controls="offersSubmenu">
+                    <i class="fas fa-percent"></i>
+                    Offers
+                    <i class="fas fa-chevron-down ms-auto"></i>
+                </a>
+                <div class="collapse submenu <%= activePage === 'offers' || activePage === 'product-offers' || activePage === 'category-offers' ? 'show' : '' %>" id="offersSubmenu">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a href="/admin/offers" class="nav-link <%= activePage === 'offers' ? 'active' : '' %>">
+                                <i class="fas fa-list"></i>
+                                All Offers
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="/admin/product-offers" class="nav-link <%= activePage === 'product-offers' ? 'active' : '' %>">
+                                <i class="fas fa-box"></i>
+                                Product Offers
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="/admin/category-offers" class="nav-link <%= activePage === 'category-offers' ? 'active' : '' %>">
+                                <i class="fas fa-tags"></i>
+                                Category Offers
+                            </a>
+                        </li>
                     </ul>
                 </div>
+            </li>
+
+            <li class="nav-item">
+                <a href="/admin/orders" class="nav-link <%= activePage === 'orders' ? 'active' : '' %>">
+                    <i class="fas fa-shopping-cart"></i>
+                    Orders
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a href="/admin/return-requests" class="nav-link <%= activePage === 'returns' ? 'active' : '' %>">
+                    <i class="fas fa-exchange-alt"></i>
+                    Return Requests
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a href="/admin/delivery-charges" class="nav-link <%= activePage === 'delivery-charges' ? 'active' : '' %>">
+                    <i class="fas fa-truck"></i>
+                    Delivery Charges
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a href="/admin/sales-report" class="nav-link <%= activePage === 'reports' ? 'active' : '' %>">
+                    <i class="fas fa-chart-bar"></i>
+                    Sales Report
+                </a>
+            </li>
+        </ul>
+
+        <div class="mt-auto p-3">
+            <div class="dropdown">
+                <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle text-white"
+                   id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
+                    <img src="/images/keychain1.webp" alt="Admin" width="32" height="32" class="rounded-circle me-2">
+                    <strong>Admin</strong>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-dark text-small shadow" aria-labelledby="dropdownUser1">
+                    <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Profile</a></li>
+                    <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Settings</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="/admin/logout"><i class="fas fa-sign-out-alt me-2"></i>Sign out</a></li>
+                </ul>
             </div>
-            <!-- Main Content Area (to be filled by including page) -->
-            <div class="col-md-9 col-lg-10 main-content">
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <div class="admin-main">
+        <div class="main-content">

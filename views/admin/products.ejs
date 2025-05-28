@@ -1,165 +1,132 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Products | Mangeyko</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-    <style>
-        .status-available {
-            background-color: #c8e6c9;
-            color: #1b5e20;
-        }
-        .status-out-of-stock {
-            background-color: #ffcdd2;
-            color: #b71c1c;
-        }
-        .status-blocked {
-            background-color: #ffcdd2;
-            color: #b71c1c;
-        }
-        .status-low-stock {
-            background-color: #fff9c4;
-            color: #f57f17;
-        }
-        .pagination-link {
-            transition: all 0.3s ease;
-        }
-        .pagination-link:hover {
-            transform: translateY(-1px);
-        }
-        .product-image {
-            width: 60px;
-            height: 60px;
-            object-fit: cover;
-            border-radius: 4px;
-        }
-    </style>
-</head>
-<body class="bg-gray-50">
-    <!-- Navbar -->
-    <nav class="bg-gray-800 text-white py-4">
-        <div class="container mx-auto flex justify-between items-center px-4">
-            <a href="/admin/dashboard" class="text-lg font-bold">Admin Panel</a>
-            <ul class="flex space-x-6">
-                <li><a href="/admin/orders" class="hover:text-gray-300">Orders</a></li>
-                <li><a href="/admin/products" class="hover:text-gray-300 border-b-2 border-blue-500 pb-1">Products</a></li>
-                <li><a href="/admin/users" class="hover:text-gray-300">Users</a></li>
-                <li><a href="/admin/logout" class="hover:text-gray-300">Logout</a></li>
-            </ul>
-        </div>
-    </nav>
+<%- include("partials/header", { activePage: 'products' }) %>
 
-    <div class="container mx-auto px-4 py-8 max-w-6xl">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold flex items-center">
-                <i class="fas fa-box mr-2"></i> All Products
-            </h1>
-            <a href="/admin/add-products" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
-                <i class="fas fa-plus mr-2"></i> Add New Product
+<!-- Products Content -->
+<div class="content-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1><i class="fas fa-box me-2"></i>All Products</h1>
+            <p class="text-muted mb-0">Manage your product inventory and settings</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/admin/add-products" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i> Add New Product
             </a>
+            <button class="btn btn-outline-primary" onclick="exportProducts()">
+                <i class="fas fa-download me-1"></i> Export
+            </button>
         </div>
-        
-        <!-- Search and Filter -->
-        <div class="bg-white p-4 rounded-lg shadow-sm mb-6">
-            <form action="" method="GET" class="flex flex-col md:flex-row gap-4">
-                <div class="flex-grow">
-                    <input type="text" name="search" placeholder="Search products..." 
-                           class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                           value="<%= pagination ? (pagination.searchParams.replace('&search=', '') || '') : '' %>">
-                </div>
-                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
-                    <i class="fas fa-search mr-2"></i> Search
+    </div>
+</div>
+
+<!-- Search and Filter -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form action="" method="GET" class="row g-3">
+            <div class="col-md-10">
+                <input type="text" name="search" placeholder="Search products..."
+                       class="form-control"
+                       value="<%= pagination ? (pagination.searchParams.replace('&search=', '') || '') : '' %>">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search me-1"></i> Search
                 </button>
-            </form>
-        </div>
-        
-        <!-- Products Table -->
-        <div class="bg-white p-6 rounded-lg shadow-sm mb-6 overflow-x-auto">
-            <table class="w-full min-w-max">
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Products Table -->
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
                 <thead>
-                    <tr class="border-b">
-                        <th class="py-3 px-2 text-left">Image</th>
-                        <th class="py-3 px-2 text-left">Product</th>
-                        <th class="py-3 px-2 text-left">Category</th>
-                        <th class="py-3 px-2 text-left">Price</th>
-                        <th class="py-3 px-2 text-left">Stock</th>
-                        <th class="py-3 px-2 text-left">Status</th>
-                        <th class="py-3 px-2 text-left">Actions</th>
+                    <tr>
+                        <th>Image</th>
+                        <th>Product</th>
+                        <th>Category</th>
+                        <th>Price</th>
+                        <th>Stock</th>
+                        <th>Status</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     <% if (products && products.length > 0) { %>
                         <% products.forEach(product => { %>
-                            <tr class="border-b hover:bg-gray-50">
-                                <td class="py-3 px-2">
+                            <tr>
+                                <td>
                                     <% if (product.productImage && product.productImage.length > 0) { %>
-                                        <img src="/uploads/product-images/<%= product.productImage[0] %>" class="product-image" alt="<%= product.productName %>">
+                                        <img src="/uploads/product-images/<%= product.productImage[0] %>"
+                                             class="rounded" style="width: 60px; height: 60px; object-fit: cover;"
+                                             alt="<%= product.productName %>">
                                     <% } else { %>
-                                        <div class="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
-                                            <i class="fas fa-image text-gray-400"></i>
+                                        <div class="bg-light rounded d-flex align-items-center justify-content-center"
+                                             style="width: 60px; height: 60px;">
+                                            <i class="fas fa-image text-muted"></i>
                                         </div>
                                     <% } %>
                                 </td>
-                                <td class="py-3 px-2">
-                                    <div class="font-medium"><%= product.productName %></div>
-                                    <div class="text-sm text-gray-500">ID: <%= product._id %></div>
+                                <td>
+                                    <div class="fw-medium"><%= product.productName %></div>
+                                    <small class="text-muted">ID: <%= product._id.toString().slice(-8) %></small>
                                 </td>
-                                <td class="py-3 px-2"><%= product.category.name %></td>
-                                <td class="py-3 px-2">
+                                <td><%= product.category.name %></td>
+                                <td>
                                     <% if (product.hasOffer) { %>
-                                        <div class="flex items-center">
-                                            <span class="line-through text-gray-500 mr-2">₹<%= product.price.toFixed(2) %></span>
-                                            <span class="font-medium text-green-600">₹<%= product.finalPrice.toFixed(2) %></span>
+                                        <div class="d-flex align-items-center">
+                                            <span class="text-decoration-line-through text-muted me-2">₹<%= product.price.toFixed(2) %></span>
+                                            <span class="fw-medium text-success">₹<%= product.finalPrice.toFixed(2) %></span>
                                         </div>
-                                        <div class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded inline-block mt-1">
+                                        <span class="badge bg-success mt-1">
                                             <%= product.discountPercentage.toFixed(0) %>% OFF
-                                        </div>
+                                        </span>
                                     <% } else { %>
-                                        <span class="font-medium">₹<%= (product.price ? product.price.toFixed(2) : (product.salePrice ? product.salePrice.toFixed(2) : (product.regularPrice ? product.regularPrice.toFixed(2) : '0.00'))) %></span>
+                                        <span class="fw-medium">₹<%= (product.price ? product.price.toFixed(2) : (product.salePrice ? product.salePrice.toFixed(2) : (product.regularPrice ? product.regularPrice.toFixed(2) : '0.00'))) %></span>
                                     <% } %>
                                 </td>
-                                <td class="py-3 px-2">
-                                    <span class="font-medium"><%= product.quantity %></span>
+                                <td>
+                                    <span class="fw-medium"><%= product.quantity %></span>
                                 </td>
-                                <td class="py-3 px-2">
+                                <td>
                                     <% if (product.isBlocked) { %>
-                                        <span class="px-3 py-1 rounded-full text-sm font-medium status-blocked">
-                                            Blocked
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-ban me-1"></i>Blocked
                                         </span>
                                     <% } else if (product.quantity <= 0) { %>
-                                        <span class="px-3 py-1 rounded-full text-sm font-medium status-out-of-stock">
-                                            Out of Stock
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-times-circle me-1"></i>Out of Stock
                                         </span>
                                     <% } else if (product.quantity < 10) { %>
-                                        <span class="px-3 py-1 rounded-full text-sm font-medium status-low-stock">
-                                            Low Stock
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>Low Stock
                                         </span>
                                     <% } else { %>
-                                        <span class="px-3 py-1 rounded-full text-sm font-medium status-available">
-                                            Available
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check-circle me-1"></i>Available
                                         </span>
                                     <% } %>
                                 </td>
-                                <td class="py-3 px-2">
-                                    <div class="flex space-x-2">
-                                        <a href="/admin/edit-product/<%= product._id %>" 
-                                           class="text-blue-600 hover:text-blue-800 hover:underline flex items-center">
-                                            <i class="fas fa-edit mr-1"></i> Edit
+                                <td>
+                                    <div class="btn-group-vertical btn-group-sm" role="group">
+                                        <a href="/admin/edit-product/<%= product._id %>"
+                                           class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-edit me-1"></i> Edit
                                         </a>
-                                        <form action="/admin/toggle-block-product/<%= product._id %>" method="POST" class="inline">
-                                            <button type="submit" 
-                                                    class="<%= product.isBlocked ? 'text-green-600 hover:text-green-800' : 'text-red-600 hover:text-red-800' %> hover:underline flex items-center">
-                                                <i class="fas <%= product.isBlocked ? 'fa-unlock' : 'fa-ban' %> mr-1"></i>
+                                        <form action="/admin/toggle-block-product/<%= product._id %>" method="POST" class="d-inline">
+                                            <button type="submit"
+                                                    class="btn btn-outline-<%= product.isBlocked ? 'success' : 'warning' %> btn-sm w-100"
+                                                    onclick="return confirm('Are you sure you want to <%= product.isBlocked ? 'unblock' : 'block' %> this product?')">
+                                                <i class="fas <%= product.isBlocked ? 'fa-unlock' : 'fa-ban' %> me-1"></i>
                                                 <%= product.isBlocked ? 'Unblock' : 'Block' %>
                                             </button>
                                         </form>
-                                        <form action="/admin/delete-product/<%= product._id %>" method="POST" class="inline">
-                                            <button type="submit" 
+                                        <form action="/admin/delete-product/<%= product._id %>" method="POST" class="d-inline">
+                                            <button type="submit"
                                                     onclick="return confirm('Are you sure you want to delete <%= product.productName %>?')"
-                                                    class="text-red-600 hover:text-red-800 hover:underline flex items-center">
-                                                <i class="fas fa-trash mr-1"></i> Delete
+                                                    class="btn btn-outline-danger btn-sm w-100">
+                                                <i class="fas fa-trash me-1"></i> Delete
                                             </button>
                                         </form>
                                     </div>
@@ -168,105 +135,96 @@
                         <% }); %>
                     <% } else { %>
                         <tr>
-                            <td colspan="7" class="py-4 text-center text-gray-500">No products found</td>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                <i class="fas fa-box fa-2x mb-2"></i>
+                                <div>No products found</div>
+                            </td>
                         </tr>
                     <% } %>
                 </tbody>
             </table>
         </div>
+    </div>
+</div>
 
-        <!-- Pagination -->
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div class="text-sm text-gray-600">
-                Showing <span class="font-medium"><%= (pagination.currentPage - 1) * pagination.limit + 1 %></span> to 
-                <span class="font-medium"><%= Math.min(pagination.currentPage * pagination.limit, pagination.totalItems) %></span> of 
-                <span class="font-medium"><%= pagination.totalItems %></span> products
-            </div>
-            
-            <div class="flex items-center gap-1">
+<!-- Pagination -->
+<% if (pagination.totalPages > 1) { %>
+    <div class="d-flex justify-content-between align-items-center mt-4">
+        <div class="text-muted">
+            Showing <strong><%= (pagination.currentPage - 1) * pagination.limit + 1 %></strong> to
+            <strong><%= Math.min(pagination.currentPage * pagination.limit, pagination.totalItems) %></strong> of
+            <strong><%= pagination.totalItems %></strong> products
+        </div>
+
+        <nav aria-label="Products pagination">
+            <ul class="pagination mb-0">
                 <!-- First Page -->
-                <% if (pagination.currentPage > 1) { %>
-                    <a href="?page=1<%= pagination.searchParams %>" 
-                       class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
+                <li class="page-item <%= pagination.currentPage === 1 ? 'disabled' : '' %>">
+                    <a class="page-link" href="?page=1<%= pagination.searchParams %>" aria-label="First">
                         <i class="fas fa-angle-double-left"></i>
                     </a>
-                <% } else { %>
-                    <span class="px-3 py-1 rounded border text-gray-400 cursor-not-allowed">
-                        <i class="fas fa-angle-double-left"></i>
-                    </span>
-                <% } %>
-                
+                </li>
+
                 <!-- Previous Page -->
-                <% if (pagination.currentPage > 1) { %>
-                    <a href="?page=<%= pagination.currentPage - 1 %><%= pagination.searchParams %>" 
-                       class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
+                <li class="page-item <%= pagination.currentPage === 1 ? 'disabled' : '' %>">
+                    <a class="page-link" href="?page=<%= pagination.currentPage - 1 %><%= pagination.searchParams %>" aria-label="Previous">
                         <i class="fas fa-angle-left"></i>
                     </a>
-                <% } else { %>
-                    <span class="px-3 py-1 rounded border text-gray-400 cursor-not-allowed">
-                        <i class="fas fa-angle-left"></i>
-                    </span>
-                <% } %>
-                
+                </li>
+
                 <!-- Page Numbers -->
                 <% const maxVisiblePages = 5;
                    let startPage = Math.max(1, pagination.currentPage - Math.floor(maxVisiblePages / 2));
                    let endPage = Math.min(pagination.totalPages, startPage + maxVisiblePages - 1);
-                   
+
                    if (endPage - startPage + 1 < maxVisiblePages) {
                        startPage = Math.max(1, endPage - maxVisiblePages + 1);
                    }
-                   
+
                    for (let i = startPage; i <= endPage; i++) { %>
-                    <% if (i === pagination.currentPage) { %>
-                        <span class="px-3 py-1 rounded border bg-blue-600 text-white font-medium">
-                            <%= i %>
-                        </span>
-                    <% } else { %>
-                        <a href="?page=<%= i %><%= pagination.searchParams %>" 
-                           class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
-                            <%= i %>
-                        </a>
-                    <% } %>
+                    <li class="page-item <%= i === pagination.currentPage ? 'active' : '' %>">
+                        <a class="page-link" href="?page=<%= i %><%= pagination.searchParams %>"><%= i %></a>
+                    </li>
                 <% } %>
-                
+
                 <!-- Next Page -->
-                <% if (pagination.currentPage < pagination.totalPages) { %>
-                    <a href="?page=<%= pagination.currentPage + 1 %><%= pagination.searchParams %>" 
-                       class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
+                <li class="page-item <%= pagination.currentPage === pagination.totalPages ? 'disabled' : '' %>">
+                    <a class="page-link" href="?page=<%= pagination.currentPage + 1 %><%= pagination.searchParams %>" aria-label="Next">
                         <i class="fas fa-angle-right"></i>
                     </a>
-                <% } else { %>
-                    <span class="px-3 py-1 rounded border text-gray-400 cursor-not-allowed">
-                        <i class="fas fa-angle-right"></i>
-                    </span>
-                <% } %>
-                
+                </li>
+
                 <!-- Last Page -->
-                <% if (pagination.currentPage < pagination.totalPages) { %>
-                    <a href="?page=<%= pagination.totalPages %><%= pagination.searchParams %>" 
-                       class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
+                <li class="page-item <%= pagination.currentPage === pagination.totalPages ? 'disabled' : '' %>">
+                    <a class="page-link" href="?page=<%= pagination.totalPages %><%= pagination.searchParams %>" aria-label="Last">
                         <i class="fas fa-angle-double-right"></i>
                     </a>
-                <% } else { %>
-                    <span class="px-3 py-1 rounded border text-gray-400 cursor-not-allowed">
-                        <i class="fas fa-angle-double-right"></i>
-                    </span>
-                <% } %>
-            </div>
-            
-            <!-- Items per page selector -->
-            <div class="flex items-center gap-2">
-                <span class="text-sm text-gray-600">Items per page:</span>
-                <select onchange="window.location.href='?page=1&limit=' + this.value + '<%= pagination.searchParamsWithoutLimit %>'" 
-                        class="border rounded px-2 py-1 text-sm">
-                    <option value="10" <%= pagination.limit == 10 ? 'selected' : '' %>>10</option>
-                    <option value="25" <%= pagination.limit == 25 ? 'selected' : '' %>>25</option>
-                    <option value="50" <%= pagination.limit == 50 ? 'selected' : '' %>>50</option>
-                    <option value="100" <%= pagination.limit == 100 ? 'selected' : '' %>>100</option>
-                </select>
-            </div>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Items per page selector -->
+        <div class="d-flex align-items-center">
+            <span class="text-muted me-2">Items per page:</span>
+            <select onchange="window.location.href='?page=1&limit=' + this.value + '<%= pagination.searchParamsWithoutLimit %>'"
+                    class="form-select form-select-sm" style="width: auto;">
+                <option value="10" <%= pagination.limit == 10 ? 'selected' : '' %>>10</option>
+                <option value="25" <%= pagination.limit == 25 ? 'selected' : '' %>>25</option>
+                <option value="50" <%= pagination.limit == 50 ? 'selected' : '' %>>50</option>
+                <option value="100" <%= pagination.limit == 100 ? 'selected' : '' %>>100</option>
+            </select>
         </div>
     </div>
-</body>
-</html>
+<% } %>
+
+<script>
+function exportProducts() {
+    Swal.fire({
+        icon: 'info',
+        title: 'Export Feature',
+        text: 'Export functionality will be implemented soon!'
+    });
+}
+</script>
+
+<%- include("partials/footer") %>
