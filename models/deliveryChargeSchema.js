@@ -5,7 +5,6 @@ const deliveryChargeSchema = new Schema({
   location: {
     type: String,
     required: true,
-    unique: true,
     trim: true
   },
   state: {
@@ -15,7 +14,7 @@ const deliveryChargeSchema = new Schema({
   },
   cityType: {
     type: String,
-    enum: ['major', 'minor'],
+    enum: ['major', 'minor', 'tier1', 'tier2', 'tier3', 'tier4'],
     default: 'minor',
     required: true
   },
@@ -23,6 +22,14 @@ const deliveryChargeSchema = new Schema({
     type: Number,
     required: true,
     min: 0
+  },
+  description: {
+    type: String,
+    default: ''
+  },
+  cities: {
+    type: [String],
+    default: []
   },
   isActive: {
     type: Boolean,
@@ -42,6 +49,14 @@ const deliveryChargeSchema = new Schema({
 deliveryChargeSchema.pre('save', function(next) {
   this.updatedAt = Date.now();
   next();
+});
+
+// Create compound index for tier-based charges
+deliveryChargeSchema.index({ cityType: 1 }, {
+  unique: true,
+  partialFilterExpression: {
+    cityType: { $in: ['tier1', 'tier2', 'tier3', 'tier4'] }
+  }
 });
 
 const DeliveryCharge = mongoose.model('DeliveryCharge', deliveryChargeSchema);

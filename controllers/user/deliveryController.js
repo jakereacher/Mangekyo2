@@ -23,8 +23,11 @@ exports.calculateDeliveryCharge = async (req, res) => {
     let shipping = shippingInfo.charge;
     let deliveryDescription = shippingInfo.description;
 
+    // Convert city to lowercase for consistent lookup
+    const normalizedCity = city.trim().toLowerCase();
+
     // Get delivery charge based on city
-    const cityDeliveryInfo = await deliveryChargeController.getDeliveryChargeByLocation(city);
+    const cityDeliveryInfo = await deliveryChargeController.getDeliveryChargeByLocation(normalizedCity);
 
     console.log('City delivery info:', cityDeliveryInfo);
 

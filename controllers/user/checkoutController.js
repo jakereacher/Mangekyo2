@@ -120,8 +120,11 @@ exports.renderCheckoutPage = async (req, res) => {
     let deliveryDescription = shippingInfo.description;
 
     if (defaultAddress && defaultAddress.city) {
+      // Convert city to lowercase for consistent lookup
+      const normalizedCity = defaultAddress.city.trim().toLowerCase();
+
       // Get delivery charge based on city
-      const cityDeliveryInfo = await deliveryChargeController.getDeliveryChargeByLocation(defaultAddress.city);
+      const cityDeliveryInfo = await deliveryChargeController.getDeliveryChargeByLocation(normalizedCity);
 
       if (cityDeliveryInfo !== null) {
         shipping = cityDeliveryInfo.charge;
@@ -349,8 +352,11 @@ exports.placeOrder = async (req, res) => {
     let deliveryDescription = shippingInfo.description;
 
     if (selectedAddress && selectedAddress.city) {
+      // Convert city to lowercase for consistent lookup
+      const normalizedCity = selectedAddress.city.trim().toLowerCase();
+
       // Get delivery charge based on city
-      const cityDeliveryInfo = await deliveryChargeController.getDeliveryChargeByLocation(selectedAddress.city);
+      const cityDeliveryInfo = await deliveryChargeController.getDeliveryChargeByLocation(normalizedCity);
 
       if (cityDeliveryInfo !== null) {
         shipping = cityDeliveryInfo.charge;

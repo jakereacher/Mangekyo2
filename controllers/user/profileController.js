@@ -440,6 +440,11 @@ exports.handleAddress = async (req, res) => {
           addressData.isDefault = true;
         }
 
+        // Convert city name to lowercase for consistent storage
+        if (addressData.city) {
+          addressData.city = addressData.city.trim().toLowerCase();
+        }
+
         updatedUser = await User.findByIdAndUpdate(
           userId,
           { $push: { address: addressData } },
@@ -453,6 +458,11 @@ exports.handleAddress = async (req, res) => {
             success: false,
             message: 'Address ID is required for update'
           });
+        }
+
+        // Convert city name to lowercase for consistent storage
+        if (addressData.city) {
+          addressData.city = addressData.city.trim().toLowerCase();
         }
 
         const updateObj = {};

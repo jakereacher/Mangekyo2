@@ -6,19 +6,140 @@
 const DeliveryCharge = require('../../models/deliveryChargeSchema');
 const StatusCodes = require('../../utils/httpStatusCodes');
 
-// Get all delivery charges
+// Get all delivery charges (show tier-based charges with city management)
 exports.getAllDeliveryCharges = async (req, res) => {
   try {
-    const deliveryCharges = await DeliveryCharge.find().sort({ state: 1, location: 1 });
+    console.log('Fetching delivery charges...'); // Debug log
+
+    // Get tier-based delivery charges from database or use defaults
+    let tierCharges = await DeliveryCharge.find({ cityType: { $in: ['tier1', 'tier2', 'tier3', 'tier4'] } }).sort({ cityType: 1 });
+
+    console.log('Found tier charges:', tierCharges.length); // Debug log
+
+    // If no tier charges exist, create defaults
+    if (tierCharges.length === 0) {
+      console.log('Creating default tier charges...'); // Debug log
+
+      const defaultTierCharges = [
+        {
+          location: 'Tier 1 Cities',
+          state: 'All States',
+          cityType: 'tier1',
+          charge: 40,
+          isActive: true,
+          description: 'Major Metropolitan Cities',
+          cities: ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 'Ahmedabad', 'Pune', 'Surat']
+        },
+        {
+          location: 'Tier 2 Cities',
+          state: 'All States',
+          cityType: 'tier2',
+          charge: 60,
+          isActive: true,
+          description: 'Emerging Metropolitan Cities',
+          cities: ['Jaipur', 'Lucknow', 'Kanpur', 'Nagpur', 'Visakhapatnam', 'Indore', 'Thane', 'Bhopal', 'Patna', 'Vadodara', 'Ghaziabad', 'Ludhiana', 'Agra', 'Nashik', 'Faridabad']
+        },
+        {
+          location: 'Tier 3 Cities',
+          state: 'All States',
+          cityType: 'tier3',
+          charge: 80,
+          isActive: true,
+          description: 'Other Key Cities',
+          cities: ['Meerut', 'Rajkot', 'Varanasi', 'Kochi', 'Chandigarh', 'Mysuru', 'Gurgaon', 'Noida', 'Coimbatore', 'Madurai', 'Jalandhar', 'Durgapur']
+        },
+        {
+          location: 'Tier 4 Cities',
+          state: 'All States',
+          cityType: 'tier4',
+          charge: 100,
+          isActive: true,
+          description: 'Small Towns & Villages',
+          cities: ['All other cities, towns and villages not listed in above tiers']
+        }
+      ];
+
+      try {
+        // Create default tier charges in database
+        tierCharges = await DeliveryCharge.insertMany(defaultTierCharges);
+        console.log('Default tier charges created successfully'); // Debug log
+      } catch (insertError) {
+        console.error('Error creating default tier charges:', insertError);
+        // If insertion fails, use the default data for display
+        tierCharges = defaultTierCharges.map((charge, index) => ({
+          ...charge,
+          _id: `temp_${index}` // Temporary ID for display
+        }));
+      }
+    }
+
+    // Format for frontend
+    const formattedTierCharges = tierCharges.map(charge => ({
+      _id: charge._id,
+      location: charge.location,
+      state: charge.state,
+      cityType: charge.cityType,
+      charge: charge.charge,
+      isActive: charge.isActive,
+      description: charge.description,
+      cities: Array.isArray(charge.cities) ? charge.cities : (charge.cities ? charge.cities.split(', ').map(city => city.trim()) : [])
+    }));
+
+    console.log('Formatted tier charges:', formattedTierCharges); // Debug log
 
     res.render('admin/admin-delivery-charges', {
-      deliveryCharges,
+      deliveryCharges: formattedTierCharges,
       activePage: 'delivery-charges'
     });
   } catch (error) {
     console.error('Error fetching delivery charges:', error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).render('admin/admin-error', {
-      message: 'Failed to fetch delivery charges',
+
+    // Fallback: provide default data if database fails
+    const fallbackTierCharges = [
+      {
+        _id: 'fallback_tier1',
+        location: 'Tier 1 Cities',
+        state: 'All States',
+        cityType: 'tier1',
+        charge: 40,
+        isActive: true,
+        description: 'Major Metropolitan Cities',
+        cities: ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 'Ahmedabad', 'Pune', 'Surat']
+      },
+      {
+        _id: 'fallback_tier2',
+        location: 'Tier 2 Cities',
+        state: 'All States',
+        cityType: 'tier2',
+        charge: 60,
+        isActive: true,
+        description: 'Emerging Metropolitan Cities',
+        cities: ['Jaipur', 'Lucknow', 'Kanpur', 'Nagpur', 'Visakhapatnam', 'Indore', 'Thane', 'Bhopal', 'Patna', 'Vadodara', 'Ghaziabad', 'Ludhiana', 'Agra', 'Nashik', 'Faridabad']
+      },
+      {
+        _id: 'fallback_tier3',
+        location: 'Tier 3 Cities',
+        state: 'All States',
+        cityType: 'tier3',
+        charge: 80,
+        isActive: true,
+        description: 'Other Key Cities',
+        cities: ['Meerut', 'Rajkot', 'Varanasi', 'Kochi', 'Chandigarh', 'Mysuru', 'Gurgaon', 'Noida', 'Coimbatore', 'Madurai', 'Jalandhar', 'Durgapur']
+      },
+      {
+        _id: 'fallback_tier4',
+        location: 'Tier 4 Cities',
+        state: 'All States',
+        cityType: 'tier4',
+        charge: 100,
+        isActive: true,
+        description: 'Small Towns & Villages',
+        cities: ['All other cities, towns and villages not listed in above tiers']
+      }
+    ];
+
+    res.render('admin/admin-delivery-charges', {
+      deliveryCharges: fallbackTierCharges,
       activePage: 'delivery-charges'
     });
   }
@@ -76,21 +197,37 @@ exports.addDeliveryCharge = async (req, res) => {
   }
 };
 
-// Update a delivery charge
+// Update a delivery charge with city management and validations
 exports.updateDeliveryCharge = async (req, res) => {
   try {
     const { id } = req.params;
-    const { location, state, charge, isActive, cityType } = req.body;
+    const { charge, isActive, cities } = req.body;
 
-    // Validate input
-    if (!location || !state || !charge) {
+    console.log('Update request received:', { id, charge, isActive, cities }); // Debug log
+
+    // Validate charge amount
+    if (!charge || isNaN(charge) || parseFloat(charge) <= 0) {
+      console.log('Invalid charge amount:', charge); // Debug log
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
-        message: 'All fields are required'
+        message: 'Please enter a valid charge amount (numbers only, greater than 0)'
       });
     }
 
-    // Check if delivery charge exists
+    // Validate cities if provided
+    if (cities && Array.isArray(cities)) {
+      for (const city of cities) {
+        // Check if city name contains only letters, spaces, and common punctuation
+        if (!/^[a-zA-Z\s\-'\.]+$/.test(city.trim())) {
+          return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: `Invalid city name: "${city}". City names should contain only letters, spaces, hyphens, and apostrophes.`
+          });
+        }
+      }
+    }
+
+    // Find the delivery charge to update
     const deliveryCharge = await DeliveryCharge.findById(id);
     if (!deliveryCharge) {
       return res.status(StatusCodes.NOT_FOUND).json({
@@ -99,21 +236,50 @@ exports.updateDeliveryCharge = async (req, res) => {
       });
     }
 
-    // Determine if it's a major city if cityType not provided
-    if (!cityType) {
-      const majorCities = ['Mumbai', 'Delhi', 'Bangalore', 'Kochi', 'Chennai', 'Hyderabad', 'Kolkata', 'Pune', 'Ahmedabad', 'Jaipur'];
-      const isMajorCity = majorCities.some(city =>
-        location.toLowerCase().includes(city.toLowerCase())
-      );
-      deliveryCharge.cityType = isMajorCity ? 'major' : 'minor';
-    } else {
-      deliveryCharge.cityType = cityType;
+    // Get all other tier charges to validate uniqueness
+    const otherTierCharges = await DeliveryCharge.find({
+      _id: { $ne: id },
+      cityType: { $in: ['tier1', 'tier2', 'tier3', 'tier4'] }
+    });
+
+    // Validate that charge amounts are different across tiers
+    const newCharge = parseFloat(charge);
+    for (const otherCharge of otherTierCharges) {
+      if (Math.abs(otherCharge.charge - newCharge) < 0.01) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          success: false,
+          message: `Charge amount ₹${newCharge} is already used by another tier. Each tier must have a different charge amount.`
+        });
+      }
+    }
+
+    // Validate city uniqueness across tiers
+    if (cities && Array.isArray(cities)) {
+      const cleanCities = cities.map(city => city.trim().toLowerCase()).filter(city => city.length > 0);
+
+      for (const otherCharge of otherTierCharges) {
+        const otherCities = Array.isArray(otherCharge.cities) ? otherCharge.cities : [];
+
+        for (const city of cleanCities) {
+          const cityExists = otherCities.some(otherCity =>
+            otherCity.toLowerCase().trim() === city.toLowerCase().trim()
+          );
+
+          if (cityExists) {
+            return res.status(StatusCodes.BAD_REQUEST).json({
+              success: false,
+              message: `City "${city}" is already assigned to another tier. Each city can only belong to one tier.`
+            });
+          }
+        }
+      }
+
+      // Update cities (store in lowercase)
+      deliveryCharge.cities = cleanCities;
     }
 
     // Update delivery charge
-    deliveryCharge.location = location;
-    deliveryCharge.state = state;
-    deliveryCharge.charge = parseFloat(charge);
+    deliveryCharge.charge = newCharge;
     deliveryCharge.isActive = isActive === 'true' || isActive === true;
     deliveryCharge.updatedAt = Date.now();
 
@@ -121,8 +287,14 @@ exports.updateDeliveryCharge = async (req, res) => {
 
     res.status(StatusCodes.OK).json({
       success: true,
-      message: 'Delivery charge updated successfully',
-      deliveryCharge
+      message: `${deliveryCharge.location} updated successfully`,
+      deliveryCharge: {
+        _id: deliveryCharge._id,
+        location: deliveryCharge.location,
+        charge: deliveryCharge.charge,
+        isActive: deliveryCharge.isActive,
+        cities: deliveryCharge.cities
+      }
     });
   } catch (error) {
     console.error('Error updating delivery charge:', error);

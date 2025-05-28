@@ -1,13 +1,93 @@
-<%- include('../partials/admin-header.ejs') %>
+<%- include("../../views/admin/partials/header", { activePage: 'delivery-charges' }) %>
+
+<style>
+    .cities-container .badge {
+        font-size: 0.8em;
+        max-width: 150px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .cities-management {
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        padding: 1rem;
+        background-color: #f8f9fa;
+    }
+
+    #citiesContainer .badge {
+        position: relative;
+        padding-right: 2rem;
+    }
+
+    #citiesContainer .btn-close {
+        position: absolute;
+        right: 0.5rem;
+        top: 50%;
+        transform: translateY(-50%);
+        padding: 0;
+        width: 0.8rem;
+        height: 0.8rem;
+    }
+
+    .form-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+
+    .alert-info {
+        border-left: 4px solid #0dcaf0;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(0, 0, 0, 0.075);
+    }
+
+    .badge.fs-6 {
+        font-size: 0.9rem !important;
+    }
+</style>
+
+            <!-- Main Content -->
+            <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <nav class="navbar navbar-expand-lg navbar-light bg-light">
+                    <div class="container-fluid">
+                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                            <span class="navbar-toggler-icon"></span>
+                        </button>
+                        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                            <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-bell"></i>
+                                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                            3
+                                        </span>
+                                    </a>
+                                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                                        <li><a class="dropdown-item" href="#">New order received</a></li>
+                                        <li><a class="dropdown-item" href="#">New customer registered</a></li>
+                                        <li><a class="dropdown-item" href="#">Inventory alert</a></li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </nav>
+
+                <div class="main-content">
+                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                        <h1 class="h2">Delivery Charges Management</h1>
+                        <div class="btn-toolbar mb-2 mb-md-0">
+                            <div class="btn-group me-2">
+                                <span class="badge bg-info">Tier-based Delivery Charges</span>
+                            </div>
+                        </div>
+                    </div>
 
 <div class="container-fluid">
-    <!-- Page Heading -->
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">Delivery Charges</h1>
-        <button class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm" data-toggle="modal" data-target="#addDeliveryChargeModal">
-            <i class="fas fa-plus fa-sm text-white-50"></i> Add New Delivery Charge
-        </button>
-    </div>
+
 
     <!-- Content Row -->
     <div class="row">
@@ -18,12 +98,12 @@
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-bordered" id="deliveryChargesTable" width="100%" cellspacing="0">
-                            <thead>
+                        <table class="table table-bordered table-hover" id="deliveryChargesTable" width="100%" cellspacing="0">
+                            <thead class="table-dark">
                                 <tr>
-                                    <th>Location</th>
-                                    <th>State</th>
-                                    <th>City Type</th>
+                                    <th>Tier</th>
+                                    <th>Description</th>
+                                    <th>Cities Included</th>
                                     <th>Charge (₹)</th>
                                     <th>Status</th>
                                     <th>Actions</th>
@@ -33,67 +113,76 @@
                                 <% if (deliveryCharges && deliveryCharges.length > 0) { %>
                                     <% deliveryCharges.forEach(charge => { %>
                                         <tr>
-                                            <td><%= charge.location %></td>
-                                            <td><%= charge.state %></td>
                                             <td>
                                                 <%
                                                 let badgeClass = 'secondary';
-                                                let cityTypeText = 'Unknown';
+                                                let tierText = 'Unknown';
 
                                                 if (charge.cityType === 'tier1') {
                                                     badgeClass = 'primary';
-                                                    cityTypeText = 'Tier 1';
+                                                    tierText = 'Tier 1';
                                                 } else if (charge.cityType === 'tier2') {
                                                     badgeClass = 'info';
-                                                    cityTypeText = 'Tier 2';
+                                                    tierText = 'Tier 2';
                                                 } else if (charge.cityType === 'tier3') {
                                                     badgeClass = 'success';
-                                                    cityTypeText = 'Tier 3';
+                                                    tierText = 'Tier 3';
                                                 } else if (charge.cityType === 'tier4') {
-                                                    badgeClass = 'secondary';
-                                                    cityTypeText = 'Tier 4';
-                                                } else if (charge.cityType === 'major') {
-                                                    // For backward compatibility
-                                                    badgeClass = 'primary';
-                                                    cityTypeText = 'Major City';
-                                                } else if (charge.cityType === 'minor') {
-                                                    // For backward compatibility
-                                                    badgeClass = 'secondary';
-                                                    cityTypeText = 'Minor City';
+                                                    badgeClass = 'warning';
+                                                    tierText = 'Tier 4';
                                                 }
                                                 %>
-                                                <span class="badge badge-<%= badgeClass %>">
-                                                    <%= cityTypeText %>
+                                                <span class="badge bg-<%= badgeClass %> fs-6">
+                                                    <%= tierText %>
                                                 </span>
-                                                <% if (charge.charge) { %>
-                                                    <small class="d-block mt-1">₹<%= charge.charge.toFixed(2) %></small>
-                                                <% } %>
                                             </td>
-                                            <td>₹<%= charge.charge.toFixed(2) %></td>
                                             <td>
-                                                <span class="badge badge-<%= charge.isActive ? 'success' : 'danger' %>">
+                                                <strong><%= charge.location %></strong>
+                                                <br>
+                                                <small class="text-muted"><%= charge.description %></small>
+                                            </td>
+                                            <td>
+                                                <div class="cities-container">
+                                                    <% if (Array.isArray(charge.cities)) { %>
+                                                        <% charge.cities.slice(0, 3).forEach(city => { %>
+                                                            <span class="badge bg-light text-dark me-1 mb-1"><%= city %></span>
+                                                        <% }); %>
+                                                        <% if (charge.cities.length > 3) { %>
+                                                            <span class="badge bg-secondary">+<%= charge.cities.length - 3 %> more</span>
+                                                        <% } %>
+                                                    <% } else { %>
+                                                        <small class="text-muted"><%= charge.cities %></small>
+                                                    <% } %>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="h5 text-success">₹<%= charge.charge.toFixed(2) %></span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-<%= charge.isActive ? 'success' : 'danger' %>">
                                                     <%= charge.isActive ? 'Active' : 'Inactive' %>
                                                 </span>
                                             </td>
                                             <td>
-                                                <button class="btn btn-sm btn-primary edit-charge-btn"
+                                                <button class="btn btn-sm btn-outline-primary edit-charge-btn"
                                                         data-id="<%= charge._id %>"
                                                         data-location="<%= charge.location %>"
-                                                        data-state="<%= charge.state %>"
+                                                        data-description="<%= charge.description %>"
                                                         data-city-type="<%= charge.cityType %>"
                                                         data-charge="<%= charge.charge %>"
-                                                        data-is-active="<%= charge.isActive %>">
+                                                        data-is-active="<%= charge.isActive %>"
+                                                        data-cities="<%= Array.isArray(charge.cities) ? JSON.stringify(charge.cities) : charge.cities %>"
+                                                        title="Edit delivery charge">
                                                     <i class="fas fa-edit"></i> Edit
-                                                </button>
-                                                <button class="btn btn-sm btn-danger delete-charge-btn" data-id="<%= charge._id %>">
-                                                    <i class="fas fa-trash"></i> Delete
                                                 </button>
                                             </td>
                                         </tr>
                                     <% }); %>
                                 <% } else { %>
                                     <tr>
-                                        <td colspan="6" class="text-center">No delivery charges found. Add one to get started.</td>
+                                        <td colspan="6" class="text-center text-muted">
+                                            <i class="fas fa-info-circle"></i> No delivery charges configured.
+                                        </td>
                                     </tr>
                                 <% } %>
                             </tbody>
@@ -105,107 +194,94 @@
     </div>
 </div>
 
-<!-- Add Delivery Charge Modal -->
-<div class="modal fade" id="addDeliveryChargeModal" tabindex="-1" role="dialog" aria-labelledby="addDeliveryChargeModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addDeliveryChargeModalLabel">Add New Delivery Charge</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form id="addDeliveryChargeForm">
-                    <div class="form-group">
-                        <label for="location">Location (City)</label>
-                        <input type="text" class="form-control" id="location" name="location" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="state">State</label>
-                        <input type="text" class="form-control" id="state" name="state" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="cityType">City Type</label>
-                        <select class="form-control" id="cityType" name="cityType">
-                            <option value="tier1">Tier 1 - Major Metropolitan City (₹40)</option>
-                            <option value="tier2">Tier 2 - Emerging Metropolitan City (₹60)</option>
-                            <option value="tier3">Tier 3 - Other Key City (₹80)</option>
-                            <option value="tier4">Tier 4 - Small Town/Village (₹100)</option>
-                        </select>
-                        <small class="form-text text-muted">
-                            <strong>Tier 1:</strong> Mumbai, Delhi, Bangalore, Hyderabad, Chennai, Kolkata, Ahmedabad, Pune, Surat<br>
-                            <strong>Tier 2:</strong> Jaipur, Lucknow, Kanpur, Nagpur, Visakhapatnam, Indore, Thane, Bhopal, Patna, etc.<br>
-                            <strong>Tier 3:</strong> Meerut, Rajkot, Varanasi, Kochi, Chandigarh, Mysuru, Gurgaon, etc.<br>
-                            <strong>Tier 4:</strong> All other smaller cities, towns and villages
-                        </small>
-                    </div>
-                    <div class="form-group">
-                        <label for="charge">Delivery Charge (₹)</label>
-                        <input type="number" class="form-control" id="charge" name="charge" min="0" step="0.01" required>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="saveDeliveryChargeBtn">Save</button>
-            </div>
-        </div>
-    </div>
-</div>
+
 
 <!-- Edit Delivery Charge Modal -->
 <div class="modal fade" id="editDeliveryChargeModal" tabindex="-1" role="dialog" aria-labelledby="editDeliveryChargeModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="editDeliveryChargeModalLabel">Edit Delivery Charge</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="editDeliveryChargeModalLabel">
+                    <i class="fas fa-edit me-2"></i>Edit Delivery Charge
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
                 <form id="editDeliveryChargeForm">
                     <input type="hidden" id="editChargeId" name="id">
-                    <div class="form-group">
-                        <label for="editLocation">Location (City)</label>
-                        <input type="text" class="form-control" id="editLocation" name="location" required>
+
+                    <!-- Tier Information (Read-only) -->
+                    <div class="alert alert-info">
+                        <h6 id="editTierTitle" class="mb-2"></h6>
+                        <p id="editTierDescription" class="mb-0 small"></p>
                     </div>
-                    <div class="form-group">
-                        <label for="editState">State</label>
-                        <input type="text" class="form-control" id="editState" name="state" required>
+
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="form-group mb-3">
+                                <label for="editCharge" class="form-label">
+                                    <i class="fas fa-rupee-sign me-1"></i>Delivery Charge (₹)
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    <input type="number" class="form-control" id="editCharge" name="charge"
+                                           min="0" step="0.01" required placeholder="Enter charge amount">
+                                </div>
+                                <div class="form-text">Set the delivery charge for this tier (must be different from other tiers)</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group mb-3">
+                                <label for="editIsActive" class="form-label">
+                                    <i class="fas fa-toggle-on me-1"></i>Status
+                                </label>
+                                <select class="form-select" id="editIsActive" name="isActive">
+                                    <option value="true">Active</option>
+                                    <option value="false">Inactive</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="editCityType">City Type</label>
-                        <select class="form-control" id="editCityType" name="cityType">
-                            <option value="tier1">Tier 1 - Major Metropolitan City (₹40)</option>
-                            <option value="tier2">Tier 2 - Emerging Metropolitan City (₹60)</option>
-                            <option value="tier3">Tier 3 - Other Key City (₹80)</option>
-                            <option value="tier4">Tier 4 - Small Town/Village (₹100)</option>
-                        </select>
-                        <small class="form-text text-muted">
-                            <strong>Tier 1:</strong> Mumbai, Delhi, Bangalore, Hyderabad, Chennai, Kolkata, Ahmedabad, Pune, Surat<br>
-                            <strong>Tier 2:</strong> Jaipur, Lucknow, Kanpur, Nagpur, Visakhapatnam, Indore, Thane, Bhopal, Patna, etc.<br>
-                            <strong>Tier 3:</strong> Meerut, Rajkot, Varanasi, Kochi, Chandigarh, Mysuru, Gurgaon, etc.<br>
-                            <strong>Tier 4:</strong> All other smaller cities, towns and villages
-                        </small>
-                    </div>
-                    <div class="form-group">
-                        <label for="editCharge">Delivery Charge (₹)</label>
-                        <input type="number" class="form-control" id="editCharge" name="charge" min="0" step="0.01" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="editIsActive">Status</label>
-                        <select class="form-control" id="editIsActive" name="isActive">
-                            <option value="true">Active</option>
-                            <option value="false">Inactive</option>
-                        </select>
+
+                    <!-- City Management Section -->
+                    <div class="form-group mb-3">
+                        <label class="form-label">
+                            <i class="fas fa-city me-1"></i>Cities in this Tier
+                        </label>
+                        <div class="cities-management">
+                            <!-- Current Cities Display -->
+                            <div id="currentCities" class="mb-3">
+                                <div class="d-flex flex-wrap gap-2" id="citiesContainer">
+                                    <!-- Cities will be populated by JavaScript -->
+                                </div>
+                            </div>
+
+                            <!-- Add New City -->
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="newCityInput"
+                                       placeholder="Enter city name (letters only)"
+                                       pattern="[a-zA-Z\s\-'\.]+">
+                                <button class="btn btn-outline-success" type="button" id="addCityBtn">
+                                    <i class="fas fa-plus"></i> Add City
+                                </button>
+                            </div>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                City names should contain only letters, spaces, hyphens, and apostrophes. Each city can only belong to one tier.
+                            </div>
+                        </div>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="updateDeliveryChargeBtn">Update</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-primary" id="updateDeliveryChargeBtn">
+                    <i class="fas fa-save me-1"></i>Update Charge
+                </button>
             </div>
         </div>
     </div>
@@ -213,93 +289,211 @@
 
 <script>
     $(document).ready(function() {
-        // Initialize DataTable
-        $('#deliveryChargesTable').DataTable();
+        console.log('Document ready - delivery charges page loaded'); // Debug log
 
-        // Add Delivery Charge
-        $('#saveDeliveryChargeBtn').click(function() {
-            const location = $('#location').val();
-            const state = $('#state').val();
-            const cityType = $('#cityType').val();
-            const charge = $('#charge').val();
+        // Test if jQuery and other libraries are loaded
+        console.log('jQuery loaded:', typeof $ !== 'undefined');
+        console.log('SweetAlert loaded:', typeof Swal !== 'undefined');
+        console.log('DataTable loaded:', typeof $.fn.DataTable !== 'undefined');
 
-            if (!location || !state || !charge) {
-                Swal.fire('Error', 'All fields are required', 'error');
+        // Initialize DataTable with custom options
+        try {
+            $('#deliveryChargesTable').DataTable({
+                "pageLength": 10,
+                "ordering": true,
+                "searching": true,
+                "info": true,
+                "responsive": true,
+                "language": {
+                    "emptyTable": "No delivery charges configured",
+                    "zeroRecords": "No matching delivery charges found"
+                }
+            });
+            console.log('DataTable initialized successfully');
+        } catch (e) {
+            console.error('Error initializing DataTable:', e);
+        }
+
+        // Global variable to store current cities
+        let currentCities = [];
+
+        // Edit Delivery Charge - Open Modal
+        $(document).on('click', '.edit-charge-btn', function(e) {
+            e.preventDefault();
+            console.log('Edit button clicked'); // Debug log
+
+            const $button = $(this);
+            const id = $button.data('id');
+            const location = $button.data('location');
+            const description = $button.data('description');
+            const cityType = $button.data('city-type');
+            const charge = $button.data('charge');
+            const isActive = $button.data('is-active');
+            const citiesData = $button.data('cities');
+
+            console.log('Button data:', { id, location, description, cityType, charge, isActive, citiesData }); // Debug log
+
+            // Validate required data
+            if (!id) {
+                console.error('No ID found for edit button');
+                Swal.fire('Error', 'Unable to edit this delivery charge. Please refresh the page and try again.', 'error');
                 return;
             }
 
-            $.ajax({
-                url: '/admin/delivery-charges',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({
-                    location,
-                    state,
-                    cityType,
-                    charge
-                }),
-                success: function(response) {
-                    if (response.success) {
-                        Swal.fire('Success', response.message, 'success').then(() => {
-                            location.reload();
-                        });
-                    } else {
-                        Swal.fire('Error', response.message, 'error');
-                    }
-                },
-                error: function(xhr) {
-                    Swal.fire('Error', xhr.responseJSON?.message || 'Failed to add delivery charge', 'error');
+            // Set form values
+            $('#editChargeId').val(id);
+            $('#editCharge').val(charge || '');
+            $('#editIsActive').val(isActive ? isActive.toString() : 'true');
+
+            // Set tier information
+            $('#editTierTitle').text(location || 'Unknown Tier');
+            $('#editTierDescription').text(description || 'No description available');
+
+            // Parse and set cities
+            try {
+                if (typeof citiesData === 'string' && citiesData.startsWith('[')) {
+                    currentCities = JSON.parse(citiesData);
+                } else if (Array.isArray(citiesData)) {
+                    currentCities = citiesData;
+                } else if (typeof citiesData === 'string' && citiesData.length > 0) {
+                    currentCities = citiesData.split(',').map(city => city.trim()).filter(city => city.length > 0);
+                } else {
+                    currentCities = [];
                 }
-            });
+            } catch (e) {
+                console.error('Error parsing cities data:', e);
+                currentCities = [];
+            }
+
+            console.log('Parsed cities:', currentCities); // Debug log
+
+            // Display current cities
+            displayCities();
+
+            // Clear new city input
+            $('#newCityInput').val('');
+
+            // Show modal using jQuery (most compatible)
+            $('#editDeliveryChargeModal').modal('show');
+            console.log('Modal shown'); // Debug log
         });
 
-        // Edit Delivery Charge - Open Modal
-        $('.edit-charge-btn').click(function() {
-            const id = $(this).data('id');
-            const location = $(this).data('location');
-            const state = $(this).data('state');
-            const cityType = $(this).data('city-type');
-            const charge = $(this).data('charge');
-            const isActive = $(this).data('is-active');
+        // Display cities function
+        function displayCities() {
+            const container = $('#citiesContainer');
+            container.empty();
 
-            $('#editChargeId').val(id);
-            $('#editLocation').val(location);
-            $('#editState').val(state);
-            $('#editCityType').val(cityType);
-            $('#editCharge').val(charge);
-            $('#editIsActive').val(isActive.toString());
+            currentCities.forEach((city, index) => {
+                // Capitalize first letter of each word for display
+                const displayCity = city.split(' ').map(word =>
+                    word.charAt(0).toUpperCase() + word.slice(1)
+                ).join(' ');
 
-            $('#editDeliveryChargeModal').modal('show');
+                const cityBadge = $(`
+                    <span class="badge bg-primary me-2 mb-2 d-inline-flex align-items-center">
+                        ${displayCity}
+                        <button type="button" class="btn-close btn-close-white ms-2"
+                                onclick="removeCity(${index})"
+                                aria-label="Remove ${displayCity}"
+                                style="font-size: 0.7em;">
+                        </button>
+                    </span>
+                `);
+                container.append(cityBadge);
+            });
+
+            if (currentCities.length === 0) {
+                container.append('<span class="text-muted">No cities added yet</span>');
+            }
+        }
+
+        // Remove city function
+        window.removeCity = function(index) {
+            currentCities.splice(index, 1);
+            displayCities();
+        };
+
+        // Add city functionality
+        $('#addCityBtn').click(function() {
+            const originalCity = $('#newCityInput').val().trim();
+            const newCity = originalCity.toLowerCase();
+
+            if (!originalCity) {
+                Swal.fire('Error', 'Please enter a city name', 'error');
+                return;
+            }
+
+            // Validate city name (only letters, spaces, hyphens, apostrophes)
+            if (!/^[a-zA-Z\s\-'\.]+$/.test(originalCity)) {
+                Swal.fire('Error', 'City names should contain only letters, spaces, hyphens, and apostrophes', 'error');
+                return;
+            }
+
+            // Check if city already exists in current tier
+            if (currentCities.some(city => city.toLowerCase() === newCity.toLowerCase())) {
+                Swal.fire('Error', 'This city is already in this tier', 'error');
+                return;
+            }
+
+            // Add city to current list (stored in lowercase)
+            currentCities.push(newCity);
+            displayCities();
+            $('#newCityInput').val('');
+        });
+
+        // Allow adding city with Enter key
+        $('#newCityInput').keypress(function(e) {
+            if (e.which === 13) {
+                $('#addCityBtn').click();
+            }
         });
 
         // Update Delivery Charge
         $('#updateDeliveryChargeBtn').click(function() {
             const id = $('#editChargeId').val();
-            const location = $('#editLocation').val();
-            const state = $('#editState').val();
-            const cityType = $('#editCityType').val();
             const charge = $('#editCharge').val();
             const isActive = $('#editIsActive').val();
 
-            if (!location || !state || !charge) {
-                Swal.fire('Error', 'All fields are required', 'error');
+            console.log('Update button clicked:', { id, charge, isActive, currentCities }); // Debug log
+
+            // Validate charge amount
+            if (!charge || isNaN(charge) || parseFloat(charge) <= 0) {
+                Swal.fire('Error', 'Please enter a valid charge amount (numbers only, greater than 0)', 'error');
                 return;
             }
+
+            // Validate cities
+            if (currentCities.length === 0) {
+                Swal.fire('Error', 'Please add at least one city to this tier', 'error');
+                return;
+            }
+
+            // Show loading state
+            $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Updating...');
+
+            const requestData = {
+                charge: parseFloat(charge),
+                isActive: isActive,
+                cities: currentCities
+            };
+
+            console.log('Sending request:', requestData); // Debug log
 
             $.ajax({
                 url: `/admin/delivery-charges/${id}`,
                 type: 'PUT',
                 contentType: 'application/json',
-                data: JSON.stringify({
-                    location,
-                    state,
-                    cityType,
-                    charge,
-                    isActive
-                }),
+                data: JSON.stringify(requestData),
                 success: function(response) {
+                    console.log('Update response:', response); // Debug log
                     if (response.success) {
-                        Swal.fire('Success', response.message, 'success').then(() => {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Updated!',
+                            text: response.message,
+                            timer: 2000,
+                            showConfirmButton: false
+                        }).then(() => {
                             location.reload();
                         });
                     } else {
@@ -307,45 +501,22 @@
                     }
                 },
                 error: function(xhr) {
-                    Swal.fire('Error', xhr.responseJSON?.message || 'Failed to update delivery charge', 'error');
+                    console.error('Update error:', xhr); // Debug log
+                    const errorMessage = xhr.responseJSON?.message || 'Failed to update delivery charge';
+                    Swal.fire('Error', errorMessage, 'error');
+                },
+                complete: function() {
+                    // Reset button state
+                    $('#updateDeliveryChargeBtn').prop('disabled', false).html('<i class="fas fa-save me-1"></i>Update Charge');
                 }
             });
         });
 
-        // Delete Delivery Charge
-        $('.delete-charge-btn').click(function() {
-            const id = $(this).data('id');
 
-            Swal.fire({
-                title: 'Are you sure?',
-                text: 'This delivery charge will be permanently deleted.',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Yes, delete it!'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        url: `/admin/delivery-charges/${id}`,
-                        type: 'DELETE',
-                        success: function(response) {
-                            if (response.success) {
-                                Swal.fire('Deleted!', response.message, 'success').then(() => {
-                                    location.reload();
-                                });
-                            } else {
-                                Swal.fire('Error', response.message, 'error');
-                            }
-                        },
-                        error: function(xhr) {
-                            Swal.fire('Error', xhr.responseJSON?.message || 'Failed to delete delivery charge', 'error');
-                        }
-                    });
-                }
-            });
-        });
     });
 </script>
 
-<%- include('../partials/admin-footer.ejs') %>
+                </div>
+            </div>
+
+<%- include("../../views/admin/partials/footer") %>

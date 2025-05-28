@@ -1027,8 +1027,8 @@ function formatCurrency(amount) {
                             maintainAspectRatio: false,
                             plugins: {
                                 legend: {
-                                    display: type === 'bar' || type === 'line',
-                                    position: 'top'
+                                    display: true,
+                                    position: type === 'pie' || type === 'doughnut' ? 'bottom' : 'top'
                                 },
                                 tooltip: {
                                     backgroundColor: 'rgba(0, 0, 0, 0.8)',
@@ -1104,7 +1104,7 @@ function formatCurrency(amount) {
                             }
                         };
                     } else {
-                        config.options.plugins.legend.position = 'bottom';
+                        // For pie and doughnut charts, configure legend labels
                         config.options.plugins.legend.labels = {
                             padding: 20,
                             usePointStyle: true
