@@ -583,6 +583,384 @@ exports.renderSalesReport = async (req, res) => {
   }
 };
 
+// AJAX endpoint for sales report orders pagination
+exports.getSalesReportOrders = async (req, res) => {
+  try {
+    const adminId = req.session.admin;
+    if (!adminId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Get filter parameters
+    const filter = req.query.filter || 'custom';
+    const paymentMethod = req.query.paymentMethod || 'all';
+    const orderStatus = req.query.orderStatus || 'all';
+    const sortBy = req.query.sortBy || 'date';
+    const sortOrder = req.query.sortOrder || 'desc';
+
+    // Pagination parameters for orders
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // Date filtering logic
+    let startDate, endDate;
+    if (filter === 'today') {
+      startDate = moment().startOf('day').toDate();
+      endDate = moment().endOf('day').toDate();
+    } else if (filter === 'this_week') {
+      startDate = moment().startOf('week').toDate();
+      endDate = moment().endOf('week').toDate();
+    } else if (filter === 'this_month') {
+      startDate = moment().startOf('month').toDate();
+      endDate = moment().endOf('month').toDate();
+    } else if (filter === 'this_year') {
+      startDate = moment().startOf('year').toDate();
+      endDate = moment().endOf('year').toDate();
+    } else if (filter === 'all_time') {
+      startDate = new Date(0);
+      endDate = moment().endOf('day').toDate();
+    } else if (filter === 'custom') {
+      try {
+        startDate = req.query.startDate
+          ? moment(req.query.startDate).startOf('day').toDate()
+          : moment().subtract(30, 'days').startOf('day').toDate();
+        endDate = req.query.endDate
+          ? moment(req.query.endDate).endOf('day').toDate()
+          : moment().endOf('day').toDate();
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+          throw new Error("Invalid date format");
+        }
+      } catch (error) {
+        startDate = moment().subtract(30, 'days').startOf('day').toDate();
+        endDate = moment().endOf('day').toDate();
+      }
+    }
+
+    // Build match stage for aggregation
+    let matchStage = { orderDate: { $gte: startDate, $lte: endDate } };
+    if (paymentMethod !== 'all') {
+      matchStage.paymentMethod = paymentMethod;
+    }
+
+    // Orders pipeline
+    const ordersPipeline = [
+      { $match: matchStage },
+      { $unwind: "$orderedItems" },
+      ...(orderStatus !== 'all' ? [{ $match: { "orderedItems.status": orderStatus } }] : []),
+      {
+        $lookup: {
+          from: "users",
+          localField: "userId",
+          foreignField: "_id",
+          as: "userDetails"
+        }
+      },
+      { $unwind: { path: "$userDetails", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "products",
+          localField: "orderedItems.product",
+          foreignField: "_id",
+          as: "productDetails"
+        }
+      },
+      { $unwind: { path: "$productDetails", preserveNullAndEmptyArrays: true } },
+      {
+        $group: {
+          _id: "$_id",
+          orderId: { $first: "$orderId" },
+          orderNumber: { $first: "$orderNumber" },
+          orderDate: { $first: "$orderDate" },
+          userId: { $first: "$userId" },
+          userName: { $first: "$userDetails.name" },
+          userEmail: { $first: "$userDetails.email" },
+          paymentMethod: { $first: "$paymentMethod" },
+          paymentStatus: { $first: "$paymentStatus" },
+          finalAmount: { $first: "$finalAmount" },
+          discount: { $first: "$discount" },
+          shippingCharge: { $first: "$shippingCharge" },
+          items: { $push: "$orderedItems" },
+          products: { $push: "$productDetails" },
+          itemCount: { $sum: 1 }
+        }
+      },
+      {
+        $addFields: {
+          totalDiscount: {
+            $sum: {
+              $map: {
+                input: { $zip: { inputs: ["$items", "$products"] } },
+                as: "item",
+                in: {
+                  $multiply: [
+                    { $arrayElemAt: ["$$item.0.quantity", 0] },
+                    {
+                      $subtract: [
+                        { $ifNull: [{ $arrayElemAt: ["$$item.1.price", 0] }, 0] },
+                        { $ifNull: [{ $arrayElemAt: ["$$item.0.price", 0] }, 0] }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      { $sort: sortBy === 'amount' ? { finalAmount: sortOrder === 'asc' ? 1 : -1 } : { orderDate: sortOrder === 'asc' ? 1 : -1 } },
+      { $skip: skip },
+      { $limit: limit }
+    ];
+
+    // Count pipeline
+    const countPipeline = [
+      { $match: matchStage },
+      ...(orderStatus !== 'all' ? [
+        { $unwind: "$orderedItems" },
+        { $match: { "orderedItems.status": orderStatus } },
+        { $group: { _id: "$_id" } }
+      ] : []),
+      { $count: "total" }
+    ];
+
+    // Execute aggregations
+    const [orders, countResult] = await Promise.all([
+      Order.aggregate(ordersPipeline),
+      Order.aggregate(countPipeline)
+    ]);
+
+    // Format orders for display
+    const formattedOrders = orders.map(order => {
+      const orderedItems = order.items.map((item, index) => {
+        const productDetail = order.products[index];
+        return {
+          ...item,
+          productName: productDetail ? productDetail.productName : 'Unknown Product',
+          productImage: productDetail && productDetail.productImage ? productDetail.productImage[0] : null,
+          originalPrice: productDetail ? productDetail.price : 0,
+          discountPerItem: productDetail ? (productDetail.price - item.price) : 0,
+          offerPercentage: productDetail ? productDetail.offerPercentage || 0 : 0
+        };
+      });
+
+      const displayOrderId = order.orderNumber || `MK${order._id.toString().slice(-5)}`;
+
+      return {
+        _id: order._id,
+        orderId: order.orderId || order._id.toString().slice(-5).toUpperCase(),
+        orderNumber: order.orderNumber,
+        displayOrderId: displayOrderId,
+        orderDate: order.orderDate,
+        formattedOrderDate: moment(order.orderDate).format('YYYY-MM-DD HH:mm'),
+        customerName: order.userName || 'Unknown',
+        customerEmail: order.userEmail || 'Unknown',
+        paymentMethod: order.paymentMethod,
+        paymentStatus: order.paymentStatus,
+        finalAmount: order.finalAmount,
+        discount: order.discount || 0,
+        shippingCharge: order.shippingCharge || 0,
+        totalDiscount: order.totalDiscount || 0,
+        discountPercentage: order.finalAmount > 0 ? Math.round((order.totalDiscount / (order.finalAmount + order.totalDiscount)) * 100) : 0,
+        itemCount: order.itemCount || 0,
+        orderedItems: orderedItems
+      };
+    });
+
+    // Get pagination data
+    const totalItems = countResult.length > 0 ? countResult[0].total : 0;
+    const totalPages = Math.ceil(totalItems / limit);
+
+    res.json({
+      success: true,
+      orders: formattedOrders,
+      pagination: {
+        page,
+        limit,
+        totalItems,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      }
+    });
+  } catch (error) {
+    console.error("Sales report orders error:", error);
+    res.status(500).json({ error: 'Failed to fetch orders' });
+  }
+};
+
+// AJAX endpoint for sales report products pagination
+exports.getSalesReportProducts = async (req, res) => {
+  try {
+    const adminId = req.session.admin;
+    if (!adminId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Get filter parameters
+    const filter = req.query.filter || 'custom';
+    const paymentMethod = req.query.paymentMethod || 'all';
+    const orderStatus = req.query.orderStatus || 'all';
+    const productsSortBy = req.query.productsSortBy || 'revenue';
+    const productsSortOrder = req.query.productsSortOrder || 'desc';
+
+    // Pagination parameters for products
+    const productsPage = Math.max(parseInt(req.query.page) || 1, 1);
+    const productsLimit = parseInt(req.query.limit) || 5;
+    const productsSkip = (productsPage - 1) * productsLimit;
+
+    // Date filtering logic
+    let startDate, endDate;
+    if (filter === 'today') {
+      startDate = moment().startOf('day').toDate();
+      endDate = moment().endOf('day').toDate();
+    } else if (filter === 'this_week') {
+      startDate = moment().startOf('week').toDate();
+      endDate = moment().endOf('week').toDate();
+    } else if (filter === 'this_month') {
+      startDate = moment().startOf('month').toDate();
+      endDate = moment().endOf('month').toDate();
+    } else if (filter === 'this_year') {
+      startDate = moment().startOf('year').toDate();
+      endDate = moment().endOf('year').toDate();
+    } else if (filter === 'all_time') {
+      startDate = new Date(0);
+      endDate = moment().endOf('day').toDate();
+    } else if (filter === 'custom') {
+      try {
+        startDate = req.query.startDate
+          ? moment(req.query.startDate).startOf('day').toDate()
+          : moment().subtract(30, 'days').startOf('day').toDate();
+        endDate = req.query.endDate
+          ? moment(req.query.endDate).endOf('day').toDate()
+          : moment().endOf('day').toDate();
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+          throw new Error("Invalid date format");
+        }
+      } catch (error) {
+        startDate = moment().subtract(30, 'days').startOf('day').toDate();
+        endDate = moment().endOf('day').toDate();
+      }
+    }
+
+    // Build match stage for aggregation
+    let matchStage = { orderDate: { $gte: startDate, $lte: endDate } };
+    if (paymentMethod !== 'all') {
+      matchStage.paymentMethod = paymentMethod;
+    }
+
+    // Top products pipeline
+    const topProductsPipeline = [
+      { $match: matchStage },
+      { $unwind: "$orderedItems" },
+      ...(orderStatus !== 'all' ? [{ $match: { "orderedItems.status": orderStatus } }] : []),
+      {
+        $lookup: {
+          from: "products",
+          localField: "orderedItems.product",
+          foreignField: "_id",
+          as: "productDetails"
+        }
+      },
+      { $unwind: { path: "$productDetails", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "categories",
+          localField: "productDetails.category",
+          foreignField: "_id",
+          as: "categoryDetails"
+        }
+      },
+      { $unwind: { path: "$categoryDetails", preserveNullAndEmptyArrays: true } },
+      {
+        $group: {
+          _id: "$orderedItems.product",
+          name: { $first: "$productDetails.productName" },
+          image: { $first: { $arrayElemAt: ["$productDetails.productImage", 0] } },
+          brand: { $first: "$productDetails.brand" },
+          category: { $first: "$categoryDetails.name" },
+          quantity: { $sum: "$orderedItems.quantity" },
+          revenue: { $sum: { $multiply: ["$orderedItems.price", "$orderedItems.quantity"] } },
+          originalPrice: { $first: "$productDetails.price" },
+          offerPercentage: { $first: "$productDetails.offerPercentage" },
+          offerType: { $first: "$productDetails.offerType" },
+          discountPercentage: { $first: "$orderedItems.discountPercentage" },
+          originalRevenue: {
+            $sum: {
+              $multiply: [
+                "$orderedItems.quantity",
+                { $ifNull: ["$productDetails.price", 0] }
+              ]
+            }
+          },
+          totalDiscount: {
+            $sum: {
+              $multiply: [
+                "$orderedItems.quantity",
+                {
+                  $subtract: [
+                    { $ifNull: ["$productDetails.price", 0] },
+                    { $ifNull: ["$orderedItems.price", 0] }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        $sort: {
+          [productsSortBy === 'quantity' ? 'quantity' :
+           productsSortBy === 'discount' ? 'totalDiscount' :
+           productsSortBy === 'original' ? 'originalRevenue' : 'revenue']:
+           productsSortOrder === 'asc' ? 1 : -1
+        }
+      },
+      { $skip: productsSkip },
+      { $limit: productsLimit }
+    ];
+
+    // Top products count pipeline for pagination
+    const topProductsCountPipeline = [
+      { $match: matchStage },
+      { $unwind: "$orderedItems" },
+      ...(orderStatus !== 'all' ? [{ $match: { "orderedItems.status": orderStatus } }] : []),
+      {
+        $group: {
+          _id: "$orderedItems.product"
+        }
+      },
+      { $count: "total" }
+    ];
+
+    // Execute aggregations
+    const [topProducts, topProductsCountResult] = await Promise.all([
+      Order.aggregate(topProductsPipeline),
+      Order.aggregate(topProductsCountPipeline)
+    ]);
+
+    // Get pagination data for top products
+    const totalProductItems = topProductsCountResult.length > 0 ? topProductsCountResult[0].total : 0;
+    const totalProductPages = Math.ceil(totalProductItems / productsLimit);
+
+    res.json({
+      success: true,
+      products: topProducts,
+      pagination: {
+        page: productsPage,
+        limit: productsLimit,
+        totalItems: totalProductItems,
+        totalPages: totalProductPages,
+        hasNextPage: productsPage < totalProductPages,
+        hasPrevPage: productsPage > 1
+      }
+    });
+  } catch (error) {
+    console.error("Sales report products error:", error);
+    res.status(500).json({ error: 'Failed to fetch products' });
+  }
+};
+
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
@@ -1791,6 +2169,8 @@ exports.downloadSalesReportPDF = async (req, res) => {
 // Export all functions
 module.exports = {
   renderSalesReport: exports.renderSalesReport,
+  getSalesReportOrders: exports.getSalesReportOrders,
+  getSalesReportProducts: exports.getSalesReportProducts,
   downloadSalesReport: exports.downloadSalesReport,
   downloadSalesReportPDF: exports.downloadSalesReportPDF
 };

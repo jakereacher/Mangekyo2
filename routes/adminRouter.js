@@ -18,6 +18,8 @@ const { userAuth, adminAuth } = require("../middlewares/auth");
 router.get("/login", adminController.loadLogin);
 router.post("/login", adminController.login);
 router.get("/dashboard", adminAuth, adminController.loadDashboard);
+router.get("/dashboard/orders", adminAuth, adminController.getDashboardOrders);
+router.get("/dashboard/products", adminAuth, adminController.getDashboardProducts);
 router.get("/logout", adminController.logout);
 
 router.get("/users", adminAuth, customerController.customerInfo);
@@ -86,6 +88,8 @@ router.post("/category-offers/update/:id", adminAuth, offerController.updateCate
 
 // Sales Report routes
 router.get("/sales-report", adminAuth, reportController.renderSalesReport);
+router.get("/sales-report/orders", adminAuth, reportController.getSalesReportOrders);
+router.get("/sales-report/products", adminAuth, reportController.getSalesReportProducts);
 router.get("/sales-report/download", adminAuth, reportController.downloadSalesReport);
 router.get("/sales-report/download-pdf", adminAuth, reportController.downloadSalesReportPDF);
 

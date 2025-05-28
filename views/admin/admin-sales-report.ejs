@@ -151,15 +151,49 @@
                                     <div class="row no-gutters align-items-center">
                                         <div class="col mr-2">
                                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                                Original Amount</div>
-                                            <% const originalAmount = summary.totalOriginalValue || totalSales; %>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800">₹<%= originalAmount.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %></div>
+                                                Gross Revenue</div>
+                                            <%
+                                            // Use the calculated gross from backend, but ensure it's at least equal to net
+                                            const netAmount = totalSales || 0;
+                                            const backendGross = summary.totalOriginalValue || 0;
+                                            const backendDiscount = summary.totalDiscount || 0;
+
+                                            // If backend gross is less than net, calculate gross as net + discount
+                                            const grossRevenue = backendGross >= netAmount ? backendGross : (netAmount + Math.abs(backendDiscount));
+                                            %>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800">₹<%= grossRevenue.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %></div>
                                             <div class="text-xs text-muted mt-1">
-                                                <i class="fas fa-tag"></i> Before discounts
+                                                <i class="fas fa-tag"></i> Before discounts & offers
                                             </div>
                                         </div>
                                         <div class="col-auto">
                                             <i class="fas fa-rupee-sign fa-2x text-primary"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-xl-4 col-md-6 mb-4">
+                            <div class="card border-left-warning shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                                Total Discounts</div>
+                                            <%
+                                            // Calculate discount as the difference between gross and net
+                                            const totalDiscounts = grossRevenue - netAmount;
+                                            %>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800">₹<%= totalDiscounts.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %></div>
+                                            <% if (grossRevenue > 0) { %>
+                                                <div class="text-xs text-warning mt-1">
+                                                    <i class="fas fa-percentage"></i> <%= Math.round((totalDiscounts / grossRevenue) * 100) %>% of gross revenue
+                                                </div>
+                                            <% } %>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-tags fa-2x text-warning"></i>
                                         </div>
                                     </div>
                                 </div>
@@ -172,37 +206,14 @@
                                     <div class="row no-gutters align-items-center">
                                         <div class="col mr-2">
                                             <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                                Total Revenue</div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800">₹<%= totalSales.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %></div>
-                                            <% if (summary.totalOriginalValue && summary.totalOriginalValue > totalSales) { %>
-                                                <div class="text-xs text-success mt-1">
-                                                    <i class="fas fa-tags"></i> Saved: ₹<%= (summary.totalOriginalValue - totalSales).toLocaleString('en-IN', { maximumFractionDigits: 2 }) %>
-                                                </div>
-                                            <% } %>
-                                        </div>
-                                        <div class="col-auto">
-                                            <i class="fas fa-chart-line fa-2x text-success"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-xl-4 col-md-6 mb-4">
-                            <div class="card border-left-danger shadow h-100 py-2">
-                                <div class="card-body">
-                                    <div class="row no-gutters align-items-center">
-                                        <div class="col mr-2">
-                                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
-                                                Net Sales</div>
-                                            <% const summaryNetSales = totalSales; %>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800">₹<%= summaryNetSales.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %></div>
+                                                Net Revenue</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800">₹<%= netAmount.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %></div>
                                             <div class="text-xs text-muted mt-1">
-                                                <i class="fas fa-hand-holding-usd"></i> Revenue after discounts
+                                                <i class="fas fa-hand-holding-usd"></i> After discounts & offers
                                             </div>
                                         </div>
                                         <div class="col-auto">
-                                            <i class="fas fa-hand-holding-usd fa-2x text-danger"></i>
+                                            <i class="fas fa-chart-line fa-2x text-success"></i>
                                         </div>
                                     </div>
                                 </div>
@@ -236,11 +247,12 @@
                                         <div class="col mr-2">
                                             <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
                                                 Average Order Value</div>
+                                            <% const avgOrderValue = totalOrders > 0 ? (totalSales / totalOrders) : 0; %>
                                             <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                                ₹<%= totalOrders > 0 ? (totalSales / totalOrders).toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '0.00' %>
+                                                ₹<%= avgOrderValue.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %>
                                             </div>
                                             <div class="text-xs text-muted mt-1">
-                                                <i class="fas fa-calculator"></i> Per order average
+                                                <i class="fas fa-calculator"></i> Net revenue per order
                                             </div>
                                         </div>
                                         <div class="col-auto">
@@ -286,15 +298,21 @@
                                             <td>₹<%= paymentSummary.wallet ? paymentSummary.wallet.total.toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '0.00' %></td>
                                         </tr>
                                         <tr class="table-active fw-bold">
-                                            <td>Total</td>
+                                            <td><i class="fas fa-calculator text-primary me-1"></i> Gross Total</td>
                                             <td><%= totalOrders %></td>
-                                            <td>₹<%= totalSales.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %></td>
+                                            <td>₹<%= grossRevenue.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %></td>
                                         </tr>
-                                        <% const tableNetSales = totalSales; %>
-                                        <tr class="table-info">
-                                            <td><i class="fas fa-hand-holding-usd text-danger me-1"></i> Actual Revenue</td>
-                                            <td></td>
-                                            <td>₹<%= tableNetSales.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %></td>
+                                        <% if (totalDiscounts > 0) { %>
+                                            <tr class="table-warning">
+                                                <td><i class="fas fa-tags text-warning me-1"></i> Total Discounts</td>
+                                                <td>-</td>
+                                                <td class="text-warning fw-bold">-₹<%= totalDiscounts.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %></td>
+                                            </tr>
+                                        <% } %>
+                                        <tr class="table-success">
+                                            <td><i class="fas fa-hand-holding-usd text-success me-1"></i> Net Revenue</td>
+                                            <td><%= totalOrders %></td>
+                                            <td class="text-success fw-bold">₹<%= netAmount.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %></td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -336,16 +354,19 @@
                                         <tr class="table-active fw-bold">
                                             <td>Total Savings</td>
                                             <td></td>
-                                            <td>₹<%= offerSummary && offerSummary.totalSavings ? offerSummary.totalSavings.toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '0.00' %></td>
+                                            <td>₹<%= totalDiscounts.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %></td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </div>
-                            <% if (offerSummary && offerSummary.totalSavings > 0) { %>
+                            <% if (totalDiscounts > 0 && grossRevenue > 0) { %>
                                 <div class="text-center mt-2 small text-success">
                                     <i class="fas fa-chart-line me-1"></i> Customers saved
-                                    <%= Math.round((offerSummary.totalSavings / (totalSales + offerSummary.totalSavings)) * 100) %>%
+                                    <%= Math.round((totalDiscounts / grossRevenue) * 100) %>%
                                     on their purchases
+                                </div>
+                                <div class="text-center mt-1 small text-muted">
+                                    <i class="fas fa-info-circle me-1"></i> Total savings: ₹<%= totalDiscounts.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %>
                                 </div>
                             <% } %>
                         </div>
@@ -390,7 +411,7 @@
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                <table class="table table-bordered table-hover" width="100%" cellspacing="0" id="topProductsTable">
                     <thead class="table-light">
                         <tr>
                             <th>#</th>
@@ -487,21 +508,21 @@
 
             <!-- Products Pagination -->
             <% if (productsPagination.totalPages > 1) { %>
-                <div class="d-flex justify-content-between align-items-center mt-3">
-                    <div class="text-muted small">
+                <div class="d-flex justify-content-between align-items-center mt-3" id="productsPaginationContainer">
+                    <div class="text-muted small" id="productsInfo">
                         Showing <%= ((productsPagination.page - 1) * productsPagination.limit) + 1 %> to
                         <%= Math.min(productsPagination.page * productsPagination.limit, productsPagination.totalItems) %>
                         of <%= productsPagination.totalItems %> products
                     </div>
                     <nav aria-label="Top products pagination">
-                        <ul class="pagination pagination-sm mb-0">
+                        <ul class="pagination pagination-sm mb-0" id="productsPagination">
                             <li class="page-item <%= !productsPagination.hasPrevPage ? 'disabled' : '' %>">
-                                <a class="page-link" href="?productsPage=1&page=<%= pagination.page %>&startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>&productsLimit=<%= productsPagination.limit %>&productsSortBy=<%= filters.productsSortBy %>&productsSortOrder=<%= filters.productsSortOrder %>" aria-label="First">
+                                <a class="page-link" href="#" onclick="loadSalesReportProductsPage(1); return false;" aria-label="First">
                                     <span aria-hidden="true">&laquo;&laquo;</span>
                                 </a>
                             </li>
                             <li class="page-item <%= !productsPagination.hasPrevPage ? 'disabled' : '' %>">
-                                <a class="page-link" href="?productsPage=<%= productsPagination.page - 1 %>&page=<%= pagination.page %>&startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>&productsLimit=<%= productsPagination.limit %>&productsSortBy=<%= filters.productsSortBy %>&productsSortOrder=<%= filters.productsSortOrder %>" aria-label="Previous">
+                                <a class="page-link" href="#" onclick="loadSalesReportProductsPage(<%= productsPagination.page - 1 %>); return false;" aria-label="Previous">
                                     <span aria-hidden="true">&laquo;</span>
                                 </a>
                             </li>
@@ -517,19 +538,19 @@
                             for (let i = startPage; i <= endPage; i++) {
                             %>
                                 <li class="page-item <%= i === productsPagination.page ? 'active' : '' %>">
-                                    <a class="page-link" href="?productsPage=<%= i %>&page=<%= pagination.page %>&startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>&productsLimit=<%= productsPagination.limit %>&productsSortBy=<%= filters.productsSortBy %>&productsSortOrder=<%= filters.productsSortOrder %>">
+                                    <a class="page-link" href="#" onclick="loadSalesReportProductsPage(<%= i %>); return false;">
                                         <%= i %>
                                     </a>
                                 </li>
                             <% } %>
 
                             <li class="page-item <%= !productsPagination.hasNextPage ? 'disabled' : '' %>">
-                                <a class="page-link" href="?productsPage=<%= productsPagination.page + 1 %>&page=<%= pagination.page %>&startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>&productsLimit=<%= productsPagination.limit %>&productsSortBy=<%= filters.productsSortBy %>&productsSortOrder=<%= filters.productsSortOrder %>" aria-label="Next">
+                                <a class="page-link" href="#" onclick="loadSalesReportProductsPage(<%= productsPagination.page + 1 %>); return false;" aria-label="Next">
                                     <span aria-hidden="true">&raquo;</span>
                                 </a>
                             </li>
                             <li class="page-item <%= !productsPagination.hasNextPage ? 'disabled' : '' %>">
-                                <a class="page-link" href="?productsPage=<%= productsPagination.totalPages %>&page=<%= pagination.page %>&startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>&productsLimit=<%= productsPagination.limit %>&productsSortBy=<%= filters.productsSortBy %>&productsSortOrder=<%= filters.productsSortOrder %>" aria-label="Last">
+                                <a class="page-link" href="#" onclick="loadSalesReportProductsPage(<%= productsPagination.totalPages %>); return false;" aria-label="Last">
                                     <span aria-hidden="true">&raquo;&raquo;</span>
                                 </a>
                             </li>
@@ -556,7 +577,7 @@
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                <table class="table table-bordered table-hover" width="100%" cellspacing="0" id="ordersTable">
                     <thead class="table-light">
                         <tr>
                             <th>Order ID</th>
@@ -649,49 +670,49 @@
 
             <!-- Orders Pagination -->
             <% if (pagination.totalPages > 1) { %>
-                <div class="d-flex justify-content-between align-items-center mt-3">
-                    <div class="text-muted small">
+                <div class="d-flex justify-content-between align-items-center mt-3" id="ordersPaginationContainer">
+                    <div class="text-muted small" id="ordersInfo">
                         Showing <%= ((pagination.page - 1) * pagination.limit) + 1 %> to
                         <%= Math.min(pagination.page * pagination.limit, pagination.totalItems) %>
                         of <%= pagination.totalItems %> orders
                     </div>
                     <nav aria-label="Orders pagination">
-                        <ul class="pagination pagination-sm mb-0">
+                        <ul class="pagination pagination-sm mb-0" id="ordersPagination">
                             <li class="page-item <%= !pagination.hasPrevPage ? 'disabled' : '' %>">
-                                <a class="page-link" href="?page=1&productsPage=<%= productsPagination.page %>&startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>&limit=<%= pagination.limit %>&productsSortBy=<%= filters.productsSortBy %>&productsSortOrder=<%= filters.productsSortOrder %>" aria-label="First">
+                                <a class="page-link" href="#" onclick="loadSalesReportOrdersPage(1); return false;" aria-label="First">
                                     <span aria-hidden="true">&laquo;&laquo;</span>
                                 </a>
                             </li>
                             <li class="page-item <%= !pagination.hasPrevPage ? 'disabled' : '' %>">
-                                <a class="page-link" href="?page=<%= pagination.page - 1 %>&productsPage=<%= productsPagination.page %>&startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>&limit=<%= pagination.limit %>&productsSortBy=<%= filters.productsSortBy %>&productsSortOrder=<%= filters.productsSortOrder %>" aria-label="Previous">
+                                <a class="page-link" href="#" onclick="loadSalesReportOrdersPage(<%= pagination.page - 1 %>); return false;" aria-label="Previous">
                                     <span aria-hidden="true">&laquo;</span>
                                 </a>
                             </li>
 
                             <%
-                            let startPage = Math.max(1, pagination.page - 2);
-                            let endPage = Math.min(pagination.totalPages, startPage + 4);
+                            let oStartPage = Math.max(1, pagination.page - 2);
+                            let oEndPage = Math.min(pagination.totalPages, oStartPage + 4);
 
-                            if (endPage - startPage < 4) {
-                                startPage = Math.max(1, endPage - 4);
+                            if (oEndPage - oStartPage < 4) {
+                                oStartPage = Math.max(1, oEndPage - 4);
                             }
 
-                            for (let i = startPage; i <= endPage; i++) {
+                            for (let i = oStartPage; i <= oEndPage; i++) {
                             %>
                                 <li class="page-item <%= i === pagination.page ? 'active' : '' %>">
-                                    <a class="page-link" href="?page=<%= i %>&productsPage=<%= productsPagination.page %>&startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>&limit=<%= pagination.limit %>&productsSortBy=<%= filters.productsSortBy %>&productsSortOrder=<%= filters.productsSortOrder %>">
+                                    <a class="page-link" href="#" onclick="loadSalesReportOrdersPage(<%= i %>); return false;">
                                         <%= i %>
                                     </a>
                                 </li>
                             <% } %>
 
                             <li class="page-item <%= !pagination.hasNextPage ? 'disabled' : '' %>">
-                                <a class="page-link" href="?page=<%= pagination.page + 1 %>&productsPage=<%= productsPagination.page %>&startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>&limit=<%= pagination.limit %>&productsSortBy=<%= filters.productsSortBy %>&productsSortOrder=<%= filters.productsSortOrder %>" aria-label="Next">
+                                <a class="page-link" href="#" onclick="loadSalesReportOrdersPage(<%= pagination.page + 1 %>); return false;" aria-label="Next">
                                     <span aria-hidden="true">&raquo;</span>
                                 </a>
                             </li>
                             <li class="page-item <%= !pagination.hasNextPage ? 'disabled' : '' %>">
-                                <a class="page-link" href="?page=<%= pagination.totalPages %>&productsPage=<%= productsPagination.page %>&startDate=<%= filters.startDate %>&endDate=<%= filters.endDate %>&paymentMethod=<%= filters.paymentMethod %>&orderStatus=<%= filters.orderStatus %>&limit=<%= pagination.limit %>&productsSortBy=<%= filters.productsSortBy %>&productsSortOrder=<%= filters.productsSortOrder %>" aria-label="Last">
+                                <a class="page-link" href="#" onclick="loadSalesReportOrdersPage(<%= pagination.totalPages %>); return false;" aria-label="Last">
                                     <span aria-hidden="true">&raquo;&raquo;</span>
                                 </a>
                             </li>
@@ -741,19 +762,378 @@
         return `${year}-${month}-${day}`;
     }
 
+    // Current pagination state
+    let currentOrdersPage = <%= pagination.page %>;
+    let currentProductsPage = <%= productsPagination.page %>;
+    let currentFilters = {
+        filter: '<%= filters.filter || "custom" %>',
+        startDate: '<%= filters.startDate %>',
+        endDate: '<%= filters.endDate %>',
+        paymentMethod: '<%= filters.paymentMethod %>',
+        orderStatus: '<%= filters.orderStatus %>',
+        sortBy: '<%= filters.sortBy %>',
+        sortOrder: '<%= filters.sortOrder %>',
+        productsSortBy: '<%= filters.productsSortBy %>',
+        productsSortOrder: '<%= filters.productsSortOrder %>'
+    };
+
+    // AJAX pagination functions for sales report orders
+    function loadSalesReportOrdersPage(page) {
+        if (page < 1) return;
+
+        // Show loading state
+        const tbody = document.querySelector('#ordersTable tbody');
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+
+        // Build query parameters
+        const params = new URLSearchParams({
+            page: page,
+            limit: document.getElementById('orderLimitSelect').value || 10,
+            ...currentFilters
+        });
+
+        fetch(`/admin/sales-report/orders?${params.toString()}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateSalesReportOrdersTable(data.orders);
+                    updateSalesReportOrdersPagination(data.pagination);
+                    currentOrdersPage = page;
+                } else {
+                    throw new Error(data.error || 'Failed to load orders');
+                }
+            })
+            .catch(error => {
+                console.error('Error loading orders:', error);
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center text-danger">Error loading orders</td></tr>';
+            });
+    }
+
+    // AJAX pagination functions for sales report products
+    function loadSalesReportProductsPage(page) {
+        if (page < 1) return;
+
+        // Show loading state
+        const tbody = document.querySelector('#topProductsTable tbody');
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+
+        // Build query parameters
+        const params = new URLSearchParams({
+            page: page,
+            limit: document.getElementById('productsLimitSelect').value || 5,
+            ...currentFilters
+        });
+
+        fetch(`/admin/sales-report/products?${params.toString()}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateSalesReportProductsTable(data.products, data.pagination);
+                    updateSalesReportProductsPagination(data.pagination);
+                    currentProductsPage = page;
+                } else {
+                    throw new Error(data.error || 'Failed to load products');
+                }
+            })
+            .catch(error => {
+                console.error('Error loading products:', error);
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center text-danger">Error loading products</td></tr>';
+            });
+    }
+
+    // Update orders table
+    function updateSalesReportOrdersTable(orders) {
+        const tbody = document.querySelector('#ordersTable tbody');
+        tbody.innerHTML = '';
+
+        if (orders && orders.length > 0) {
+            orders.forEach(order => {
+                const statusBadges = {};
+                order.orderedItems.forEach(item => {
+                    statusBadges[item.status] = (statusBadges[item.status] || 0) + 1;
+                });
+
+                let statusHtml = '';
+                Object.entries(statusBadges).forEach(([status, count]) => {
+                    let badgeClass = 'bg-secondary';
+                    if (status === 'Delivered') badgeClass = 'bg-success';
+                    if (status === 'Processing') badgeClass = 'bg-primary';
+                    if (status === 'Shipped') badgeClass = 'bg-info';
+                    if (status === 'Cancelled') badgeClass = 'bg-danger';
+                    if (status === 'Returned') badgeClass = 'bg-warning';
+                    statusHtml += `<span class="badge ${badgeClass} me-1">${status} (${count})</span>`;
+                });
+
+                let paymentMethodBadge = '';
+                if (order.paymentMethod === 'cod') {
+                    paymentMethodBadge = '<span class="badge bg-success">COD</span>';
+                } else if (order.paymentMethod === 'razorpay') {
+                    paymentMethodBadge = '<span class="badge bg-primary">Razorpay</span>';
+                } else if (order.paymentMethod === 'wallet') {
+                    paymentMethodBadge = '<span class="badge bg-info">Wallet</span>';
+                } else {
+                    paymentMethodBadge = `<span class="badge bg-secondary">${order.paymentMethod.toUpperCase()}</span>`;
+                }
+
+                let paymentStatusBadge = '';
+                if (order.paymentStatus === 'paid') {
+                    paymentStatusBadge = '<span class="badge bg-success">Paid</span>';
+                } else if (order.paymentStatus === 'pending') {
+                    paymentStatusBadge = '<span class="badge bg-warning">Pending</span>';
+                } else if (order.paymentStatus === 'failed') {
+                    paymentStatusBadge = '<span class="badge bg-danger">Failed</span>';
+                } else {
+                    paymentStatusBadge = `<span class="badge bg-secondary">${order.paymentStatus}</span>`;
+                }
+
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td class="align-middle"><strong>${order.orderId}</strong></td>
+                    <td class="align-middle">${order.formattedOrderDate}</td>
+                    <td class="align-middle">
+                        ${order.customerName}
+                        ${order.customerEmail ? `<div class="small text-muted">${order.customerEmail}</div>` : ''}
+                    </td>
+                    <td class="align-middle">${paymentMethodBadge}</td>
+                    <td class="align-middle">${paymentStatusBadge}</td>
+                    <td class="align-middle text-center">
+                        <span class="badge bg-secondary">${order.orderedItems.length}</span>
+                    </td>
+                    <td class="align-middle text-end fw-bold">₹${order.finalAmount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+                    <td class="align-middle">${statusHtml}</td>
+                    <td class="align-middle">
+                        <a href="/admin/orders/${order._id}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-eye"></i> View
+                        </a>
+                    </td>
+                `;
+            });
+        } else {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="9" class="text-center py-4">
+                        <div class="text-muted">
+                            <i class="fas fa-shopping-cart fa-3x mb-3"></i>
+                            <p>No orders found for the selected period</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    // Update products table
+    function updateSalesReportProductsTable(products, pagination) {
+        const tbody = document.querySelector('#topProductsTable tbody');
+        tbody.innerHTML = '';
+
+        if (products && products.length > 0) {
+            products.forEach((product, index) => {
+                const serialNumber = ((pagination.page - 1) * pagination.limit) + index + 1;
+                const unitPrice = product.revenue / product.quantity;
+                const originalAmount = product.originalPrice ? product.originalPrice * product.quantity : product.revenue;
+                const discountPercentage = originalAmount > product.revenue ? Math.round((originalAmount - product.revenue) / originalAmount * 100) : 0;
+
+                let imageHtml = '';
+                if (product.image) {
+                    imageHtml = `<img src="${product.image}" alt="${product.name}" class="img-thumbnail" style="max-width: 50px; max-height: 50px;">`;
+                } else {
+                    imageHtml = `<div class="bg-light text-center p-2 rounded"><i class="fas fa-image text-muted"></i></div>`;
+                }
+
+                let offerHtml = '';
+                if (product.offerPercentage && product.offerPercentage > 0) {
+                    const offerIcon = product.offerType === 'product' ? 'fas fa-tag' : 'fas fa-folder';
+                    const offerTitle = product.offerType === 'product' ? 'Product Offer' : 'Category Offer';
+                    offerHtml = `<span class="badge bg-success">${product.offerPercentage}% <i class="${offerIcon}" title="${offerTitle}"></i></span>`;
+                } else {
+                    offerHtml = '<span class="badge bg-secondary">No Offer</span>';
+                }
+
+                let priceHtml = '';
+                if (product.originalPrice && product.originalPrice > unitPrice) {
+                    priceHtml = `
+                        <span class="text-decoration-line-through text-muted">
+                            ₹${product.originalPrice.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                        </span>
+                        <br>
+                        <span>₹${unitPrice.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                    `;
+                } else {
+                    priceHtml = `₹${unitPrice.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+                }
+
+                let originalAmountHtml = '';
+                if (product.originalPrice && product.quantity) {
+                    originalAmountHtml = `
+                        ₹${originalAmount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                        ${originalAmount > product.revenue ? `<small class="text-success">(${discountPercentage}% off)</small>` : ''}
+                    `;
+                } else {
+                    originalAmountHtml = `₹${product.revenue.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+                }
+
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td class="align-middle">${serialNumber}</td>
+                    <td class="align-middle" style="width: 60px;">${imageHtml}</td>
+                    <td class="align-middle">
+                        <strong>${product.name}</strong>
+                        ${product.brand ? `<div class="small text-muted">${product.brand}</div>` : ''}
+                    </td>
+                    <td class="align-middle">${product.category || 'Uncategorized'}</td>
+                    <td class="align-middle text-center">
+                        <span class="badge bg-primary">${product.quantity}</span>
+                    </td>
+                    <td class="align-middle text-center">${offerHtml}</td>
+                    <td class="align-middle text-end">${priceHtml}</td>
+                    <td class="align-middle text-end fw-bold">₹${product.revenue.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+                    <td class="align-middle text-end">${originalAmountHtml}</td>
+                `;
+            });
+        } else {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="9" class="text-center py-4">
+                        <div class="text-muted">
+                            <i class="fas fa-box fa-3x mb-3"></i>
+                            <p>No products found for the selected period</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    // Update orders pagination
+    function updateSalesReportOrdersPagination(pagination) {
+        const infoElement = document.getElementById('ordersInfo');
+        const paginationElement = document.getElementById('ordersPagination');
+
+        // Update info text
+        const start = ((pagination.page - 1) * pagination.limit) + 1;
+        const end = Math.min(pagination.page * pagination.limit, pagination.totalItems);
+        infoElement.textContent = `Showing ${start} to ${end} of ${pagination.totalItems} orders`;
+
+        // Update pagination buttons
+        let paginationHTML = '';
+
+        // First and Previous buttons
+        const firstDisabled = !pagination.hasPrevPage ? 'disabled' : '';
+        const prevDisabled = !pagination.hasPrevPage ? 'disabled' : '';
+        paginationHTML += `
+            <li class="page-item ${firstDisabled}">
+                <a class="page-link" href="#" onclick="loadSalesReportOrdersPage(1); return false;" aria-label="First">
+                    <span aria-hidden="true">&laquo;&laquo;</span>
+                </a>
+            </li>
+            <li class="page-item ${prevDisabled}">
+                <a class="page-link" href="#" onclick="loadSalesReportOrdersPage(${pagination.page - 1}); return false;" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+        `;
+
+        // Page numbers
+        const startPage = Math.max(1, pagination.page - 2);
+        const endPage = Math.min(pagination.totalPages, startPage + 4);
+
+        for (let i = startPage; i <= endPage; i++) {
+            const activeClass = pagination.page === i ? 'active' : '';
+            paginationHTML += `
+                <li class="page-item ${activeClass}">
+                    <a class="page-link" href="#" onclick="loadSalesReportOrdersPage(${i}); return false;">${i}</a>
+                </li>
+            `;
+        }
+
+        // Next and Last buttons
+        const nextDisabled = !pagination.hasNextPage ? 'disabled' : '';
+        const lastDisabled = !pagination.hasNextPage ? 'disabled' : '';
+        paginationHTML += `
+            <li class="page-item ${nextDisabled}">
+                <a class="page-link" href="#" onclick="loadSalesReportOrdersPage(${pagination.page + 1}); return false;" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+            <li class="page-item ${lastDisabled}">
+                <a class="page-link" href="#" onclick="loadSalesReportOrdersPage(${pagination.totalPages}); return false;" aria-label="Last">
+                    <span aria-hidden="true">&raquo;&raquo;</span>
+                </a>
+            </li>
+        `;
+
+        paginationElement.innerHTML = paginationHTML;
+    }
+
+    // Update products pagination
+    function updateSalesReportProductsPagination(pagination) {
+        const infoElement = document.getElementById('productsInfo');
+        const paginationElement = document.getElementById('productsPagination');
+
+        // Update info text
+        const start = ((pagination.page - 1) * pagination.limit) + 1;
+        const end = Math.min(pagination.page * pagination.limit, pagination.totalItems);
+        infoElement.textContent = `Showing ${start} to ${end} of ${pagination.totalItems} products`;
+
+        // Update pagination buttons
+        let paginationHTML = '';
+
+        // First and Previous buttons
+        const firstDisabled = !pagination.hasPrevPage ? 'disabled' : '';
+        const prevDisabled = !pagination.hasPrevPage ? 'disabled' : '';
+        paginationHTML += `
+            <li class="page-item ${firstDisabled}">
+                <a class="page-link" href="#" onclick="loadSalesReportProductsPage(1); return false;" aria-label="First">
+                    <span aria-hidden="true">&laquo;&laquo;</span>
+                </a>
+            </li>
+            <li class="page-item ${prevDisabled}">
+                <a class="page-link" href="#" onclick="loadSalesReportProductsPage(${pagination.page - 1}); return false;" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+        `;
+
+        // Page numbers
+        const startPage = Math.max(1, pagination.page - 2);
+        const endPage = Math.min(pagination.totalPages, startPage + 4);
+
+        for (let i = startPage; i <= endPage; i++) {
+            const activeClass = pagination.page === i ? 'active' : '';
+            paginationHTML += `
+                <li class="page-item ${activeClass}">
+                    <a class="page-link" href="#" onclick="loadSalesReportProductsPage(${i}); return false;">${i}</a>
+                </li>
+            `;
+        }
+
+        // Next and Last buttons
+        const nextDisabled = !pagination.hasNextPage ? 'disabled' : '';
+        const lastDisabled = !pagination.hasNextPage ? 'disabled' : '';
+        paginationHTML += `
+            <li class="page-item ${nextDisabled}">
+                <a class="page-link" href="#" onclick="loadSalesReportProductsPage(${pagination.page + 1}); return false;" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+            <li class="page-item ${lastDisabled}">
+                <a class="page-link" href="#" onclick="loadSalesReportProductsPage(${pagination.totalPages}); return false;" aria-label="Last">
+                    <span aria-hidden="true">&raquo;&raquo;</span>
+                </a>
+            </li>
+        `;
+
+        paginationElement.innerHTML = paginationHTML;
+    }
+
     // Handle pagination limit changes
     document.getElementById('productsLimitSelect').addEventListener('change', function() {
-        const url = new URL(window.location.href);
-        url.searchParams.set('productsLimit', this.value);
-        url.searchParams.set('productsPage', '1'); // Reset to first page when changing limit
-        window.location.href = url.toString();
+        loadSalesReportProductsPage(1); // Load first page with new limit
     });
 
     document.getElementById('orderLimitSelect').addEventListener('change', function() {
-        const url = new URL(window.location.href);
-        url.searchParams.set('limit', this.value);
-        url.searchParams.set('page', '1'); // Reset to first page when changing limit
-        window.location.href = url.toString();
+        loadSalesReportOrdersPage(1); // Load first page with new limit
     });
 
     // Handle product sorting changes

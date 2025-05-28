@@ -481,10 +481,119 @@ const loadDashboard = async(req, res) => {
   }
 }
 
+// AJAX endpoint for dashboard orders pagination
+const getDashboardOrders = async (req, res) => {
+  try {
+    if (!req.session.admin) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const orderPage = parseInt(req.query.page) || 1;
+    const orderLimit = parseInt(req.query.limit) || 5;
+    const orderSkip = (orderPage - 1) * orderLimit;
+
+    // Get total count for pagination
+    const orderCount = await Order.countDocuments();
+    const totalOrderPages = Math.ceil(orderCount / orderLimit);
+
+    // Get recent orders with pagination
+    const recentOrders = await Order.find()
+      .populate("userId", "name email")
+      .sort({ orderDate: -1 })
+      .skip(orderSkip)
+      .limit(orderLimit)
+      .lean();
+
+    // Format orders for display
+    const formattedOrders = recentOrders.map(order => {
+      let overallStatus = "Processing";
+      if (order.orderedItems && order.orderedItems.every(item => item.status === "Delivered")) {
+        overallStatus = "Delivered";
+      } else if (order.orderedItems && order.orderedItems.every(item => item.status === "Cancelled")) {
+        overallStatus = "Cancelled";
+      } else if (order.orderedItems && order.orderedItems.some(item => item.status === "Shipped")) {
+        overallStatus = "Shipped";
+      }
+
+      return {
+        _id: order._id,
+        orderId: order.orderNumber || (order.orderId ? order.orderId.substring(0, 8) : 'N/A'),
+        customer: order.userId ? order.userId.name : "Unknown",
+        date: moment(order.orderDate).format("MMM DD, YYYY"),
+        amount: `₹${order.finalAmount.toFixed(2)}`,
+        status: overallStatus
+      };
+    });
+
+    res.json({
+      success: true,
+      orders: formattedOrders,
+      pagination: {
+        currentPage: orderPage,
+        totalPages: totalOrderPages,
+        limit: orderLimit,
+        totalItems: orderCount
+      }
+    });
+  } catch (error) {
+    console.error("Dashboard orders error:", error);
+    res.status(500).json({ error: 'Failed to fetch orders' });
+  }
+};
+
+// AJAX endpoint for dashboard products pagination
+const getDashboardProducts = async (req, res) => {
+  try {
+    if (!req.session.admin) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const productPage = parseInt(req.query.page) || 1;
+    const productLimit = parseInt(req.query.limit) || 5;
+    const productSkip = (productPage - 1) * productLimit;
+
+    // Get total count for pagination
+    const productCount = await Product.countDocuments();
+    const totalProductPages = Math.ceil(productCount / productLimit);
+
+    // Get latest products with pagination
+    const latestProducts = await Product.find()
+      .populate("category", "name")
+      .sort({ createdAt: -1 })
+      .skip(productSkip)
+      .limit(productLimit)
+      .lean();
+
+    // Format products for display
+    const formattedProducts = latestProducts.map(product => ({
+      _id: product._id,
+      productId: product._id.toString().substring(0, 8),
+      name: product.productName,
+      category: product.category ? product.category.name : "Uncategorized",
+      price: `₹${product.price.toFixed(2)}`,
+      stock: product.quantity
+    }));
+
+    res.json({
+      success: true,
+      products: formattedProducts,
+      pagination: {
+        currentPage: productPage,
+        totalPages: totalProductPages,
+        limit: productLimit,
+        totalItems: productCount
+      }
+    });
+  } catch (error) {
+    console.error("Dashboard products error:", error);
+    res.status(500).json({ error: 'Failed to fetch products' });
+  }
+};
+
 const logout = (req,res) => {
   req.session.destroy(() => res.redirect("/admin/login"));
 }
 
 const pageerror = (req,res) => res.render("admin-error");
 
-module.exports = { loadLogin, login, loadDashboard, logout, pageerror };
+module.exports = { loadLogin, login, loadDashboard, getDashboardOrders, getDashboardProducts, logout, pageerror };

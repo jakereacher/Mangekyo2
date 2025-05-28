@@ -630,7 +630,7 @@ function formatCurrency(amount) {
                         </div>
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table class="table table-striped table-hover">
+                                <table class="table table-striped table-hover" id="recentOrdersTable">
                                     <thead>
                                         <tr>
                                             <th>Order ID</th>
@@ -683,17 +683,17 @@ function formatCurrency(amount) {
 
                             <!-- Pagination for Orders -->
                             <% if (pagination && pagination.orders && pagination.orders.totalPages > 1) { %>
-                                <div class="d-flex justify-content-between align-items-center mt-3">
-                                    <div class="text-muted">
+                                <div class="d-flex justify-content-between align-items-center mt-3" id="ordersPaginationContainer">
+                                    <div class="text-muted" id="ordersInfo">
                                         Showing <%= ((pagination.orders.currentPage - 1) * pagination.orders.limit) + 1 %> to
                                         <%= Math.min(pagination.orders.currentPage * pagination.orders.limit, pagination.orders.totalItems) %>
                                         of <%= pagination.orders.totalItems %> orders
                                     </div>
                                     <nav aria-label="Orders pagination">
-                                        <ul class="pagination pagination-sm mb-0">
+                                        <ul class="pagination pagination-sm mb-0" id="ordersPagination">
                                             <!-- Previous Button -->
                                             <li class="page-item <%= pagination.orders.currentPage === 1 ? 'disabled' : '' %>">
-                                                <a class="page-link" href="?orderPage=<%= pagination.orders.currentPage - 1 %>&productPage=<%= pagination.products.currentPage %>" aria-label="Previous">
+                                                <a class="page-link" href="#" onclick="loadOrdersPage(<%= pagination.orders.currentPage - 1 %>); return false;" aria-label="Previous">
                                                     <span aria-hidden="true">&laquo;</span>
                                                 </a>
                                             </li>
@@ -710,13 +710,13 @@ function formatCurrency(amount) {
                                             for (let i = startPage; i <= endPage; i++) {
                                             %>
                                                 <li class="page-item <%= pagination.orders.currentPage === i ? 'active' : '' %>">
-                                                    <a class="page-link" href="?orderPage=<%= i %>&productPage=<%= pagination.products.currentPage %>"><%= i %></a>
+                                                    <a class="page-link" href="#" onclick="loadOrdersPage(<%= i %>); return false;"><%= i %></a>
                                                 </li>
                                             <% } %>
 
                                             <!-- Next Button -->
                                             <li class="page-item <%= pagination.orders.currentPage === pagination.orders.totalPages ? 'disabled' : '' %>">
-                                                <a class="page-link" href="?orderPage=<%= pagination.orders.currentPage + 1 %>&productPage=<%= pagination.products.currentPage %>" aria-label="Next">
+                                                <a class="page-link" href="#" onclick="loadOrdersPage(<%= pagination.orders.currentPage + 1 %>); return false;" aria-label="Next">
                                                     <span aria-hidden="true">&raquo;</span>
                                                 </a>
                                             </li>
@@ -735,7 +735,7 @@ function formatCurrency(amount) {
                         </div>
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table class="table table-striped table-hover">
+                                <table class="table table-striped table-hover" id="latestProductsTable">
                                     <thead>
                                         <tr>
                                             <th>Product ID</th>
@@ -784,17 +784,17 @@ function formatCurrency(amount) {
 
                             <!-- Pagination for Products -->
                             <% if (pagination && pagination.products && pagination.products.totalPages > 1) { %>
-                                <div class="d-flex justify-content-between align-items-center mt-3">
-                                    <div class="text-muted">
+                                <div class="d-flex justify-content-between align-items-center mt-3" id="productsPaginationContainer">
+                                    <div class="text-muted" id="productsInfo">
                                         Showing <%= ((pagination.products.currentPage - 1) * pagination.products.limit) + 1 %> to
                                         <%= Math.min(pagination.products.currentPage * pagination.products.limit, pagination.products.totalItems) %>
                                         of <%= pagination.products.totalItems %> products
                                     </div>
                                     <nav aria-label="Products pagination">
-                                        <ul class="pagination pagination-sm mb-0">
+                                        <ul class="pagination pagination-sm mb-0" id="productsPagination">
                                             <!-- Previous Button -->
                                             <li class="page-item <%= pagination.products.currentPage === 1 ? 'disabled' : '' %>">
-                                                <a class="page-link" href="?orderPage=<%= pagination.orders.currentPage %>&productPage=<%= pagination.products.currentPage - 1 %>" aria-label="Previous">
+                                                <a class="page-link" href="#" onclick="loadProductsPage(<%= pagination.products.currentPage - 1 %>); return false;" aria-label="Previous">
                                                     <span aria-hidden="true">&laquo;</span>
                                                 </a>
                                             </li>
@@ -811,13 +811,13 @@ function formatCurrency(amount) {
                                             for (let i = pStartPage; i <= pEndPage; i++) {
                                             %>
                                                 <li class="page-item <%= pagination.products.currentPage === i ? 'active' : '' %>">
-                                                    <a class="page-link" href="?orderPage=<%= pagination.orders.currentPage %>&productPage=<%= i %>"><%= i %></a>
+                                                    <a class="page-link" href="#" onclick="loadProductsPage(<%= i %>); return false;"><%= i %></a>
                                                 </li>
                                             <% } %>
 
                                             <!-- Next Button -->
                                             <li class="page-item <%= pagination.products.currentPage === pagination.products.totalPages ? 'disabled' : '' %>">
-                                                <a class="page-link" href="?orderPage=<%= pagination.orders.currentPage %>&productPage=<%= pagination.products.currentPage + 1 %>" aria-label="Next">
+                                                <a class="page-link" href="#" onclick="loadProductsPage(<%= pagination.products.currentPage + 1 %>); return false;" aria-label="Next">
                                                     <span aria-hidden="true">&raquo;</span>
                                                 </a>
                                             </li>
@@ -1349,6 +1349,214 @@ function formatCurrency(amount) {
         } else {
             table.style.display = 'none';
         }
+    }
+
+    // AJAX pagination functions
+    let currentOrdersPage = <%= pagination.orders.currentPage %>;
+    let currentProductsPage = <%= pagination.products.currentPage %>;
+
+    function loadOrdersPage(page) {
+        if (page < 1) return;
+
+        // Show loading state
+        const tbody = document.querySelector('#recentOrdersTable tbody');
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+
+        fetch(`/admin/dashboard/orders?page=${page}&limit=5`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateOrdersTable(data.orders);
+                    updateOrdersPagination(data.pagination);
+                    currentOrdersPage = page;
+                } else {
+                    throw new Error(data.error || 'Failed to load orders');
+                }
+            })
+            .catch(error => {
+                console.error('Error loading orders:', error);
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error loading orders</td></tr>';
+            });
+    }
+
+    function loadProductsPage(page) {
+        if (page < 1) return;
+
+        // Show loading state
+        const tbody = document.querySelector('#latestProductsTable tbody');
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+
+        fetch(`/admin/dashboard/products?page=${page}&limit=5`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateProductsTable(data.products);
+                    updateProductsPagination(data.pagination);
+                    currentProductsPage = page;
+                } else {
+                    throw new Error(data.error || 'Failed to load products');
+                }
+            })
+            .catch(error => {
+                console.error('Error loading products:', error);
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error loading products</td></tr>';
+            });
+    }
+
+    function updateOrdersTable(orders) {
+        const tbody = document.querySelector('#recentOrdersTable tbody');
+        tbody.innerHTML = '';
+
+        if (orders && orders.length > 0) {
+            orders.forEach(order => {
+                const statusClass = order.status === 'Delivered' ? 'success' :
+                                  order.status === 'Cancelled' ? 'danger' :
+                                  order.status === 'Shipped' ? 'info' : 'warning';
+
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>#${order.orderId}</td>
+                    <td>${order.customer}</td>
+                    <td>${order.date}</td>
+                    <td>${order.amount}</td>
+                    <td><span class="badge bg-${statusClass}">${order.status}</span></td>
+                    <td>
+                        <a href="/admin/orders/${order._id}" class="btn btn-sm btn-info">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                    </td>
+                `;
+            });
+        } else {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center">No orders found</td></tr>';
+        }
+    }
+
+    function updateProductsTable(products) {
+        const tbody = document.querySelector('#latestProductsTable tbody');
+        tbody.innerHTML = '';
+
+        if (products && products.length > 0) {
+            products.forEach(product => {
+                const stockClass = product.stock > 0 ? (product.stock < 10 ? 'text-danger' : 'text-success') : 'text-danger';
+                const stockText = product.stock > 0 ? product.stock : 'Out of Stock';
+
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>#${product.productId}</td>
+                    <td>${product.name}</td>
+                    <td>${product.category}</td>
+                    <td>${product.price}</td>
+                    <td><span class="${stockClass}">${stockText}</span></td>
+                    <td>
+                        <a href="/admin/products/${product._id}" class="btn btn-sm btn-info">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        <a href="/admin/products/edit/${product._id}" class="btn btn-sm btn-warning">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                    </td>
+                `;
+            });
+        } else {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center">No products found</td></tr>';
+        }
+    }
+
+    function updateOrdersPagination(pagination) {
+        const infoElement = document.getElementById('ordersInfo');
+        const paginationElement = document.getElementById('ordersPagination');
+
+        // Update info text
+        const start = ((pagination.currentPage - 1) * pagination.limit) + 1;
+        const end = Math.min(pagination.currentPage * pagination.limit, pagination.totalItems);
+        infoElement.textContent = `Showing ${start} to ${end} of ${pagination.totalItems} orders`;
+
+        // Update pagination buttons
+        let paginationHTML = '';
+
+        // Previous button
+        const prevDisabled = pagination.currentPage === 1 ? 'disabled' : '';
+        paginationHTML += `
+            <li class="page-item ${prevDisabled}">
+                <a class="page-link" href="#" onclick="loadOrdersPage(${pagination.currentPage - 1}); return false;" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+        `;
+
+        // Page numbers
+        const startPage = Math.max(1, pagination.currentPage - 2);
+        const endPage = Math.min(pagination.totalPages, startPage + 4);
+
+        for (let i = startPage; i <= endPage; i++) {
+            const activeClass = pagination.currentPage === i ? 'active' : '';
+            paginationHTML += `
+                <li class="page-item ${activeClass}">
+                    <a class="page-link" href="#" onclick="loadOrdersPage(${i}); return false;">${i}</a>
+                </li>
+            `;
+        }
+
+        // Next button
+        const nextDisabled = pagination.currentPage === pagination.totalPages ? 'disabled' : '';
+        paginationHTML += `
+            <li class="page-item ${nextDisabled}">
+                <a class="page-link" href="#" onclick="loadOrdersPage(${pagination.currentPage + 1}); return false;" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+        `;
+
+        paginationElement.innerHTML = paginationHTML;
+    }
+
+    function updateProductsPagination(pagination) {
+        const infoElement = document.getElementById('productsInfo');
+        const paginationElement = document.getElementById('productsPagination');
+
+        // Update info text
+        const start = ((pagination.currentPage - 1) * pagination.limit) + 1;
+        const end = Math.min(pagination.currentPage * pagination.limit, pagination.totalItems);
+        infoElement.textContent = `Showing ${start} to ${end} of ${pagination.totalItems} products`;
+
+        // Update pagination buttons
+        let paginationHTML = '';
+
+        // Previous button
+        const prevDisabled = pagination.currentPage === 1 ? 'disabled' : '';
+        paginationHTML += `
+            <li class="page-item ${prevDisabled}">
+                <a class="page-link" href="#" onclick="loadProductsPage(${pagination.currentPage - 1}); return false;" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+        `;
+
+        // Page numbers
+        const startPage = Math.max(1, pagination.currentPage - 2);
+        const endPage = Math.min(pagination.totalPages, startPage + 4);
+
+        for (let i = startPage; i <= endPage; i++) {
+            const activeClass = pagination.currentPage === i ? 'active' : '';
+            paginationHTML += `
+                <li class="page-item ${activeClass}">
+                    <a class="page-link" href="#" onclick="loadProductsPage(${i}); return false;">${i}</a>
+                </li>
+            `;
+        }
+
+        // Next button
+        const nextDisabled = pagination.currentPage === pagination.totalPages ? 'disabled' : '';
+        paginationHTML += `
+            <li class="page-item ${nextDisabled}">
+                <a class="page-link" href="#" onclick="loadProductsPage(${pagination.currentPage + 1}); return false;" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+        `;
+
+        paginationElement.innerHTML = paginationHTML;
     }
     </script>
 <%- include("../../views/admin/partials/footer", { activePage: 'dashboard' }) %>
