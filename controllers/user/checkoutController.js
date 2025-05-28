@@ -97,7 +97,9 @@ exports.renderCheckoutPage = async (req, res) => {
             discountAmount: offerResult.discountAmount,
             discountPercentage: offerResult.hasOffer ? (offerResult.discountAmount / basePrice) * 100 : 0,
             originalPrice: basePrice,
-            finalPrice: currentBestPrice
+            finalPrice: currentBestPrice,
+            offerType: offerResult.offer ? offerResult.offer.discountType : null,
+            offerValue: offerResult.offer ? offerResult.offer.discountValue : null
           }
         };
       })

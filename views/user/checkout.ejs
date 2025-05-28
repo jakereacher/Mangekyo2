@@ -290,7 +290,9 @@
                                                 <% if (item.product.hasOffer && item.product.originalPrice > item.price) { %>
                                                     Price: <span class="line-through text-gray-400">₹<%= item.product.originalPrice.toFixed(2) %></span>
                                                     <span class="text-green-600 font-medium">₹<%= item.price.toFixed(2) %></span>
-                                                    <% if (item.product.discountPercentage > 0) { %>
+                                                    <% if (item.product.offerType === 'fixed') { %>
+                                                        <span class="bg-red-600 text-white text-xs px-2 py-0.5 rounded ml-1">₹<%= item.product.discountAmount.toFixed(0) %> OFF</span>
+                                                    <% } else if (item.product.discountPercentage > 0) { %>
                                                         <span class="bg-red-600 text-white text-xs px-2 py-0.5 rounded ml-1"><%= Math.round(item.product.discountPercentage) %>% OFF</span>
                                                     <% } %>
                                                 <% } else { %>
@@ -401,7 +403,11 @@
                                             <p class="text-xs text-gray-600">
                                                 <span class="line-through text-gray-400">₹<%= item.product.originalPrice.toFixed(2) %></span>
                                                 <span class="text-green-600">₹<%= item.price.toFixed(2) %></span>
-                                                <span class="bg-red-600 text-white text-xs px-1 py-0.5 rounded ml-1"><%= Math.round(item.product.discountPercentage) %>%</span>
+                                                <% if (item.product.offerType === 'fixed') { %>
+                                                    <span class="bg-red-600 text-white text-xs px-1 py-0.5 rounded ml-1">₹<%= item.product.discountAmount.toFixed(0) %></span>
+                                                <% } else if (item.product.discountPercentage > 0) { %>
+                                                    <span class="bg-red-600 text-white text-xs px-1 py-0.5 rounded ml-1"><%= Math.round(item.product.discountPercentage) %>%</span>
+                                                <% } %>
                                             </p>
                                         <% } %>
                                     </div>
