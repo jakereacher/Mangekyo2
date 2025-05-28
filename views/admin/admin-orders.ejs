@@ -38,7 +38,7 @@
                         <% orders.forEach(order => { %>
                             <tr>
                                 <td>
-                                    <strong>#<%= order.displayOrderId || (order.orderNumber || order._id.toString().slice(-8)) %></strong>
+                                    <strong>#<%= order.displayOrderId %></strong>
                                 </td>
                                 <td>
                                     <div class="fw-medium"><%= order.customerName %></div>

@@ -54,7 +54,7 @@
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
                     <h6 class="m-0 font-weight-bold text-primary">
-                        Order #<%= order.displayOrderId || order._id %>
+                        Order #<%= order.displayOrderId %>
                         <%
                         let statusBadgeClass = 'bg-secondary';
                         if (order.status === 'Delivered') statusBadgeClass = 'bg-success';

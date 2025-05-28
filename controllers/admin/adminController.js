@@ -519,7 +519,7 @@ const getDashboardOrders = async (req, res) => {
 
       return {
         _id: order._id,
-        orderId: order.orderNumber || (order.orderId ? order.orderId.substring(0, 8) : 'N/A'),
+        orderId: order.orderNumber || `MK${order._id.toString().slice(-5)}`,
         customer: order.userId ? order.userId.name : "Unknown",
         date: moment(order.orderDate).format("MMM DD, YYYY"),
         amount: `₹${order.finalAmount.toFixed(2)}`,

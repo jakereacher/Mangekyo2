@@ -595,7 +595,7 @@
                         <% if (orders && orders.length > 0) { %>
                             <% orders.forEach(order => { %>
                                 <tr>
-                                    <td class="align-middle"><strong><%= order.orderId %></strong></td>
+                                    <td class="align-middle"><strong><%= order.displayOrderId %></strong></td>
                                     <td class="align-middle"><%= order.formattedOrderDate %></td>
                                     <td class="align-middle">
                                         <%= order.customerName %>
@@ -888,7 +888,7 @@
 
                 const row = tbody.insertRow();
                 row.innerHTML = `
-                    <td class="align-middle"><strong>${order.orderId}</strong></td>
+                    <td class="align-middle"><strong>${order.displayOrderId}</strong></td>
                     <td class="align-middle">${order.formattedOrderDate}</td>
                     <td class="align-middle">
                         ${order.customerName}

@@ -71,8 +71,8 @@ exports.getAllOrders = async (req, res) => {
       customerEmail: order.userId.email,
       formattedOrderDate: new Date(order.orderDate).toLocaleDateString(),
       finalAmount: order.finalAmount || order.totalPrice + order.shippingCharge + (order.taxAmount || 0),
-      // Display order number if available, otherwise use the first 8 characters of the ID
-      displayOrderId: order.orderNumber || order._id.toString().substring(0, 8)
+      // Use orderNumber if available, otherwise use a shortened version of the ID (5 digits)
+      displayOrderId: order.orderNumber || `MK${order._id.toString().slice(-5)}`
     }));
 
     res.render("admin-orders", {
@@ -190,8 +190,8 @@ exports.getAdminOrderDetails = async (req, res) => {
       userName: order.userId.fullName,
       paymentStatus: displayPaymentStatus,
       allItemsCancelled: allItemsCancelled,
-      // Display order number if available, otherwise use the ID
-      displayOrderId: order.orderNumber || order._id.toString()
+      // Use orderNumber if available, otherwise use a shortened version of the ID (5 digits)
+      displayOrderId: order.orderNumber || `MK${order._id.toString().slice(-5)}`
     };
 
     res.render("admin-order-details", {
@@ -310,7 +310,7 @@ exports.updateOrderItemStatus = async (req, res) => {
             user: order.userId,
             amount: refundAmount,
             type: "credit",
-            description: `Refund for cancelled item in order #${order.orderNumber || orderId.substring(0, 8)}`,
+            description: `Refund for cancelled item in order #${order.orderNumber || `MK${orderId.slice(-5)}`}`,
             status: "completed",
             orderId: orderId
           });
@@ -476,6 +476,7 @@ exports.getReturnRequests = async (req, res) => {
         if (item.status === "Return Request") {
           returnRequests.push({
             orderId: order._id,
+            displayOrderId: order.orderNumber || `MK${order._id.toString().slice(-5)}`,
             orderDate: new Date(order.orderDate).toLocaleDateString(),
             customerName: order.userId.fullName,
             customerEmail: order.userId.email,
@@ -638,7 +639,7 @@ exports.approveReturn = async (req, res) => {
         user: order.userId,
         amount: refundAmount,
         type: "credit",
-        description: `Refund for returned item in order #${orderId}`,
+        description: `Refund for returned item in order #${order.orderNumber || `MK${orderId.slice(-5)}`}`,
         status: "completed",
         orderId: orderId
       });
