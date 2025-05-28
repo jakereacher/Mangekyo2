@@ -1,426 +1,308 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Return Requests | Mangeyko</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-    <style>
-        .status-pending {
-            background-color: #fff9c4;
-            color: #f57f17;
-        }
-        .pagination-link {
-            transition: all 0.3s ease;
-        }
-        .pagination-link:hover {
-            transform: translateY(-1px);
-        }
-    </style>
-</head>
-<body class="bg-gray-50">
-    <!-- Navbar -->
-    <nav class="bg-gray-800 text-white py-4">
-        <div class="container mx-auto flex justify-between items-center px-4">
-            <a href="/admin/dashboard" class="text-lg font-bold">Admin Panel</a>
-            <ul class="flex space-x-6">
-                <li><a href="/admin/orders" class="hover:text-gray-300">Orders</a></li>
-                <li><a href="/admin/products" class="hover:text-gray-300">Products</a></li>
-                <li><a href="/admin/category" class="hover:text-gray-300">Categories</a></li>
-                <li><a href="/admin/users" class="hover:text-gray-300">Users</a></li>
-                <li><a href="/admin/return-requests" class="hover:text-gray-300 border-b-2 border-blue-500 pb-1">Return Requests</a></li>
-                <li><a href="/admin/logout" class="hover:text-gray-300">Logout</a></li>
-            </ul>
-        </div>
-    </nav>
+<%- include("partials/header", { activePage: 'returns' }) %>
 
-    <div class="container mx-auto px-4 py-8 max-w-6xl">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold flex items-center">
-                <i class="fas fa-exchange-alt mr-2"></i> Return Requests
-            </h1>
-            <a href="/admin/orders" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
-                <i class="fas fa-shopping-cart mr-2"></i> View All Orders
+<!-- Return Requests Content -->
+<div class="content-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1><i class="fas fa-exchange-alt me-2"></i>Return Requests</h1>
+            <p class="text-muted mb-0">Manage customer return requests</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/admin/orders" class="btn btn-outline-primary">
+                <i class="fas fa-shopping-cart me-1"></i> View All Orders
             </a>
         </div>
-
-        <% if (returnRequests.length === 0) { %>
-            <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-6 rounded" role="alert">
-                <p class="font-medium">No return requests found.</p>
-                <p>When customers request returns, they will appear here.</p>
-            </div>
-
-            <!-- Empty state pagination -->
-            <% if (pagination) { %>
-                <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 bg-white p-4 rounded-lg shadow-sm">
-                    <div class="text-sm text-gray-600">
-                        Showing <span class="font-medium">0</span> to
-                        <span class="font-medium">0</span> of
-                        <span class="font-medium">0</span> requests
-                    </div>
-
-                    <div class="flex items-center gap-1">
-                        <!-- Disabled pagination controls -->
-                        <span class="px-3 py-1 rounded border text-gray-400 cursor-not-allowed">
-                            <i class="fas fa-angle-double-left"></i>
-                        </span>
-                        <span class="px-3 py-1 rounded border text-gray-400 cursor-not-allowed">
-                            <i class="fas fa-angle-left"></i>
-                        </span>
-                        <span class="px-3 py-1 rounded border bg-blue-600 text-white font-medium">
-                            1
-                        </span>
-                        <span class="px-3 py-1 rounded border text-gray-400 cursor-not-allowed">
-                            <i class="fas fa-angle-right"></i>
-                        </span>
-                        <span class="px-3 py-1 rounded border text-gray-400 cursor-not-allowed">
-                            <i class="fas fa-angle-double-right"></i>
-                        </span>
-                    </div>
-
-                    <!-- Items per page selector -->
-                    <div class="flex items-center gap-2">
-                        <span class="text-sm text-gray-600">Items per page:</span>
-                        <select onchange="window.location.href='?page=1&limit=' + this.value + '<%= pagination.searchParamsWithoutLimit %>'"
-                                class="border rounded px-2 py-1 text-sm">
-                            <option value="2" <%= pagination.limit == 2 ? 'selected' : '' %>>2</option>
-                            <option value="5" <%= pagination.limit == 5 ? 'selected' : '' %>>5</option>
-                            <option value="10" <%= pagination.limit == 10 ? 'selected' : '' %>>10</option>
-                            <option value="25" <%= pagination.limit == 25 ? 'selected' : '' %>>25</option>
-                            <option value="50" <%= pagination.limit == 50 ? 'selected' : '' %>>50</option>
-                        </select>
-                    </div>
-                </div>
-            <% } %>
-        <% } else { %>
-            <!-- Return Requests Table -->
-            <div class="bg-white p-6 rounded-lg shadow-sm mb-6 overflow-x-auto">
-                <h2 class="text-xl font-semibold mb-4">Pending Return Requests</h2>
-                <table class="w-full min-w-max">
-                    <thead>
-                        <tr class="border-b">
-                            <th class="py-3 px-2 text-left">Order ID</th>
-                            <th class="py-3 px-2 text-left">Product</th>
-                            <th class="py-3 px-2 text-left">Customer</th>
-                            <th class="py-3 px-2 text-left">Quantity</th>
-                            <th class="py-3 px-2 text-left">Price</th>
-                            <th class="py-3 px-2 text-left">Return Reason</th>
-                            <th class="py-3 px-2 text-left">Request Date</th>
-                            <th class="py-3 px-2 text-left">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <% returnRequests.forEach(request => { %>
-                            <tr class="border-b hover:bg-gray-50">
-                                <td class="py-3 px-2">
-                                    <a href="/admin/orders/<%= request.orderId %>" class="text-blue-600 hover:text-blue-800 hover:underline">
-                                        <%= request.orderId %>
-                                    </a>
-                                </td>
-                                <td class="py-3 px-2">
-                                    <div class="flex items-center">
-                                        <img src="<%= request.productImage %>" alt="<%= request.productName %>" class="w-12 h-12 object-cover rounded mr-3">
-                                        <div>
-                                            <div class="font-medium"><%= request.productName %></div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="py-3 px-2">
-                                    <div class="font-medium"><%= request.customerName %></div>
-                                    <div class="text-sm text-gray-500"><%= request.customerEmail %></div>
-                                </td>
-                                <td class="py-3 px-2"><%= request.quantity %></td>
-                                <td class="py-3 px-2">₹<%= request.price.toFixed(2) %></td>
-                                <td class="py-3 px-2">
-                                    <span class="px-3 py-1 rounded-full text-sm font-medium status-pending">
-                                        <%= request.returnReason %>
-                                    </span>
-                                </td>
-                                <td class="py-3 px-2"><%= request.returnRequestDate %></td>
-                                <td class="py-3 px-2">
-                                    <div class="flex flex-col space-y-2">
-                                        <button
-                                            class="text-green-600 hover:text-green-800 hover:underline flex items-center approve-return-btn"
-                                            data-order-id="<%= request.orderId %>"
-                                            data-product-id="<%= request.productId %>">
-                                            <i class="fas fa-check-circle mr-1"></i> Approve
-                                        </button>
-                                        <button
-                                            class="text-red-600 hover:text-red-800 hover:underline flex items-center reject-return-btn"
-                                            data-order-id="<%= request.orderId %>"
-                                            data-product-id="<%= request.productId %>">
-                                            <i class="fas fa-times-circle mr-1"></i> Reject
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        <% }) %>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Pagination -->
-            <% if (pagination) { %>
-                <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 bg-white p-4 rounded-lg shadow-sm">
-                    <div class="text-sm text-gray-600">
-                        Showing <span class="font-medium"><%= (pagination.currentPage - 1) * pagination.limit + 1 %></span> to
-                        <span class="font-medium"><%= Math.min(pagination.currentPage * pagination.limit, pagination.totalItems) %></span> of
-                        <span class="font-medium"><%= pagination.totalItems %></span> requests
-                    </div>
-
-                    <div class="flex items-center gap-1">
-                        <!-- First Page -->
-                        <% if (pagination.currentPage > 1) { %>
-                            <a href="?page=1<%= pagination.searchParams %>"
-                               class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
-                                <i class="fas fa-angle-double-left"></i>
-                            </a>
-                        <% } else { %>
-                            <span class="px-3 py-1 rounded border text-gray-400 cursor-not-allowed">
-                                <i class="fas fa-angle-double-left"></i>
-                            </span>
-                        <% } %>
-
-                        <!-- Previous Page -->
-                        <% if (pagination.currentPage > 1) { %>
-                            <a href="?page=<%= pagination.currentPage - 1 %><%= pagination.searchParams %>"
-                               class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
-                                <i class="fas fa-angle-left"></i>
-                            </a>
-                        <% } else { %>
-                            <span class="px-3 py-1 rounded border text-gray-400 cursor-not-allowed">
-                                <i class="fas fa-angle-left"></i>
-                            </span>
-                        <% } %>
-
-                        <!-- Page Numbers -->
-                        <%
-                        const maxVisiblePages = 5;
-                        let startPage = Math.max(1, pagination.currentPage - Math.floor(maxVisiblePages / 2));
-                        let endPage = Math.min(pagination.totalPages, startPage + maxVisiblePages - 1);
-
-                        if (endPage - startPage + 1 < maxVisiblePages) {
-                            startPage = Math.max(1, endPage - maxVisiblePages + 1);
-                        }
-
-                        for (let i = startPage; i <= endPage; i++) {
-                        %>
-                            <% if (i === pagination.currentPage) { %>
-                                <span class="px-3 py-1 rounded border bg-blue-600 text-white font-medium">
-                                    <%= i %>
-                                </span>
-                            <% } else { %>
-                                <a href="?page=<%= i %><%= pagination.searchParams %>"
-                                   class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
-                                    <%= i %>
-                                </a>
-                            <% } %>
-                        <% } %>
-
-                        <!-- Next Page -->
-                        <% if (pagination.currentPage < pagination.totalPages) { %>
-                            <a href="?page=<%= pagination.currentPage + 1 %><%= pagination.searchParams %>"
-                               class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
-                                <i class="fas fa-angle-right"></i>
-                            </a>
-                        <% } else { %>
-                            <span class="px-3 py-1 rounded border text-gray-400 cursor-not-allowed">
-                                <i class="fas fa-angle-right"></i>
-                            </span>
-                        <% } %>
-
-                        <!-- Last Page -->
-                        <% if (pagination.currentPage < pagination.totalPages) { %>
-                            <a href="?page=<%= pagination.totalPages %><%= pagination.searchParams %>"
-                               class="pagination-link px-3 py-1 rounded border hover:bg-gray-100">
-                                <i class="fas fa-angle-double-right"></i>
-                            </a>
-                        <% } else { %>
-                            <span class="px-3 py-1 rounded border text-gray-400 cursor-not-allowed">
-                                <i class="fas fa-angle-double-right"></i>
-                            </span>
-                        <% } %>
-                    </div>
-
-                    <!-- Items per page selector -->
-                    <div class="flex items-center gap-2">
-                        <span class="text-sm text-gray-600">Items per page:</span>
-                        <select onchange="window.location.href='?page=1&limit=' + this.value + '<%= pagination.searchParamsWithoutLimit %>'"
-                                class="border rounded px-2 py-1 text-sm">
-                            <option value="2" <%= pagination.limit == 2 ? 'selected' : '' %>>2</option>
-                            <option value="5" <%= pagination.limit == 5 ? 'selected' : '' %>>5</option>
-                            <option value="10" <%= pagination.limit == 10 ? 'selected' : '' %>>10</option>
-                            <option value="25" <%= pagination.limit == 25 ? 'selected' : '' %>>25</option>
-                            <option value="50" <%= pagination.limit == 50 ? 'selected' : '' %>>50</option>
-                        </select>
-                    </div>
-                </div>
-            <% } %>
-        <% } %>
     </div>
+</div>
 
-    <!-- SweetAlert2 for dialogs -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.all.min.js"></script>
-    <script>
-        // Approve Return Request
-        document.querySelectorAll('.approve-return-btn').forEach(button => {
-            button.addEventListener('click', async (e) => {
-                const orderId = e.target.closest('button').dataset.orderId;
-                const productId = e.target.closest('button').dataset.productId;
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="card-title mb-0">Return Requests List</h4>
+                    <div class="d-flex align-items-center">
+                        <span class="text-muted me-2">Show:</span>
+                        <select class="form-select form-select-sm" style="width: auto;"
+                                onchange="window.location.href='?page=1&limit=' + this.value + '<%= pagination ? pagination.searchParamsWithoutLimit : '' %>'">
+                            <option value="2" <%= pagination && pagination.limit == 2 ? 'selected' : '' %>>2</option>
+                            <option value="5" <%= pagination && pagination.limit == 5 ? 'selected' : '' %>>5</option>
+                            <option value="10" <%= pagination && pagination.limit == 10 ? 'selected' : '' %>>10</option>
+                            <option value="25" <%= pagination && pagination.limit == 25 ? 'selected' : '' %>>25</option>
+                            <option value="50" <%= pagination && pagination.limit == 50 ? 'selected' : '' %>>50</option>
+                        </select>
+                        <span class="text-muted ms-2">entries</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <% if (returnRequests && returnRequests.length > 0) { %>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Product</th>
+                                    <th>Customer</th>
+                                    <th>Quantity</th>
+                                    <th>Price</th>
+                                    <th>Return Reason</th>
+                                    <th>Request Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% returnRequests.forEach(request => { %>
+                                    <tr>
+                                        <td>
+                                            <a href="/admin/orders/<%= request.orderId %>" class="text-primary fw-bold text-decoration-none">
+                                                #<%= request.orderId %>
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <img src="<%= request.productImage %>" alt="<%= request.productName %>"
+                                                     class="rounded me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                                                <div>
+                                                    <div class="fw-semibold"><%= request.productName %></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div>
+                                                <div class="fw-semibold"><%= request.customerName %></div>
+                                                <small class="text-muted"><%= request.customerEmail %></small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary"><%= request.quantity %></span>
+                                        </td>
+                                        <td>
+                                            <span class="fw-bold text-success">$<%= request.price.toFixed(2) %></span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-warning text-dark">
+                                                <%= request.returnReason %>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted"><%= request.returnRequestDate %></small>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <button class="btn btn-sm btn-success approve-return-btn"
+                                                        data-order-id="<%= request.orderId %>"
+                                                        data-product-id="<%= request.productId %>"
+                                                        title="Approve Return">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-danger reject-return-btn"
+                                                        data-order-id="<%= request.orderId %>"
+                                                        data-product-id="<%= request.productId %>"
+                                                        title="Reject Return">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
 
-                // Show confirmation dialog
-                const result = await Swal.fire({
-                    title: 'Approve Return?',
-                    text: 'This will approve the return request and process a refund to the customer\'s wallet.',
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonColor: '#10B981',
-                    cancelButtonColor: '#6B7280',
-                    confirmButtonText: 'Yes, approve it!'
-                });
+                    <!-- Pagination -->
+                    <% if (pagination && pagination.totalPages > 1) { %>
+                        <div class="d-flex justify-content-between align-items-center mt-4">
+                            <div class="text-muted">
+                                Showing <%= (pagination.currentPage - 1) * pagination.limit + 1 %> to
+                                <%= Math.min(pagination.currentPage * pagination.limit, pagination.totalItems) %> of
+                                <%= pagination.totalItems %> entries
+                            </div>
 
-                if (result.isConfirmed) {
-                    // Show loading state
-                    Swal.fire({
-                        title: 'Processing...',
-                        text: 'Approving return request',
-                        icon: 'info',
-                        allowOutsideClick: false,
-                        showConfirmButton: false,
-                        didOpen: () => {
-                            Swal.showLoading();
-                        }
-                    });
+                            <nav aria-label="Return requests pagination">
+                                <ul class="pagination pagination-sm mb-0">
+                                    <li class="page-item <%= pagination.currentPage === 1 ? 'disabled' : '' %>">
+                                        <a class="page-link" href="?page=1<%= pagination.searchParams %>">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item <%= pagination.currentPage === 1 ? 'disabled' : '' %>">
+                                        <a class="page-link" href="?page=<%= pagination.currentPage - 1 %><%= pagination.searchParams %>">
+                                            <i class="fas fa-angle-left"></i>
+                                        </a>
+                                    </li>
 
-                    try {
-                        const response = await fetch(`/admin/orders/${orderId}/approve-return`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'CSRF-Token': '<%= csrfToken %>'
-                            },
-                            body: JSON.stringify({ productId })
-                        });
+                                    <%
+                                    const maxVisiblePages = 5;
+                                    let startPage = Math.max(1, pagination.currentPage - Math.floor(maxVisiblePages / 2));
+                                    let endPage = Math.min(pagination.totalPages, startPage + maxVisiblePages - 1);
 
-                        const result = await response.json();
+                                    if (endPage - startPage + 1 < maxVisiblePages) {
+                                        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                                    }
 
-                        if (result.success) {
-                            // Show success message
-                            Swal.fire({
-                                title: 'Return Approved!',
-                                text: 'The return request has been approved and refund processed.',
-                                icon: 'success',
-                                confirmButtonColor: '#10B981'
-                            }).then(() => {
-                                // Reload the page to refresh the list
-                                window.location.reload();
-                            });
-                        } else {
-                            // Show error message
-                            Swal.fire({
-                                title: 'Error',
-                                text: result.message || 'Failed to approve return',
-                                icon: 'error',
-                                confirmButtonColor: '#3B82F6'
-                            });
-                        }
-                    } catch (error) {
-                        // Show error message
-                        Swal.fire({
-                            title: 'Error',
-                            text: 'Error approving return: ' + error.message,
-                            icon: 'error',
-                            confirmButtonColor: '#3B82F6'
-                        });
-                    }
-                }
-            });
+                                    for (let i = startPage; i <= endPage; i++) {
+                                    %>
+                                        <li class="page-item <%= i === pagination.currentPage ? 'active' : '' %>">
+                                            <a class="page-link" href="?page=<%= i %><%= pagination.searchParams %>"><%= i %></a>
+                                        </li>
+                                    <% } %>
+
+                                    <li class="page-item <%= pagination.currentPage === pagination.totalPages ? 'disabled' : '' %>">
+                                        <a class="page-link" href="?page=<%= pagination.currentPage + 1 %><%= pagination.searchParams %>">
+                                            <i class="fas fa-angle-right"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item <%= pagination.currentPage === pagination.totalPages ? 'disabled' : '' %>">
+                                        <a class="page-link" href="?page=<%= pagination.totalPages %><%= pagination.searchParams %>">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    <% } %>
+                <% } else { %>
+                    <div class="text-center py-5">
+                        <div class="mb-3">
+                            <i class="fas fa-exchange-alt fa-3x text-muted"></i>
+                        </div>
+                        <h5 class="text-muted">No Return Requests Found</h5>
+                        <p class="text-muted">When customers request returns, they will appear here.</p>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Approve Return Request
+document.querySelectorAll('.approve-return-btn').forEach(button => {
+    button.addEventListener('click', async (e) => {
+        const orderId = e.target.closest('button').dataset.orderId;
+        const productId = e.target.closest('button').dataset.productId;
+
+        const result = await Swal.fire({
+            title: 'Approve Return?',
+            text: 'This will approve the return request and process a refund to the customer\'s wallet.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#198754',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, approve it!',
+            cancelButtonText: 'Cancel'
         });
 
-        // Reject Return Request
-        document.querySelectorAll('.reject-return-btn').forEach(button => {
-            button.addEventListener('click', async (e) => {
-                const orderId = e.target.closest('button').dataset.orderId;
-                const productId = e.target.closest('button').dataset.productId;
-
-                // Show input dialog for rejection reason
-                const { value: adminResponse } = await Swal.fire({
-                    title: 'Reject Return',
-                    input: 'textarea',
-                    inputLabel: 'Reason for rejection',
-                    inputPlaceholder: 'Enter the reason for rejecting this return request...',
-                    inputAttributes: {
-                        'aria-label': 'Reason for rejection'
+        if (result.isConfirmed) {
+            try {
+                const response = await fetch(`/admin/orders/${orderId}/approve-return`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': '<%= csrfToken %>'
                     },
-                    showCancelButton: true,
-                    confirmButtonColor: '#EF4444',
-                    cancelButtonColor: '#6B7280',
-                    confirmButtonText: 'Reject Return',
-                    inputValidator: (value) => {
-                        if (!value) {
-                            return 'You need to provide a reason for rejection!';
-                        }
-                    }
+                    body: JSON.stringify({ productId })
                 });
 
-                if (adminResponse) {
-                    // Show loading state
+                const result = await response.json();
+
+                if (result.success) {
                     Swal.fire({
-                        title: 'Processing...',
-                        text: 'Rejecting return request',
-                        icon: 'info',
-                        allowOutsideClick: false,
-                        showConfirmButton: false,
-                        didOpen: () => {
-                            Swal.showLoading();
-                        }
+                        title: 'Success!',
+                        text: 'Return request approved and refund processed.',
+                        icon: 'success',
+                        confirmButtonColor: '#198754'
+                    }).then(() => {
+                        window.location.reload();
                     });
-
-                    try {
-                        const response = await fetch(`/admin/orders/${orderId}/reject-return`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'CSRF-Token': '<%= csrfToken %>'
-                            },
-                            body: JSON.stringify({ productId, adminResponse })
-                        });
-
-                        const result = await response.json();
-
-                        if (result.success) {
-                            // Show success message
-                            Swal.fire({
-                                title: 'Return Rejected!',
-                                text: 'The return request has been rejected.',
-                                icon: 'success',
-                                confirmButtonColor: '#10B981'
-                            }).then(() => {
-                                // Reload the page to refresh the list
-                                window.location.reload();
-                            });
-                        } else {
-                            // Show error message
-                            Swal.fire({
-                                title: 'Error',
-                                text: result.message || 'Failed to reject return',
-                                icon: 'error',
-                                confirmButtonColor: '#3B82F6'
-                            });
-                        }
-                    } catch (error) {
-                        // Show error message
-                        Swal.fire({
-                            title: 'Error',
-                            text: 'Error rejecting return: ' + error.message,
-                            icon: 'error',
-                            confirmButtonColor: '#3B82F6'
-                        });
-                    }
+                } else {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: result.message || 'Failed to approve return request.',
+                        icon: 'error',
+                        confirmButtonColor: '#dc3545'
+                    });
                 }
-            });
+            } catch (error) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'An error occurred while processing the request.',
+                    icon: 'error',
+                    confirmButtonColor: '#dc3545'
+                });
+            }
+        }
+    });
+});
+
+// Reject Return Request
+document.querySelectorAll('.reject-return-btn').forEach(button => {
+    button.addEventListener('click', async (e) => {
+        const orderId = e.target.closest('button').dataset.orderId;
+        const productId = e.target.closest('button').dataset.productId;
+
+        const { value: adminResponse } = await Swal.fire({
+            title: 'Reject Return Request',
+            input: 'textarea',
+            inputLabel: 'Reason for rejection',
+            inputPlaceholder: 'Please provide a reason for rejecting this return request...',
+            inputAttributes: {
+                'aria-label': 'Rejection reason'
+            },
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Reject Request',
+            cancelButtonText: 'Cancel',
+            inputValidator: (value) => {
+                if (!value) {
+                    return 'Please provide a reason for rejection!';
+                }
+            }
         });
-    </script>
-</body>
-</html>
+
+        if (adminResponse) {
+            try {
+                const response = await fetch(`/admin/orders/${orderId}/reject-return`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': '<%= csrfToken %>'
+                    },
+                    body: JSON.stringify({ productId, adminResponse })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    Swal.fire({
+                        title: 'Success!',
+                        text: 'Return request has been rejected.',
+                        icon: 'success',
+                        confirmButtonColor: '#198754'
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: result.message || 'Failed to reject return request.',
+                        icon: 'error',
+                        confirmButtonColor: '#dc3545'
+                    });
+                }
+            } catch (error) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'An error occurred while processing the request.',
+                    icon: 'error',
+                    confirmButtonColor: '#dc3545'
+                });
+            }
+        }
+    });
+});
+</script>
+
+<%- include("partials/footer") %>

@@ -1492,7 +1492,7 @@ exports.downloadSalesReportPDF = async (req, res) => {
 
     // Helper function to format currency
     const formatCurrency = (amount) => {
-      return '₹' + amount.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+      return '$' + amount.toLocaleString('en-US', { maximumFractionDigits: 2 });
     };
 
     // Set response headers for PDF download

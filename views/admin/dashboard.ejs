@@ -49,7 +49,7 @@ function formatCurrency(amount) {
     }
 
     // Convert to number and format
-    return '₹' + Number(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return '$' + Number(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 %>
 
@@ -80,7 +80,7 @@ function formatCurrency(amount) {
                                         </div>
                                         <div class="col-md-6">
                                             <ul class="list-unstyled">
-                                                <li class="mb-2"><i class="fas fa-rupee-sign text-danger me-2"></i> <strong><%= formatCurrency(stats.totalSales) %></strong> total revenue</li>
+                                                <li class="mb-2"><i class="fas fa-dollar-sign text-danger me-2"></i> <strong><%= formatCurrency(stats.totalSales) %></strong> total revenue</li>
                                                 <li class="mb-2"><i class="fas fa-shopping-cart text-info me-2"></i> <strong><%= formatCurrency(stats.orderCount > 0 ? (stats.totalSales / stats.orderCount) : 0) %></strong> average order value</li>
                                                 <li class="mb-2"><i class="fas fa-th-large text-secondary me-2"></i> <strong><%= stats.categoryCount %></strong> product categories</li>
                                             </ul>
@@ -189,7 +189,7 @@ function formatCurrency(amount) {
                                             <div class="h5 mb-0 fw-bold"><%= formatCurrency(stats.totalSales) %></div>
                                         </div>
                                         <div class="card-icon">
-                                            <i class="fas fa-rupee-sign"></i>
+                                            <i class="fas fa-dollar-sign"></i>
                                         </div>
                                     </div>
                                 </div>
@@ -726,7 +726,7 @@ function formatCurrency(amount) {
                         data: {
                             labels: chartData.revenue.labels,
                             datasets: [{
-                                label: 'Revenue (₹)',
+                                label: 'Revenue ($)',
                                 data: chartData.revenue.values,
                                 borderColor: '#4e73df',
                                 backgroundColor: 'rgba(78, 115, 223, 0.1)',
@@ -756,7 +756,7 @@ function formatCurrency(amount) {
                                     borderWidth: 1,
                                     callbacks: {
                                         label: function(context) {
-                                            return 'Revenue: ₹' + context.parsed.y.toLocaleString('en-IN', {
+                                            return 'Revenue: $' + context.parsed.y.toLocaleString('en-US', {
                                                 minimumFractionDigits: 2,
                                                 maximumFractionDigits: 2
                                             });
@@ -769,7 +769,7 @@ function formatCurrency(amount) {
                                     beginAtZero: true,
                                     ticks: {
                                         callback: function(value) {
-                                            return '₹' + value.toLocaleString('en-IN');
+                                            return '$' + value.toLocaleString('en-US');
                                         }
                                     },
                                     grid: {
@@ -820,7 +820,7 @@ function formatCurrency(amount) {
                                             const percentage = ((context.parsed / total) * 100).toFixed(1);
                                             const count = chartData.payment.counts[context.dataIndex];
                                             return [
-                                                context.label + ': ₹' + context.parsed.toLocaleString('en-IN'),
+                                                context.label + ': $' + context.parsed.toLocaleString('en-US'),
                                                 'Orders: ' + count,
                                                 'Percentage: ' + percentage + '%'
                                             ];
@@ -847,7 +847,7 @@ function formatCurrency(amount) {
                         data: {
                             labels: chartData.products.labels,
                             datasets: [{
-                                label: 'Revenue (₹)',
+                                label: 'Revenue ($)',
                                 data: chartData.products.values,
                                 backgroundColor: type === 'bar' || type === 'line' ?
                                     'rgba(28, 200, 138, 0.8)' :
@@ -884,19 +884,19 @@ function formatCurrency(amount) {
                                                 const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                                 const percentage = ((context.parsed / total) * 100).toFixed(1);
                                                 return [
-                                                    'Revenue: ₹' + context.parsed.toLocaleString('en-IN'),
+                                                    'Revenue: $' + context.parsed.toLocaleString('en-US'),
                                                     'Units Sold: ' + quantity,
                                                     'Orders: ' + orderCount,
-                                                    'Avg Price: ₹' + avgPrice.toFixed(2),
+                                                    'Avg Price: $' + avgPrice.toFixed(2),
                                                     'Market Share: ' + percentage + '%'
                                                 ];
                                             } else {
                                                 const revenue = context.parsed.y;
                                                 return [
-                                                    'Revenue: ₹' + revenue.toLocaleString('en-IN'),
+                                                    'Revenue: $' + revenue.toLocaleString('en-US'),
                                                     'Units Sold: ' + quantity,
                                                     'Orders: ' + orderCount,
-                                                    'Avg Price: ₹' + avgPrice.toFixed(2)
+                                                    'Avg Price: $' + avgPrice.toFixed(2)
                                                 ];
                                             }
                                         }
@@ -913,7 +913,7 @@ function formatCurrency(amount) {
                                 beginAtZero: true,
                                 ticks: {
                                     callback: function(value) {
-                                        return '₹' + value.toLocaleString('en-IN');
+                                        return '$' + value.toLocaleString('en-US');
                                     }
                                 }
                             },
@@ -932,7 +932,7 @@ function formatCurrency(amount) {
                                 beginAtZero: true,
                                 ticks: {
                                     callback: function(value) {
-                                        return '₹' + value.toLocaleString('en-IN');
+                                        return '$' + value.toLocaleString('en-US');
                                     }
                                 }
                             }
@@ -963,7 +963,7 @@ function formatCurrency(amount) {
                         data: {
                             labels: chartData.categories.labels,
                             datasets: [{
-                                label: 'Revenue (₹)',
+                                label: 'Revenue ($)',
                                 data: chartData.categories.values,
                                 backgroundColor: type === 'bar' ?
                                     'rgba(54, 185, 204, 0.8)' :
@@ -1001,7 +1001,7 @@ function formatCurrency(amount) {
 
                                             if (type === 'bar') {
                                                 return [
-                                                    'Revenue: ₹' + context.parsed.y.toLocaleString('en-IN'),
+                                                    'Revenue: $' + context.parsed.y.toLocaleString('en-US'),
                                                     'Items Sold: ' + quantity,
                                                     'Products: ' + productCount,
                                                     'Orders: ' + orderCount
@@ -1010,7 +1010,7 @@ function formatCurrency(amount) {
                                                 const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                                 const percentage = ((context.parsed / total) * 100).toFixed(1);
                                                 return [
-                                                    'Revenue: ₹' + context.parsed.toLocaleString('en-IN'),
+                                                    'Revenue: $' + context.parsed.toLocaleString('en-US'),
                                                     'Items Sold: ' + quantity,
                                                     'Products: ' + productCount,
                                                     'Orders: ' + orderCount,
@@ -1033,7 +1033,7 @@ function formatCurrency(amount) {
                                 beginAtZero: true,
                                 ticks: {
                                     callback: function(value) {
-                                        return '₹' + value.toLocaleString('en-IN');
+                                        return '$' + value.toLocaleString('en-US');
                                     }
                                 }
                             },
@@ -1138,10 +1138,10 @@ function formatCurrency(amount) {
                     const row = tbody.insertRow();
                     row.innerHTML = `
                         <td><strong>${name}</strong></td>
-                        <td>₹${products.values[index].toLocaleString('en-IN')}</td>
+                        <td>$${products.values[index].toLocaleString('en-US')}</td>
                         <td>${products.quantities[index]}</td>
                         <td>${products.orderCounts[index]}</td>
-                        <td>₹${products.averagePrices[index].toFixed(2)}</td>
+                        <td>$${products.averagePrices[index].toFixed(2)}</td>
                     `;
                 });
             }
@@ -1170,7 +1170,7 @@ function formatCurrency(amount) {
                     const row = tbody.insertRow();
                     row.innerHTML = `
                         <td><strong>${name}</strong></td>
-                        <td>₹${categories.values[index].toLocaleString('en-IN')}</td>
+                        <td>$${categories.values[index].toLocaleString('en-US')}</td>
                         <td>${categories.quantities[index]}</td>
                         <td>${categories.productCounts[index]}</td>
                         <td>${categories.orderCounts[index]}</td>

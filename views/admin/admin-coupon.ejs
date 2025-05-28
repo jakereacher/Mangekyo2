@@ -91,13 +91,13 @@
                                 </td>
                                 <td>
                                     <strong>
-                                        <%= coupon.type === 'percentage' ? coupon.discountValue + '%' : '₹' + coupon.discountValue %>
+                                        <%= coupon.type === 'percentage' ? coupon.discountValue + '%' : '$' + coupon.discountValue %>
                                     </strong>
                                 </td>
                                 <td>
                                     <small class="text-muted">
-                                        Min: ₹<%= coupon.minPrice %><br>
-                                        Max: <%= coupon.maxPrice ? '₹' + coupon.maxPrice : '∞' %>
+                                        Min: $<%= coupon.minPrice %><br>
+                                        Max: <%= coupon.maxPrice ? '$' + coupon.maxPrice : '∞' %>
                                     </small>
                                 </td>
                                 <td>
@@ -112,8 +112,8 @@
                                 </td>
                                 <td>
                                     <small class="text-muted">
-                                        <div><strong>Start:</strong> <%= coupon.startDate.toLocaleDateString('en-IN') %></div>
-                                        <div><strong>End:</strong> <%= coupon.expiryDate.toLocaleDateString('en-IN') %></div>
+                                        <div><strong>Start:</strong> <%= coupon.startDate.toLocaleDateString('en-US') %></div>
+                                        <div><strong>End:</strong> <%= coupon.expiryDate.toLocaleDateString('en-US') %></div>
                                     </small>
                                 </td>
                                 <td>

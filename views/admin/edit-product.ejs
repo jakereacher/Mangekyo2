@@ -89,8 +89,8 @@
                                     <% if (product.productOffer && product.offerPercentage > 0) { %>
                                         <div class="mt-2 alert alert-info">
                                             <strong>Offer Applied:</strong> <%= product.offerPercentage %>% off
-                                            <div>Original Price: ₹<%= product.price.toFixed(2) %></div>
-                                            <div>Final Price: ₹<%= product.finalPrice.toFixed(2) %></div>
+                                            <div>Original Price: $<%= product.price.toFixed(2) %></div>
+                                            <div>Final Price: $<%= product.finalPrice.toFixed(2) %></div>
                                             <small>Note: Changing the price will recalculate the final price with the current offer.</small>
                                         </div>
                                     <% } else { %>

@@ -38,8 +38,8 @@
                                                     </div>
                                                     <div class="product-details ms-3">
                                                         <div class="product-name"><%= request.productName %></div>
-                                                        <div class="product-quantity">Qty: <%= request.quantity %> × ₹<%= request.price.toFixed(2) %></div>
-                                                        <div class="product-total">Total: ₹<%= (request.quantity * request.price).toFixed(2) %></div>
+                                                        <div class="product-quantity">Qty: <%= request.quantity %> × $<%= request.price.toFixed(2) %></div>
+                                                        <div class="product-total">Total: $<%= (request.quantity * request.price).toFixed(2) %></div>
                                                     </div>
                                                 </div>
                                             </td>
@@ -52,13 +52,13 @@
                                             </td>
                                             <td>
                                                 <div class="d-flex">
-                                                    <button 
-                                                        onclick="approveCancellation('<%= request.orderId %>', '<%= request.productId %>')" 
+                                                    <button
+                                                        onclick="approveCancellation('<%= request.orderId %>', '<%= request.productId %>')"
                                                         class="btn btn-sm btn-success me-2">
                                                         Approve
                                                     </button>
-                                                    <button 
-                                                        onclick="showRejectModal('<%= request.orderId %>', '<%= request.productId %>')" 
+                                                    <button
+                                                        onclick="showRejectModal('<%= request.orderId %>', '<%= request.productId %>')"
                                                         class="btn btn-sm btn-danger">
                                                         Reject
                                                     </button>

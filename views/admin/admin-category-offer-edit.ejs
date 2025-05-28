@@ -45,13 +45,13 @@
             <label for="discountValue" class="form-label">Discount Value <span class="text-danger">*</span></label>
             <div class="input-group">
               <input type="number" class="form-control" id="discountValue" name="discountValue" value="<%= offer.discountValue %>" min="0" step="0.01" required>
-              <span class="input-group-text discount-symbol"><%= offer.discountType === 'percentage' ? '%' : '₹' %></span>
+              <span class="input-group-text discount-symbol"><%= offer.discountType === 'percentage' ? '%' : '$' %></span>
             </div>
           </div>
           <div class="col-md-6 max-discount-container" <%= offer.discountType === 'percentage' ? '' : 'style="display: none;"' %>>
             <label for="maxDiscountAmount" class="form-label">Max Discount Amount</label>
             <div class="input-group">
-              <span class="input-group-text">₹</span>
+              <span class="input-group-text">$</span>
               <input type="number" class="form-control" id="maxDiscountAmount" name="maxDiscountAmount" value="<%= offer.maxDiscountAmount || '' %>" min="0" step="0.01">
             </div>
             <div class="form-text">Leave empty for no maximum limit</div>
@@ -195,14 +195,14 @@
         discountSymbol.textContent = '%';
       } else {
         maxDiscountContainer.style.display = 'none';
-        discountSymbol.textContent = '₹';
+        discountSymbol.textContent = '$';
       }
       updateCategoryOfferPreview();
     });
 
     // Update discount symbol when discount type changes
     discountTypeSelect.addEventListener('change', function() {
-      discountSymbol.textContent = this.value === 'percentage' ? '%' : '₹';
+      discountSymbol.textContent = this.value === 'percentage' ? '%' : '$';
     });
 
     // Update category selection count

@@ -115,7 +115,7 @@
                         <%= offer.applicableProducts && offer.applicableProducts.some(p => p.toString() === product._id.toString()) ? 'checked' : '' %>>
                       <label class="form-check-label d-flex justify-content-between" for="product_<%= product._id %>">
                         <span class="product-name"><%= product.productName %></span>
-                        <span class="text-primary">₹<%= product.salePrice %></span>
+                        <span class="text-primary">$<%= product.salePrice %></span>
                       </label>
                     </div>
                   </div>
@@ -137,12 +137,12 @@
                   <div class="col-md-6">
                     <h6>Sample Product:</h6>
                     <div id="sampleProductName"></div>
-                    <div>Original Price: ₹<span id="sampleProductPrice"></span></div>
+                    <div>Original Price: $<span id="sampleProductPrice"></span></div>
                   </div>
                   <div class="col-md-6">
                     <h6>After Offer:</h6>
                     <div>Discount: <span id="sampleProductDiscount"></span></div>
-                    <div>Final Price: ₹<span id="sampleProductFinalPrice" class="text-success fw-bold"></span></div>
+                    <div>Final Price: $<span id="sampleProductFinalPrice" class="text-success fw-bold"></span></div>
                   </div>
                 </div>
               </div>
@@ -198,10 +198,10 @@
               </div>
               <div class="card-body">
                 <p>This offer will apply to all products in the selected categories.</p>
-                <p>For example, if a product costs ₹1000:</p>
+                <p>For example, if a product costs $1000:</p>
                 <ul>
                   <li>Discount: <span id="categoryDiscountExample"></span></li>
-                  <li>Final Price: ₹<span id="categoryFinalPriceExample" class="text-success fw-bold"></span></li>
+                  <li>Final Price: $<span id="categoryFinalPriceExample" class="text-success fw-bold"></span></li>
                 </ul>
               </div>
             </div>
@@ -427,7 +427,7 @@
         const sampleProductId = selectedProducts[0].value;
         const sampleProductElement = document.getElementById(`product_${sampleProductId}`).closest('.product-item');
         const sampleProductName = sampleProductElement.querySelector('.product-name').textContent;
-        const sampleProductPrice = parseFloat(sampleProductElement.querySelector('.text-primary').textContent.replace('₹', ''));
+        const sampleProductPrice = parseFloat(sampleProductElement.querySelector('.text-primary').textContent.replace('$', ''));
 
         // Calculate discount
         let discountAmount = 0;
@@ -457,9 +457,9 @@
         document.getElementById('sampleProductPrice').textContent = sampleProductPrice.toFixed(2);
 
         if (discountTypeSelect.value === 'percentage') {
-          document.getElementById('sampleProductDiscount').textContent = `${discountValue}% (₹${discountAmount.toFixed(2)})`;
+          document.getElementById('sampleProductDiscount').textContent = `${discountValue}% ($${discountAmount.toFixed(2)})`;
         } else {
-          document.getElementById('sampleProductDiscount').textContent = `₹${discountAmount.toFixed(2)}`;
+          document.getElementById('sampleProductDiscount').textContent = `$${discountAmount.toFixed(2)}`;
         }
 
         document.getElementById('sampleProductFinalPrice').textContent = finalPrice.toFixed(2);
@@ -491,7 +491,7 @@
             discountAmount = maxDiscountAmount;
           }
 
-          document.getElementById('categoryDiscountExample').textContent = `${discountValue}% (₹${discountAmount.toFixed(2)})`;
+          document.getElementById('categoryDiscountExample').textContent = `${discountValue}% ($${discountAmount.toFixed(2)})`;
         } else {
           discountAmount = discountValue;
 
@@ -500,7 +500,7 @@
             discountAmount = samplePrice;
           }
 
-          document.getElementById('categoryDiscountExample').textContent = `₹${discountAmount.toFixed(2)}`;
+          document.getElementById('categoryDiscountExample').textContent = `$${discountAmount.toFixed(2)}`;
         }
 
         const finalPrice = samplePrice - discountAmount;

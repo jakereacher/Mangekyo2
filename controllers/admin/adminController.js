@@ -572,7 +572,7 @@ const getDashboardProducts = async (req, res) => {
       productId: product._id.toString().substring(0, 8),
       name: product.productName,
       category: product.category ? product.category.name : "Uncategorized",
-      price: `₹${product.price.toFixed(2)}`,
+      price: `$${product.price.toFixed(2)}`,
       stock: product.quantity
     }));
 
