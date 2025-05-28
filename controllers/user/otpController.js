@@ -22,7 +22,7 @@ function generateOtp() {
  */
 async function processReferralReward(referrerId, newUserId) {
   try {
-    const REWARD_AMOUNT = 50; // ₹50 reward for both users
+    const REWARD_AMOUNT = 50; // $50 reward for both users
 
     // Process reward for referrer
     await addReferralReward(referrerId, REWARD_AMOUNT, `Referral bonus for inviting a new user`);
@@ -30,7 +30,7 @@ async function processReferralReward(referrerId, newUserId) {
     // Process reward for new user
     await addReferralReward(newUserId, REWARD_AMOUNT, `Welcome bonus for signing up with a referral code`);
 
-    console.log(`Referral rewards processed: ₹${REWARD_AMOUNT} added to both users' wallets`);
+    console.log(`Referral rewards processed: $${REWARD_AMOUNT} added to both users' wallets`);
   } catch (error) {
     console.error("Error processing referral reward:", error);
   }

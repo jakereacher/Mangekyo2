@@ -56,7 +56,7 @@
                 <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-8">
                     <p class="text-yellow-800 flex items-center">
                         <i class="fas fa-wallet mr-2"></i>
-                        <span>Your wallet balance (₹<%= walletBalance.toFixed(2) %>) is insufficient for this purchase.</span>
+                        <span>Your wallet balance ($<%= walletBalance.toFixed(2) %>) is insufficient for this purchase.</span>
                     </p>
                     <a href="/profile#wallet" class="inline-block mt-2 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition">
                         <i class="fas fa-plus-circle mr-2"></i> Add Money to Wallet
@@ -181,7 +181,7 @@
                 const options = {
                     key: razorpayKey,
                     amount: result.order.amount,
-                    currency: result.order.currency || 'INR',
+                    currency: result.order.currency || 'USD',
                     name: 'Mangeyko',
                     description: 'Purchase from Mangeyko',
                     order_id: result.order.id,

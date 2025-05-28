@@ -68,7 +68,7 @@
           <% if (product.hasOffer && product.discount > 0) { %>
           <div class="absolute top-4 left-4 bg-red-500 text-white text-sm font-bold px-3 py-1 rounded-full">
             <% if (product.discountType === 'fixed') { %>
-              ₹<%= Math.round(product.discountAmount) %> OFF
+              $<%= Math.round(product.discountAmount) %> OFF
             <% } else { %>
               <%= Math.round(product.discount) %>% OFF
             <% } %>
@@ -141,11 +141,11 @@
         <div class="mb-6">
           <% if (product.hasOffer && product.discount > 0) { %>
             <div class="flex items-center mb-2">
-              <span class="text-3xl font-bold text-[#00ffff]">₹<%= product.displayPrice ? product.displayPrice.toFixed(2) : '0.00' %></span>
-              <span class="text-gray-400 line-through text-xl ml-3">₹<%= product.price ? product.price.toFixed(2) : '0.00' %></span>
+              <span class="text-3xl font-bold text-[#00ffff]">$<%= product.displayPrice ? product.displayPrice.toFixed(2) : '0.00' %></span>
+              <span class="text-gray-400 line-through text-xl ml-3">$<%= product.price ? product.price.toFixed(2) : '0.00' %></span>
               <span class="ml-3 bg-red-600 text-white text-sm px-2 py-1 rounded">
                 <% if (product.discountType === 'fixed') { %>
-                  ₹<%= Math.round(product.discountAmount) %> OFF
+                  $<%= Math.round(product.discountAmount) %> OFF
                 <% } else { %>
                   <%= Math.round(product.discount) %>% OFF
                 <% } %>
@@ -170,7 +170,7 @@
               </div>
             <% } %>
           <% } else { %>
-            <span class="text-3xl font-bold text-[#00ffff]">₹<%= product.price ? product.price.toFixed(2) : '0.00' %></span>
+            <span class="text-3xl font-bold text-[#00ffff]">$<%= product.price ? product.price.toFixed(2) : '0.00' %></span>
           <% } %>
         </div>
 
@@ -549,7 +549,7 @@
             <% if (relatedProduct.hasOffer && relatedProduct.discount > 0) { %>
             <div class="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full">
               <% if (relatedProduct.discountType === 'fixed') { %>
-                ₹<%= Math.round(relatedProduct.discountAmount) %> OFF
+                $<%= Math.round(relatedProduct.discountAmount) %> OFF
               <% } else { %>
                 <%= Math.round(relatedProduct.discount) %>% OFF
               <% } %>
@@ -586,11 +586,11 @@
               <div>
                 <% if (relatedProduct.hasOffer && relatedProduct.discount > 0) { %>
                   <div class="flex items-center">
-                    <span class="text-lg font-bold text-[#00ffff]">₹<%= relatedProduct.displayPrice ? relatedProduct.displayPrice.toFixed(2) : '0.00' %></span>
-                    <span class="text-gray-400 line-through text-sm ml-2">₹<%= relatedProduct.price ? relatedProduct.price.toFixed(2) : '0.00' %></span>
+                    <span class="text-lg font-bold text-[#00ffff]">$<%= relatedProduct.displayPrice ? relatedProduct.displayPrice.toFixed(2) : '0.00' %></span>
+                    <span class="text-gray-400 line-through text-sm ml-2">$<%= relatedProduct.price ? relatedProduct.price.toFixed(2) : '0.00' %></span>
                   </div>
                 <% } else { %>
-                  <span class="text-lg font-bold text-[#00ffff]">₹<%= relatedProduct.price ? relatedProduct.price.toFixed(2) : '0.00' %></span>
+                  <span class="text-lg font-bold text-[#00ffff]">$<%= relatedProduct.price ? relatedProduct.price.toFixed(2) : '0.00' %></span>
                 <% } %>
               </div>
 

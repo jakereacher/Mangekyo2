@@ -151,8 +151,8 @@ function generateInvoicePDF(doc, order) {
     doc.fontSize(10).text(productName, itemX, tableRow, { width: 90 });
     doc.fontSize(10).text(`Size: ${item.size || 'N/A'}`, descriptionX, tableRow);
     doc.fontSize(10).text(item.quantity.toString(), quantityX, tableRow);
-    doc.fontSize(10).text(`₹${item.price.toFixed(2)}`, priceX, tableRow);
-    doc.fontSize(10).text(`₹${amount.toFixed(2)}`, amountX, tableRow);
+    doc.fontSize(10).text(`$${item.price.toFixed(2)}`, priceX, tableRow);
+    doc.fontSize(10).text(`$${amount.toFixed(2)}`, amountX, tableRow);
 
     tableRow += 20;
 
@@ -186,12 +186,12 @@ function generateInvoicePDF(doc, order) {
 
   doc.fontSize(10).text('Tax:', 350, tableRow);
   const tax = subtotal * 0.09;
-  doc.fontSize(10).text(`₹${tax.toFixed(2)}`, amountX, tableRow);
+  doc.fontSize(10).text(`$${tax.toFixed(2)}`, amountX, tableRow);
   tableRow += 15;
 
   if (order.discount && order.discount > 0) {
     doc.fontSize(10).text('Discount:', 350, tableRow);
-    doc.fontSize(10).text(`-₹${order.discount.toFixed(2)}`, amountX, tableRow);
+    doc.fontSize(10).text(`-$${order.discount.toFixed(2)}`, amountX, tableRow);
     tableRow += 15;
 
     // Add coupon information if available
@@ -208,7 +208,7 @@ function generateInvoicePDF(doc, order) {
   tableRow += 15;
 
   doc.fontSize(12).text('Total:', 350, tableRow);
-  doc.fontSize(12).text(`₹${order.finalAmount.toFixed(2)}`, amountX, tableRow);
+  doc.fontSize(12).text(`$${order.finalAmount.toFixed(2)}`, amountX, tableRow);
 
   doc.fontSize(10).text('Thank you for your purchase!', 50, 700, { align: 'center' });
   doc.fontSize(8).text('This is a computer-generated invoice and does not require a signature.', 50, 720, { align: 'center' });

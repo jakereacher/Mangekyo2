@@ -104,17 +104,17 @@
                                     <p class="text-sm text-gray-600">Quantity: <%= item.quantity %></p>
                                     <p class="text-sm text-gray-600">
                                         <% if (item.originalPrice && item.originalPrice > item.price) { %>
-                                            Price: <span class="line-through text-gray-400">₹<%= item.originalPrice.toFixed(2) %></span>
-                                            <span class="text-green-600 font-medium">₹<%= item.price.toFixed(2) %></span>
+                                            Price: <span class="line-through text-gray-400">$<%= item.originalPrice.toFixed(2) %></span>
+                                            <span class="text-green-600 font-medium">$<%= item.price.toFixed(2) %></span>
                                             <% if (item.discountPercentage > 0) { %>
                                                 <% if (item.offerType === 'fixed') { %>
-                                                    <span class="bg-red-600 text-white text-xs px-2 py-0.5 rounded ml-1">₹<%= (item.originalPrice - item.price).toFixed(2) %> OFF</span>
+                                                    <span class="bg-red-600 text-white text-xs px-2 py-0.5 rounded ml-1">$<%= (item.originalPrice - item.price).toFixed(2) %> OFF</span>
                                                 <% } else { %>
                                                     <span class="bg-red-600 text-white text-xs px-2 py-0.5 rounded ml-1"><%= Math.round(item.discountPercentage) %>% OFF</span>
                                                 <% } %>
                                             <% } %>
                                         <% } else { %>
-                                            Price: ₹<%= item.price.toFixed(2) %>
+                                            Price: $<%= item.price.toFixed(2) %>
                                         <% } %>
                                     </p>
                                     <p class="text-sm text-gray-600">Status: <span class="item-status <%= item.status === 'Cancelled' ? 'text-red-600' : '' %>"><%= item.status %></span></p>
@@ -165,7 +165,7 @@
                     <div class="space-y-3 mb-4">
                         <div class="flex justify-between">
                             <span class="text-gray-600">Subtotal (<span id="itemCount"><%= order.items.length %></span> items)</span>
-                            <span id="subtotal">₹<%= order.subtotal %></span>
+                            <span id="subtotal">$<%= order.subtotal %></span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-600">
@@ -174,16 +174,16 @@
                                     <span class="text-xs text-blue-600 block">(<%= order.deliveryDescription %>)</span>
                                 <% } %>
                             </span>
-                            <span id="shipping">₹<%= order.shipping %></span>
+                            <span id="shipping">$<%= order.shipping %></span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-600">Tax</span>
-                            <span id="tax">₹<%= order.tax %></span>
+                            <span id="tax">$<%= order.tax %></span>
                         </div>
                         <% if (order.discount > 0) { %>
                             <div class="flex justify-between">
                                 <span class="text-gray-600">Discount</span>
-                                <span id="discount">-₹<%= order.discount %></span>
+                                <span id="discount">-$<%= order.discount %></span>
                             </div>
                             <% if (order.couponCode) { %>
                                 <div class="flex justify-between text-sm text-green-600">
@@ -196,16 +196,16 @@
                         <% if (order.discount > 0 && order.couponCode) { %>
                             <div class="flex justify-between font-bold text-lg line-through text-gray-500">
                                 <span>Original Total</span>
-                                <span id="originalTotal">₹<%= (parseFloat(order.total) + parseFloat(order.discount)).toFixed(2) %></span>
+                                <span id="originalTotal">$<%= (parseFloat(order.total) + parseFloat(order.discount)).toFixed(2) %></span>
                             </div>
                             <div class="flex justify-between font-bold text-lg text-green-600 mt-1">
                                 <span>Total After Discount</span>
-                                <span id="total">₹<%= order.total %></span>
+                                <span id="total">$<%= order.total %></span>
                             </div>
                         <% } else { %>
                             <div class="flex justify-between font-bold text-lg">
                                 <span>Total</span>
-                                <span id="total">₹<%= order.total %></span>
+                                <span id="total">$<%= order.total %></span>
                             </div>
                         <% } %>
                     </div>
@@ -256,7 +256,7 @@
                         <i class="fas fa-tag mr-2"></i> Coupon Applied
                     </h2>
                     <p class="text-gray-600">Code: <span class="font-medium text-green-600"><%= order.couponCode %></span></p>
-                    <p class="text-gray-600">Discount: <span class="font-medium text-green-600">₹<%= order.discount %></span></p>
+                    <p class="text-gray-600">Discount: <span class="font-medium text-green-600">$<%= order.discount %></span></p>
                 </div>
                 <% } %>
             </div>
@@ -617,7 +617,7 @@
                 const options = {
                     key: '<%= razorpayKeyId %>', // This should be passed from the server
                     amount: result.order.amount,
-                    currency: result.order.currency || 'INR',
+                    currency: result.order.currency || 'USD',
                     name: 'Mangeyko',
                     description: 'Complete your pending payment',
                     order_id: result.order.id,
@@ -751,21 +751,21 @@
 
             // Update the UI
             document.getElementById('itemCount').textContent = nonCancelledItems.length;
-            document.getElementById('subtotal').textContent = `₹${subtotal.toFixed(2)}`;
-            document.getElementById('shipping').textContent = `₹${shipping.toFixed(2)}`;
-            document.getElementById('tax').textContent = `₹${tax.toFixed(2)}`;
+            document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
+            document.getElementById('shipping').textContent = `$${shipping.toFixed(2)}`;
+            document.getElementById('tax').textContent = `$${tax.toFixed(2)}`;
             <% if (order.discount && parseFloat(order.discount) > 0) { %>
-                document.getElementById('discount').textContent = `-₹${parseFloat(order.discount).toFixed(2)}`;
+                document.getElementById('discount').textContent = `-$${parseFloat(order.discount).toFixed(2)}`;
                 // Update both original and discounted totals
                 const originalAmount = subtotal + shipping + tax;
-                document.getElementById('originalTotal').textContent = `₹${originalAmount.toFixed(2)}`;
+                document.getElementById('originalTotal').textContent = `$${originalAmount.toFixed(2)}`;
             <% } %>
-            document.getElementById('total').textContent = `₹${finalAmount.toFixed(2)}`;
+            document.getElementById('total').textContent = `$${finalAmount.toFixed(2)}`;
 
-            // Log the exact amount that will be sent to Razorpay (in paise)
+            // Log the exact amount that will be sent to Razorpay (in cents)
             const razorpayAmount = Math.max(100, Math.round(finalAmount * 100));
-            console.log('Amount to be charged by Razorpay (in paise):', razorpayAmount);
-            console.log('Amount to be charged by Razorpay (in rupees):', razorpayAmount / 100);
+            console.log('Amount to be charged by Razorpay (in cents):', razorpayAmount);
+            console.log('Amount to be charged by Razorpay (in dollars):', razorpayAmount / 100);
 
             return {
                 nonCancelledItems,

@@ -144,7 +144,7 @@ exports.renderCheckoutPage = async (req, res) => {
     const tax = subtotal * 0.09; // Using 9% tax rate consistently across the application
     const total = subtotal + shipping + tax;
 
-    // Check if order is eligible for COD (not allowed for orders above Rs 1000)
+    // Check if order is eligible for COD (not allowed for orders above $1000)
     const isCodAllowed = total <= 1000;
 
     // Make sure we have a valid Razorpay key ID

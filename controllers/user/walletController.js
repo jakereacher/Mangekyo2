@@ -73,8 +73,8 @@ const addMoney = async (req, res) => {
     console.log("Generated receipt ID:", receipt, "Length:", receipt.length);
 
     const options = {
-      amount: amount * 100, // amount in the smallest currency unit (paise)
-      currency: "INR",
+      amount: amount * 100, // amount in the smallest currency unit (cents)
+      currency: "USD",
       receipt: receipt,
       payment_capture: 1 // Auto-capture payment
     };

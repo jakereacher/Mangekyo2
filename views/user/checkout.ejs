@@ -288,20 +288,20 @@
                                             <p class="text-sm text-gray-600">Quantity: <%= item.quantity %></p>
                                             <p class="text-sm text-gray-600">
                                                 <% if (item.product.hasOffer && item.product.originalPrice > item.price) { %>
-                                                    Price: <span class="line-through text-gray-400">₹<%= item.product.originalPrice.toFixed(2) %></span>
-                                                    <span class="text-green-600 font-medium">₹<%= item.price.toFixed(2) %></span>
+                                                    Price: <span class="line-through text-gray-400">$<%= item.product.originalPrice.toFixed(2) %></span>
+                                                    <span class="text-green-600 font-medium">$<%= item.price.toFixed(2) %></span>
                                                     <% if (item.product.offerType === 'fixed') { %>
-                                                        <span class="bg-red-600 text-white text-xs px-2 py-0.5 rounded ml-1">₹<%= item.product.discountAmount.toFixed(0) %> OFF</span>
+                                                        <span class="bg-red-600 text-white text-xs px-2 py-0.5 rounded ml-1">$<%= item.product.discountAmount.toFixed(0) %> OFF</span>
                                                     <% } else if (item.product.discountPercentage > 0) { %>
                                                         <span class="bg-red-600 text-white text-xs px-2 py-0.5 rounded ml-1"><%= Math.round(item.product.discountPercentage) %>% OFF</span>
                                                     <% } %>
                                                 <% } else { %>
-                                                    Price: ₹<%= item.price.toFixed(2) %>
+                                                    Price: $<%= item.price.toFixed(2) %>
                                                 <% } %>
                                             </p>
                                         </div>
                                         <div class="text-right">
-                                            <p class="font-medium">₹<%= item.totalPrice.toFixed(2) %></p>
+                                            <p class="font-medium">$<%= item.totalPrice.toFixed(2) %></p>
                                         </div>
                                     </div>
                                 <% }); %>
@@ -353,7 +353,7 @@
                     <div class="space-y-3 mb-4">
                         <div class="flex justify-between">
                             <span class="text-gray-600">Subtotal (<%= cartCount %> items)</span>
-                            <span>₹<%= subtotal %></span>
+                            <span>$<%= subtotal %></span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-600">
@@ -362,16 +362,16 @@
                                     <span class="text-xs text-blue-600 block">(<%= deliveryDescription %>)</span>
                                 <% } %>
                             </span>
-                            <span id="shippingPrice">₹<%= shipping %></span>
+                            <span id="shippingPrice">$<%= shipping %></span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-600">Tax (9%)</span>
-                            <span>₹<%= tax %></span>
+                            <span>$<%= tax %></span>
                         </div>
                         <div id="discountSection" class="hidden">
                             <div class="flex justify-between">
                                 <span class="text-gray-600">Discount</span>
-                                <span id="discountAmount">₹0.00</span>
+                                <span id="discountAmount">$0.00</span>
                             </div>
                         </div>
                     </div>
@@ -379,11 +379,11 @@
                     <div class="border-t border-gray-200 pt-4 mb-4">
                         <div id="originalTotalSection" class="flex justify-between font-bold text-lg">
                             <span>Total</span>
-                            <span id="finalTotal">₹<%= total %></span>
+                            <span id="finalTotal">$<%= total %></span>
                         </div>
                         <div id="discountedTotalSection" class="flex justify-between font-bold text-lg text-green-600 hidden">
                             <span>Total After Discount</span>
-                            <span id="discountedTotal">₹<%= total %></span>
+                            <span id="discountedTotal">$<%= total %></span>
                         </div>
                     </div>
 
@@ -401,10 +401,10 @@
                                         <p class="text-xs text-gray-600">Qty: <%= item.quantity %></p>
                                         <% if (item.product.hasOffer && item.product.originalPrice > item.price) { %>
                                             <p class="text-xs text-gray-600">
-                                                <span class="line-through text-gray-400">₹<%= item.product.originalPrice.toFixed(2) %></span>
-                                                <span class="text-green-600">₹<%= item.price.toFixed(2) %></span>
+                                                <span class="line-through text-gray-400">$<%= item.product.originalPrice.toFixed(2) %></span>
+                                                <span class="text-green-600">$<%= item.price.toFixed(2) %></span>
                                                 <% if (item.product.offerType === 'fixed') { %>
-                                                    <span class="bg-red-600 text-white text-xs px-1 py-0.5 rounded ml-1">₹<%= item.product.discountAmount.toFixed(0) %></span>
+                                                    <span class="bg-red-600 text-white text-xs px-1 py-0.5 rounded ml-1">$<%= item.product.discountAmount.toFixed(0) %></span>
                                                 <% } else if (item.product.discountPercentage > 0) { %>
                                                     <span class="bg-red-600 text-white text-xs px-1 py-0.5 rounded ml-1"><%= Math.round(item.product.discountPercentage) %>%</span>
                                                 <% } %>
@@ -412,7 +412,7 @@
                                         <% } %>
                                     </div>
                                     <div class="text-sm font-medium">
-                                        ₹<%= item.totalPrice.toFixed(2) %>
+                                        $<%= item.totalPrice.toFixed(2) %>
                                     </div>
                                 </div>
                             <% }); %>
@@ -551,18 +551,18 @@
         function updateOrderSummary(discount, finalAmount) {
             // Show discount section
             discountSection.classList.remove('hidden');
-            discountAmount.textContent = `-₹${discount.toFixed(2)}`;
+            discountAmount.textContent = `-$${discount.toFixed(2)}`;
 
             // Get the original total
             const originalAmount = parseFloat('<%= total %>');
 
             // Update the original total with strikethrough style
             document.getElementById('originalTotalSection').classList.add('line-through', 'text-gray-500');
-            finalTotal.textContent = `₹${originalAmount.toFixed(2)}`;
+            finalTotal.textContent = `$${originalAmount.toFixed(2)}`;
 
             // Show the discounted total section
             document.getElementById('discountedTotalSection').classList.remove('hidden');
-            document.getElementById('discountedTotal').textContent = `₹${finalAmount.toFixed(2)}`;
+            document.getElementById('discountedTotal').textContent = `$${finalAmount.toFixed(2)}`;
 
             // Show the remove coupon button
             removeCouponBtn.classList.remove('hidden');
@@ -591,7 +591,7 @@
 
             console.log(`Resetting total with current values - Subtotal: ${currentSubtotal}, Shipping: ${currentShipping}, Tax: ${currentTax}, Total: ${resetTotal}`);
 
-            finalTotal.textContent = `₹${resetTotal.toFixed(2)}`;
+            finalTotal.textContent = `$${resetTotal.toFixed(2)}`;
 
             // Reset the coupon data
             appliedCoupon = null;
@@ -855,12 +855,12 @@
                             );
                         }
                         else if (data.message.includes("Minimum cart value")) {
-                            const minAmount = data.message.match(/₹(\d+)/);
+                            const minAmount = data.message.match(/\$(\d+)/);
                             const minAmountValue = minAmount ? minAmount[1] : '';
                             showCouponError(
                                 data.message,
                                 'Minimum Purchase Requirement Not Met',
-                                `Add more items to your cart to reach the minimum purchase amount of ₹${minAmountValue}.`
+                                `Add more items to your cart to reach the minimum purchase amount of $${minAmountValue}.`
                             );
                         }
                         else if (data.message.includes("maximum usage limit")) {
@@ -988,10 +988,10 @@
                                 if (shippingElement) {
                                     // Update the shipping price
                                     const newShippingPrice = result.shipping.toFixed(2);
-                                    console.log(`Updating shipping price to: ₹${newShippingPrice}`);
+                                    console.log(`Updating shipping price to: $${newShippingPrice}`);
 
                                     // Simple direct update
-                                    shippingElement.textContent = `₹${newShippingPrice}`;
+                                    shippingElement.textContent = `$${newShippingPrice}`;
 
                                     // Also update the shipping variable for calculations
                                     const oldShipping = window.currentShipping;
@@ -1016,7 +1016,7 @@
                                         Swal.fire({
                                             title: 'Delivery Charge Updated',
                                             html: `
-                                                <p>Delivery charge has been updated to <strong>₹${result.shipping.toFixed(2)}</strong> based on your location.</p>
+                                                <p>Delivery charge has been updated to <strong>$${result.shipping.toFixed(2)}</strong> based on your location.</p>
                                                 <p class="text-sm text-muted mt-2">${deliveryExplanation}</p>
                                             `,
                                             icon: 'info',
@@ -1070,8 +1070,8 @@
                                 // Update the total in the UI
                                 const totalElement = document.getElementById('finalTotal');
                                 if (totalElement) {
-                                    totalElement.textContent = `₹${newTotal.toFixed(2)}`;
-                                    console.log(`Updated total price to: ₹${newTotal.toFixed(2)}`);
+                                    totalElement.textContent = `$${newTotal.toFixed(2)}`;
+                                    console.log(`Updated total price to: $${newTotal.toFixed(2)}`);
                                 }
 
                                 // If a coupon is applied, recalculate the final amount
@@ -1128,7 +1128,7 @@
         function showCodNotAllowedMessage() {
             Swal.fire({
                 title: 'Cash on Delivery Not Available',
-                text: 'Cash on Delivery is not available for orders above ₹1000. Please choose another payment method.',
+                text: 'Cash on Delivery is not available for orders above $1000. Please choose another payment method.',
                 icon: 'info',
                 confirmButtonText: 'OK'
             });
@@ -1166,7 +1166,7 @@
             } else if (selectedPaymentMethod === 'wallet') {
                 // Get wallet balance from user object - use the same value we calculated earlier
                 const walletBalance = <%= typeof user.wallet === 'number' ? user.wallet : 0 %>;
-                paymentMethodText = `Wallet Balance (₹${walletBalance.toFixed(2)} available)`;
+                paymentMethodText = `Wallet Balance ($${walletBalance.toFixed(2)} available)`;
             }
             document.getElementById('selectedPaymentDisplay').innerHTML = `
                 <p class="font-medium">${paymentMethodText}</p>
@@ -1369,7 +1369,7 @@
                     data.coupons.forEach(coupon => {
                         const discountText = coupon.type === 'percentage'
                             ? `${coupon.discountValue}% OFF`
-                            : `₹${coupon.discountValue} OFF`;
+                            : `$${coupon.discountValue} OFF`;
 
                         const expiryDate = new Date(coupon.expiryDate).toLocaleDateString();
 
@@ -1389,12 +1389,12 @@
                                             ${discountText}
                                         </div>
                                         <div class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm font-medium">
-                                            Min: ₹${coupon.minPrice}
+                                            Min: $${coupon.minPrice}
                                         </div>
                                     </div>
                                     ${coupon.maxPrice ? `
                                     <div class="mb-2">
-                                        <p class="text-sm text-gray-600">Max. Order: ₹${coupon.maxPrice}</p>
+                                        <p class="text-sm text-gray-600">Max. Order: $${coupon.maxPrice}</p>
                                     </div>` : ''}
                                     <div class="flex justify-between items-center">
                                         <span class="text-xs text-gray-500">Expires: ${expiryDate}</span>
@@ -1511,12 +1511,12 @@
                             );
                         }
                         else if (data.message.includes("Minimum cart value")) {
-                            const minAmount = data.message.match(/₹(\d+)/);
+                            const minAmount = data.message.match(/\$(\d+)/);
                             const minAmountValue = minAmount ? minAmount[1] : '';
                             showCouponError(
                                 data.message,
                                 'Minimum Purchase Requirement Not Met',
-                                `Add more items to your cart to reach the minimum purchase amount of ₹${minAmountValue}.`
+                                `Add more items to your cart to reach the minimum purchase amount of $${minAmountValue}.`
                             );
                         }
                         else if (data.message.includes("maximum usage limit")) {
@@ -1711,7 +1711,7 @@
                             const options = {
                                 key: razorpayKey, // Get from server
                                 amount: razorpayResult.order.amount,
-                                currency: razorpayResult.order.currency || 'INR',
+                                currency: razorpayResult.order.currency || 'USD',
                                 name: 'Mangeyko',
                                 description: 'Purchase from Mangeyko',
                                 order_id: razorpayResult.order.id,

@@ -239,7 +239,7 @@ exports.applyReferralCode = async (req, res) => {
     await currentUser.save();
 
     // Process referral rewards for both users
-    const REWARD_AMOUNT = 50; // ₹50 reward for both users
+    const REWARD_AMOUNT = 50; // $50 reward for both users
 
     // Add reward to referrer
     await addReferralReward(
@@ -257,7 +257,7 @@ exports.applyReferralCode = async (req, res) => {
 
     return res.status(StatusCodes.OK).json({
       success: true,
-      message: "Referral code applied successfully! ₹50 has been added to your wallet."
+      message: "Referral code applied successfully! $50 has been added to your wallet."
     });
   } catch (error) {
     console.error("Error applying referral code:", error);

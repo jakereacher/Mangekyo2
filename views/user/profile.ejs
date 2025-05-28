@@ -275,8 +275,8 @@
                             </div>
                             <div class="flex justify-between items-center mt-4 pt-3 border-t border-gray-200">
                                 <div>
-                                    <p class="text-gray-600 text-sm">Ordered on ${new Date(order.orderDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
-                                    <p class="font-medium">Total: ₹${order.finalAmount.toFixed(2)}</p>
+                                    <p class="text-gray-600 text-sm">Ordered on ${new Date(order.orderDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                                    <p class="font-medium">Total: $${order.finalAmount.toFixed(2)}</p>
                                 </div>
                                 <div class="flex gap-2">
                                     <a href="/orders/${order._id}" class="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm flex items-center">
@@ -419,7 +419,7 @@
                                     </span>
                                 </td>
                                 <td class="px-4 py-3 text-sm font-medium ${colorClass}">
-                                    ${isCredit ? '+' : '-'}₹${transaction.amount.toLocaleString('en-IN')}
+                                    ${isCredit ? '+' : '-'}$${transaction.amount.toLocaleString('en-US')}
                                 </td>
                             </tr>
                         `;
@@ -539,13 +539,13 @@
                     // Update Refunds & Deposits
                     const creditsElement = document.querySelector('.grid.grid-cols-1.md\\:grid-cols-3 > div:nth-child(1) .text-xl.font-bold');
                     if (creditsElement) {
-                        creditsElement.textContent = `₹${totalCredits.toLocaleString('en-IN')}`;
+                        creditsElement.textContent = `$${totalCredits.toLocaleString('en-US')}`;
                     }
 
                     // Update Purchases
                     const debitsElement = document.querySelector('.grid.grid-cols-1.md\\:grid-cols-3 > div:nth-child(2) .text-xl.font-bold');
                     if (debitsElement) {
-                        debitsElement.textContent = `₹${totalDebits.toLocaleString('en-IN')}`;
+                        debitsElement.textContent = `$${totalDebits.toLocaleString('en-US')}`;
                     }
 
                     // Update Total Transactions
@@ -568,7 +568,7 @@
                     <div class="flex flex-col md:flex-row items-center justify-between">
                         <div class="mb-4 md:mb-0 text-center md:text-left">
                             <p class="text-white text-opacity-90 mb-1">Available Balance</p>
-                            <p class="text-4xl font-bold">₹<%= (user.wallet || 0).toLocaleString('en-IN') %></p>
+                            <p class="text-4xl font-bold">$<%= (user.wallet || 0).toLocaleString('en-US') %></p>
                             <p class="text-sm text-white text-opacity-80 mt-1">Your wallet is ready to use</p>
                         </div>
                         <div>
@@ -587,7 +587,7 @@
                         </div>
                         <div>
                             <p class="text-gray-500 text-sm">Refunds & Deposits</p>
-                            <p class="text-xl font-bold">₹<%= (user.walletTotalCredits || 0).toLocaleString('en-IN') %></p>
+                            <p class="text-xl font-bold">$<%= (user.walletTotalCredits || 0).toLocaleString('en-US') %></p>
                         </div>
                     </div>
                     <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex items-center">
@@ -596,7 +596,7 @@
                         </div>
                         <div>
                             <p class="text-gray-500 text-sm">Purchases</p>
-                            <p class="text-xl font-bold">₹<%= (user.walletTotalDebits || 0).toLocaleString('en-IN') %></p>
+                            <p class="text-xl font-bold">$<%= (user.walletTotalDebits || 0).toLocaleString('en-US') %></p>
                         </div>
                     </div>
                     <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex items-center">
@@ -634,7 +634,7 @@
                                         <% user.walletTransactions.forEach(transaction => { %>
                                             <tr class="hover:bg-gray-50 transition">
                                                 <td class="px-4 py-3 text-sm text-gray-500">
-                                                    <%= new Date(transaction.createdAt).toLocaleDateString('en-IN', {
+                                                    <%= new Date(transaction.createdAt).toLocaleDateString('en-US', {
                                                         day: 'numeric',
                                                         month: 'short',
                                                         year: 'numeric',
@@ -651,7 +651,7 @@
                                                     </span>
                                                 </td>
                                                 <td class="px-4 py-3 text-sm font-medium <%= transaction.type === 'credit' ? 'text-green-600' : 'text-red-600' %>">
-                                                    <%= transaction.type === 'credit' ? '+' : '-' %>₹<%= transaction.amount.toLocaleString('en-IN') %>
+                                                    <%= transaction.type === 'credit' ? '+' : '-' %>$<%= transaction.amount.toLocaleString('en-US') %>
                                                 </td>
                                             </tr>
                                         <% }); %>
@@ -755,7 +755,7 @@
                             <p class="text-sm text-gray-600">Friends Referred</p>
                         </div>
                         <div class="bg-gray-50 p-4 rounded-lg text-center">
-                            <p class="text-3xl font-bold text-green-600">₹<%= referral.totalEarnings.toLocaleString('en-IN') %></p>
+                            <p class="text-3xl font-bold text-green-600">$<%= referral.totalEarnings.toLocaleString('en-US') %></p>
                             <p class="text-sm text-gray-600">Total Earned</p>
                         </div>
                     </div>
@@ -809,15 +809,15 @@
                                 <div class="flex justify-between items-start mb-3">
                                     <div>
                                         <p class="text-xl font-bold text-gray-800">
-                                            <%= coupon.type === 'percentage' ? coupon.discountValue + '%' : '₹' + coupon.discountValue %>
+                                            <%= coupon.type === 'percentage' ? coupon.discountValue + '%' : '$' + coupon.discountValue %>
                                             <span class="text-sm font-normal text-gray-600">
                                                 <%= coupon.type === 'percentage' ? 'OFF' : 'FLAT OFF' %>
                                             </span>
                                         </p>
                                         <p class="text-sm text-gray-600 mt-1">
-                                            Min. Order: ₹<%= coupon.minPrice.toLocaleString('en-IN') %>
+                                            Min. Order: $<%= coupon.minPrice.toLocaleString('en-US') %>
                                             <% if (coupon.maxPrice) { %>
-                                                | Max. Order: ₹<%= coupon.maxPrice.toLocaleString('en-IN') %>
+                                                | Max. Order: $<%= coupon.maxPrice.toLocaleString('en-US') %>
                                             <% } %>
                                         </p>
                                     </div>
@@ -1313,7 +1313,7 @@
                 const options = {
                     key: '<%= razorpayKeyId %>', // This should be passed from the server
                     amount: result.order.amount,
-                    currency: result.order.currency || 'INR',
+                    currency: result.order.currency || 'USD',
                     name: 'Mangeyko',
                     description: 'Add money to wallet',
                     order_id: result.order.id,
@@ -1350,7 +1350,7 @@
                                 // Show success message
                                 Swal.fire({
                                     title: 'Money Added Successfully!',
-                                    text: `₹${amount} has been added to your wallet.`,
+                                    text: `$${amount} has been added to your wallet.`,
                                     icon: 'success',
                                     confirmButtonText: 'OK'
                                 }).then(() => {

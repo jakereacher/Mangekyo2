@@ -85,7 +85,7 @@ const createRazorpayOrder = async (req, res) => {
     // Ensure amount is not negative
     finalAmount = Math.max(0, finalAmount);
 
-    // Convert to paise (smallest currency unit)
+    // Convert to cents (smallest currency unit for USD)
     const amount = Math.max(100, Math.round(finalAmount * 100));
 
     console.log('Payment calculation for non-cancelled items:', {
@@ -94,12 +94,12 @@ const createRazorpayOrder = async (req, res) => {
       tax,
       discount: order.discount || 0,
       finalAmount,
-      finalAmountInPaise: amount
+      finalAmountInCents: amount
     });
 
     const options = {
       amount: amount,
-      currency: 'INR',
+      currency: 'USD',
       receipt: order._id.toString(),
       payment_capture: 1 // Auto-capture payment
     };
