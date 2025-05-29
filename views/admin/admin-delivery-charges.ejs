@@ -448,7 +448,29 @@
             }
         });
 
-        // Update Delivery Charge
+        // Real-time charge validation and preview
+        $('#editCharge').on('input', function() {
+            const charge = $(this).val();
+            const chargePreview = $('#chargePreview');
+
+            if (!chargePreview.length) {
+                // Add preview element if it doesn't exist
+                $(this).closest('.form-group').append('<div id="chargePreview" class="form-text"></div>');
+            }
+
+            if (charge && !isNaN(charge) && parseFloat(charge) > 0) {
+                $('#chargePreview').html(`<i class="fas fa-info-circle text-info"></i> New charge will be: <strong>$${parseFloat(charge).toFixed(2)}</strong>`);
+                $(this).removeClass('is-invalid').addClass('is-valid');
+            } else if (charge) {
+                $('#chargePreview').html(`<i class="fas fa-exclamation-triangle text-warning"></i> Please enter a valid amount greater than 0`);
+                $(this).removeClass('is-valid').addClass('is-invalid');
+            } else {
+                $('#chargePreview').html('');
+                $(this).removeClass('is-valid is-invalid');
+            }
+        });
+
+        // Update Delivery Charge with dynamic table update
         $('#updateDeliveryChargeBtn').click(function() {
             const id = $('#editChargeId').val();
             const charge = $('#editCharge').val();
@@ -487,14 +509,19 @@
                 success: function(response) {
                     console.log('Update response:', response); // Debug log
                     if (response.success) {
+                        // Update the table row dynamically instead of reloading
+                        updateTableRow(id, response.deliveryCharge);
+
+                        // Close the modal
+                        $('#editDeliveryChargeModal').modal('hide');
+
+                        // Show success message
                         Swal.fire({
                             icon: 'success',
                             title: 'Updated!',
                             text: response.message,
                             timer: 2000,
                             showConfirmButton: false
-                        }).then(() => {
-                            location.reload();
                         });
                     } else {
                         Swal.fire('Error', response.message, 'error');
@@ -511,6 +538,47 @@
                 }
             });
         });
+
+        // Function to update table row dynamically
+        function updateTableRow(id, updatedData) {
+            const $row = $(`button[data-id="${id}"]`).closest('tr');
+
+            if ($row.length) {
+                // Update charge display
+                $row.find('td:nth-child(4)').html(`<span class="h5 text-success">$${updatedData.charge.toFixed(2)}</span>`);
+
+                // Update status badge
+                const statusBadge = updatedData.isActive ?
+                    '<span class="badge bg-success">Active</span>' :
+                    '<span class="badge bg-danger">Inactive</span>';
+                $row.find('td:nth-child(5)').html(statusBadge);
+
+                // Update cities display
+                if (updatedData.cities && Array.isArray(updatedData.cities)) {
+                    let citiesHtml = '';
+                    const displayCities = updatedData.cities.slice(0, 3);
+                    displayCities.forEach(city => {
+                        citiesHtml += `<span class="badge bg-light text-dark me-1 mb-1">${city}</span>`;
+                    });
+                    if (updatedData.cities.length > 3) {
+                        citiesHtml += `<span class="badge bg-secondary">+${updatedData.cities.length - 3} more</span>`;
+                    }
+                    $row.find('td:nth-child(3) .cities-container').html(citiesHtml);
+                }
+
+                // Update button data attributes
+                const $editBtn = $row.find('.edit-charge-btn');
+                $editBtn.attr('data-charge', updatedData.charge);
+                $editBtn.attr('data-is-active', updatedData.isActive);
+                $editBtn.attr('data-cities', JSON.stringify(updatedData.cities));
+
+                // Add visual feedback for the updated row
+                $row.addClass('table-success');
+                setTimeout(() => {
+                    $row.removeClass('table-success');
+                }, 3000);
+            }
+        }
 
 
     });

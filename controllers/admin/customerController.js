@@ -1,12 +1,21 @@
+/**
+ * CustomerController
+ */
+
 const User=require("../../models/userSchema");
 
+//=================================================================================================
+// Customer Info
+//=================================================================================================
+// This function gets the customer information with pagination.
+// It displays the customer information in the customer page.
+//=================================================================================================
 const customerInfo = async (req, res) => {
   try {
     const search = req.query.search || "";
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
 
-    // Build search query
     const searchQuery = {
       isAdmin: false
     };
@@ -19,18 +28,15 @@ const customerInfo = async (req, res) => {
       ];
     }
 
-    // Fetch users with pagination
     const userData = await User.find(searchQuery)
       .sort({ createdAt: -1 })
       .limit(limit)
       .skip((page - 1) * limit)
       .exec();
 
-    // Count total users for pagination
     const totalItems = await User.countDocuments(searchQuery);
     const totalPages = Math.ceil(totalItems / limit);
 
-    // Build search params for pagination links
     const searchParams = search ? `&search=${encodeURIComponent(search)}` : '';
     const searchParamsWithoutLimit = search ? `&search=${encodeURIComponent(search)}` : '';
 
@@ -50,7 +56,12 @@ const customerInfo = async (req, res) => {
   }
 };
 
-
+//=================================================================================================
+// Customer Blocked
+//=================================================================================================
+// This function blocks a customer.
+// It updates the customer's isBlocked field to true.
+//=================================================================================================
 const customerBlocked=async (req,res) => {
   try {
     let id=req.query.id;
@@ -65,6 +76,12 @@ const customerBlocked=async (req,res) => {
   }
 }
 
+//=================================================================================================
+// Customer Unblocked
+//=================================================================================================
+// This function unblocks a customer.
+// It updates the customer's isBlocked field to false.
+//=================================================================================================
 const customerunBlocked= async (req,res) => {
   try {
     let id= req.query.id;
@@ -75,19 +92,12 @@ const customerunBlocked= async (req,res) => {
   }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+//=================================================================================================
+// Module Exports
+//=================================================================================================
+// This exports the customer controller functions.
+// It exports the customer controller functions to be used in the admin routes.
+//=================================================================================================
 module.exports = {
   customerInfo,
   customerBlocked,

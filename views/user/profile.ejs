@@ -1313,11 +1313,20 @@
                 const options = {
                     key: '<%= razorpayKeyId %>', // This should be passed from the server
                     amount: result.order.amount,
-                    currency: result.order.currency || 'USD',
+                    currency: result.order.currency || 'INR',
                     name: 'Mangeyko',
                     description: 'Add money to wallet',
                     order_id: result.order.id,
                     image: 'https://i.imgur.com/3g7nmJC.png', // Add your logo URL here
+
+
+                    prefill: {
+                        name: '<%= user.name %>',
+                        email: '<%= user.email %>'
+                    },
+                    theme: {
+                        color: '#000000'
+                    },
                     handler: async function(response) {
                         // Show loading indicator
                         Swal.fire({

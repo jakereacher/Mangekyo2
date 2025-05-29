@@ -617,11 +617,13 @@
                 const options = {
                     key: '<%= razorpayKeyId %>', // This should be passed from the server
                     amount: result.order.amount,
-                    currency: result.order.currency || 'USD',
+                    currency: result.order.currency || 'INR',
                     name: 'Mangeyko',
                     description: 'Complete your pending payment',
                     order_id: result.order.id,
                     image: 'https://i.imgur.com/3g7nmJC.png', // Add your logo URL here
+
+
                     handler: async function(response) {
                         // Show loading indicator
                         Swal.fire({

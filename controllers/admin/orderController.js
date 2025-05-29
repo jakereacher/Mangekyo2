@@ -1,3 +1,7 @@
+/**
+ * OrderController
+ */
+
 const mongoose = require("mongoose");
 const Order = require("../../models/orderSchema");
 const User = require("../../models/userSchema");
@@ -7,14 +11,24 @@ const WalletTransaction = require("../../models/walletTransactionSchema");
 const StatusCodes = require("../../utils/httpStatusCodes");
 const winston = require("winston");
 
-// Configure Winston logger
+//=================================================================================================
+// Logger
+//=================================================================================================
+// This is a logger for the order controller.
+// It logs the errors and other information to the console and a file.
+//=================================================================================================
 const logger = winston.createLogger({
   level: "error",
   format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
   transports: [new winston.transports.File({ filename: "error.log" }), new winston.transports.Console()],
 });
 
-// Helper function to calculate overall order status
+//=================================================================================================
+// Calculate Overall Status
+//=================================================================================================
+// This function calculates the overall status of the order.
+// It returns the overall status of the order.
+//=================================================================================================
 function calculateOverallStatus(orderedItems) {
   if (!orderedItems || orderedItems.length === 0) return "Processing";
 
@@ -42,7 +56,12 @@ function calculateOverallStatus(orderedItems) {
   return "Processing";
 }
 
-// Get all orders for admin
+//=================================================================================================
+// Get All Orders
+//=================================================================================================
+// This function gets all the orders with pagination.
+// It displays the orders in the orders page.
+//=================================================================================================
 exports.getAllOrders = async (req, res) => {
   try {
     const adminId = req.session.admin;
@@ -71,7 +90,7 @@ exports.getAllOrders = async (req, res) => {
       customerEmail: order.userId.email,
       formattedOrderDate: new Date(order.orderDate).toLocaleDateString(),
       finalAmount: order.finalAmount || order.totalPrice + order.shippingCharge + (order.taxAmount || 0),
-      // Use orderNumber if available, otherwise use a shortened version of the ID (5 digits)
+
       displayOrderId: order.orderNumber || `MK${order._id.toString().slice(-5)}`
     }));
 
@@ -96,7 +115,12 @@ exports.getAllOrders = async (req, res) => {
   }
 };
 
-// Get admin order details
+//=================================================================================================
+// Get Admin Order Details
+//=================================================================================================
+// This function gets the order details for the admin.
+// It displays the order details in the order details page.
+//=================================================================================================
 exports.getAdminOrderDetails = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -106,7 +130,6 @@ exports.getAdminOrderDetails = async (req, res) => {
       return res.status(StatusCodes.UNAUTHORIZED).redirect("/admin/login");
     }
 
-    // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(orderId)) {
       logger.error("Invalid orderId format", { orderId });
       return res.status(StatusCodes.BAD_REQUEST).render("admin/error", {
@@ -128,34 +151,25 @@ exports.getAdminOrderDetails = async (req, res) => {
       });
     }
 
-    // Calculate overall status
     const status = calculateOverallStatus(order.orderedItems);
 
-    // Check if all items are cancelled
     const allItemsCancelled = order.orderedItems.every(item => item.status === "Cancelled");
 
-    // Get non-cancelled items
     const nonCancelledItems = order.orderedItems.filter(item => item.status !== "Cancelled");
 
-    // Calculate subtotal for non-cancelled items
     const subtotal = nonCancelledItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-    // Add shipping and tax
     const shipping = order.shippingCharge || 0;
     const tax = order.taxAmount || (subtotal * 0.09); // Default tax rate if not specified
 
-    // Calculate final amount
     let finalAmount = subtotal + shipping + tax;
 
-    // Apply discount if applicable
     if (order.discount && order.discount > 0) {
       finalAmount -= order.discount;
     }
 
-    // Ensure amount is not negative
     finalAmount = Math.max(0, finalAmount);
 
-    // If all items are cancelled, update the payment status display
     let displayPaymentStatus = order.paymentStatus;
     if (allItemsCancelled && (order.paymentStatus === 'Pending' || order.paymentStatus === 'Failed')) {
       displayPaymentStatus = 'Cancelled';
@@ -175,7 +189,7 @@ exports.getAdminOrderDetails = async (req, res) => {
               ? item.product.productImage[0]
               : "/images/default-product.jpg",
         },
-        // Include original price and discount percentage if available
+
         originalPrice: item.originalPrice || item.price,
         discountPercentage: item.discountPercentage || 0,
         totalPrice: (item.quantity * item.price).toFixed(2),
@@ -190,7 +204,7 @@ exports.getAdminOrderDetails = async (req, res) => {
       userName: order.userId.fullName,
       paymentStatus: displayPaymentStatus,
       allItemsCancelled: allItemsCancelled,
-      // Use orderNumber if available, otherwise use a shortened version of the ID (5 digits)
+
       displayOrderId: order.orderNumber || `MK${order._id.toString().slice(-5)}`
     };
 
@@ -213,15 +227,17 @@ exports.getAdminOrderDetails = async (req, res) => {
   }
 };
 
-// Update order item status (admin)
+//=================================================================================================
+// Update Order Item Status
+//=================================================================================================
+// This function updates the status of an item in an order.
+// It updates the status of the item in the database.
+//=================================================================================================
 exports.updateOrderItemStatus = async (req, res) => {
   try {
     const { orderId } = req.params;
     const { productId, status } = req.body;
     const adminId = req.session.admin;
-
-    console.log("Admin update order status request:", { orderId, productId, status, adminId });
-
     if (!adminId) {
       logger.error("Unauthorized attempt to update item status", { orderId, productId, adminId: null });
       return res.status(StatusCodes.UNAUTHORIZED).json({
@@ -230,7 +246,6 @@ exports.updateOrderItemStatus = async (req, res) => {
       });
     }
 
-    // Validate ObjectId for orderId
     if (!mongoose.Types.ObjectId.isValid(orderId)) {
       logger.error("Invalid orderId format", { orderId });
       return res.status(StatusCodes.BAD_REQUEST).json({
@@ -239,7 +254,6 @@ exports.updateOrderItemStatus = async (req, res) => {
       });
     }
 
-    // Validate ObjectId for productId
     if (!mongoose.Types.ObjectId.isValid(productId)) {
       logger.error("Invalid productId format", { productId });
       return res.status(StatusCodes.BAD_REQUEST).json({
@@ -275,11 +289,9 @@ exports.updateOrderItemStatus = async (req, res) => {
       });
     }
 
-    // Handle product quantity updates
     try {
       const product = await Product.findById(productId);
 
-      // If changing to Cancelled and not already cancelled, restore quantity and process refund automatically
       if (status === "Cancelled" && item.status !== "Cancelled") {
         const updatedProduct = await Product.findByIdAndUpdate(
           productId,
@@ -287,14 +299,12 @@ exports.updateOrderItemStatus = async (req, res) => {
           { new: true }
         );
 
-        // Update status based on new quantity
         if (updatedProduct.quantity > 0 && updatedProduct.status !== "Available") {
           updatedProduct.status = "Available";
           await updatedProduct.save();
         }
         logger.info("Restored product quantity", { productId, quantity: item.quantity });
 
-        // Process refund automatically for all payment methods
         if (order.paymentStatus === "Paid" || order.paymentMethod === "razorpay" || order.paymentMethod === "wallet") {
           const refundAmount = item.price * item.quantity;
           let wallet = await Wallet.findOne({ user: order.userId });
@@ -305,7 +315,6 @@ exports.updateOrderItemStatus = async (req, res) => {
           wallet.balance += refundAmount;
           await wallet.save();
 
-          // Create a wallet transaction record
           const transaction = new WalletTransaction({
             user: order.userId,
             amount: refundAmount,
@@ -319,48 +328,37 @@ exports.updateOrderItemStatus = async (req, res) => {
           logger.info("Added refund to user wallet", { userId: order.userId, amount: refundAmount });
         }
 
-        // Mark as cancelled by admin
         order.cancelledBy = "admin";
         order.cancelledAt = new Date();
 
-        // Recalculate order totals
-        // Get all non-cancelled items (excluding the current item being cancelled)
+
         const nonCancelledItems = order.orderedItems.filter(i =>
           i.status !== "Cancelled" && i._id.toString() !== item._id.toString()
         );
 
-        // Calculate new subtotal
         const newSubtotal = nonCancelledItems.reduce((sum, i) => sum + (i.price * i.quantity), 0);
 
-        // Update order totals
         order.totalPrice = newSubtotal;
 
-        // Recalculate tax (assuming 9% tax rate)
         const newTax = newSubtotal * 0.09;
         order.taxAmount = newTax;
 
-        // Calculate new final amount (subtotal + shipping + tax - discount)
         const newFinalAmount = newSubtotal + (order.shippingCharge || 0) + newTax - (order.discount || 0);
         order.finalAmount = Math.max(0, newFinalAmount); // Ensure it's not negative
 
-        // Check if all items are now cancelled
         const allItemsCancelled = order.orderedItems.every(i =>
           i.status === "Cancelled" || i._id.toString() === item._id.toString()
         );
 
-        // If all items are cancelled, update the order status
         if (allItemsCancelled) {
-          console.log('All items in order are now cancelled');
           order.orderStatus = "Cancelled";
 
-          // If payment is pending or failed, mark it as cancelled
           if (order.paymentStatus === 'Pending' || order.paymentStatus === 'Failed') {
             order.paymentStatus = 'Cancelled';
           }
         }
       }
 
-      // If changing from Cancelled to another status, reduce quantity
       if (item.status === "Cancelled" && status !== "Cancelled") {
         if (product.quantity < item.quantity) {
           logger.error("Insufficient stock for status update", {
@@ -380,7 +378,6 @@ exports.updateOrderItemStatus = async (req, res) => {
           { new: true }
         );
 
-        // Update status if quantity becomes zero
         if (updatedProduct.quantity <= 0 && updatedProduct.status !== "Out of Stock") {
           updatedProduct.status = "Out of Stock";
           await updatedProduct.save();
@@ -388,7 +385,6 @@ exports.updateOrderItemStatus = async (req, res) => {
         logger.info("Reduced product quantity", { productId, quantity: item.quantity });
       }
 
-      // Update status-specific timestamps
       if (status === "Delivered" && item.status !== "Delivered") {
         item.order_delivered_date = new Date();
       } else if (status === "Shipped" && item.status !== "Shipped") {
@@ -398,21 +394,16 @@ exports.updateOrderItemStatus = async (req, res) => {
         item.order_cancel_reason = "Cancelled by admin";
       }
 
-      // Update the status
       const oldStatus = item.status;
       item.status = status;
 
-      // Save the order
       await order.save();
 
-      // Update payment status if all items are delivered for COD orders
       if (order.paymentMethod === "cod" && order.orderedItems.every((item) => item.status === "Delivered")) {
         order.paymentStatus = "Paid";
         await order.save();
         logger.info("Updated payment status to Paid", { orderId });
       }
-
-      console.log("Order status updated successfully");
       res.status(StatusCodes.OK).json({
         success: true,
         message: "Item status updated successfully",
@@ -443,10 +434,13 @@ exports.updateOrderItemStatus = async (req, res) => {
   }
 };
 
-// Cancellation requests functionality has been removed as per requirements
-// All cancellations are now processed automatically without requiring admin approval
+//=================================================================================================
+// Get Return Requests
+//=================================================================================================
+// This function gets the return requests with pagination.
+// It displays the return requests in the return requests page.
+//=================================================================================================
 
-// Get all return requests for admin with pagination
 exports.getReturnRequests = async (req, res) => {
   try {
     const adminId = req.session.admin;
@@ -455,12 +449,10 @@ exports.getReturnRequests = async (req, res) => {
       return res.status(StatusCodes.UNAUTHORIZED).redirect("/admin/login");
     }
 
-    // Pagination parameters
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 2; // Default to 2 requests per page
     const skip = (page - 1) * limit;
 
-    // Find all orders with items that have return requests
     const orders = await Order.find({
       "orderedItems.status": "Return Request",
     })
@@ -469,7 +461,6 @@ exports.getReturnRequests = async (req, res) => {
       .sort({ orderDate: -1 })
       .lean();
 
-    // Format the return requests for display
     let returnRequests = [];
     orders.forEach((order) => {
       order.orderedItems.forEach((item) => {
@@ -495,20 +486,15 @@ exports.getReturnRequests = async (req, res) => {
       });
     });
 
-    // Get total count for pagination
     const totalItems = returnRequests.length;
 
-    // Calculate pagination values
     const totalPages = Math.ceil(totalItems / limit) || 1; // Ensure at least 1 page even if no items
 
-    // Apply pagination to the formatted requests
     returnRequests = returnRequests.slice(skip, skip + limit);
 
-    // Build search params for pagination links
     const searchParams = req.query.search ? `&search=${encodeURIComponent(req.query.search)}` : '';
     const searchParamsWithoutLimit = req.query.search ? `&search=${encodeURIComponent(req.query.search)}` : '';
 
-    // Log pagination info for debugging
     console.log('Return Requests Pagination:', {
       page,
       limit,
@@ -540,15 +526,17 @@ exports.getReturnRequests = async (req, res) => {
   }
 };
 
-// Approve a return request
+//=================================================================================================
+// Approve Return
+//=================================================================================================
+// This function approves a return.
+// It updates the status of the return in the database.
+//=================================================================================================
 exports.approveReturn = async (req, res) => {
   try {
     const { orderId } = req.params;
     const { productId } = req.body;
     const adminId = req.session.admin;
-
-    console.log("Admin approve return request:", { orderId, productId, adminId });
-
     if (!adminId) {
       logger.error("Unauthorized attempt to approve return", { orderId, productId, adminId: null });
       return res.status(StatusCodes.UNAUTHORIZED).json({
@@ -557,7 +545,6 @@ exports.approveReturn = async (req, res) => {
       });
     }
 
-    // Validate ObjectIds
     if (!mongoose.Types.ObjectId.isValid(orderId) || !mongoose.Types.ObjectId.isValid(productId)) {
       logger.error("Invalid orderId or productId format", { orderId, productId });
       return res.status(StatusCodes.BAD_REQUEST).json({
@@ -566,7 +553,6 @@ exports.approveReturn = async (req, res) => {
       });
     }
 
-    // Find the order
     const order = await Order.findById(orderId);
     if (!order) {
       logger.error("Order not found for return approval", { orderId });
@@ -576,30 +562,27 @@ exports.approveReturn = async (req, res) => {
       });
     }
 
-  //find the user
-    // const user = await User.findById(order.userId);
-    // if (!user) {
-    //   logger.error("User not found for return approval", { userId: order.userId });
-    //   return res.status(StatusCodes.NOT_FOUND).json({
-    //     success: false,
-    //     message: "User not found",
-    //   });
-    // }
 
 
-    // // find the wallet
-    // const wallet = await Wallet.findById( user._id );
-    // console.log("walletCheck2",wallet)
-    // if (!wallet) {
-    //   wallet = await Wallet.create({
-    //     _id: user._id, // Assuming you're using user._id as the wallet ID
-    //     userId: user._id, // Optional, if your Wallet schema includes this
-    //     balance: product.saleprice, // Or whatever default values you use
-    //     // other fields...
-    //   });
-    //   console.log("New wallet created:", wallet);
-    // }
-    // Find the order item
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     const item = order.orderedItems.find((item) => item.product.toString() === productId);
     if (!item) {
       logger.error("Item not found in order", { orderId, productId });
@@ -609,7 +592,6 @@ exports.approveReturn = async (req, res) => {
       });
     }
 
-    // Check if item has a pending return request
     if (item.status !== "Return Request" || item.order_return_status !== "Pending") {
       logger.error("Item does not have a pending return request", { orderId, productId, status: item.status });
       return res.status(StatusCodes.BAD_REQUEST).json({
@@ -618,14 +600,13 @@ exports.approveReturn = async (req, res) => {
       });
     }
 
-    // Update item status
     item.status = "Returned";
     item.order_return_status = "Approved";
     item.order_returned_date = new Date();
     refundAmount = item.price * item.quantity; // Calculate refund amount
-    // Add the refund amount to the user's wallet
+
     try {
-      // Find or create user wallet
+
       let wallet = await Wallet.findOne({ user: order.userId });
       if (!wallet) {
         wallet = new Wallet({
@@ -634,7 +615,6 @@ exports.approveReturn = async (req, res) => {
         });
       }
 
-      // Add wallet transaction record
       const transaction = new WalletTransaction({
         user: order.userId,
         amount: refundAmount,
@@ -652,26 +632,18 @@ exports.approveReturn = async (req, res) => {
       amount: refundAmount,
       });
 
-// Save the transaction
 await transaction.save();
 logger.info("Transaction recorded for refund", {
   transactionId: transaction._id,
   userId: order.userId,
 });
 
-
-
-
-      // Update product quantity
       await Product.findByIdAndUpdate(productId, {
         $inc: { quantity: item.quantity },
       });
       logger.info("Restored product quantity", { productId, quantity: item.quantity });
 
-      // Save the order
       await order.save();
-
-      console.log("Return approved successfully");
       res.status(StatusCodes.OK).json({
         success: true,
         message: "Return approved and refund added to user wallet",
@@ -697,15 +669,17 @@ logger.info("Transaction recorded for refund", {
   }
 };
 
-// Reject a return request
+//=================================================================================================
+// Reject Return
+//=================================================================================================
+// This function rejects a return.
+// It updates the status of the return in the database.
+//=================================================================================================
 exports.rejectReturn = async (req, res) => {
   try {
     const { orderId } = req.params;
     const { productId, adminResponse } = req.body;
     const adminId = req.session.admin;
-
-    console.log("Admin reject return request:", { orderId, productId, adminResponse, adminId });
-
     if (!adminId) {
       logger.error("Unauthorized attempt to reject return", { orderId, productId, adminId: null });
       return res.status(StatusCodes.UNAUTHORIZED).json({
@@ -714,7 +688,6 @@ exports.rejectReturn = async (req, res) => {
       });
     }
 
-    // Validate ObjectIds
     if (!mongoose.Types.ObjectId.isValid(orderId) || !mongoose.Types.ObjectId.isValid(productId)) {
       logger.error("Invalid orderId or productId format", { orderId, productId });
       return res.status(StatusCodes.BAD_REQUEST).json({
@@ -723,7 +696,6 @@ exports.rejectReturn = async (req, res) => {
       });
     }
 
-    // Validate admin response
     if (!adminResponse || adminResponse.trim() === "") {
       logger.error("Missing admin response for return rejection", { orderId, productId });
       return res.status(StatusCodes.BAD_REQUEST).json({
@@ -732,7 +704,6 @@ exports.rejectReturn = async (req, res) => {
       });
     }
 
-    // Find the order
     const order = await Order.findById(orderId);
     if (!order) {
       logger.error("Order not found for return rejection", { orderId });
@@ -742,7 +713,6 @@ exports.rejectReturn = async (req, res) => {
       });
     }
 
-    // Find the order item
     const item = order.orderedItems.find((item) => item.product.toString() === productId);
     if (!item) {
       logger.error("Item not found in order", { orderId, productId });
@@ -752,7 +722,6 @@ exports.rejectReturn = async (req, res) => {
       });
     }
 
-    // Check if item has a pending return request
     if (item.status !== "Return Request" || item.order_return_status !== "Pending") {
       logger.error("Item does not have a pending return request", { orderId, productId, status: item.status });
       return res.status(StatusCodes.BAD_REQUEST).json({
@@ -761,15 +730,11 @@ exports.rejectReturn = async (req, res) => {
       });
     }
 
-    // Update item status
     item.status = "Delivered"; // Revert back to delivered
     item.order_return_status = "Rejected";
     item.adminResponse = adminResponse;
 
-    // Save the order
     await order.save();
-
-    console.log("Return rejected successfully");
     res.status(StatusCodes.OK).json({
       success: true,
       message: "Return request rejected",

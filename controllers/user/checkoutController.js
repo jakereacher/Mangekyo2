@@ -1,3 +1,7 @@
+/**
+ * CheckoutController
+ */
+
 const Cart = require("../../models/cartSchema");
 const Product = require("../../models/productSchema");
 const Order = require("../../models/orderSchema");
@@ -13,6 +17,12 @@ const { razorpayKeyId } = require("../../config/razorpay");
 const { processWalletPayment } = require("./walletController");
 const deliveryChargeController = require("../admin/deliveryChargeController");
 
+//=================================================================================================
+// Render Checkout Page
+//=================================================================================================
+// This function renders the checkout page.
+// It renders the checkout page.
+//=================================================================================================
 exports.renderCheckoutPage = async (req, res) => {
   try {
     const userId = req.session.user;
@@ -21,22 +31,17 @@ exports.renderCheckoutPage = async (req, res) => {
       return res.redirect("/login");
     }
 
-    // Find user and populate wallet data
     const user = await User.findById(userId).lean();
     if (!user) {
       return res.status(StatusCodes.NOT_FOUND).render('page-404');
     }
 
-    // Find wallet for this user
     const wallet = await Wallet.findOne({ user: userId }).lean();
 
-    // If wallet exists, use its balance, otherwise use the user.wallet value or default to 0
     if (wallet) {
       user.wallet = wallet.balance;
-      console.log("Using wallet balance from Wallet collection:", wallet.balance);
     } else {
       user.wallet = user.wallet || 0;
-      console.log("Using wallet balance from User document:", user.wallet);
     }
 
     const cart = await Cart.findOne({ userId }).lean();
@@ -45,7 +50,6 @@ exports.renderCheckoutPage = async (req, res) => {
       return res.redirect('/cart');
     }
 
-    // Get the offerService to calculate best offer prices
     const offerService = require('../../services/offerService');
 
     const cartItems = await Promise.all(
@@ -57,26 +61,20 @@ exports.renderCheckoutPage = async (req, res) => {
           ? product.productImage[0]
           : '/images/default-product.jpg';
 
-        // Get the best offer for this product
         const basePrice = product.price || 0;
         const offerResult = await offerService.getBestOfferForProduct(product._id, basePrice);
 
-        // Use the price from cart (which should already have the best offer applied)
-        // but double-check it against the current best offer price
+
         const currentBestPrice = offerResult.finalPrice;
 
-        // If there's a significant difference between cart price and current best price,
-        // use the current best price (this handles cases where offers changed after adding to cart)
+
         const priceDifference = Math.abs(item.price - currentBestPrice);
         const shouldUpdatePrice = priceDifference > 0.01; // 1 cent threshold for floating point comparison
 
         if (shouldUpdatePrice) {
-          console.log(`Price difference detected for ${product.productName}: Cart price: ${item.price}, Current best price: ${currentBestPrice}`);
-          // Update the item price and total price
           item.price = currentBestPrice;
           item.totalPrice = currentBestPrice * item.quantity;
 
-          // Also update the cart in the database
           await Cart.updateOne(
             { userId, "products.productId": item.productId },
             {
@@ -107,32 +105,28 @@ exports.renderCheckoutPage = async (req, res) => {
 
     const validCartItems = cartItems.filter(item => item !== null);
 
-    // Calculate subtotal based on the updated prices
     const subtotal = validCartItems.reduce((sum, item) => sum + item.totalPrice, 0);
 
-    // Get default address for delivery charge calculation
     let defaultAddress = null;
     if (Array.isArray(user.address) && user.address.length > 0) {
       defaultAddress = user.address.find((addr, idx) => addr && idx > 0 && addr.isDefault) || user.address[1];
     }
 
-    // Calculate delivery charge based on location
-    let shippingInfo = deliveryChargeController.getDefaultDeliveryCharge(); // Default charge
+    let shippingInfo = await deliveryChargeController.getDefaultDeliveryCharge(); // Default charge
     let shipping = shippingInfo.charge;
     let deliveryDescription = shippingInfo.description;
 
     if (defaultAddress && defaultAddress.city) {
-      // Convert city to lowercase for consistent lookup
+
       const normalizedCity = defaultAddress.city.trim().toLowerCase();
 
-      // Get delivery charge based on city
       const cityDeliveryInfo = await deliveryChargeController.getDeliveryChargeByLocation(normalizedCity);
 
       if (cityDeliveryInfo !== null) {
         shipping = cityDeliveryInfo.charge;
         deliveryDescription = cityDeliveryInfo.description || 'Standard Delivery';
       } else {
-        // If no city-specific charge, try state
+
         const stateCharge = await deliveryChargeController.getDeliveryChargeByState(defaultAddress.state);
         if (stateCharge !== null) {
           shipping = stateCharge;
@@ -144,10 +138,8 @@ exports.renderCheckoutPage = async (req, res) => {
     const tax = subtotal * 0.09; // Using 9% tax rate consistently across the application
     const total = subtotal + shipping + tax;
 
-    // Check if order is eligible for COD (not allowed for orders above $1000)
     const isCodAllowed = total <= 1000;
 
-    // Make sure we have a valid Razorpay key ID
     const safeRazorpayKeyId = razorpayKeyId || 'rzp_test_UkVZCj9Q9Jy9Ja';
 
     res.render("checkout", {
@@ -172,6 +164,12 @@ exports.renderCheckoutPage = async (req, res) => {
   }
 };
 
+//=================================================================================================
+// Handle Address Selection
+//=================================================================================================
+// This function handles the address selection.
+// It handles the address selection.
+//=================================================================================================
 exports.handleAddressSelection = async (req, res) => {
   try {
     const userId = req.session.user;
@@ -194,7 +192,6 @@ exports.handleAddressSelection = async (req, res) => {
       { $set: { 'address.$.isDefault': true } }
     );
 
-    // Return JSON response for AJAX requests
     if (req.xhr || req.headers.accept.includes('application/json')) {
       return res.json({
         success: true,
@@ -202,14 +199,12 @@ exports.handleAddressSelection = async (req, res) => {
       });
     }
 
-    // For non-AJAX requests, redirect back to checkout
     req.flash('success', 'Default address updated');
     return res.redirect('/checkout');
 
   } catch (error) {
     console.error('Error updating default address:', error);
 
-    // Return JSON response for AJAX requests
     if (req.xhr || req.headers.accept.includes('application/json')) {
       return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
         success: false,
@@ -217,20 +212,23 @@ exports.handleAddressSelection = async (req, res) => {
       });
     }
 
-    // For non-AJAX requests, redirect back to checkout with error message
     req.flash('error', 'Failed to update default address');
     return res.redirect('/checkout');
   }
 };
 
+//=================================================================================================
+// Place Order
+//=================================================================================================
+// This function places an order.
+// It places an order.
+//=================================================================================================
 exports.placeOrder = async (req, res) => {
-  // Set content type to JSON for all responses from this endpoint
+
   res.setHeader('Content-Type', 'application/json');
   try {
     const userId = req.session.user;
     const { paymentMethod, addressId, couponCode } = req.body;
-    console.log("Order request body:", req.body);
-
     if (!userId) {
       return res.status(StatusCodes.UNAUTHORIZED).json({
         success: false,
@@ -270,7 +268,6 @@ exports.placeOrder = async (req, res) => {
       });
     }
 
-    // Get the offerService to calculate best offer prices
     const offerService = require('../../services/offerService');
 
     const orderedItems = await Promise.all(
@@ -280,14 +277,11 @@ exports.placeOrder = async (req, res) => {
           return null;
         }
 
-        // Get the best offer for this product
         const basePrice = product.price || 0;
         const offerResult = await offerService.getBestOfferForProduct(product._id, basePrice);
 
-        // Use the current best price
         const currentBestPrice = offerResult.finalPrice;
 
-        // Calculate discount percentage
         const discountPercentage = offerResult.hasOffer ? (offerResult.discountAmount / basePrice) * 100 : 0;
 
         if (product.quantity < item.quantity) {
@@ -338,8 +332,7 @@ exports.placeOrder = async (req, res) => {
       0
     );
 
-    // Get the selected address for delivery charge calculation
-    // Use the already found selectedAddress or find it again if needed
+
     if (!selectedAddress) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -348,23 +341,21 @@ exports.placeOrder = async (req, res) => {
       });
     }
 
-    // Calculate delivery charge based on location
-    let shippingInfo = deliveryChargeController.getDefaultDeliveryCharge(); // Default charge
+    let shippingInfo = await deliveryChargeController.getDefaultDeliveryCharge(); // Default charge
     let shipping = shippingInfo.charge;
     let deliveryDescription = shippingInfo.description;
 
     if (selectedAddress && selectedAddress.city) {
-      // Convert city to lowercase for consistent lookup
+
       const normalizedCity = selectedAddress.city.trim().toLowerCase();
 
-      // Get delivery charge based on city
       const cityDeliveryInfo = await deliveryChargeController.getDeliveryChargeByLocation(normalizedCity);
 
       if (cityDeliveryInfo !== null) {
         shipping = cityDeliveryInfo.charge;
         deliveryDescription = cityDeliveryInfo.description || 'Standard Delivery';
       } else {
-        // If no city-specific charge, try state
+
         const stateCharge = await deliveryChargeController.getDeliveryChargeByState(selectedAddress.state);
         if (stateCharge !== null) {
           shipping = stateCharge;
@@ -375,7 +366,6 @@ exports.placeOrder = async (req, res) => {
 
     const tax = subtotal * 0.09; // Using 9% tax rate consistently across the application
 
-    // Enhanced coupon validation logic
     let coupon = null;
     let discount = 0;
 
@@ -421,7 +411,6 @@ exports.placeOrder = async (req, res) => {
         });
       }
 
-      // Check coupon usage limits
       const userCoupon = coupon.users.find(
         (u) => u.userId.toString() === userId.toString()
       );
@@ -450,7 +439,6 @@ exports.placeOrder = async (req, res) => {
         });
       }
 
-      // Calculate discount
       if (coupon.type === "percentage") {
         discount = (subtotal * coupon.discountValue) / 100;
         if (coupon.maxDiscount && discount > coupon.maxDiscount) {
@@ -461,13 +449,10 @@ exports.placeOrder = async (req, res) => {
       }
     }
 
-    // Calculate final amount with discount
     const finalAmount = (subtotal + shipping + tax) - discount;
 
-    // Check if order is eligible for COD (not allowed for orders above Rs 1000)
     const isCodAllowed = finalAmount <= 1000;
 
-    // Validate payment method
     if (paymentMethod === "cod" && !isCodAllowed) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -476,38 +461,30 @@ exports.placeOrder = async (req, res) => {
       });
     }
 
-    // Check wallet balance for wallet payment
     if (paymentMethod === "wallet") {
-      // Get wallet balance from Wallet collection
+
       let wallet = await Wallet.findOne({ user: userId });
       let walletBalance = 0;
 
       if (wallet) {
         walletBalance = wallet.balance;
-        console.log("Found wallet with balance:", walletBalance);
       } else if (typeof user.wallet === 'number' && user.wallet > 0) {
-        // If no wallet document but user has wallet balance, create wallet document
+
         wallet = new Wallet({
           user: userId,
           balance: user.wallet
         });
         walletBalance = user.wallet;
         await wallet.save();
-        console.log("Created new wallet with balance from user:", walletBalance);
       } else {
-        // Create empty wallet
+
         wallet = new Wallet({
           user: userId,
           balance: 0
         });
         await wallet.save();
         walletBalance = 0;
-        console.log("Created new empty wallet");
       }
-
-      console.log("Wallet payment selected. Available balance:", walletBalance);
-      console.log("Required amount:", finalAmount);
-
       if (walletBalance < finalAmount) {
         return res.status(StatusCodes.BAD_REQUEST).json({
           success: false,
@@ -540,12 +517,10 @@ exports.placeOrder = async (req, res) => {
       deliveryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     };
 
-    // Add coupon information if a coupon was applied
     if (coupon) {
       orderData.couponApplied = true;
       orderData.couponCode = couponCode;
 
-      // Set coupon details as individual properties
       if (orderData.coupon === undefined) {
         orderData.coupon = {};
       }
@@ -554,18 +529,14 @@ exports.placeOrder = async (req, res) => {
       orderData.coupon.type = coupon.type;
       orderData.coupon.discountValue = coupon.discountValue;
       orderData.coupon.couponId = coupon._id;
-
-      console.log("Coupon data being saved:", orderData.coupon);
     }
 
-    // Generate a user-friendly order number
     try {
       const orderNumber = await generateOrderNumber();
       orderData.orderNumber = orderNumber;
-      console.log("Generated order number:", orderNumber);
     } catch (orderNumberError) {
       console.error("Error generating order number:", orderNumberError);
-      // Continue without order number if there's an error
+
     }
 
     const order = new Order(orderData);
@@ -573,8 +544,6 @@ exports.placeOrder = async (req, res) => {
     let newOrder;
     try {
       newOrder = await order.save();
-      console.log("Order saved successfully:", newOrder._id);
-      console.log("Order number:", newOrder.orderNumber);
     } catch (saveError) {
       console.error("Error saving order:", saveError);
       return res.status(StatusCodes.BAD_REQUEST).json({
@@ -606,20 +575,15 @@ exports.placeOrder = async (req, res) => {
         $push: { orderHistory: newOrder._id },
       };
 
-      // Handle wallet payment
       if (paymentMethod === "wallet") {
         try {
-          // Process wallet payment
+
           const paymentResult = await processWalletPayment(
             userId,
             newOrder._id,
             finalAmount,
             `Payment for order ${newOrder.orderNumber || newOrder._id}`
           );
-
-          console.log("Wallet payment processed:", paymentResult);
-
-          // Update order payment status
           await Order.findByIdAndUpdate(newOrder._id, {
             paymentStatus: "Paid",
             paymentDetails: {
@@ -633,7 +597,6 @@ exports.placeOrder = async (req, res) => {
         } catch (walletError) {
           console.error("Wallet payment error:", walletError);
 
-          // Update order payment status to failed
           await Order.findByIdAndUpdate(newOrder._id, {
             paymentStatus: "Failed",
             paymentDetails: {
@@ -646,12 +609,8 @@ exports.placeOrder = async (req, res) => {
         }
       }
 
-      // For Razorpay, we'll handle the payment separately
-      // This is just a placeholder for now
+
       if (paymentMethod === "razorpay") {
-        // We'll update the order with Razorpay details later
-        // For now, just create the order
-        console.log("Razorpay payment method selected");
       }
 
       await User.findByIdAndUpdate(userId, updateUser);
@@ -667,21 +626,12 @@ exports.placeOrder = async (req, res) => {
       throw new Error("Failed to update user: " + error.message);
     }
 
-    // Update coupon usage after successful order creation
     if (coupon) {
-      console.log("Updating coupon usage for coupon:", coupon.code);
-      console.log("Before update - Total used count:", coupon.totalUsedCount);
-
-      // Get current user usage before update
       const existingUserUsage = coupon.users.find(
         (u) => u.userId.toString() === userId.toString()
       );
-      console.log("Before update - User usage:", existingUserUsage ? existingUserUsage.usedCount : 0);
-
-      // Increment total usage count
       coupon.totalUsedCount += 1;
 
-      // Update or add user usage
       const userUsageIndex = coupon.users.findIndex(
         (u) => u.userId.toString() === userId.toString()
       );
@@ -691,15 +641,10 @@ exports.placeOrder = async (req, res) => {
         coupon.users.push({ userId, usedCount: 1 });
       }
 
-      // Save the updated coupon
       await coupon.save();
-
-      // Log the updated values
-      console.log("After update - Total used count:", coupon.totalUsedCount);
       const updatedUserUsage = coupon.users.find(
         (u) => u.userId.toString() === userId.toString()
       );
-      console.log("After update - User usage:", updatedUserUsage.usedCount);
     }
 
     try {
@@ -708,10 +653,8 @@ exports.placeOrder = async (req, res) => {
       console.error("Failed to clear cart:", error);
     }
 
-    // Determine if this is an AJAX request
     const isAjaxRequest = req.xhr || req.headers.accept.includes('application/json');
 
-    // For AJAX requests, return JSON response
     if (isAjaxRequest) {
       return res.status(StatusCodes.OK)
         .header('Content-Type', 'application/json')
@@ -722,8 +665,7 @@ exports.placeOrder = async (req, res) => {
         });
     }
 
-    // Since we've set the Content-Type to application/json for all responses,
-    // we need to return a JSON response even for redirects
+
     return res.status(StatusCodes.OK).json({
       success: true,
       message: "Order placed successfully",
@@ -733,10 +675,8 @@ exports.placeOrder = async (req, res) => {
   } catch (error) {
     console.error("Error placing order:", error);
 
-    // Determine if this is an AJAX request
     const isAjaxRequest = req.xhr || req.headers.accept.includes('application/json');
 
-    // For AJAX requests, return JSON response
     if (isAjaxRequest) {
       return res.status(StatusCodes.INTERNAL_SERVER_ERROR)
         .header('Content-Type', 'application/json')
@@ -747,10 +687,8 @@ exports.placeOrder = async (req, res) => {
         });
     }
 
-    // Since we've set the Content-Type to application/json for all responses,
-    // we need to return JSON responses for all cases
 
-    // For wallet payment errors
+
     if (error.message && error.message.includes("wallet")) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -760,7 +698,6 @@ exports.placeOrder = async (req, res) => {
       });
     }
 
-    // For other errors
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: "Failed to place order",
@@ -770,5 +707,4 @@ exports.placeOrder = async (req, res) => {
   }
 };
 
-// Note: This function is now handled in couponController.js
 

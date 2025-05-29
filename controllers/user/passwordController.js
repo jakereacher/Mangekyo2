@@ -1,8 +1,18 @@
+/**
+ * Password Controller
+ */
+
 const User = require("../../models/userSchema");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const { generateOtp, sendVerificationEmail } = require("./otpController");
 
+//=================================================================================================
+// Secure Password
+//=================================================================================================
+// This function hashes a password.
+// It hashes a password.
+//=================================================================================================
 const securePassword = async (password) => {
   try {
     return await bcrypt.hash(password, 10);
@@ -11,6 +21,12 @@ const securePassword = async (password) => {
   }
 };
 
+//=================================================================================================
+// Load Forgot Password
+//=================================================================================================
+// This function loads the forgot password page.
+// It loads the forgot password page.
+//=================================================================================================
 const loadForgotPassword = async (req, res) => {
   try {
     res.render("forgot-password", { message: "" });
@@ -20,6 +36,12 @@ const loadForgotPassword = async (req, res) => {
   }
 };
 
+//=================================================================================================
+// Reset Password
+//=================================================================================================
+// This function resets a password.
+// It resets a password.
+//=================================================================================================
 const resetPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -42,8 +64,8 @@ const resetPassword = async (req, res) => {
       return res.status(500).json({ success: false, message: "Failed to send OTP" });
     }
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       message: "OTP sent to your email",
       token: resetToken,
       redirectUrl: `/newPassword?token=${resetToken}`
@@ -54,6 +76,12 @@ const resetPassword = async (req, res) => {
   }
 };
 
+//=================================================================================================
+// Load New Password
+//=================================================================================================
+// This function loads the new password page.
+// It loads the new password page.
+//=================================================================================================
 const loadNewPassword = async (req, res) => {
   try {
     const { token } = req.query;
@@ -73,6 +101,12 @@ const loadNewPassword = async (req, res) => {
   }
 };
 
+//=================================================================================================
+// New Password
+//=================================================================================================
+// This function resets a password.
+// It resets a password.
+//=================================================================================================
 const newPassword = async (req, res) => {
   try {
     const { token, otp, password } = req.body;
@@ -103,6 +137,12 @@ const newPassword = async (req, res) => {
   }
 };
 
+//=================================================================================================
+// Module Exports
+//=================================================================================================
+// This exports the password controller functions.
+// It exports the password controller functions to be used in the user routes.
+//=================================================================================================
 module.exports = {
   securePassword,
   loadForgotPassword,

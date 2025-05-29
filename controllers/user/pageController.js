@@ -1,34 +1,42 @@
+/**
+ * Page Controller
+ */
+
 const User = require("../../models/userSchema");
 const Product = require('../../models/productSchema');
 const Category = require('../../models/categorySchema');
 const mongoose = require('mongoose');
 
-// Function to update all product statuses based on quantity
+//=================================================================================================
+// Update All Product Statuses
+//=================================================================================================
+// This function updates the status of all products.
+// It updates the status of all products.
+//=================================================================================================
 async function updateAllProductStatuses() {
   try {
     const products = await Product.find({});
-    let updatedCount = 0;
 
     for (const product of products) {
       if (product.quantity > 0 && product.status !== "Available") {
         product.status = "Available";
         await product.save();
-        updatedCount++;
-        console.log(`Updated product status to Available for ${product.productName} (${product._id})`);
       } else if (product.quantity <= 0 && product.status !== "Out of Stock") {
         product.status = "Out of Stock";
         await product.save();
-        updatedCount++;
-        console.log(`Updated product status to Out of Stock for ${product.productName} (${product._id})`);
       }
     }
-
-    console.log(`Updated ${updatedCount} product statuses`);
   } catch (error) {
     console.error("Error updating product statuses:", error);
   }
 }
 
+//=================================================================================================
+// Page Not Found
+//=================================================================================================
+// This function renders the page not found page.
+// It renders the page not found page.
+//=================================================================================================
 const pageNotFound = async (req, res) => {
   try {
     res.render("page-404");
@@ -37,9 +45,14 @@ const pageNotFound = async (req, res) => {
   }
 };
 
+//=================================================================================================
+// Load Home
+//=================================================================================================
+// This function loads the home page.
+// It loads the home page.
+//=================================================================================================
 const loadHome = async (req, res) => {
   try {
-    // Update all product statuses based on quantity
     await updateAllProductStatuses();
 
     const userId = req.session.user;
@@ -47,7 +60,6 @@ const loadHome = async (req, res) => {
     const now = new Date();
     const offerService = require('../../services/newOfferService');
 
-    // Fetch products with populated offer information
     const products = await Product.find({
       isBlocked: false
     })
@@ -56,10 +68,8 @@ const loadHome = async (req, res) => {
     .sort({ createdAt: -1 })
     .limit(8);
 
-    // Double-check for any expired offers that might still be attached to products
     for (const product of products) {
       if (product.offer && (product.offer.endDate < now || !product.offer.isActive)) {
-        console.log(`Found expired offer on product ${product._id} during home page load`);
         await Product.findByIdAndUpdate(product._id, {
           $set: {
             offer: null,
@@ -69,7 +79,6 @@ const loadHome = async (req, res) => {
             offerEndDate: null
           }
         });
-        // Remove the offer from the current product object
         product.offer = null;
         product.productOffer = false;
         product.offerPercentage = 0;
@@ -78,48 +87,26 @@ const loadHome = async (req, res) => {
       }
     }
 
-    // Process products to include offer information
     const processedProducts = await Promise.all(products.map(async (product) => {
-      // Ensure price is available and not zero
-      if (!product.price || product.price === 0) {
-        console.log("Warning: Product has no price or price is zero:", product._id);
-      }
-
       const basePrice = product.price || 0;
-
-      // Get the best offer for this product (either product or category offer)
       const offerResult = await offerService.getBestOfferForProduct(product._id, basePrice);
-
-      // Extract offer information
       const hasOffer = offerResult.hasOffer;
       const finalPrice = offerResult.finalPrice;
       const discountAmount = offerResult.discountAmount;
       const bestOffer = offerResult.offer;
-
-      // Calculate discount percentage
       const discountPercentage = hasOffer ? (discountAmount / basePrice) * 100 : 0;
 
-      // Format offer information if available
       let offerInfo = null;
       if (hasOffer && bestOffer) {
         offerInfo = {
           name: bestOffer.name,
-          type: bestOffer.type, // 'product' or 'category'
+          type: bestOffer.type,
           discountType: bestOffer.discountType,
           discountValue: bestOffer.discountValue,
           endDate: bestOffer.endDate,
           createdAt: bestOffer.createdAt
         };
       }
-
-      // Log the offer information for debugging
-      console.log(`Product ${product.productName} (${product._id}) offer info:`, {
-        hasOffer,
-        offerType: offerInfo?.type,
-        discountPercentage: discountPercentage.toFixed(2) + '%',
-        originalPrice: basePrice,
-        finalPrice
-      });
 
       return {
         ...product.toObject({ virtuals: true }),
@@ -145,6 +132,12 @@ const loadHome = async (req, res) => {
   }
 };
 
+//=================================================================================================
+// Load Landing Page
+//=================================================================================================
+// This function loads the landing page.
+// It loads the landing page.
+//=================================================================================================
 const loadLandingpage = async (req, res) => {
   try {
     if (req.session.user) {
@@ -157,6 +150,12 @@ const loadLandingpage = async (req, res) => {
   }
 };
 
+//=================================================================================================
+// Load Sign Up Page
+//=================================================================================================
+// This function loads the sign up page.
+// It loads the sign up page.
+//=================================================================================================
 const loadSignUppage = async (req, res) => {
   try {
     return res.render("signup");
@@ -166,6 +165,12 @@ const loadSignUppage = async (req, res) => {
   }
 };
 
+//=================================================================================================
+// Load Shop
+//=================================================================================================
+// This function loads the shop page.
+// It loads the shop page.
+//=================================================================================================
 const loadShop = async (req, res) => {
   try {
     const userId = req.session.user;
@@ -413,6 +418,12 @@ const loadShop = async (req, res) => {
   }
 };
 
+//=================================================================================================
+// Load Product Detail
+//=================================================================================================
+// This function loads the product detail page.
+// It loads the product detail page.
+//=================================================================================================
 const loadProductDetail = async (req, res) => {
   try {
     const userId = req.session.user;
@@ -624,6 +635,12 @@ const loadProductDetail = async (req, res) => {
   }
 };
 
+//=================================================================================================
+// Module Exports
+//=================================================================================================
+// This exports the page controller functions.
+// It exports the page controller functions to be used in the user routes.
+//=================================================================================================
 module.exports = {
   pageNotFound,
   loadHome,

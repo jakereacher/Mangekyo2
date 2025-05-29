@@ -1,6 +1,18 @@
+/**
+ * User Controller
+ */
+
 const User = require("../../models/userSchema");
 const { securePassword } = require("./passwordController");
 const { generateOtp, sendVerificationEmail } = require("./otpController");
+
+//=================================================================================================
+// Sign Up
+//=================================================================================================
+// This function handles user sign up.
+// It handles user sign up.
+//=================================================================================================
+
 
 const signup = async (req, res) => {
   try {
@@ -32,7 +44,6 @@ const signup = async (req, res) => {
       });
     }
 
-    // Validate referral code if provided
     if (referralCode && referralCode.trim() !== '') {
       const referrer = await User.findOne({ referralCode: referralCode.trim() });
       if (!referrer) {
@@ -62,7 +73,6 @@ const signup = async (req, res) => {
       referralCode: referralCode ? referralCode.trim() : null
     };
 
-    // Pass referral bonus information to the OTP page
     const hasReferralCode = referralCode && referralCode.trim() !== '';
     res.render("verify-otp", {
       referralBonus: hasReferralCode
@@ -73,6 +83,12 @@ const signup = async (req, res) => {
   }
 };
 
+//=================================================================================================
+// Module Exports
+//=================================================================================================
+// This exports the user controller functions.
+// It exports the user controller functions to be used in the user routes.
+//=================================================================================================
 module.exports = {
   signup
 };

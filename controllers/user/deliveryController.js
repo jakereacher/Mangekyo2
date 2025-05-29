@@ -6,6 +6,12 @@
 const StatusCodes = require("../../utils/httpStatusCodes");
 const deliveryChargeController = require("../admin/deliveryChargeController");
 
+//=================================================================================================
+// Calculate Delivery Charge
+//=================================================================================================
+// This function calculates the delivery charge for a given address.
+// It calculates the delivery charge for a given address.
+//=================================================================================================
 // Calculate delivery charge for a given address
 exports.calculateDeliveryCharge = async (req, res) => {
   try {
@@ -19,7 +25,7 @@ exports.calculateDeliveryCharge = async (req, res) => {
     }
 
     // Get default delivery charge info
-    let shippingInfo = deliveryChargeController.getDefaultDeliveryCharge();
+    let shippingInfo = await deliveryChargeController.getDefaultDeliveryCharge();
     let shipping = shippingInfo.charge;
     let deliveryDescription = shippingInfo.description;
 

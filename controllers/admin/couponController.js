@@ -1,11 +1,18 @@
+/**
+ * CouponController
+ */
 const cron = require("node-cron");
 const Coupon = require("../../models/couponSchema.js");
 const StatusCodes = require("../../utils/httpStatusCodes");
 const mongoose = require("mongoose");
 
-// ========================================================================================
-// RENDER COUPONS PAGE
-// ========================================================================================
+
+//=================================================================================================
+// Render Coupons Page
+//=================================================================================================
+// This function renders the coupons page, which displays all coupons and allows for filtering and pagination.
+// It also handles the search functionality to filter coupons by type and status.
+//=================================================================================================
 const renderCouponsPage = async (req, res) => {
   const { page = 1, type = "all", isActive = "all", limit = 3 } = req.query;
   const pageSize = parseInt(limit, 10);
@@ -16,7 +23,6 @@ const renderCouponsPage = async (req, res) => {
     if (type !== "all") totalCouponsQuery.type = type;
     if (isActive !== "all") totalCouponsQuery.isActive = isActive === "true";
 
-    // Add isDelete filter to only show non-deleted coupons by default
     const query = { ...totalCouponsQuery, isDelete: false };
     const totalCoupons = await Coupon.countDocuments(query);
 
@@ -28,7 +34,6 @@ const renderCouponsPage = async (req, res) => {
     const totalPages = Math.ceil(totalCoupons / pageSize);
     const discountTypes = await Coupon.distinct("type");
 
-    // Build search params for pagination links
     const searchParams = `&type=${type}&isActive=${isActive}`;
     const searchParamsWithoutLimit = `&type=${type}&isActive=${isActive}`;
 
@@ -56,9 +61,14 @@ const renderCouponsPage = async (req, res) => {
   }
 };
 
-// ========================================================================================
-// ADD COUPON
-// ========================================================================================
+
+
+//=================================================================================================
+// Add Coupon
+//=================================================================================================
+// This function adds a new coupon to the database.
+// It validates the coupon data and creates a new coupon object.
+//=================================================================================================
 const addCoupon = async (req, res) => {
   try {
     const {
@@ -72,7 +82,6 @@ const addCoupon = async (req, res) => {
       expiryDate,
     } = req.body;
 
-    // Validate coupon code
     if (!code || code.trim() === '') {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -80,7 +89,6 @@ const addCoupon = async (req, res) => {
       });
     }
 
-    // Validate coupon code format (alphanumeric only)
     if (!/^[a-zA-Z0-9]+$/.test(code)) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -88,7 +96,6 @@ const addCoupon = async (req, res) => {
       });
     }
 
-    // Validate discount type
     if (!discountType || (discountType !== 'percentage' && discountType !== 'fixed')) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -96,7 +103,6 @@ const addCoupon = async (req, res) => {
       });
     }
 
-    // Validate discount value
     const discountValue = parseFloat(value);
     if (isNaN(discountValue) || discountValue <= 0) {
       return res.status(StatusCodes.BAD_REQUEST).json({
@@ -105,7 +111,6 @@ const addCoupon = async (req, res) => {
       });
     }
 
-    // Validate percentage discount (max 100%)
     if (discountType === 'percentage' && discountValue > 100) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -113,7 +118,6 @@ const addCoupon = async (req, res) => {
       });
     }
 
-    // Validate minimum price
     const minPriceValue = parseFloat(minPrice);
     if (isNaN(minPriceValue) || minPriceValue < 0) {
       return res.status(StatusCodes.BAD_REQUEST).json({
@@ -122,7 +126,6 @@ const addCoupon = async (req, res) => {
       });
     }
 
-    // For fixed discount type, ensure discount is not greater than minimum purchase amount
     if (discountType === 'fixed' && discountValue > minPriceValue) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -130,7 +133,6 @@ const addCoupon = async (req, res) => {
       });
     }
 
-    // Validate maximum price (if provided)
     let maxPriceValue = null;
     if (maxPrice) {
       maxPriceValue = parseFloat(maxPrice);
@@ -141,7 +143,6 @@ const addCoupon = async (req, res) => {
         });
       }
 
-      // Validate max price is greater than min price
       if (maxPriceValue <= minPriceValue) {
         return res.status(StatusCodes.BAD_REQUEST).json({
           success: false,
@@ -150,7 +151,6 @@ const addCoupon = async (req, res) => {
       }
     }
 
-    // Validate usage limit (if provided)
     let usageLimit = null;
     if (limit) {
       usageLimit = parseInt(limit, 10);
@@ -162,11 +162,9 @@ const addCoupon = async (req, res) => {
       }
     }
 
-    // Parse dates with time
     const parsedStartDate = new Date(startDate);
     const parsedExpiryDate = new Date(expiryDate);
 
-    // Validate dates are valid
     if (isNaN(parsedStartDate.getTime()) || isNaN(parsedExpiryDate.getTime())) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -174,7 +172,6 @@ const addCoupon = async (req, res) => {
       });
     }
 
-    // Validate expiry date is after start date
     if (parsedStartDate >= parsedExpiryDate) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -182,7 +179,6 @@ const addCoupon = async (req, res) => {
       });
     }
 
-    // Check if the start date is in the past or present
     const now = new Date();
     const isActive = parsedStartDate <= now && parsedExpiryDate > now;
 
@@ -210,7 +206,6 @@ const addCoupon = async (req, res) => {
   } catch (error) {
     console.error("Error adding coupon:", error);
 
-    // Handle different types of errors
     if (error.code === 11000) {
       return res.status(StatusCodes.CONFLICT).json({
         success: false,
@@ -218,7 +213,7 @@ const addCoupon = async (req, res) => {
       });
     }
     else if (error.name === 'ValidationError') {
-      // Extract the specific validation error message
+
       const errorMessage = Object.values(error.errors)
         .map(err => err.message)
         .join('. ');
@@ -238,9 +233,14 @@ const addCoupon = async (req, res) => {
   }
 };
 
-// ========================================================================================
-// DELETE COUPON (SOFT DELETE)
-// ========================================================================================
+
+
+//=================================================================================================
+// Remove Coupon
+//=================================================================================================
+// This function removes a coupon from the database.
+// It updates the coupon's isDelete field to true.
+//=================================================================================================
 const removeCoupon = async (req, res) => {
   try {
     const { id } = req.body;
@@ -278,9 +278,14 @@ const removeCoupon = async (req, res) => {
   }
 };
 
-// ========================================================================================
-// RESTORE COUPON
-// ========================================================================================
+
+
+//=================================================================================================
+// Restore Coupon
+//=================================================================================================
+// This function restores a coupon from the database.
+// It updates the coupon's isDelete field to false.
+//=================================================================================================
 const restoreCoupon = async (req, res) => {
   try {
     const { id } = req.body;
@@ -318,9 +323,14 @@ const restoreCoupon = async (req, res) => {
   }
 };
 
-// ========================================================================================
-// EDIT COUPON
-// ========================================================================================
+
+
+//=================================================================================================
+// Edit Coupon
+//=================================================================================================
+// This function edits a coupon in the database.
+// It updates the coupon's code, type, discount value, limit, min price, max price, start date, and expiry date.
+//================================================================================================= 
 const editCoupon = async (req, res) => {
   try {
     const {
@@ -335,7 +345,6 @@ const editCoupon = async (req, res) => {
       expiryDate,
     } = req.body;
 
-    // Validate coupon ID
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -343,7 +352,6 @@ const editCoupon = async (req, res) => {
       });
     }
 
-    // Validate coupon code
     if (!code || code.trim() === '') {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -351,7 +359,6 @@ const editCoupon = async (req, res) => {
       });
     }
 
-    // Validate coupon code format (alphanumeric only)
     if (!/^[a-zA-Z0-9]+$/.test(code)) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -359,7 +366,6 @@ const editCoupon = async (req, res) => {
       });
     }
 
-    // Validate discount type
     if (!discountType || (discountType !== 'percentage' && discountType !== 'fixed')) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -367,7 +373,6 @@ const editCoupon = async (req, res) => {
       });
     }
 
-    // Validate discount value
     const discountValue = parseFloat(value);
     if (isNaN(discountValue) || discountValue <= 0) {
       return res.status(StatusCodes.BAD_REQUEST).json({
@@ -376,7 +381,6 @@ const editCoupon = async (req, res) => {
       });
     }
 
-    // Validate percentage discount (max 100%)
     if (discountType === 'percentage' && discountValue > 100) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -384,7 +388,6 @@ const editCoupon = async (req, res) => {
       });
     }
 
-    // Validate minimum price
     const minPriceValue = parseFloat(minPrice);
     if (isNaN(minPriceValue) || minPriceValue < 0) {
       return res.status(StatusCodes.BAD_REQUEST).json({
@@ -393,7 +396,6 @@ const editCoupon = async (req, res) => {
       });
     }
 
-    // For fixed discount type, ensure discount is not greater than minimum purchase amount
     if (discountType === 'fixed' && discountValue > minPriceValue) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -401,7 +403,6 @@ const editCoupon = async (req, res) => {
       });
     }
 
-    // Validate maximum price (if provided)
     let maxPriceValue = null;
     if (maxPrice) {
       maxPriceValue = parseFloat(maxPrice);
@@ -412,7 +413,6 @@ const editCoupon = async (req, res) => {
         });
       }
 
-      // Validate max price is greater than min price
       if (maxPriceValue <= minPriceValue) {
         return res.status(StatusCodes.BAD_REQUEST).json({
           success: false,
@@ -421,7 +421,6 @@ const editCoupon = async (req, res) => {
       }
     }
 
-    // Validate usage limit (if provided)
     let usageLimit = null;
     if (limit) {
       usageLimit = parseInt(limit, 10);
@@ -433,11 +432,9 @@ const editCoupon = async (req, res) => {
       }
     }
 
-    // Parse dates with time
     const parsedStartDate = new Date(startDate);
     const parsedExpiryDate = new Date(expiryDate);
 
-    // Validate dates are valid
     if (isNaN(parsedStartDate.getTime()) || isNaN(parsedExpiryDate.getTime())) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -445,7 +442,6 @@ const editCoupon = async (req, res) => {
       });
     }
 
-    // Validate expiry date is after start date
     if (parsedStartDate >= parsedExpiryDate) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -461,7 +457,6 @@ const editCoupon = async (req, res) => {
       });
     }
 
-    // Update fields
     coupon.code = code;
     coupon.type = discountType;
     coupon.discountValue = value;
@@ -472,16 +467,15 @@ const editCoupon = async (req, res) => {
     coupon.expiryDate = parsedExpiryDate;
     coupon.updated_at = new Date();
 
-    // Set isActive based on current date relative to start and expiry dates
     const now = new Date();
     if (parsedStartDate <= now && parsedExpiryDate > now) {
-      // If start date is in the past/present and expiry date is in the future, activate the coupon
+
       coupon.isActive = true;
     } else if (parsedStartDate > now) {
-      // If start date is in the future, deactivate the coupon
+
       coupon.isActive = false;
     } else if (parsedExpiryDate <= now) {
-      // If expiry date is in the past/present, deactivate the coupon
+
       coupon.isActive = false;
     }
 
@@ -495,7 +489,6 @@ const editCoupon = async (req, res) => {
   } catch (error) {
     console.error("Error editing coupon:", error);
 
-    // Handle different types of errors
     if (error.code === 11000) {
       return res.status(StatusCodes.CONFLICT).json({
         success: false,
@@ -503,7 +496,7 @@ const editCoupon = async (req, res) => {
       });
     }
     else if (error.name === 'ValidationError') {
-      // Extract the specific validation error message
+
       const errorMessage = Object.values(error.errors)
         .map(err => err.message)
         .join('. ');
@@ -523,9 +516,14 @@ const editCoupon = async (req, res) => {
   }
 };
 
-// ========================================================================================
-// CRON JOB: Activate / Deactivate Coupons
-// ========================================================================================
+
+
+//=================================================================================================
+// Cron Job for Coupon Status Update
+//=================================================================================================
+// This cron job updates the status of coupons based on their start and expiry dates.
+// It activates coupons that have started and are not active, and deactivates coupons that have expired.
+//=================================================================================================
 cron.schedule("* * * * *", async () => {
   try {
     const now = new Date();

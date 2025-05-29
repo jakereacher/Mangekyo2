@@ -3,9 +3,12 @@ const Product = require('../../models/productSchema');
 const Category = require('../../models/categorySchema');
 const offerService = require('../../services/newOfferService');
 
-/**
- * Render all offers list page with pagination
- */
+//=================================================================================================
+// Render Offers Page
+//=================================================================================================
+// This function renders the offers page.
+// It renders the offers page.
+//=================================================================================================
 exports.renderOffersPage = async (req, res) => {
   try {
     // Get pagination parameters from query string
@@ -52,9 +55,12 @@ exports.renderOffersPage = async (req, res) => {
   }
 };
 
-/**
- * Render product offers list page with pagination
- */
+//=================================================================================================
+// Render Product Offers Page
+//=================================================================================================
+// This function renders the product offers page.
+// It renders the product offers page.
+//=================================================================================================
 exports.renderProductOffersPage = async (req, res) => {
   try {
     // Get pagination parameters from query string
@@ -101,9 +107,12 @@ exports.renderProductOffersPage = async (req, res) => {
   }
 };
 
-/**
- * Render category offers list page with pagination
- */
+//=================================================================================================
+// Render Category Offers Page
+//=================================================================================================
+// This function renders the category offers page.
+// It renders the category offers page.
+//=================================================================================================
 exports.renderCategoryOffersPage = async (req, res) => {
   try {
     // Get pagination parameters from query string
@@ -150,9 +159,12 @@ exports.renderCategoryOffersPage = async (req, res) => {
   }
 };
 
-/**
- * Render create product offer page
- */
+//=================================================================================================
+// Render Create Product Offer Page
+//=================================================================================================
+// This function renders the create product offer page.
+// It renders the create product offer page.
+//=================================================================================================
 exports.renderCreateProductOfferPage = async (req, res) => {
   try {
     const products = await Product.find({ isBlocked: false })
@@ -172,9 +184,12 @@ exports.renderCreateProductOfferPage = async (req, res) => {
   }
 };
 
-/**
- * Render create category offer page
- */
+//=================================================================================================
+// Render Create Category Offer Page
+//=================================================================================================
+// This function renders the create category offer page.
+// It renders the create category offer page.
+//=================================================================================================
 exports.renderCreateCategoryOfferPage = async (req, res) => {
   try {
     const categories = await Category.find({ isListed: true })
@@ -194,9 +209,12 @@ exports.renderCreateCategoryOfferPage = async (req, res) => {
   }
 };
 
-/**
- * Render edit product offer page
- */
+//=================================================================================================
+// Render Edit Product Offer Page
+//=================================================================================================
+// This function renders the edit product offer page.
+// It renders the edit product offer page.
+//=================================================================================================
 exports.renderEditProductOfferPage = async (req, res) => {
   try {
     const { id } = req.params;
@@ -238,9 +256,12 @@ exports.renderEditProductOfferPage = async (req, res) => {
   }
 };
 
-/**
- * Render edit category offer page
- */
+//=================================================================================================
+// Render Edit Category Offer Page
+//=================================================================================================
+// This function renders the edit category offer page.
+// It renders the edit category offer page.
+//=================================================================================================
 exports.renderEditCategoryOfferPage = async (req, res) => {
   try {
     const { id } = req.params;
@@ -282,9 +303,12 @@ exports.renderEditCategoryOfferPage = async (req, res) => {
   }
 };
 
-/**
- * Create a new product offer
- */
+//=================================================================================================
+// Create Product Offer
+//=================================================================================================
+// This function creates a new product offer.
+// It creates a new product offer.
+//=================================================================================================
 exports.createProductOffer = async (req, res) => {
   try {
     const {
@@ -437,9 +461,12 @@ exports.createProductOffer = async (req, res) => {
   }
 };
 
-/**
- * Create a new category offer
- */
+//=================================================================================================
+// Create Category Offer
+//=================================================================================================
+// This function creates a new category offer.
+// It creates a new category offer.
+//=================================================================================================
 exports.createCategoryOffer = async (req, res) => {
   try {
     const {
@@ -592,9 +619,12 @@ exports.createCategoryOffer = async (req, res) => {
   }
 };
 
-/**
- * Update an existing product offer
- */
+//=================================================================================================
+// Update Product Offer
+//=================================================================================================
+// This function updates an existing product offer.
+// It updates an existing product offer.
+//=================================================================================================
 exports.updateProductOffer = async (req, res) => {
   try {
     const { id } = req.params;
@@ -770,9 +800,12 @@ exports.updateProductOffer = async (req, res) => {
   }
 };
 
-/**
- * Update an existing category offer
- */
+//=================================================================================================
+// Update Category Offer
+//=================================================================================================
+// This function updates an existing category offer.
+// It updates an existing category offer.
+//=================================================================================================
 exports.updateCategoryOffer = async (req, res) => {
   try {
     const { id } = req.params;
@@ -948,9 +981,12 @@ exports.updateCategoryOffer = async (req, res) => {
   }
 };
 
-/**
- * Delete an offer
- */
+//=================================================================================================
+// Delete Offer
+//=================================================================================================
+// This function deletes an offer.
+// It deletes an offer.
+//=================================================================================================
 exports.deleteOffer = async (req, res) => {
   try {
     const { id } = req.params;

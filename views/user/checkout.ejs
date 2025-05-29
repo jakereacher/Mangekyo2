@@ -1711,7 +1711,7 @@
                             const options = {
                                 key: razorpayKey, // Get from server
                                 amount: razorpayResult.order.amount,
-                                currency: razorpayResult.order.currency || 'USD',
+                                currency: razorpayResult.order.currency || 'INR',
                                 name: 'Mangeyko',
                                 description: 'Purchase from Mangeyko',
                                 order_id: razorpayResult.order.id,
@@ -1720,6 +1720,8 @@
                                     order_id: result.orderId,
                                     customer_name: '<%= user.name %>'
                                 },
+
+
                                 handler: async function(response) {
                                     console.log('Razorpay payment successful:', response);
                                     // Show loading overlay again

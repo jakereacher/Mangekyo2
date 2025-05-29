@@ -1,12 +1,21 @@
 /**
  * Admin Controller
- * Handles admin authentication and dashboard functionality
  */
 
 const User = require("../../models/userSchema");
+const Order = require("../../models/orderSchema");
+const Product = require("../../models/productSchema");
+const Category = require("../../models/categorySchema");
 const mongoose = require("mongoose");
 const bcrypt = require('bcrypt');
+const moment = require("moment");
 
+//=================================================================================================
+// Demo Admin
+//=================================================================================================
+// This is a demo admin user with a predefined email and password.
+// It is used for demonstration purposes.
+//=================================================================================================
 const DEMO_ADMIN = {
   email: "demo_admin@example.com",
   password: "$2b$10$9mX.3dR7fGp5YQ6d8lzZpeY0YRfJQ9b3m8X1uD0vLk9rKs6VJ5XaC",
@@ -16,15 +25,26 @@ const DEMO_ADMIN = {
   _id: new mongoose.Types.ObjectId("6478a3b18bd2a6d999999992")
 };
 
+//=================================================================================================
+// Load Login
+//=================================================================================================
+// This function loads the login page.
+// It checks if the user is already logged in and redirects to the dashboard if so.
+//=================================================================================================
 const loadLogin = (req,res) => {
   if(req.session.admin) return res.redirect("/admin/dashboard");
   res.render("admin-login", { message: null });
 }
 
+//=================================================================================================
+// Login
+//=================================================================================================
+// This function logs in an admin user.
+// It checks the admin's email and password, and redirects to the dashboard if successful.
+//=================================================================================================
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-
 
     const admin = await User.findOne({ email, isAdmin: true });
     if (!admin || !(await bcrypt.compare(password, admin.password))) {
@@ -40,66 +60,82 @@ const login = async (req, res) => {
   }
 };
 
-const Order = require("../../models/orderSchema");
-const Product = require("../../models/productSchema");
-const Category = require("../../models/categorySchema");
-
-const moment = require("moment");
-
+//=================================================================================================
+// Load Dashboard
+//=================================================================================================
+// This function loads the dashboard page.
+// It displays various statistics and charts about the site's performance.
+//=================================================================================================
 const loadDashboard = async(req, res) => {
   try {
     if(!req.session.admin) return res.redirect("/admin/login");
 
-    // Get counts
     const userCount = await User.countDocuments({ isAdmin: false });
     const productCount = await Product.countDocuments();
     const orderCount = await Order.countDocuments();
     const categoryCount = await Category.countDocuments();
 
-    // Get filter period from query params
+    // Enhanced filtering parameters
     const period = req.query.period || 'month';
-    const currentDate = new Date();
-    let startDate, endDate, dateFormat, groupFormat, labelFormat;
+    const paymentMethod = req.query.paymentMethod || 'all';
+    const orderStatus = req.query.orderStatus || 'all';
+    const sortBy = req.query.sortBy || 'date';
+    const sortOrder = req.query.sortOrder || 'desc';
 
-    // Set date ranges and formatting based on period
-    switch(period) {
-      case 'today':
-        startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
-        endDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 1);
-        dateFormat = "%Y-%m-%d-%H";
-        groupFormat = { year: { $year: "$orderDate" }, month: { $month: "$orderDate" }, day: { $dayOfMonth: "$orderDate" }, hour: { $hour: "$orderDate" } };
-        labelFormat = 'HH:mm';
-        break;
-      case 'week':
-        startDate = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000);
-        endDate = currentDate;
-        dateFormat = "%Y-%m-%d";
-        groupFormat = { year: { $year: "$orderDate" }, month: { $month: "$orderDate" }, day: { $dayOfMonth: "$orderDate" } };
-        labelFormat = 'MMM DD';
-        break;
-      case 'year':
-        startDate = new Date(currentDate.getFullYear(), 0, 1);
-        endDate = new Date(currentDate.getFullYear() + 1, 0, 1);
-        dateFormat = "%Y-%m";
-        groupFormat = { year: { $year: "$orderDate" }, month: { $month: "$orderDate" } };
-        labelFormat = 'MMM YYYY';
-        break;
-      case 'month':
-      default:
-        startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-        endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
-        dateFormat = "%Y-%m-%d";
-        groupFormat = { year: { $year: "$orderDate" }, month: { $month: "$orderDate" }, day: { $dayOfMonth: "$orderDate" } };
-        labelFormat = 'MMM DD';
-        break;
+    // Date range handling
+    const currentDate = new Date();
+    let startDate, endDate, groupFormat;
+
+    // Custom date range support
+    if (req.query.startDate && req.query.endDate) {
+      startDate = new Date(req.query.startDate);
+      endDate = new Date(req.query.endDate);
+      endDate.setHours(23, 59, 59, 999); // End of day
+    } else {
+      // Use period-based date ranges
+      switch(period) {
+        case 'today':
+          startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+          endDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 1);
+          groupFormat = { year: { $year: "$orderDate" }, month: { $month: "$orderDate" }, day: { $dayOfMonth: "$orderDate" }, hour: { $hour: "$orderDate" } };
+          break;
+        case 'week':
+          startDate = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+          endDate = currentDate;
+          groupFormat = { year: { $year: "$orderDate" }, month: { $month: "$orderDate" }, day: { $dayOfMonth: "$orderDate" } };
+          break;
+        case 'year':
+          startDate = new Date(currentDate.getFullYear(), 0, 1);
+          endDate = new Date(currentDate.getFullYear() + 1, 0, 1);
+          groupFormat = { year: { $year: "$orderDate" }, month: { $month: "$orderDate" } };
+          break;
+        case 'month':
+        default:
+          startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+          endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+          groupFormat = { year: { $year: "$orderDate" }, month: { $month: "$orderDate" }, day: { $dayOfMonth: "$orderDate" } };
+          break;
+      }
     }
 
-    // Get revenue trend data with filtering
+    // Build filter conditions for orders
+    const orderFilter = {
+      orderDate: { $gte: startDate, $lt: endDate }
+    };
+
+    // Add payment method filter
+    if (paymentMethod !== 'all') {
+      orderFilter.paymentMethod = paymentMethod;
+    }
+
+    // Add order status filter - check if any item in the order has the specified status
+    if (orderStatus !== 'all') {
+      orderFilter['orderedItems.status'] = orderStatus;
+    }
+
     const revenueByPeriod = await Order.aggregate([
       {
-        $match: {
-          orderDate: { $gte: startDate, $lt: endDate }
-        }
+        $match: orderFilter
       },
       {
         $group: {
@@ -109,59 +145,59 @@ const loadDashboard = async(req, res) => {
         }
       },
       {
+        $match: {
+          _id: { $ne: null }
+        }
+      },
+      {
         $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1, "_id.hour": 1 }
       }
     ]);
 
-    // Format revenue trend data
     const revenueData = {
       labels: [],
       values: [],
       period: period
     };
-
-    // Generate all time periods and fill in data
     if (period === 'today') {
       for (let i = 0; i < 24; i++) {
         const hour = i;
-        const hourData = revenueByPeriod.find(d => d._id.hour === hour);
+        const hourData = revenueByPeriod.find(d => d && d._id && typeof d._id.hour === 'number' && d._id.hour === hour);
         revenueData.labels.push(`${hour.toString().padStart(2, '0')}:00`);
-        revenueData.values.push(hourData ? hourData.revenue : 0);
+        revenueData.values.push(hourData ? (hourData.revenue || 0) : 0);
       }
     } else if (period === 'week') {
       for (let i = 0; i < 7; i++) {
         const date = new Date(startDate);
         date.setDate(date.getDate() + i);
         const dayData = revenueByPeriod.find(d =>
-          d._id.year === date.getFullYear() &&
-          d._id.month === date.getMonth() + 1 &&
-          d._id.day === date.getDate()
+          d && d._id &&
+          typeof d._id.year === 'number' && d._id.year === date.getFullYear() &&
+          typeof d._id.month === 'number' && d._id.month === date.getMonth() + 1 &&
+          typeof d._id.day === 'number' && d._id.day === date.getDate()
         );
         revenueData.labels.push(moment(date).format('MMM DD'));
-        revenueData.values.push(dayData ? dayData.revenue : 0);
+        revenueData.values.push(dayData ? (dayData.revenue || 0) : 0);
       }
     } else if (period === 'year') {
       for (let i = 0; i < 12; i++) {
         const month = i + 1;
-        const monthData = revenueByPeriod.find(d => d._id.month === month);
+        const monthData = revenueByPeriod.find(d => d && d._id && typeof d._id.month === 'number' && d._id.month === month);
         revenueData.labels.push(moment().month(i).format('MMM'));
-        revenueData.values.push(monthData ? monthData.revenue : 0);
+        revenueData.values.push(monthData ? (monthData.revenue || 0) : 0);
       }
-    } else { // month
+    } else {
       const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
       for (let i = 1; i <= daysInMonth; i++) {
-        const dayData = revenueByPeriod.find(d => d._id.day === i);
+        const dayData = revenueByPeriod.find(d => d && d._id && typeof d._id.day === 'number' && d._id.day === i);
         revenueData.labels.push(i.toString());
-        revenueData.values.push(dayData ? dayData.revenue : 0);
+        revenueData.values.push(dayData ? (dayData.revenue || 0) : 0);
       }
     }
 
-    // Get payment methods distribution (filtered by period)
     const paymentMethodsData = await Order.aggregate([
       {
-        $match: {
-          orderDate: { $gte: startDate, $lt: endDate }
-        }
+        $match: orderFilter
       },
       {
         $group: {
@@ -184,31 +220,11 @@ const loadDashboard = async(req, res) => {
       counts: paymentMethodsData.map(p => p.count)
     };
 
-    // Debug: Check if there are any orders in the selected period
-    const totalOrdersInPeriod = await Order.countDocuments({
-      orderDate: { $gte: startDate, $lt: endDate }
-    });
-    console.log(`Total orders in period (${period}):`, totalOrdersInPeriod);
-    console.log('Date range:', { startDate, endDate });
-
-    // Also check total orders in database
-    const totalOrdersInDB = await Order.countDocuments();
-    console.log('Total orders in database:', totalOrdersInDB);
-
-    // Get top products data (filtered by period) with proper product names
     const topProductsData = await Order.aggregate([
       {
-        $match: {
-          orderDate: { $gte: startDate, $lt: endDate }
-        }
+        $match: orderFilter
       },
       { $unwind: "$orderedItems" },
-      // Temporarily remove status filter to see if that's the issue
-      // {
-      //   $match: {
-      //     "orderedItems.status": { $ne: "Cancelled" }
-      //   }
-      // },
       {
         $lookup: {
           from: "products",
@@ -238,22 +254,6 @@ const loadDashboard = async(req, res) => {
       { $limit: 10 }
     ]);
 
-    console.log('Top Products Data:', topProductsData);
-    console.log('Number of products found:', topProductsData.length);
-
-    // If no products found, try a simpler query to debug
-    if (topProductsData.length === 0) {
-      console.log('No products found, trying simpler query...');
-      const simpleOrderCheck = await Order.find({
-        orderDate: { $gte: startDate, $lt: endDate }
-      }).limit(1);
-      console.log('Sample order found:', simpleOrderCheck.length > 0 ? 'Yes' : 'No');
-
-      if (simpleOrderCheck.length > 0) {
-        console.log('Sample order structure:', JSON.stringify(simpleOrderCheck[0], null, 2));
-      }
-    }
-
     const formattedTopProducts = {
       labels: topProductsData.map(p => {
         const productName = p.productName || 'Unknown Product';
@@ -267,20 +267,11 @@ const loadDashboard = async(req, res) => {
       productIds: topProductsData.map(p => p._id)
     };
 
-    // Get sales by category (filtered by period) with proper category names
     const categoryData = await Order.aggregate([
       {
-        $match: {
-          orderDate: { $gte: startDate, $lt: endDate }
-        }
+        $match: orderFilter
       },
       { $unwind: "$orderedItems" },
-      // Temporarily remove status filter to see if that's the issue
-      // {
-      //   $match: {
-      //     "orderedItems.status": { $ne: "Cancelled" }
-      //   }
-      // },
       {
         $lookup: {
           from: "products",
@@ -323,9 +314,6 @@ const loadDashboard = async(req, res) => {
       { $sort: { total: -1 } }
     ]);
 
-    console.log('Category Data:', categoryData);
-    console.log('Number of categories found:', categoryData.length);
-
     const formattedCategoryData = {
       labels: categoryData.map(c => c.categoryName || 'Uncategorized'),
       values: categoryData.map(c => c.total || 0),
@@ -335,9 +323,12 @@ const loadDashboard = async(req, res) => {
       categoryIds: categoryData.map(c => c._id)
     };
 
-    // Calculate total sales and monthly sales
+    // Calculate total sales and period sales based on filtered data
     const totalSales = formattedPaymentData.values.reduce((a, b) => a + b, 0);
-    const monthlySales = revenueData.values.reduce((a, b) => a + b, 0);
+    const periodSales = revenueData.values.reduce((a, b) => a + b, 0);
+
+    // Calculate filtered order count for stats
+    const filteredOrderCount = await Order.countDocuments(orderFilter);
 
     // Pagination parameters
     const orderPage = parseInt(req.query.orderPage) || 1;
@@ -347,17 +338,34 @@ const loadDashboard = async(req, res) => {
     const productLimit = parseInt(req.query.productLimit) || 5;
     const productSkip = (productPage - 1) * productLimit;
 
-    // Calculate total pages
-    const totalOrderPages = Math.ceil(orderCount / orderLimit);
+    // Calculate total pages (will be updated after filtering)
     const totalProductPages = Math.ceil(productCount / productLimit);
 
-    // Get recent orders with pagination
-    const recentOrders = await Order.find()
+    // Build query for recent orders with filters
+    let orderQuery = {
+      orderDate: { $gte: startDate, $lt: endDate }
+    };
+
+    // Add payment method filter
+    if (paymentMethod !== 'all') {
+      orderQuery.paymentMethod = paymentMethod;
+    }
+
+    // Add order status filter
+    if (orderStatus !== 'all') {
+      orderQuery['orderedItems.status'] = orderStatus;
+    }
+
+    // Get recent orders with pagination and filters
+    const recentOrders = await Order.find(orderQuery)
       .populate("userId", "name email")
       .sort({ orderDate: -1 })
       .skip(orderSkip)
       .limit(orderLimit)
       .lean();
+
+    // Calculate total pages for filtered orders
+    const totalFilteredOrderPages = Math.ceil(filteredOrderCount / orderLimit);
 
     // Format orders for display
     const formattedOrders = recentOrders.map(order => {
@@ -398,18 +406,31 @@ const loadDashboard = async(req, res) => {
       stock: product.quantity
     }));
 
+    // Format filter dates for display
+    const formatDate = (date) => {
+      return date.toISOString().split('T')[0];
+    };
+
     // Render dashboard with all data
     res.render("admin/dashboard", {
       activePage: 'dashboard',
       isDemoAdmin: req.session.isDemoAdmin || false,
       currentPeriod: period,
+      filters: {
+        startDate: req.query.startDate || formatDate(startDate),
+        endDate: req.query.endDate || formatDate(endDate),
+        paymentMethod: paymentMethod,
+        orderStatus: orderStatus,
+        sortBy: sortBy,
+        sortOrder: sortOrder
+      },
       stats: {
         userCount,
         productCount,
-        orderCount,
+        orderCount: filteredOrderCount, // Use filtered count
         categoryCount,
         totalSales,
-        periodSales: monthlySales
+        periodSales: periodSales // Use calculated period sales
       },
       revenueData,
       paymentMethodsData: formattedPaymentData,
@@ -420,9 +441,9 @@ const loadDashboard = async(req, res) => {
       pagination: {
         orders: {
           currentPage: orderPage,
-          totalPages: totalOrderPages,
+          totalPages: totalFilteredOrderPages,
           limit: orderLimit,
-          totalItems: orderCount
+          totalItems: filteredOrderCount
         },
         products: {
           currentPage: productPage,
@@ -438,7 +459,16 @@ const loadDashboard = async(req, res) => {
     res.render("admin/dashboard", {
       activePage: 'dashboard',
       isDemoAdmin: req.session.isDemoAdmin || false,
+      currentPeriod: req.query.period || 'month',
       error: "Failed to load dashboard data: " + error.message,
+      filters: {
+        startDate: req.query.startDate || '',
+        endDate: req.query.endDate || '',
+        paymentMethod: req.query.paymentMethod || 'all',
+        orderStatus: req.query.orderStatus || 'all',
+        sortBy: req.query.sortBy || 'date',
+        sortOrder: req.query.sortOrder || 'desc'
+      },
       stats: {
         userCount: 0,
         productCount: 0,
@@ -483,7 +513,13 @@ const loadDashboard = async(req, res) => {
   }
 }
 
-// AJAX endpoint for dashboard orders pagination
+
+//=================================================================================================
+// Get Dashboard Orders
+//=================================================================================================
+// This function gets the orders with pagination.
+// It displays the orders in the dashboard.
+//=================================================================================================
 const getDashboardOrders = async (req, res) => {
   try {
     if (!req.session.admin) {
@@ -494,12 +530,60 @@ const getDashboardOrders = async (req, res) => {
     const orderLimit = parseInt(req.query.limit) || 5;
     const orderSkip = (orderPage - 1) * orderLimit;
 
+    // Get filter parameters from query
+    const period = req.query.period || 'month';
+    const paymentMethod = req.query.paymentMethod || 'all';
+    const orderStatus = req.query.orderStatus || 'all';
+
+    // Date range handling (same logic as main dashboard)
+    const currentDate = new Date();
+    let startDate, endDate;
+
+    if (req.query.startDate && req.query.endDate) {
+      startDate = new Date(req.query.startDate);
+      endDate = new Date(req.query.endDate);
+      endDate.setHours(23, 59, 59, 999);
+    } else {
+      switch(period) {
+        case 'today':
+          startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+          endDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 1);
+          break;
+        case 'week':
+          startDate = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+          endDate = currentDate;
+          break;
+        case 'year':
+          startDate = new Date(currentDate.getFullYear(), 0, 1);
+          endDate = new Date(currentDate.getFullYear() + 1, 0, 1);
+          break;
+        case 'month':
+        default:
+          startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+          endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+          break;
+      }
+    }
+
+    // Build query with filters
+    let orderQuery = {
+      orderDate: { $gte: startDate, $lt: endDate }
+    };
+
+    if (paymentMethod !== 'all') {
+      orderQuery.paymentMethod = paymentMethod;
+    }
+
+    if (orderStatus !== 'all') {
+      orderQuery['orderedItems.status'] = orderStatus;
+    }
+
     // Get total count for pagination
-    const orderCount = await Order.countDocuments();
+    const orderCount = await Order.countDocuments(orderQuery);
     const totalOrderPages = Math.ceil(orderCount / orderLimit);
 
-    // Get recent orders with pagination
-    const recentOrders = await Order.find()
+    // Get recent orders with pagination and filters
+    const recentOrders = await Order.find(orderQuery)
       .populate("userId", "name email")
       .sort({ orderDate: -1 })
       .skip(orderSkip)
@@ -542,8 +626,12 @@ const getDashboardOrders = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch orders' });
   }
 };
-
-// AJAX endpoint for dashboard products pagination
+//=================================================================================================
+// Get Dashboard Products
+//=================================================================================================
+// This function gets the latest products with pagination.
+// It displays the latest products in the dashboard.
+//=================================================================================================
 const getDashboardProducts = async (req, res) => {
   try {
     if (!req.session.admin) {
@@ -596,6 +684,6 @@ const logout = (req,res) => {
   req.session.destroy(() => res.redirect("/admin/login"));
 }
 
-const pageerror = (req,res) => res.render("admin-error");
+const pageerror = (req, res) => res.render("admin-error");
 
 module.exports = { loadLogin, login, loadDashboard, getDashboardOrders, getDashboardProducts, logout, pageerror };

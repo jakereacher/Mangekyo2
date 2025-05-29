@@ -6,6 +6,12 @@
 const Category = require("../../models/categorySchema");
 const Product = require("../../models/productSchema");
 
+//=================================================================================================
+// Category Info
+//=================================================================================================
+// This function gets the category information with pagination.
+// It displays the category information in the category page.
+//=================================================================================================
 const categoryInfo = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -39,7 +45,6 @@ const categoryInfo = async (req, res) => {
     const totalCategories = await Category.countDocuments(query);
     const totalPages = Math.ceil(totalCategories / limit);
 
-    // Build search params for pagination links
     const searchParams = search ? `&search=${encodeURIComponent(search)}` : '';
     const searchParamsWithoutLimit = search ? `&search=${encodeURIComponent(search)}` : '';
 
@@ -65,15 +70,20 @@ const categoryInfo = async (req, res) => {
   }
 };
 
+//=================================================================================================
+// Add Category
+//=================================================================================================
+// This function adds a new category to the database.
+// It validates the category data and creates a new category object.
+//=================================================================================================
 const addCategory = async (req, res) => {
   const { name, description } = req.body;
   try {
-    // Validate input
+
     if (!name) {
       return res.status(400).json({ error: "Category name is required" });
     }
 
-    // Validate that category name contains only letters and spaces
     const nameRegex = /^[A-Za-z\s]+$/;
     if (!nameRegex.test(name)) {
       return res.status(400).json({ error: "Category name can only contain letters and spaces (no numbers or special characters)" });
@@ -96,6 +106,12 @@ const addCategory = async (req, res) => {
   }
 };
 
+//=================================================================================================
+// Get List Category
+//=================================================================================================
+// This function gets the list of categories.
+// It displays the list of categories in the category page.
+//=================================================================================================
 const getListCategory = async (req, res) => {
   try {
     let id = req.query.id;
@@ -106,6 +122,12 @@ const getListCategory = async (req, res) => {
   }
 };
 
+//=================================================================================================
+// Get Unlist Category
+//=================================================================================================
+// This function gets the unlisted category.
+// It displays the unlisted category in the category page.
+//=================================================================================================
 const getUnlistCategory = async (req, res) => {
   try {
     let id = req.query.id;
@@ -116,6 +138,12 @@ const getUnlistCategory = async (req, res) => {
   }
 };
 
+//=================================================================================================
+// Get Edit Category
+//=================================================================================================
+// This function gets the edit category.
+// It displays the edit category in the category page.
+//=================================================================================================
 const getEditCategory = async (req, res) => {
   try {
     const id = req.query.id;
@@ -125,23 +153,27 @@ const getEditCategory = async (req, res) => {
     res.redirect("/admin/pageerror");
   }
 };
+
+//=================================================================================================
+// Edit Category
+//=================================================================================================
+// This function edits the category.
+// It updates the category in the database.
+//=================================================================================================
 const editCategory = async (req, res) => {
   try {
     const id = req.params.id || req.body.categoryId;
     const { categoryName, description, isListed } = req.body;
 
-    // Validate input
     if (!categoryName) {
       return res.status(400).json({ error: "Category name is required" });
     }
 
-    // Validate that category name contains only letters and spaces
     const nameRegex = /^[A-Za-z\s]+$/;
     if (!nameRegex.test(categoryName)) {
       return res.status(400).json({ error: "Category name can only contain letters and spaces (no numbers or special characters)" });
     }
 
-    // Check for existing category with the same name (excluding current category)
     const existingCategory = await Category.findOne({
       name: categoryName,
       _id: { $ne: id }
@@ -151,7 +183,6 @@ const editCategory = async (req, res) => {
       return res.status(400).json({ error: "Category already exists" });
     }
 
-    // Update the category
     const updatedCategory = await Category.findByIdAndUpdate(
       id,
       {
@@ -166,7 +197,6 @@ const editCategory = async (req, res) => {
       return res.status(404).json({ error: "Category not found" });
     }
 
-    // Return success response
     return res.status(200).json({
       message: "Category updated successfully",
       category: updatedCategory
@@ -178,27 +208,34 @@ const editCategory = async (req, res) => {
   }
 };
 
-
+//=================================================================================================
+// Delete Category
+//=================================================================================================
+// This function deletes the category.
+// It deletes the category from the database.
+//=================================================================================================
 const deleteCategory = async (req, res) => {
   try {
     const categoryId = req.params.id;
 
-    // Delete all products associated with this category
     await Product.deleteMany({ category: categoryId });
 
-    // Delete the category
     await Category.findByIdAndDelete(categoryId);
 
-    // Send a JSON response
     res.status(200).json({ message: "Category deleted successfully" });
   } catch (error) {
     console.error("Error deleting category:", error);
 
-    // Send a JSON error response
     res.status(500).json({ error: "Internal server error" });
   }
 };
 
+//=================================================================================================
+// Module Exports
+//=================================================================================================
+// This exports the category controller functions.
+// It exports the category controller functions to be used in the admin routes.
+//=================================================================================================
 module.exports = {
   categoryInfo,
   addCategory,
@@ -208,8 +245,3 @@ module.exports = {
   editCategory,
   deleteCategory,
 };
-
-
-
-
-

@@ -10,6 +10,12 @@ const User = require('../../models/userSchema');
 const StatusCodes = require('../../utils/httpStatusCodes');
 const crypto = require('crypto');
 
+//=================================================================================================
+// Create Razorpay Order
+//=================================================================================================
+// This function creates a new Razorpay order.
+// It creates a new Razorpay order.
+//=================================================================================================
 /**
  * Create a new Razorpay order
  * @param {Object} req - Express request object
@@ -85,21 +91,27 @@ const createRazorpayOrder = async (req, res) => {
     // Ensure amount is not negative
     finalAmount = Math.max(0, finalAmount);
 
-    // Convert to cents (smallest currency unit for USD)
-    const amount = Math.max(100, Math.round(finalAmount * 100));
+    // Convert USD to INR for Razorpay (to enable Indian payment methods)
+    const usdToInrRate = 83; // Approximate conversion rate
+    const finalAmountInINR = finalAmount * usdToInrRate;
+
+    // Convert to paise (smallest currency unit for INR)
+    const amount = Math.max(100, Math.round(finalAmountInINR * 100));
 
     console.log('Payment calculation for non-cancelled items:', {
       subtotal,
       shipping,
       tax,
       discount: order.discount || 0,
-      finalAmount,
-      finalAmountInCents: amount
+      finalAmountUSD: finalAmount,
+      finalAmountINR: finalAmountInINR,
+      finalAmountInPaise: amount,
+      conversionRate: usdToInrRate
     });
 
     const options = {
       amount: amount,
-      currency: 'USD',
+      currency: 'INR',
       receipt: order._id.toString(),
       payment_capture: 1 // Auto-capture payment
     };
@@ -169,6 +181,12 @@ const createRazorpayOrder = async (req, res) => {
   }
 };
 
+//=================================================================================================
+// Verify Razorpay Payment
+//=================================================================================================
+// This function verifies a Razorpay payment.
+// It verifies a Razorpay payment.
+//=================================================================================================
 /**
  * Verify Razorpay payment
  * @param {Object} req - Express request object
@@ -263,6 +281,12 @@ const verifyRazorpayPayment = async (req, res) => {
   }
 };
 
+//=================================================================================================
+// Module Exports
+//=================================================================================================
+// This exports the razorpay controller functions.
+// It exports the razorpay controller functions to be used in the user routes.
+//=================================================================================================
 module.exports = {
   createRazorpayOrder,
   verifyRazorpayPayment

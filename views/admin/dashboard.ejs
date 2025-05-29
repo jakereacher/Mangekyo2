@@ -11,6 +11,9 @@
             <a href="/admin/sales-report" class="btn btn-outline-primary btn-sm">
                 <i class="fas fa-chart-bar me-1"></i>View Reports
             </a>
+            <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#dashboardFilters" aria-expanded="false" aria-controls="dashboardFilters">
+                <i class="fas fa-filter me-1"></i>Filters
+            </button>
             <div class="dropdown">
                 <button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="periodDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="fas fa-calendar-alt me-1"></i>
@@ -53,6 +56,115 @@ function formatCurrency(amount) {
 }
 %>
 
+<!-- Filter Section -->
+<div class="collapse mb-4" id="dashboardFilters">
+    <div class="card shadow">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-filter me-2"></i>Dashboard Filters
+            </h6>
+        </div>
+        <div class="card-body">
+            <form id="dashboardFilterForm" action="/admin/dashboard" method="GET" class="row g-3">
+                <!-- Date Range Selector -->
+                <div class="col-md-6">
+                    <div class="card border-left-primary h-100">
+                        <div class="card-body py-2">
+                            <h6 class="font-weight-bold text-primary mb-2">Date Range</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="startDate" class="form-label small">Start Date</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
+                                        <input type="date" class="form-control" id="startDate" name="startDate" value="<%= filters.startDate %>">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="endDate" class="form-label small">End Date</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
+                                        <input type="date" class="form-control" id="endDate" name="endDate" value="<%= filters.endDate %>">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <div class="btn-group btn-group-sm w-100" role="group">
+                                    <button type="button" class="btn btn-outline-secondary" onclick="setDashboardDateRange('today')">Today</button>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="setDashboardDateRange('week')">This Week</button>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="setDashboardDateRange('month')">This Month</button>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="setDashboardDateRange('year')">This Year</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status and Payment Filters -->
+                <div class="col-md-6">
+                    <div class="card border-left-success h-100">
+                        <div class="card-body py-2">
+                            <h6 class="font-weight-bold text-success mb-2">Order Filters</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="paymentMethod" class="form-label small">Payment Method</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-credit-card"></i></span>
+                                        <select class="form-select" id="paymentMethod" name="paymentMethod">
+                                            <option value="all" <%= filters.paymentMethod === 'all' ? 'selected' : '' %>>All Methods</option>
+                                            <option value="cod" <%= filters.paymentMethod === 'cod' ? 'selected' : '' %>>Cash on Delivery</option>
+                                            <option value="razorpay" <%= filters.paymentMethod === 'razorpay' ? 'selected' : '' %>>Razorpay</option>
+                                            <option value="wallet" <%= filters.paymentMethod === 'wallet' ? 'selected' : '' %>>Wallet</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="orderStatus" class="form-label small">Order Status</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-tasks"></i></span>
+                                        <select class="form-select" id="orderStatus" name="orderStatus">
+                                            <option value="all" <%= filters.orderStatus === 'all' ? 'selected' : '' %>>All Statuses</option>
+                                            <option value="Processing" <%= filters.orderStatus === 'Processing' ? 'selected' : '' %>>Processing</option>
+                                            <option value="Shipped" <%= filters.orderStatus === 'Shipped' ? 'selected' : '' %>>Shipped</option>
+                                            <option value="Delivered" <%= filters.orderStatus === 'Delivered' ? 'selected' : '' %>>Delivered</option>
+                                            <option value="Cancelled" <%= filters.orderStatus === 'Cancelled' ? 'selected' : '' %>>Cancelled</option>
+                                            <option value="Returned" <%= filters.orderStatus === 'Returned' ? 'selected' : '' %>>Returned</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-md-6">
+                                    <label for="sortBy" class="form-label small">Sort By</label>
+                                    <select class="form-select form-select-sm" id="sortBy" name="sortBy">
+                                        <option value="date" <%= filters.sortBy === 'date' ? 'selected' : '' %>>Date</option>
+                                        <option value="amount" <%= filters.sortBy === 'amount' ? 'selected' : '' %>>Amount</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="sortOrder" class="form-label small">Sort Order</label>
+                                    <select class="form-select form-select-sm" id="sortOrder" name="sortOrder">
+                                        <option value="desc" <%= filters.sortOrder === 'desc' ? 'selected' : '' %>>Descending</option>
+                                        <option value="asc" <%= filters.sortOrder === 'asc' ? 'selected' : '' %>>Ascending</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 d-flex justify-content-end mt-3">
+                    <a href="/admin/dashboard" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-undo me-1"></i>Reset
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-1"></i>Apply Filters
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Error Alert -->
 <% if (typeof error !== 'undefined' && error) { %>
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -66,9 +178,30 @@ function formatCurrency(amount) {
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-md-8">
-                                    <h4 class="mb-3">Store Performance Summary</h4>
+                                    <h4 class="mb-3">Store Performance Summary
+                                        <% if (filters.paymentMethod !== 'all' || filters.orderStatus !== 'all' || filters.startDate || filters.endDate) { %>
+                                            <span class="badge bg-info ms-2">
+                                                <i class="fas fa-filter me-1"></i>Filtered
+                                            </span>
+                                        <% } %>
+                                    </h4>
                                     <p class="text-muted">
-                                        Welcome to your dashboard! Here's a quick overview of your store's performance.
+                                        <% if (filters.paymentMethod !== 'all' || filters.orderStatus !== 'all' || filters.startDate || filters.endDate) { %>
+                                            Showing filtered results for
+                                            <% if (filters.startDate && filters.endDate) { %>
+                                                <%= filters.startDate %> to <%= filters.endDate %>
+                                            <% } else { %>
+                                                <%= currentPeriod === 'today' ? 'today' : currentPeriod === 'week' ? 'this week' : currentPeriod === 'year' ? 'this year' : 'this month' %>
+                                            <% } %>
+                                            <% if (filters.paymentMethod !== 'all') { %>
+                                                • Payment: <%= filters.paymentMethod.charAt(0).toUpperCase() + filters.paymentMethod.slice(1) %>
+                                            <% } %>
+                                            <% if (filters.orderStatus !== 'all') { %>
+                                                • Status: <%= filters.orderStatus %>
+                                            <% } %>
+                                        <% } else { %>
+                                            Welcome to your dashboard! Here's a quick overview of your store's performance.
+                                        <% } %>
                                     </p>
                                     <div class="row">
                                         <div class="col-md-6">
@@ -500,9 +633,6 @@ function formatCurrency(amount) {
                                                         <a href="/admin/orders/<%= order._id %>" class="btn btn-sm btn-info">
                                                             <i class="fas fa-eye"></i>
                                                         </a>
-                                                        <a href="/admin/orders/edit/<%= order._id %>" class="btn btn-sm btn-warning">
-                                                            <i class="fas fa-edit"></i>
-                                                        </a>
                                                     </td>
                                                 </tr>
                                             <% }); %>
@@ -600,9 +730,6 @@ function formatCurrency(amount) {
                                                     <td>
                                                         <a href="/admin/products/<%= product._id %>" class="btn btn-sm btn-info">
                                                             <i class="fas fa-eye"></i>
-                                                        </a>
-                                                        <a href="/admin/products/edit/<%= product._id %>" class="btn btn-sm btn-warning">
-                                                            <i class="fas fa-edit"></i>
                                                         </a>
                                                     </td>
                                                 </tr>
@@ -1196,7 +1323,20 @@ function formatCurrency(amount) {
         const tbody = document.querySelector('#recentOrdersTable tbody');
         tbody.innerHTML = '<tr><td colspan="6" class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
 
-        fetch(`/admin/dashboard/orders?page=${page}&limit=5`)
+        // Get current filter values
+        const urlParams = new URLSearchParams(window.location.search);
+        const filterParams = new URLSearchParams();
+        filterParams.set('page', page);
+        filterParams.set('limit', 5);
+
+        // Add current filters to the request
+        if (urlParams.get('period')) filterParams.set('period', urlParams.get('period'));
+        if (urlParams.get('startDate')) filterParams.set('startDate', urlParams.get('startDate'));
+        if (urlParams.get('endDate')) filterParams.set('endDate', urlParams.get('endDate'));
+        if (urlParams.get('paymentMethod')) filterParams.set('paymentMethod', urlParams.get('paymentMethod'));
+        if (urlParams.get('orderStatus')) filterParams.set('orderStatus', urlParams.get('orderStatus'));
+
+        fetch(`/admin/dashboard/orders?${filterParams.toString()}`)
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
@@ -1392,5 +1532,57 @@ function formatCurrency(amount) {
 
         paginationElement.innerHTML = paginationHTML;
     }
+
+    // Dashboard filter functions
+    function setDashboardDateRange(range) {
+        const today = new Date();
+        let startDate = new Date();
+
+        switch(range) {
+            case 'today':
+                // Start and end are both today
+                break;
+            case 'week':
+                // Start is beginning of current week (Sunday)
+                startDate.setDate(today.getDate() - today.getDay());
+                break;
+            case 'month':
+                // Start is beginning of current month
+                startDate.setDate(1);
+                break;
+            case 'year':
+                // Start is beginning of current year
+                startDate.setMonth(0, 1);
+                break;
+        }
+
+        document.getElementById('startDate').value = formatDateForInput(startDate);
+        document.getElementById('endDate').value = formatDateForInput(today);
+
+        // Auto-submit the form when a date range is selected
+        document.getElementById('dashboardFilterForm').submit();
+    }
+
+    function formatDateForInput(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    // Auto-submit form when filter values change
+    document.addEventListener('DOMContentLoaded', function() {
+        const filterForm = document.getElementById('dashboardFilterForm');
+        const filterInputs = filterForm.querySelectorAll('select');
+
+        filterInputs.forEach(input => {
+            input.addEventListener('change', function() {
+                // Small delay to allow user to make multiple selections
+                setTimeout(() => {
+                    filterForm.submit();
+                }, 100);
+            });
+        });
+    });
     </script>
 <%- include("partials/footer") %>

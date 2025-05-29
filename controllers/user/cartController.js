@@ -1,27 +1,30 @@
+/**
+ * CartController
+ */
+
 const Cart = require("../../models/cartSchema");
 const Product = require("../../models/productSchema");
 const StatusCodes = require("../../utils/httpStatusCodes");
 const wishlistController = require('./wishlistController');
 
+//=================================================================================================
+// Add To Cart
+//=================================================================================================
+// This function adds a product to the cart.
+// It adds a product to the cart.
+//=================================================================================================
+
 exports.addToCart = async (req, res) => {
   try {
-    console.log("Add to cart request body:", req.body);
     const { productId, quantity = 1 } = req.body;
-    console.log("Extracted productId and quantity:", { productId, quantity });
-
-    // Check if user is logged in
     if (!req.session || !req.session.user) {
-      console.log("User not logged in");
       return res.status(StatusCodes.UNAUTHORIZED).json({
         success: false,
         message: "User not logged in",
       });
     }
 
-    // Get user ID from session
     const userId = req.session.user._id || req.session.user;
-    console.log("User ID from session:", userId);
-
     const product = await Product.findById(productId).populate('offer');
     if (!product) {
       return res.status(StatusCodes.NOT_FOUND).json({
@@ -37,7 +40,6 @@ exports.addToCart = async (req, res) => {
       });
     }
 
-    // Check if product is in stock
     if (product.quantity <= 0) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -46,7 +48,6 @@ exports.addToCart = async (req, res) => {
       });
     }
 
-    // Check if requested quantity is available
     if (product.quantity < quantity) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -58,17 +59,13 @@ exports.addToCart = async (req, res) => {
 
     let cart = await Cart.findOne({ userId });
 
-    // Get the best offer price using offerService
     const offerService = require('../../services/offerService');
     const basePrice = product.price || 0;
 
-    // Get the best offer for this product
     const offerResult = await offerService.getBestOfferForProduct(product._id, basePrice);
 
-    // Use the final price after applying the best offer
     let price = offerResult.finalPrice;
 
-    // Ensure price is not negative
     if (price < 0) price = 0;
 
     const totalPrice = price * quantity;
@@ -81,7 +78,6 @@ exports.addToCart = async (req, res) => {
 
       await cart.save();
 
-      // Remove from wishlist if present
       await wishlistController.removeFromWishlistOnAddToCart(userId, productId);
 
       return res.status(StatusCodes.OK).json({
@@ -118,7 +114,6 @@ exports.addToCart = async (req, res) => {
 
     await cart.save();
 
-    // Remove from wishlist if present (only for new additions)
     if (!existingItem) {
       await wishlistController.removeFromWishlistOnAddToCart(userId, productId);
     }
@@ -138,7 +133,12 @@ exports.addToCart = async (req, res) => {
   }
 };
 
-// Helper function to refresh cart prices based on current offers
+//=================================================================================================
+// Refresh Cart Prices
+//=================================================================================================
+// This function refreshes the cart prices.
+// It refreshes the cart prices.
+//=================================================================================================
 const refreshCartPrices = async (userId) => {
   try {
     const cart = await Cart.findOne({ userId });
@@ -149,34 +149,26 @@ const refreshCartPrices = async (userId) => {
     const offerService = require('../../services/offerService');
     let pricesUpdated = false;
 
-    // Check each product in the cart for price changes
     for (const item of cart.products) {
       const product = await Product.findById(item.productId);
       if (!product) continue;
 
-      // Get current best offer price
       const basePrice = product.price || 0;
       const offerResult = await offerService.getBestOfferForProduct(product._id, basePrice);
       const currentBestPrice = offerResult.finalPrice;
 
-      // Check if price has changed (using small threshold for floating point comparison)
       const priceDifference = Math.abs(item.price - currentBestPrice);
       const shouldUpdatePrice = priceDifference > 0.01; // 1 cent threshold
 
       if (shouldUpdatePrice) {
-        console.log(`Updating cart price for ${product.productName}: Old price: ${item.price}, New price: ${currentBestPrice}`);
-
-        // Update item price and total price
         item.price = currentBestPrice;
         item.totalPrice = currentBestPrice * item.quantity;
         pricesUpdated = true;
       }
     }
 
-    // Save cart if any prices were updated
     if (pricesUpdated) {
       await cart.save();
-      console.log(`Cart prices updated for user ${userId}`);
     }
 
     return { updated: pricesUpdated, cart };
@@ -186,6 +178,12 @@ const refreshCartPrices = async (userId) => {
   }
 };
 
+//=================================================================================================
+// Render Cart Page
+//=================================================================================================
+// This function renders the cart page.
+// It renders the cart page.
+//=================================================================================================
 exports.renderCartPage = async (req, res) => {
   try {
     const userId = req.session.user;
@@ -194,10 +192,8 @@ exports.renderCartPage = async (req, res) => {
       return res.redirect("/login");
     }
 
-    // Refresh cart prices based on current offers
     const { updated, cart, error } = await refreshCartPrices(userId);
 
-    // If there was an error refreshing prices, just proceed with the current cart
     const currentCart = error ? await Cart.findOne({ userId }) : cart;
     const allProducts = await Product.find({ isDeleted: false });
     let cartProducts = [];
@@ -212,7 +208,6 @@ exports.renderCartPage = async (req, res) => {
           const productDetails = await Product.findById(item.productId);
           if (!productDetails) return null;
 
-          // Get the current offer price to compare with the stored cart price
           const offerService = require('../../services/offerService');
           const basePrice = productDetails.price || 0;
           const offerResult = await offerService.getBestOfferForProduct(productDetails._id, basePrice);
@@ -249,6 +244,12 @@ exports.renderCartPage = async (req, res) => {
   }
 };
 
+//=================================================================================================
+// Remove From Cart
+//=================================================================================================
+// This function removes a product from the cart.
+// It removes a product from the cart.
+//=================================================================================================
 exports.removeFromCart = async (req, res) => {
   try {
     const { productId } = req.body;
@@ -298,7 +299,12 @@ exports.removeFromCart = async (req, res) => {
   }
 };
 
-// API endpoint to refresh cart prices
+//=================================================================================================
+// Refresh Cart Prices
+//=================================================================================================
+// This function refreshes the cart prices.
+// It refreshes the cart prices.
+//=================================================================================================
 exports.refreshCartPrices = async (req, res) => {
   try {
     const userId = req.session?.user;
@@ -339,27 +345,27 @@ exports.refreshCartPrices = async (req, res) => {
     });
   }
 };
-
+//=================================================================================================
+// Validate Cart
+//=================================================================================================
+// This function validates the cart.
+// It validates the cart.
+//=================================================================================================
 exports.validateCart = async (req, res) => {
   try {
     const userId = req.session?.user;
 
     if (!userId) {
-      console.log('User not authenticated');
       return res.status(StatusCodes.UNAUTHORIZED).json({
         success: false,
         message: "Not authenticated",
       });
     }
 
-    // First refresh cart prices to ensure we're working with the latest prices
     await refreshCartPrices(userId);
-
-    console.log(`User ${userId} authenticated. Fetching cart...`);
     const cart = await Cart.findOne({ userId }).lean();
 
     if (!cart || !cart.products || cart.products.length === 0) {
-      console.log('Cart is empty');
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
         errors: [{
@@ -372,8 +378,6 @@ exports.validateCart = async (req, res) => {
     const validationErrors = [];
     for (const item of cart.products) {
       const product = await Product.findById(item.productId).lean();
-      console.log(`Checking product ${item.productId}`);
-
       if (!product) {
         validationErrors.push({
           productId: item.productId,
@@ -393,7 +397,6 @@ exports.validateCart = async (req, res) => {
         continue;
       }
 
-      // Check if product is completely out of stock
       if (product.quantity <= 0) {
         validationErrors.push({
           productId: product._id,
@@ -402,7 +405,7 @@ exports.validateCart = async (req, res) => {
           message: `"${product.productName}" is out of stock.`
         });
       }
-      // Check if requested quantity exceeds available stock
+
       else if (product.quantity < item.quantity) {
         validationErrors.push({
           productId: product._id,
@@ -416,15 +419,12 @@ exports.validateCart = async (req, res) => {
     }
 
     if (validationErrors.length > 0) {
-      console.log('Cart validation failed:', validationErrors);
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
         message: "Cart validation failed",
         errors: validationErrors,
       });
     }
-
-    console.log('Cart validated successfully');
     return res.status(StatusCodes.OK).json({
       success: true,
       message: "Cart is valid",

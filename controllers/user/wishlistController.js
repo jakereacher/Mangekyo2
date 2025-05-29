@@ -1,10 +1,18 @@
+/**
+ * WishlistController
+ */
+
 const Wishlist = require('../../models/wishlistSchema');
 const Product = require('../../models/productSchema');
 const Cart = require('../../models/cartSchema');
 const User = require('../../models/userSchema');
 
-
-// wishlistController.js
+//=================================================================================================
+// Get Wishlist
+//=================================================================================================
+// This function gets the wishlist of a user.
+// It gets the wishlist of a user.
+//=================================================================================================
 exports.getWishlist = async (req, res) => {
   try {
     const userId = req.session.user;
@@ -43,7 +51,6 @@ exports.getWishlist = async (req, res) => {
       const product = item.productId;
       if (!product) return null;
 
-      // Ensure image URLs are properly formatted
       const mainImage = product.productImage && product.productImage.length > 0
         ? product.productImage[0]
         : null;
@@ -78,6 +85,12 @@ exports.getWishlist = async (req, res) => {
   }
 };
 
+//=================================================================================================
+// Add To Wishlist
+//=================================================================================================
+// This function adds a product to the wishlist of a user.
+// It adds a product to the wishlist of a user.
+//=================================================================================================
 exports.addToWishlist = async (req, res) => {
   try {
     const { productId } = req.body;
@@ -90,19 +103,17 @@ exports.addToWishlist = async (req, res) => {
       });
     }
 
-    // Find or create wishlist
     let wishlist = await Wishlist.findOne({ userId });
     if (!wishlist) {
       wishlist = new Wishlist({ userId, products: [] });
     }
 
-    // Check if product already exists in wishlist
     const existingItem = wishlist.products.find(item =>
       item.productId && item.productId.toString() === productId
     );
 
     if (existingItem) {
-      // If product is already in wishlist, inform the client
+
       return res.json({
         success: true,
         message: 'Product is already in your wishlist',
@@ -110,7 +121,6 @@ exports.addToWishlist = async (req, res) => {
       });
     }
 
-    // Add product to wishlist
     wishlist.products.push({
       productId,
       addedOn: Date.now()
@@ -131,6 +141,12 @@ exports.addToWishlist = async (req, res) => {
   }
 };
 
+//=================================================================================================
+// Remove From Wishlist
+//=================================================================================================
+// This function removes a product from the wishlist of a user.
+// It removes a product from the wishlist of a user.
+//=================================================================================================
 exports.removeFromWishlist = async (req, res) => {
   try {
     const { productId } = req.params;
@@ -151,7 +167,6 @@ exports.removeFromWishlist = async (req, res) => {
       await wishlist.save();
     }
 
-    // Determine if this is an AJAX request or a regular form submission
     const isAjax = req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1);
 
     if (isAjax) {
@@ -160,7 +175,7 @@ exports.removeFromWishlist = async (req, res) => {
         message: 'Product removed from wishlist'
       });
     } else {
-      // Redirect back to wishlist page
+
       res.redirect('/wishlist');
     }
   } catch (error) {
@@ -172,7 +187,12 @@ exports.removeFromWishlist = async (req, res) => {
   }
 };
 
-// Toggle wishlist item (add if not present, remove if present)
+//=================================================================================================
+// Toggle Wishlist
+//=================================================================================================
+// This function toggles a product in the wishlist of a user.
+// It toggles a product in the wishlist of a user.
+//=================================================================================================
 exports.toggleWishlist = async (req, res) => {
   try {
     const { productId } = req.body;
@@ -185,20 +205,18 @@ exports.toggleWishlist = async (req, res) => {
       });
     }
 
-    // Find wishlist
     let wishlist = await Wishlist.findOne({ userId });
     if (!wishlist) {
       wishlist = new Wishlist({ userId, products: [] });
     }
 
-    // Check if product exists in wishlist
     const existingItemIndex = wishlist.products.findIndex(item =>
       item.productId && item.productId.toString() === productId
     );
 
     let result;
     if (existingItemIndex > -1) {
-      // Remove product from wishlist
+
       wishlist.products.splice(existingItemIndex, 1);
       result = {
         success: true,
@@ -206,7 +224,7 @@ exports.toggleWishlist = async (req, res) => {
         action: 'removed'
       };
     } else {
-      // Add product to wishlist
+
       wishlist.products.push({
         productId,
         addedOn: Date.now()
@@ -229,7 +247,12 @@ exports.toggleWishlist = async (req, res) => {
   }
 };
 
-// Add a new method to handle removing products from wishlist when added to cart
+//=================================================================================================
+// Remove From Wishlist On Add To Cart
+//=================================================================================================
+// This function removes a product from the wishlist of a user when it is added to the cart.
+// It removes a product from the wishlist of a user when it is added to the cart.
+//=================================================================================================
 exports.removeFromWishlistOnAddToCart = async (userId, productId) => {
   try {
     if (!userId) return false;
@@ -255,7 +278,12 @@ exports.removeFromWishlistOnAddToCart = async (userId, productId) => {
   }
 };
 
-// Get wishlist status (for AJAX requests)
+//=================================================================================================
+// Get Wishlist Status
+//=================================================================================================
+// This function gets the status of a product in the wishlist of a user.
+// It gets the status of a product in the wishlist of a user.
+//=================================================================================================
 exports.getWishlistStatus = async (req, res) => {
   try {
     const { productId } = req.params;
@@ -286,7 +314,12 @@ exports.getWishlistStatus = async (req, res) => {
   }
 };
 
-// Count wishlist items
+//=================================================================================================
+// Get Wishlist Count
+//=================================================================================================
+// This function gets the count of products in the wishlist of a user.
+// It gets the count of products in the wishlist of a user.
+//=================================================================================================
 exports.getWishlistCount = async (req, res) => {
   try {
     const userId = req.session.user;

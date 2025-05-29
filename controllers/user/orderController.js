@@ -95,8 +95,7 @@ function generateInvoicePDF(doc, order) {
   doc.moveDown();
 
   doc.fontSize(14).text('Order Information', { underline: true });
-  doc.moveDown(0.5);
-  // Use orderNumber if available, otherwise use a shortened version of the ID (5 digits)
+  doc.moveDown(0.5);
   const displayOrderId = order.orderNumber || `MK${order._id.toString().slice(-5)}`;
   doc.fontSize(10).text(`Order Number: ${displayOrderId}`);
   doc.fontSize(10).text(`Order Date: ${new Date(order.orderDate).toLocaleDateString()}`);
@@ -173,9 +172,7 @@ function generateInvoicePDF(doc, order) {
   tableRow += 15;
 
   doc.fontSize(10).text('Shipping:', 350, tableRow);
-  doc.fontSize(10).text(`₹${order.shippingCharge ? order.shippingCharge.toFixed(2) : '0.00'}`, amountX, tableRow);
-
-  // Add delivery description if available
+  doc.fontSize(10).text(`₹${order.shippingCharge ? order.shippingCharge.toFixed(2) : '0.00'}`, amountX, tableRow);
   if (order.deliveryDescription) {
     tableRow += 10;
     doc.fontSize(8).fillColor('#3b82f6').text(`(${order.deliveryDescription})`, 350, tableRow);
@@ -192,9 +189,7 @@ function generateInvoicePDF(doc, order) {
   if (order.discount && order.discount > 0) {
     doc.fontSize(10).text('Discount:', 350, tableRow);
     doc.fontSize(10).text(`-$${order.discount.toFixed(2)}`, amountX, tableRow);
-    tableRow += 15;
-
-    // Add coupon information if available
+    tableRow += 15;
     if (order.couponCode) {
       doc.fontSize(10).text(`Coupon Applied: ${order.couponCode}`, 350, tableRow);
       tableRow += 15;
@@ -248,33 +243,17 @@ const getOrderDetails = async (req, res) => {
       year: 'numeric', month: 'long', day: 'numeric'
     });
 
-    const status = calculateOverallStatus(order.orderedItems);
-
-    // Check if all items are cancelled
-    const allItemsCancelled = order.orderedItems.every(item => item.status === 'Cancelled');
-
-    // Get non-cancelled items
-    const nonCancelledItems = order.orderedItems.filter(item => item.status !== 'Cancelled');
-
-    // Calculate subtotal for non-cancelled items
-    const subtotal = nonCancelledItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-
-    // Add shipping and tax
+    const status = calculateOverallStatus(order.orderedItems);
+    const allItemsCancelled = order.orderedItems.every(item => item.status === 'Cancelled');
+    const nonCancelledItems = order.orderedItems.filter(item => item.status !== 'Cancelled');
+    const subtotal = nonCancelledItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const shipping = order.shippingCharge || 0;
-    const tax = subtotal * 0.09; // 9% tax rate
-
-    // Calculate final amount
-    let finalAmount = subtotal + shipping + tax;
-
-    // Apply discount if applicable
+    const tax = subtotal * 0.09; // 9% tax rate
+    let finalAmount = subtotal + shipping + tax;
     if (order.discount && order.discount > 0) {
       finalAmount -= order.discount;
-    }
-
-    // Ensure amount is not negative
-    finalAmount = Math.max(0, finalAmount);
-
-    // Calculate Razorpay amount in paise
+    }
+    finalAmount = Math.max(0, finalAmount);
     const razorpayAmount = Math.max(100, Math.round(finalAmount * 100));
 
     console.log('Order details calculation:', {
@@ -291,10 +270,8 @@ const getOrderDetails = async (req, res) => {
       _id: order._id.toString(),
       status,
       formattedOrderDate,
-      formattedDeliveryDate,
-      // Display order number if available, otherwise use the ID
-      displayOrderId: order.orderNumber || order._id.toString(),
-      // Include cancellation information
+      formattedDeliveryDate,
+      displayOrderId: order.orderNumber || order._id.toString(),
       cancellation_status: order.cancellation_status,
       cancellation_admin_response: order.cancellation_admin_response,
       cancellation_requested_at: order.cancellation_requested_at ?
@@ -309,11 +286,9 @@ const getOrderDetails = async (req, res) => {
           mainImage: item.product.productImage && item.product.productImage.length > 0
             ? item.product.productImage[0]
             : "/images/default-product.jpg",
-        },
-        // Include original price and discount percentage if available
+        },
         originalPrice: item.originalPrice || item.price,
-        discountPercentage: item.discountPercentage || 0,
-        // Add offer type - default to 'percentage' if not specified
+        discountPercentage: item.discountPercentage || 0,
         offerType: item.product.offer && item.product.offer.discountType ? item.product.offer.discountType : 'percentage',
         totalPrice: (item.price * item.quantity).toFixed(2),
       })),
@@ -321,18 +296,13 @@ const getOrderDetails = async (req, res) => {
       shipping: shipping.toFixed(2),
       tax: tax.toFixed(2),
       discount: order.discount ? order.discount.toFixed(2) : "0.00",
-      total: finalAmount.toFixed(2),
-      // Include coupon information
+      total: finalAmount.toFixed(2),
       couponCode: order.couponCode || null,
       couponApplied: order.couponApplied || false,
-      couponDetails: order.coupon || null,
-      // Include Razorpay amount in paise
-      razorpayAmountInPaise: razorpayAmount,
-      // Flag to indicate if all items are cancelled
+      couponDetails: order.coupon || null,
+      razorpayAmountInPaise: razorpayAmount,
       allItemsCancelled: allItemsCancelled
-    };
-
-    // Get Razorpay key ID for payment retry functionality
+    };
     const { razorpayKeyId } = require("../../config/razorpay");
     const safeRazorpayKeyId = razorpayKeyId || 'rzp_test_UkVZCj9Q9Jy9Ja';
 
@@ -412,10 +382,8 @@ const getUserOrders = async (req, res) => {
         status,
         progressWidth,
         formattedOrderDate: new Date(order.orderDate).toLocaleDateString(),
-        formattedDeliveryDate: new Date(order.deliveryDate).toLocaleDateString(),
-        // Display order number if available, otherwise use the ID
-        displayOrderId: order.orderNumber || order._id.toString(),
-        // Include coupon information
+        formattedDeliveryDate: new Date(order.deliveryDate).toLocaleDateString(),
+        displayOrderId: order.orderNumber || order._id.toString(),
         couponCode: order.couponCode || null,
         couponApplied: order.couponApplied || false,
         couponDetails: order.coupon || null
@@ -628,9 +596,6 @@ const cancelOrder = async (req, res) => {
         message: "Order not found",
       });
     }
-
-    console.log(`Processing cancellation for order: ${orderId}, payment method: ${order.paymentMethod}, payment status: ${order.paymentStatus}`);
-
     const item = order.orderedItems.find(
       (item) => item.product.toString() === productId
     );
@@ -647,58 +612,27 @@ const cancelOrder = async (req, res) => {
         success: false,
         message: "This product cannot be cancelled at its current stage",
       });
-    }
-
-    // Update item status
+    }
     item.status = "Cancelled";
     item.order_cancelled_date = new Date();
-    item.order_cancel_reason = cancelReason || "User requested cancellation";
-
-    // Calculate the cancelled item amount
-    const cancelledAmount = item.price * item.quantity;
-
-    // Recalculate order totals
-    // Get all non-cancelled items (excluding the current item being cancelled)
-    const nonCancelledItems = order.orderedItems.filter(i => i.status !== "Cancelled" && i._id.toString() !== item._id.toString());
-
-    // Calculate new subtotal
-    const newSubtotal = nonCancelledItems.reduce((sum, i) => sum + (i.price * i.quantity), 0);
-
-    // Update order totals
-    order.totalPrice = newSubtotal;
-
-    // Recalculate tax (assuming 9% tax rate)
+    item.order_cancel_reason = cancelReason || "User requested cancellation";
+    const cancelledAmount = item.price * item.quantity;
+    const nonCancelledItems = order.orderedItems.filter(i => i.status !== "Cancelled" && i._id.toString() !== item._id.toString());
+    const newSubtotal = nonCancelledItems.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+    order.totalPrice = newSubtotal;
     const newTax = newSubtotal * 0.09;
-    order.taxAmount = newTax;
-
-    // Calculate new final amount (subtotal + shipping + tax - discount)
+    order.taxAmount = newTax;
     const newFinalAmount = newSubtotal + (order.shippingCharge || 0) + newTax - (order.discount || 0);
-    order.finalAmount = Math.max(0, newFinalAmount); // Ensure it's not negative
-
-    // Check if all items are now cancelled
+    order.finalAmount = Math.max(0, newFinalAmount); // Ensure it's not negative
     const allItemsCancelled = order.orderedItems.every(i =>
         i.status === "Cancelled" || i._id.toString() === item._id.toString()
-    );
-
-    // If all items are cancelled, update the order status
+    );
     if (allItemsCancelled) {
-        console.log('All items in order are now cancelled');
         order.orderStatus = "Cancelled";
-
-        // Don't change payment status as "Cancelled" is not a valid enum value
-        // Valid values are only: "Pending", "Paid", "Failed"
-        console.log(`Order payment status remains as: ${order.paymentStatus}`);
     }
-
-    console.log(`Order totals updated: subtotal=${newSubtotal}, tax=${newTax}, finalAmount=${order.finalAmount}, allCancelled=${allItemsCancelled}`);
-
-    // Process refund for paid orders (Razorpay or Wallet)
     if ((order.paymentMethod === 'razorpay' && order.paymentStatus === 'Paid') || order.paymentMethod === 'wallet') {
-      try {
-        // Calculate refund amount
-        const refundAmount = cancelledAmount;
-
-        // Find or create user wallet
+      try {
+        const refundAmount = cancelledAmount;
         const Wallet = require("../../models/walletSchema");
         const WalletTransaction = require("../../models/walletTransactionSchema");
 
@@ -708,13 +642,9 @@ const cancelOrder = async (req, res) => {
             user: userId,
             balance: 0
           });
-        }
-
-        // Add refund to wallet
+        }
         wallet.balance += refundAmount;
-        await wallet.save();
-
-        // Create a wallet transaction record
+        await wallet.save();
         const transaction = new WalletTransaction({
           user: userId,
           amount: refundAmount,
@@ -722,22 +652,14 @@ const cancelOrder = async (req, res) => {
           description: `Refund for cancelled item in order #${orderId.substring(0, 8)}`,
           status: "completed",
           orderId: orderId
-        });
-
-        // Save the transaction
+        });
         await transaction.save();
-
-        console.log(`Refund processed: ${refundAmount} added to wallet for user ${userId}`);
       } catch (refundError) {
-        console.error("Error processing refund:", refundError);
-        // Continue with cancellation even if refund fails
-        // We'll log the error but not fail the cancellation
+        console.error("Error processing refund:", refundError);
       }
     }
 
-    await order.save();
-
-    // Restore product quantity
+    await order.save();
     await Product.findByIdAndUpdate(item.product, {
       $inc: { quantity: item.quantity },
     });
@@ -797,9 +719,7 @@ const requestCancellation = async (req, res) => {
           success: false,
           message: "Order not found",
         });
-    }
-
-    // Verify this is a paid Razorpay or wallet order
+    }
     if (!((order.paymentMethod === 'razorpay' && order.paymentStatus === 'Paid') || order.paymentMethod === 'wallet')) {
       return res.status(400)
         .header('Content-Type', 'application/json')
@@ -808,9 +728,6 @@ const requestCancellation = async (req, res) => {
           message: "Only paid orders require cancellation requests. For COD orders or failed Razorpay payments, use the Cancel Order option.",
         });
     }
-
-    console.log(`Processing cancellation request for order: ${orderId}, payment method: ${order.paymentMethod}, payment status: ${order.paymentStatus}`);
-
     const item = order.orderedItems.find(
       (item) => item.product.toString() === productId
     );
@@ -827,17 +744,13 @@ const requestCancellation = async (req, res) => {
         success: false,
         message: "This product cannot be cancelled at its current stage",
       });
-    }
-
-    // Check if this item has been previously rejected for cancellation
+    }
     if (item.order_cancel_status === "Rejected") {
       return res.status(400).json({
         success: false,
         message: "This product's cancellation was previously rejected and cannot be cancelled again",
       });
-    }
-
-    // Update item status to Cancellation Pending
+    }
     item.status = "Cancellation Pending";
     item.order_cancel_reason = cancellationReason;
     order.cancellation_reason = cancellationReason;
@@ -964,9 +877,7 @@ const downloadInvoice = async (req, res) => {
       return res.status(404).render("page-404");
     }
 
-    const doc = new PDFDocument({ margin: 50 });
-
-    // Use orderNumber if available, otherwise use a shortened version of the ID (5 digits)
+    const doc = new PDFDocument({ margin: 50 });
     const displayOrderId = order.orderNumber || `MK${order._id.toString().slice(-5)}`;
 
     res.setHeader('Content-Type', 'application/pdf');
@@ -1023,9 +934,7 @@ const completePayment = async (req, res) => {
         success: false,
         message: "Order is already paid"
       });
-    }
-
-    // Update order payment status
+    }
     order.paymentStatus = "Paid";
     order.razorpayPaymentId = paymentId;
     await order.save();
@@ -1060,25 +969,15 @@ const cancelAllItems = async (req, res) => {
         message: "User not authenticated",
       });
     }
-
-    console.log(`Looking for order with ID: ${orderId} and userId: ${userId}`);
-
-    // First try to find by _id and populate the product references
     let order = await Order.findOne({ _id: orderId, userId })
       .populate("orderedItems.product")
-      .exec();
-
-    // If not found, try to find by orderId field
+      .exec();
     if (!order) {
-      console.log(`Order not found by _id, trying orderId field`);
       order = await Order.findOne({ orderId: orderId, userId })
         .populate("orderedItems.product")
         .exec();
-    }
-
-    // If still not found, try to find by orderNumber
+    }
     if (!order) {
-      console.log(`Order not found by orderId field, trying orderNumber field`);
       order = await Order.findOne({ orderNumber: orderId, userId })
         .populate("orderedItems.product")
         .exec();
@@ -1090,33 +989,21 @@ const cancelAllItems = async (req, res) => {
         message: "Order not found",
       });
     }
-
-    console.log(`Processing cancellation for all items in order: ${orderId}`);
-
-    // Log the order structure to help debug
     console.log('Order structure:', {
       id: order._id,
       orderNumber: order.orderNumber,
       paymentMethod: order.paymentMethod,
       paymentStatus: order.paymentStatus,
       itemCount: order.orderedItems ? order.orderedItems.length : 0
-    });
-
-    // Check if orderedItems exists and is an array
+    });
     if (!order.orderedItems || !Array.isArray(order.orderedItems)) {
       console.error('orderedItems is not an array:', order.orderedItems);
       return res.status(400).json({
         success: false,
         message: "Order items data is invalid",
       });
-    }
-
-    // Get all items that are in "Processing" status (only these can be cancelled)
+    }
     const itemsToCancel = order.orderedItems.filter(item => item.status === "Processing");
-
-    console.log(`Found ${itemsToCancel.length} items with "Processing" status out of ${order.orderedItems.length} total items`);
-
-    // Log the items to be cancelled
     itemsToCancel.forEach((item, index) => {
       console.log(`Item ${index + 1} to cancel:`, {
         id: item._id,
@@ -1132,41 +1019,26 @@ const cancelAllItems = async (req, res) => {
         success: false,
         message: "No items in this order can be cancelled",
       });
-    }
-
-    // Track cancelled amounts for potential refunds
-    let totalCancelledAmount = 0;
-
-    // Cancel all eligible items
-    for (const item of itemsToCancel) {
-      // Update item status
+    }
+    let totalCancelledAmount = 0;
+    for (const item of itemsToCancel) {
       item.status = "Cancelled";
       item.order_cancelled_date = new Date();
-      item.order_cancel_reason = cancelReason || "User requested cancellation of all items";
-
-      // Calculate the cancelled item amount
+      item.order_cancel_reason = cancelReason || "User requested cancellation of all items";
       const cancelledAmount = item.price * item.quantity;
-      totalCancelledAmount += cancelledAmount;
-
-      // Restore product quantity - handle different product reference formats
+      totalCancelledAmount += cancelledAmount;
       let productId;
 
-      if (typeof item.product === 'object') {
-        // If it's a populated product object
+      if (typeof item.product === 'object') {
         if (item.product._id) {
           productId = item.product._id.toString();
         } else {
           productId = item.product.toString();
         }
-      } else {
-        // If it's a string ID
+      } else {
         productId = item.product;
       }
-
-      console.log(`Restoring quantity for product: ${productId}, quantity: ${item.quantity}`);
-
-      try {
-        // Make sure we have a valid product ID
+      try {
         if (!productId || productId === 'undefined' || productId === 'null') {
           console.error(`Invalid product ID: ${productId}`);
           continue; // Skip this item
@@ -1177,54 +1049,26 @@ const cancelAllItems = async (req, res) => {
         });
 
         if (result) {
-          console.log(`Successfully restored quantity for product: ${productId}`);
         } else {
           console.error(`Product not found for ID: ${productId}`);
         }
       } catch (productError) {
-        console.error(`Error restoring product quantity for ${productId}:`, productError);
-        // Continue with cancellation even if product update fails
+        console.error(`Error restoring product quantity for ${productId}:`, productError);
       }
-    }
-
-    // Recalculate order totals
-    // Get all non-cancelled items after the cancellations
-    const nonCancelledItems = order.orderedItems.filter(i => i.status !== "Cancelled");
-
-    // Calculate new subtotal
-    const newSubtotal = nonCancelledItems.reduce((sum, i) => sum + (i.price * i.quantity), 0);
-
-    // Update order totals
-    order.totalPrice = newSubtotal;
-
-    // Recalculate tax (assuming 9% tax rate)
+    }
+    const nonCancelledItems = order.orderedItems.filter(i => i.status !== "Cancelled");
+    const newSubtotal = nonCancelledItems.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+    order.totalPrice = newSubtotal;
     const newTax = newSubtotal * 0.09;
-    order.taxAmount = newTax;
-
-    // Calculate new final amount (subtotal + shipping + tax - discount)
+    order.taxAmount = newTax;
     const newFinalAmount = newSubtotal + (order.shippingCharge || 0) + newTax - (order.discount || 0);
-    order.finalAmount = Math.max(0, newFinalAmount); // Ensure it's not negative
-
-    // Check if all items are now cancelled
-    const allItemsCancelled = order.orderedItems.every(i => i.status === "Cancelled");
-
-    // If all items are cancelled, update the order status
+    order.finalAmount = Math.max(0, newFinalAmount); // Ensure it's not negative
+    const allItemsCancelled = order.orderedItems.every(i => i.status === "Cancelled");
     if (allItemsCancelled) {
-      console.log('All items in order are now cancelled');
       order.orderStatus = "Cancelled";
-
-      // If payment is pending, keep it as pending
-      // If payment is failed, keep it as failed
-      // We don't need to change the payment status as "Cancelled" is not a valid enum value
-      console.log(`Order payment status remains as: ${order.paymentStatus}`);
     }
-
-    console.log(`Order totals updated: subtotal=${newSubtotal}, tax=${newTax}, finalAmount=${order.finalAmount}, allCancelled=${allItemsCancelled}`);
-
-    // Process refund for paid orders (Razorpay or Wallet)
     if ((order.paymentMethod === 'razorpay' && order.paymentStatus === 'Paid') || order.paymentMethod === 'wallet') {
-      try {
-        // Find or create user wallet
+      try {
         const Wallet = require("../../models/walletSchema");
         const WalletTransaction = require("../../models/walletTransactionSchema");
 
@@ -1234,13 +1078,9 @@ const cancelAllItems = async (req, res) => {
             user: userId,
             balance: 0
           });
-        }
-
-        // Add refund to wallet
+        }
         wallet.balance += totalCancelledAmount;
-        await wallet.save();
-
-        // Create a wallet transaction record
+        await wallet.save();
         const transaction = new WalletTransaction({
           user: userId,
           amount: totalCancelledAmount,
@@ -1248,16 +1088,10 @@ const cancelAllItems = async (req, res) => {
           description: `Refund for cancelled items in order #${orderId.substring(0, 8)}`,
           status: "completed",
           orderId: orderId
-        });
-
-        // Save the transaction
+        });
         await transaction.save();
-
-        console.log(`Refund processed: ${totalCancelledAmount} added to wallet for user ${userId}`);
       } catch (refundError) {
-        console.error("Error processing refund:", refundError);
-        // Continue with cancellation even if refund fails
-        // We'll log the error but not fail the cancellation
+        console.error("Error processing refund:", refundError);
       }
     }
 
@@ -1274,9 +1108,7 @@ const cancelAllItems = async (req, res) => {
 
   } catch (error) {
     console.error("Error cancelling all items in order:", error);
-    console.error("Error stack:", error.stack);
-
-    // Don't reference variables that might be out of scope in the catch block
+    console.error("Error stack:", error.stack);
     console.error("Error details:", JSON.stringify({
       message: error.message,
       errorName: error.name

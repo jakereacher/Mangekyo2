@@ -32,16 +32,12 @@ const transporter = nodemailer.createTransport({
  * @returns {String} Generated referral code
  */
 const generateReferralCode = async (userId) => {
-  try {
-    // Generate a base code using the first 4 characters of the user ID and 4 random characters
+  try {
     const userIdPrefix = userId.toString().substring(0, 4);
     const randomChars = crypto.randomBytes(4).toString("hex").toUpperCase().substring(0, 4);
-    const baseCode = `${userIdPrefix}${randomChars}`;
-
-    // Check if the code already exists
+    const baseCode = `${userIdPrefix}${randomChars}`;
     const existingUser = await User.findOne({ referralCode: baseCode });
-    if (existingUser) {
-      // If code exists, try again with different random characters
+    if (existingUser) {
       return generateReferralCode(userId);
     }
 
@@ -79,31 +75,21 @@ exports.renderProfilePage = async (req, res) => {
       return res.status(StatusCodes.NOT_FOUND).render('page-404');
     }
 
-    const wallet = await Wallet.findOne({ user: userId });
-
-    // Get wallet transactions with pagination
+    const wallet = await Wallet.findOne({ user: userId });
     const walletTransactionsPage = parseInt(req.query.wallet_page) || 1;
     const walletTransactionsLimit = 5;
-    const walletTransactionsSkip = (walletTransactionsPage - 1) * walletTransactionsLimit;
-
-    // Get paginated transactions for display
+    const walletTransactionsSkip = (walletTransactionsPage - 1) * walletTransactionsLimit;
     const walletTransactions = await WalletTransaction.find({ user: userId })
       .sort({ createdAt: -1 })
       .skip(walletTransactionsSkip)
-      .limit(walletTransactionsLimit);
-
-    // Get all transactions for summary calculations
+      .limit(walletTransactionsLimit);
     const allWalletTransactions = await WalletTransaction.find({
       user: userId,
       status: "completed" // Only include completed transactions in summary
-    });
-
-    // Calculate total credits (Refunds & Deposits)
+    });
     const totalCredits = allWalletTransactions
       .filter(t => t.type === 'credit')
-      .reduce((sum, t) => sum + t.amount, 0);
-
-    // Calculate total debits (Purchases)
+      .reduce((sum, t) => sum + t.amount, 0);
     const totalDebits = allWalletTransactions
       .filter(t => t.type === 'debit')
       .reduce((sum, t) => sum + t.amount, 0);
@@ -134,18 +120,14 @@ exports.renderProfilePage = async (req, res) => {
         status: item.status,
         price: item.price
       }))
-    }));
-
-    // Fetch available coupons for the user
+    }));
     const now = new Date();
     const availableCoupons = await Coupon.find({
       isActive: true,
       isDelete: false,
       startDate: { $lte: now },
       expiryDate: { $gte: now }
-    });
-
-    // Filter coupons based on user usage
+    });
     const userCoupons = availableCoupons.map(coupon => {
       const userUsage = coupon.users.find(u => u.userId.toString() === userId.toString());
       const usedCount = userUsage ? userUsage.usedCount : 0;
@@ -163,42 +145,29 @@ exports.renderProfilePage = async (req, res) => {
         remainingUses: remainingUses > 0 ? remainingUses : 0,
         isUsable: remainingUses > 0 && coupon.totalUsedCount < coupon.totalUsageLimit
       };
-    }).filter(coupon => coupon.isUsable);
-
-    // Get referral information
+    }).filter(coupon => coupon.isUsable);
     let referralCode = user.referralCode;
-    if (!referralCode) {
-      // Generate a referral code if the user doesn't have one
+    if (!referralCode) {
       referralCode = await generateReferralCode(userId);
       await User.findByIdAndUpdate(userId, { referralCode });
-    }
-
-    // Count users referred by this user
-    const referredUsersCount = await User.countDocuments({ referredBy: userId });
-
-    // Get wallet transactions related to referrals
+    }
+    const referredUsersCount = await User.countDocuments({ referredBy: userId });
     const referralTransactions = await WalletTransaction.find({
       user: userId,
       description: { $regex: /referral/i }
-    });
-
-    // Calculate total earnings from referrals
+    });
     const totalReferralEarnings = referralTransactions.reduce((total, transaction) => {
       if (transaction.type === "credit") {
         return total + transaction.amount;
       }
       return total;
-    }, 0);
-
-    // Get active referral offer
+    }, 0);
     const activeReferralOffer = await Offer.findOne({
       type: "referral",
       isActive: true,
       startDate: { $lte: now },
       endDate: { $gte: now }
-    });
-
-    // Prepare referral data
+    });
     const referralData = {
       code: referralCode,
       referredUsers: referredUsersCount,
@@ -212,9 +181,6 @@ exports.renderProfilePage = async (req, res) => {
         endDate: activeReferralOffer.endDate
       } : null
     };
-
-    console.log("Rendering profile page with Razorpay key ID:", razorpayKeyId);
-
     res.render('profile', {
       user: userWithWallet,
       orders: formattedOrders,
@@ -438,9 +404,7 @@ exports.handleAddress = async (req, res) => {
         const userDoc = await User.findById(userId);
         if (userDoc.address.length === 0) {
           addressData.isDefault = true;
-        }
-
-        // Convert city name to lowercase for consistent storage
+        }
         if (addressData.city) {
           addressData.city = addressData.city.trim().toLowerCase();
         }
@@ -458,9 +422,7 @@ exports.handleAddress = async (req, res) => {
             success: false,
             message: 'Address ID is required for update'
           });
-        }
-
-        // Convert city name to lowercase for consistent storage
+        }
         if (addressData.city) {
           addressData.city = addressData.city.trim().toLowerCase();
         }

@@ -1,9 +1,12 @@
+/**
+ * OTP Controller
+ */
+
 const User = require("../../models/userSchema");
 const Wallet = require("../../models/walletSchema");
 const WalletTransaction = require("../../models/walletTransactionSchema");
 const nodemailer = require("nodemailer");
-const env = require("dotenv").config();
-
+require("dotenv").config();
 const bcrypt = require("bcrypt");
 
 async function securePassword(password) {
@@ -24,13 +27,9 @@ async function processReferralReward(referrerId, newUserId) {
   try {
     const REWARD_AMOUNT = 50; // $50 reward for both users
 
-    // Process reward for referrer
     await addReferralReward(referrerId, REWARD_AMOUNT, `Referral bonus for inviting a new user`);
 
-    // Process reward for new user
     await addReferralReward(newUserId, REWARD_AMOUNT, `Welcome bonus for signing up with a referral code`);
-
-    console.log(`Referral rewards processed: $${REWARD_AMOUNT} added to both users' wallets`);
   } catch (error) {
     console.error("Error processing referral reward:", error);
   }
@@ -44,7 +43,7 @@ async function processReferralReward(referrerId, newUserId) {
  */
 async function addReferralReward(userId, amount, description) {
   try {
-    // Find or create wallet for the user
+
     let wallet = await Wallet.findOne({ user: userId });
     if (!wallet) {
       wallet = new Wallet({
@@ -53,11 +52,9 @@ async function addReferralReward(userId, amount, description) {
       });
     }
 
-    // Add reward to wallet balance
     wallet.balance += amount;
     await wallet.save();
 
-    // Create transaction record
     const transaction = new WalletTransaction({
       user: userId,
       amount: amount,
@@ -68,7 +65,6 @@ async function addReferralReward(userId, amount, description) {
 
     await transaction.save();
 
-    // Update user's wallet field as well for backward compatibility
     await User.findByIdAndUpdate(userId, { wallet: wallet.balance });
 
     return true;
@@ -112,12 +108,6 @@ const verifyOtp = async (req, res) => {
       const otpTimestamp = req.session.otpTimestamp;
       const currentTime = Date.now();
       const timeDifference = (currentTime - otpTimestamp) / 1000;
-
-      console.log("Session OTP:", req.session.userOtp);
-      console.log("Entered OTP:", otp);
-      console.log("Time difference (s):", timeDifference);
-      console.log("User data in session:", req.session.userData);
-
       if (!otpTimestamp || timeDifference > 120) {
         return res.status(400).json({ success: false, message: "OTP has expired" });
       }
@@ -137,7 +127,6 @@ const verifyOtp = async (req, res) => {
           });
         }
 
-        // Check if referral code exists and is valid
         let referrerId = null;
         if (user.referralCode) {
           const referrer = await User.findOne({ referralCode: user.referralCode });
@@ -157,7 +146,6 @@ const verifyOtp = async (req, res) => {
         await saveUserData.save();
         req.session.user = saveUserData._id;
 
-        // Process referral rewards if there's a valid referrer
         if (referrerId) {
           await processReferralReward(referrerId, saveUserData._id);
         }
@@ -185,7 +173,6 @@ const resendOtp = async (req, res) => {
 
     const emailSent = await sendVerificationEmail(email, otp);
     if (emailSent) {
-      console.log(' resend Otp in signup controller',otp);
       return res.status(200).json({ success: true, message: "OTP resent successfully" });
     } else {
       return res.status(500).json({ success: false, message: "Failed to resend OTP" });

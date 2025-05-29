@@ -2,6 +2,12 @@
  * Referral Controller
  * Handles user referral code generation, validation, and reward processing.
  */
+//=================================================================================================
+// Referral Controller
+//=================================================================================================
+// This controller handles user referral code generation, validation, and reward processing.
+// It handles user referral code generation, validation, and reward processing.
+//=================================================================================================
 
 const User = require("../../models/userSchema");
 const Wallet = require("../../models/walletSchema");
@@ -15,17 +21,22 @@ const crypto = require("crypto");
  * @param {String} userId - User ID to generate code for
  * @returns {String} Generated referral code
  */
+//=================================================================================================
+// Generate Referral Code
+//=================================================================================================
+// This function generates a unique referral code for a user.
+// It generates a unique referral code for a user.
+//=================================================================================================
 const generateReferralCode = async (userId) => {
   try {
-    // Generate a base code using the first 4 characters of the user ID and 4 random characters
+
     const userIdPrefix = userId.toString().substring(0, 4);
     const randomChars = crypto.randomBytes(4).toString("hex").toUpperCase().substring(0, 4);
     const baseCode = `${userIdPrefix}${randomChars}`;
 
-    // Check if the code already exists
     const existingUser = await User.findOne({ referralCode: baseCode });
     if (existingUser) {
-      // If code exists, try again with different random characters
+
       return generateReferralCode(userId);
     }
 
@@ -39,6 +50,12 @@ const generateReferralCode = async (userId) => {
 /**
  * Get or generate a referral code for the current user
  */
+//=================================================================================================
+// Get Referral Code
+//=================================================================================================
+// This function gets a referral code for the current user.
+// It gets a referral code for the current user.
+//=================================================================================================
 exports.getReferralCode = async (req, res) => {
   try {
     const userId = req.session.user;
@@ -59,7 +76,6 @@ exports.getReferralCode = async (req, res) => {
       });
     }
 
-    // If user already has a referral code, return it
     if (user.referralCode) {
       return res.status(StatusCodes.OK).json({
         success: true,
@@ -67,10 +83,8 @@ exports.getReferralCode = async (req, res) => {
       });
     }
 
-    // Generate a new referral code
     const referralCode = await generateReferralCode(userId);
 
-    // Save the referral code to the user
     user.referralCode = referralCode;
     await user.save();
 
@@ -90,11 +104,16 @@ exports.getReferralCode = async (req, res) => {
 /**
  * Get active referral offer details
  */
+//=================================================================================================
+// Get Referral Offer Details
+//=================================================================================================
+// This function gets the active referral offer details.
+// It gets the active referral offer details.
+//=================================================================================================
 exports.getReferralOfferDetails = async (req, res) => {
   try {
     const now = new Date();
 
-    // Find active referral offer
     const referralOffer = await Offer.findOne({
       type: "referral",
       isActive: true,
@@ -133,6 +152,12 @@ exports.getReferralOfferDetails = async (req, res) => {
 /**
  * Get referral statistics for the current user
  */
+//=================================================================================================
+// Get Referral Statistics
+//=================================================================================================
+// This function gets the referral statistics for the current user.
+// It gets the referral statistics for the current user.
+//=================================================================================================
 exports.getReferralStats = async (req, res) => {
   try {
     const userId = req.session.user;
@@ -144,16 +169,13 @@ exports.getReferralStats = async (req, res) => {
       });
     }
 
-    // Count users referred by this user
     const referredUsersCount = await User.countDocuments({ referredBy: userId });
 
-    // Get wallet transactions related to referrals
     const walletTransactions = await WalletTransaction.find({
       user: userId,
       description: { $regex: /referral/i }
     });
 
-    // Calculate total earnings from referrals
     const totalEarnings = walletTransactions.reduce((total, transaction) => {
       if (transaction.type === "credit") {
         return total + transaction.amount;
@@ -180,6 +202,12 @@ exports.getReferralStats = async (req, res) => {
 /**
  * Apply a referral code for an existing user
  */
+//=================================================================================================
+// Apply Referral Code
+//=================================================================================================
+// This function applies a referral code for an existing user.
+// It applies a referral code for an existing user.
+//=================================================================================================
 exports.applyReferralCode = async (req, res) => {
   try {
     const userId = req.session.user;
@@ -192,7 +220,6 @@ exports.applyReferralCode = async (req, res) => {
       });
     }
 
-    // Get current user
     const currentUser = await User.findById(userId);
     if (!currentUser) {
       return res.status(StatusCodes.NOT_FOUND).json({
@@ -201,7 +228,6 @@ exports.applyReferralCode = async (req, res) => {
       });
     }
 
-    // Check if user already has a referrer
     if (currentUser.referredBy) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -209,7 +235,6 @@ exports.applyReferralCode = async (req, res) => {
       });
     }
 
-    // Validate referral code
     if (!referralCode || referralCode.trim() === '') {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -217,7 +242,6 @@ exports.applyReferralCode = async (req, res) => {
       });
     }
 
-    // Find referrer by code
     const referrer = await User.findOne({ referralCode: referralCode.trim() });
     if (!referrer) {
       return res.status(StatusCodes.BAD_REQUEST).json({
@@ -226,7 +250,6 @@ exports.applyReferralCode = async (req, res) => {
       });
     }
 
-    // Make sure user is not referring themselves
     if (referrer._id.toString() === userId.toString()) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -234,21 +257,17 @@ exports.applyReferralCode = async (req, res) => {
       });
     }
 
-    // Update user with referrer ID
     currentUser.referredBy = referrer._id;
     await currentUser.save();
 
-    // Process referral rewards for both users
     const REWARD_AMOUNT = 50; // $50 reward for both users
 
-    // Add reward to referrer
     await addReferralReward(
       referrer._id,
       REWARD_AMOUNT,
       `Referral bonus for user ${currentUser.name || currentUser.email}`
     );
 
-    // Add reward to current user
     await addReferralReward(
       userId,
       REWARD_AMOUNT,
@@ -274,9 +293,15 @@ exports.applyReferralCode = async (req, res) => {
  * @param {Number} amount - Amount to add to wallet
  * @param {String} description - Description for the transaction
  */
+//=================================================================================================
+// Add Referral Reward
+//=================================================================================================
+// This function adds a referral reward to a user's wallet.
+// It adds a referral reward to a user's wallet.
+//=================================================================================================
 async function addReferralReward(userId, amount, description) {
   try {
-    // Find or create wallet for the user
+
     let wallet = await Wallet.findOne({ user: userId });
     if (!wallet) {
       wallet = new Wallet({
@@ -285,11 +310,9 @@ async function addReferralReward(userId, amount, description) {
       });
     }
 
-    // Add reward to wallet balance
     wallet.balance += amount;
     await wallet.save();
 
-    // Create transaction record
     const transaction = new WalletTransaction({
       user: userId,
       amount: amount,
@@ -300,7 +323,6 @@ async function addReferralReward(userId, amount, description) {
 
     await transaction.save();
 
-    // Update user's wallet field as well for backward compatibility
     await User.findByIdAndUpdate(userId, { wallet: wallet.balance });
 
     return true;

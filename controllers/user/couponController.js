@@ -1,12 +1,20 @@
+/**
+ * CouponController
+ */
+
 const Coupon = require("../../models/couponSchema.js");
 const StatusCodes = require("../../utils/httpStatusCodes");
 
-// ========================================================================================
-// RENDER COUPONS PAGE
-// ========================================================================================
+
+//=================================================================================================
+// Render Coupons Page
+//=================================================================================================
+// This function renders the coupons page.
+// It renders the coupons page.
+//================================================================================================= 
 const renderCouponsPage = async (req, res) => {
   try {
-    // Fetch active coupons (excluding deleted ones)
+
     const coupons = await Coupon.find({
       isActive: true,
       isDelete: false,
@@ -25,14 +33,18 @@ const renderCouponsPage = async (req, res) => {
   }
 };
 
-// ========================================================================================
-// GET COUPON BY CODE (API ENDPOINT - KEPT AS JSON RESPONSE)
-// ========================================================================================
+
+//=================================================================================================
+// Get Coupon By Code
+//=================================================================================================
+// This function gets a coupon by code.
+// It gets a coupon by code.
+//=================================================================================================
 const getCouponByCode = async (req, res) => {
   const { code } = req.params;
 
   try {
-    // Fetch coupon by code if active and not deleted
+
     const coupon = await Coupon.findOne({
       code,
       isActive: true,
@@ -61,9 +73,13 @@ const getCouponByCode = async (req, res) => {
   }
 };
 
-// ========================================================================================
-// APPLY COUPON (API ENDPOINT - KEPT AS JSON RESPONSE)
-// ========================================================================================
+
+//=================================================================================================
+// Apply Coupon
+//=================================================================================================
+// This function applies a coupon to the cart.
+// It applies a coupon to the cart.
+//=================================================================================================
 const applyCoupon = async (req, res) => {
   try {
     const { code, cartTotal, userId } = req.body;
@@ -107,7 +123,6 @@ const applyCoupon = async (req, res) => {
       });
     }
 
-    // Check if the user can use the coupon
     if (!coupon.canUserUseCoupon(userId)) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -133,7 +148,6 @@ const applyCoupon = async (req, res) => {
       });
     }
 
-    // For fixed discount type, ensure discount is not greater than minimum purchase amount
     if (coupon.type === "fixed" && coupon.discountValue > coupon.minPrice) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -142,7 +156,6 @@ const applyCoupon = async (req, res) => {
       });
     }
 
-    // Check if the coupon has reached its total usage limit
     if (coupon.totalUsedCount >= coupon.totalUsageLimit) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -159,7 +172,7 @@ const applyCoupon = async (req, res) => {
       }
     } else {
       discount = coupon.discountValue;
-      // Ensure discount doesn't exceed cart total
+
       if (discount > numericCartTotal) {
         discount = numericCartTotal;
       }
@@ -167,9 +180,8 @@ const applyCoupon = async (req, res) => {
 
     const finalAmount = numericCartTotal - discount;
 
-    // We'll only validate the coupon here, but not increment usage
-    // Usage will be incremented only when the order is actually placed
-    // This prevents double-counting when a user applies a coupon and then places an order
+
+
 
     return res.status(StatusCodes.OK).json({
       success: true,
@@ -193,13 +205,17 @@ const applyCoupon = async (req, res) => {
   }
 };
 
-// ========================================================================================
-// REMOVE APPLIED COUPON
-// ========================================================================================
+
+//=================================================================================================
+// Remove Applied Coupon
+//=================================================================================================
+// This function removes an applied coupon.
+// It removes an applied coupon.
+//=================================================================================================
 const removeAppliedCoupon = async (req, res) => {
   try {
-    // No database operation needed, just return success
-    // The frontend will handle removing the coupon from the UI and checkout data
+
+
     return res.status(StatusCodes.OK).json({
       success: true,
       message: "Coupon removed successfully",
@@ -213,9 +229,13 @@ const removeAppliedCoupon = async (req, res) => {
   }
 };
 
-// ========================================================================================
-// GET USER AVAILABLE COUPONS (API ENDPOINT)
-// ========================================================================================
+
+//=================================================================================================
+// Get User Available Coupons
+//=================================================================================================
+// This function gets the user available coupons.
+// It gets the user available coupons.
+//=================================================================================================
 const getUserAvailableCoupons = async (req, res) => {
   try {
     const userId = req.session.user;
@@ -227,7 +247,6 @@ const getUserAvailableCoupons = async (req, res) => {
       });
     }
 
-    // Fetch available coupons for the user
     const now = new Date();
     const availableCoupons = await Coupon.find({
       isActive: true,
@@ -236,7 +255,6 @@ const getUserAvailableCoupons = async (req, res) => {
       expiryDate: { $gte: now }
     });
 
-    // Filter coupons based on user usage
     const userCoupons = availableCoupons.map(coupon => {
       const userUsage = coupon.users.find(u => u.userId.toString() === userId.toString());
       const usedCount = userUsage ? userUsage.usedCount : 0;
@@ -270,6 +288,12 @@ const getUserAvailableCoupons = async (req, res) => {
   }
 };
 
+//=================================================================================================
+// Module Exports
+//=================================================================================================
+// This exports the coupon controller functions.
+// It exports the coupon controller functions to be used in the user routes.
+//=================================================================================================
 module.exports = {
   renderCouponsPage,
   getCouponByCode,

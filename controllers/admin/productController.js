@@ -1,11 +1,19 @@
+/**
+ * Product Controller
+ */
+
 const Product = require("../../models/productSchema");
 const Category = require("../../models/categorySchema");
-const User = require("../../models/userSchema");
-
 const fs = require("fs");
 const path = require("path");
 const sharp = require("sharp");
 
+//=================================================================================================
+// Get Product Add Page
+//=================================================================================================
+// This function gets the product add page.
+// It displays the product add page.
+//=================================================================================================
 const getProductAddPage = async (req, res) => {
   try {
     const category = await Category.find({ isListed: true });
@@ -16,6 +24,12 @@ const getProductAddPage = async (req, res) => {
   }
 };
 
+//=================================================================================================
+// Add Products
+//=================================================================================================
+// This function adds a new product to the database.
+// It validates the product data and creates a new product object.
+//================================================================================================= 
 const addProducts = async (req, res) => {
   try {
     const products = req.body;
@@ -29,7 +43,6 @@ if (req.files && req.files.length > 0) {
   for (let i = 0; i < req.files.length; i++) {
     const imagePath = path.join("public", "uploads", "product-images", req.files[i].filename);
 
-    // Move the uploaded file to the desired folder
     try {
       await fs.promises.rename(req.files[i].path, imagePath);
       images.push(req.files[i].filename);
@@ -44,7 +57,6 @@ if (req.files && req.files.length > 0) {
         return res.redirect("/admin/add-products?error=Invalid+category+name");
       }
 
-      // Set status based on quantity
       const status = products.quantity > 0 ? "Available" : "Out of Stock";
 
       const newProduct = new Product({
@@ -69,15 +81,19 @@ if (req.files && req.files.length > 0) {
   }
 };
 
+//=================================================================================================
+// Get Product List
+//=================================================================================================
+// This function gets the product list with pagination.
+// It displays the product list in the products page.
+//=================================================================================================
 const getProductList = async (req, res) => {
   try {
-    // Pagination parameters
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
     const search = req.query.search || "";
 
-    // Build search query
     const searchQuery = search
       ? {
           $or: [
@@ -87,10 +103,8 @@ const getProductList = async (req, res) => {
         }
       : {};
 
-    // Count total products matching the search
     const totalProducts = await Product.countDocuments(searchQuery);
 
-    // Fetch products with populated category and offer
     const products = await Product.find(searchQuery)
       .populate("category")
       .populate("offer")
@@ -98,10 +112,8 @@ const getProductList = async (req, res) => {
       .skip(skip)
       .limit(limit);
 
-    // Process products to include offer information
     const productsWithOffers = products.map(product => {
       const hasOffer = product.productOffer && product.offer;
-      // Handle price fields with fallbacks
       const price = product.price || product.salePrice || product.regularPrice || 0;
       const finalPrice = product.finalPrice || price;
       const discountAmount = hasOffer ? (price - finalPrice) : 0;
@@ -120,7 +132,6 @@ const getProductList = async (req, res) => {
       };
     });
 
-    // Build search params for pagination links
     const searchParams = search ? `&search=${encodeURIComponent(search)}` : '';
     const searchParamsWithoutLimit = search ? `&search=${encodeURIComponent(search)}` : '';
 
@@ -143,6 +154,12 @@ const getProductList = async (req, res) => {
   }
 };
 
+//=================================================================================================
+// Delete Product
+//=================================================================================================
+// This function deletes a product from the database.
+// It deletes the product from the database.
+//=================================================================================================
 const deleteProduct = async (req, res) => {
   try {
     const productId = req.params.id;
@@ -171,6 +188,12 @@ const deleteProduct = async (req, res) => {
   }
 };
 
+//=================================================================================================
+// Toggle Block Product
+//=================================================================================================
+// This function toggles the block status of a product.
+// It updates the block status of the product in the database.
+//=================================================================================================
 const toggleBlockProduct = async (req, res) => {
   try {
     const productId = req.params.id;
@@ -190,6 +213,12 @@ const toggleBlockProduct = async (req, res) => {
   }
 };
 
+//=================================================================================================
+// Get Edit Product Page
+//=================================================================================================
+// This function gets the edit product page.
+// It displays the edit product page.
+//=================================================================================================
 const getEditProductPage = async (req, res) => {
   try {
     const productId = req.params.id;
@@ -208,6 +237,12 @@ const getEditProductPage = async (req, res) => {
   }
 };
 
+//=================================================================================================
+// Edit Product
+//=================================================================================================
+// This function edits a product.
+// It updates the product in the database.
+//=================================================================================================
 const editProduct = async (req, res) => {
   try {
     const productId = req.params.id;
@@ -218,22 +253,16 @@ const editProduct = async (req, res) => {
       return res.redirect("/admin/products?error=Product+not+found");
     }
 
-    // Handle removed images
-    // Create a completely new array for existing images
     let existingImages = [];
 
-    // Only if removedImages is present in the request
     if (req.body.removedImages) {
       try {
         const removedIndices = JSON.parse(req.body.removedImages);
 
-        // Loop through the original product images
         for (let i = 0; i < product.productImage.length; i++) {
-          // If this index is NOT in the removedIndices array, keep the image
           if (!removedIndices.includes(parseInt(i))) {
             existingImages.push(product.productImage[i]);
           }
-          // If this index IS in the removedIndices array, delete the file
           else if (product.productImage[i]) {
             const imagePath = path.join("public", "uploads", "product-images", product.productImage[i]);
             try {
@@ -246,15 +275,12 @@ const editProduct = async (req, res) => {
         }
       } catch (error) {
         console.error("Error processing removed images:", error);
-        // If there's an error, don't modify the images array
         existingImages = [...product.productImage];
       }
     } else {
-      // If no removedImages in request, keep all existing images
       existingImages = [...product.productImage];
     }
 
-    // Process new images
     const validTypes = ['image/jpeg', 'image/png'];
     const newImages = [];
     const imageFields = ['image1', 'image2', 'image3', 'image4'];
@@ -291,28 +317,22 @@ const editProduct = async (req, res) => {
       }
     }
 
-    // Create a completely new array for the product images
     const finalImages = [];
 
-    // Add only valid existing images
     for (const img of existingImages) {
       if (img && typeof img === 'string' && img.trim() !== '') {
         finalImages.push(img);
       }
     }
 
-    // Add only valid new images
     for (const img of newImages) {
       if (img && typeof img === 'string' && img.trim() !== '') {
         finalImages.push(img);
       }
     }
 
-    // Directly set the product's image array to our new clean array
-    // This completely replaces the old array, removing any references to deleted images
     product.productImage = finalImages;
 
-    // Require at least one image
     if (product.productImage.length < 1) {
       return res.redirect(`/admin/edit-product/${productId}?error=Product+must+have+at+least+one+image`);
     }
@@ -328,7 +348,6 @@ const editProduct = async (req, res) => {
     product.price = products.price;
     product.quantity = products.quantity;
 
-    // Automatically update status based on quantity
     if (product.quantity > 0) {
       product.status = "Available";
     } else {
@@ -343,6 +362,12 @@ const editProduct = async (req, res) => {
   }
 };
 
+//=================================================================================================
+// Module Exports
+//=================================================================================================
+// This exports the product controller functions.
+// It exports the product controller functions to be used in the admin routes.
+//=================================================================================================
 module.exports = {
   getProductAddPage,
   addProducts,

@@ -1,24 +1,22 @@
 /**
  * Delivery Charge Controller
- * Handles CRUD operations for delivery charges based on location
  */
 
 const DeliveryCharge = require('../../models/deliveryChargeSchema');
 const StatusCodes = require('../../utils/httpStatusCodes');
 
-// Get all delivery charges (show tier-based charges with city management)
+//=================================================================================================
+// Get All Delivery Charges
+//=================================================================================================
+// This function gets all the delivery charges.
+// It displays the delivery charges in the delivery charges page.
+//=================================================================================================
+
 exports.getAllDeliveryCharges = async (req, res) => {
   try {
-    console.log('Fetching delivery charges...'); // Debug log
-
-    // Get tier-based delivery charges from database or use defaults
     let tierCharges = await DeliveryCharge.find({ cityType: { $in: ['tier1', 'tier2', 'tier3', 'tier4'] } }).sort({ cityType: 1 });
 
-    console.log('Found tier charges:', tierCharges.length); // Debug log
-
-    // If no tier charges exist, create defaults
     if (tierCharges.length === 0) {
-      console.log('Creating default tier charges...'); // Debug log
 
       const defaultTierCharges = [
         {
@@ -60,12 +58,12 @@ exports.getAllDeliveryCharges = async (req, res) => {
       ];
 
       try {
-        // Create default tier charges in database
+
         tierCharges = await DeliveryCharge.insertMany(defaultTierCharges);
         console.log('Default tier charges created successfully'); // Debug log
       } catch (insertError) {
         console.error('Error creating default tier charges:', insertError);
-        // If insertion fails, use the default data for display
+
         tierCharges = defaultTierCharges.map((charge, index) => ({
           ...charge,
           _id: `temp_${index}` // Temporary ID for display
@@ -73,7 +71,6 @@ exports.getAllDeliveryCharges = async (req, res) => {
       }
     }
 
-    // Format for frontend
     const formattedTierCharges = tierCharges.map(charge => ({
       _id: charge._id,
       location: charge.location,
@@ -94,7 +91,6 @@ exports.getAllDeliveryCharges = async (req, res) => {
   } catch (error) {
     console.error('Error fetching delivery charges:', error);
 
-    // Fallback: provide default data if database fails
     const fallbackTierCharges = [
       {
         _id: 'fallback_tier1',
@@ -145,12 +141,17 @@ exports.getAllDeliveryCharges = async (req, res) => {
   }
 };
 
-// Add a new delivery charge
+//=================================================================================================
+// Add Delivery Charge
+//=================================================================================================
+// This function adds a new delivery charge to the database.
+// It validates the delivery charge data and creates a new delivery charge object.
+//=================================================================================================
+
 exports.addDeliveryCharge = async (req, res) => {
   try {
     const { location, state, charge, cityType } = req.body;
 
-    // Validate input
     if (!location || !state || !charge) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -158,7 +159,6 @@ exports.addDeliveryCharge = async (req, res) => {
       });
     }
 
-    // Check if location already exists
     const existingCharge = await DeliveryCharge.findOne({ location });
     if (existingCharge) {
       return res.status(StatusCodes.CONFLICT).json({
@@ -167,13 +167,11 @@ exports.addDeliveryCharge = async (req, res) => {
       });
     }
 
-    // Determine if it's a major city
     const majorCities = ['Mumbai', 'Delhi', 'Bangalore', 'Kochi', 'Chennai', 'Hyderabad', 'Kolkata', 'Pune', 'Ahmedabad', 'Jaipur'];
     const isMajorCity = majorCities.some(city =>
       location.toLowerCase().includes(city.toLowerCase())
     );
 
-    // Create new delivery charge
     const newDeliveryCharge = new DeliveryCharge({
       location,
       state,
@@ -197,7 +195,13 @@ exports.addDeliveryCharge = async (req, res) => {
   }
 };
 
-// Update a delivery charge with city management and validations
+//=================================================================================================
+// Update Delivery Charge
+//=================================================================================================
+// This function updates the delivery charge.
+// It updates the delivery charge in the database.
+//=================================================================================================
+
 exports.updateDeliveryCharge = async (req, res) => {
   try {
     const { id } = req.params;
@@ -205,7 +209,6 @@ exports.updateDeliveryCharge = async (req, res) => {
 
     console.log('Update request received:', { id, charge, isActive, cities }); // Debug log
 
-    // Validate charge amount
     if (!charge || isNaN(charge) || parseFloat(charge) <= 0) {
       console.log('Invalid charge amount:', charge); // Debug log
       return res.status(StatusCodes.BAD_REQUEST).json({
@@ -214,10 +217,9 @@ exports.updateDeliveryCharge = async (req, res) => {
       });
     }
 
-    // Validate cities if provided
     if (cities && Array.isArray(cities)) {
       for (const city of cities) {
-        // Check if city name contains only letters, spaces, and common punctuation
+
         if (!/^[a-zA-Z\s\-'\.]+$/.test(city.trim())) {
           return res.status(StatusCodes.BAD_REQUEST).json({
             success: false,
@@ -227,7 +229,6 @@ exports.updateDeliveryCharge = async (req, res) => {
       }
     }
 
-    // Find the delivery charge to update
     const deliveryCharge = await DeliveryCharge.findById(id);
     if (!deliveryCharge) {
       return res.status(StatusCodes.NOT_FOUND).json({
@@ -236,13 +237,11 @@ exports.updateDeliveryCharge = async (req, res) => {
       });
     }
 
-    // Get all other tier charges to validate uniqueness
     const otherTierCharges = await DeliveryCharge.find({
       _id: { $ne: id },
       cityType: { $in: ['tier1', 'tier2', 'tier3', 'tier4'] }
     });
 
-    // Validate that charge amounts are different across tiers
     const newCharge = parseFloat(charge);
     for (const otherCharge of otherTierCharges) {
       if (Math.abs(otherCharge.charge - newCharge) < 0.01) {
@@ -253,7 +252,6 @@ exports.updateDeliveryCharge = async (req, res) => {
       }
     }
 
-    // Validate city uniqueness across tiers
     if (cities && Array.isArray(cities)) {
       const cleanCities = cities.map(city => city.trim().toLowerCase()).filter(city => city.length > 0);
 
@@ -274,11 +272,9 @@ exports.updateDeliveryCharge = async (req, res) => {
         }
       }
 
-      // Update cities (store in lowercase)
       deliveryCharge.cities = cleanCities;
     }
 
-    // Update delivery charge
     deliveryCharge.charge = newCharge;
     deliveryCharge.isActive = isActive === 'true' || isActive === true;
     deliveryCharge.updatedAt = Date.now();
@@ -305,12 +301,16 @@ exports.updateDeliveryCharge = async (req, res) => {
   }
 };
 
-// Delete a delivery charge
+//=================================================================================================
+// Delete Delivery Charge
+//=================================================================================================
+// This function deletes the delivery charge.
+// It deletes the delivery charge from the database.
+//=================================================================================================
 exports.deleteDeliveryCharge = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Check if delivery charge exists
     const deliveryCharge = await DeliveryCharge.findById(id);
     if (!deliveryCharge) {
       return res.status(StatusCodes.NOT_FOUND).json({
@@ -319,7 +319,6 @@ exports.deleteDeliveryCharge = async (req, res) => {
       });
     }
 
-    // Delete delivery charge
     await DeliveryCharge.findByIdAndDelete(id);
 
     res.status(StatusCodes.OK).json({
@@ -335,12 +334,18 @@ exports.deleteDeliveryCharge = async (req, res) => {
   }
 };
 
-// Get delivery charge by location
+//=================================================================================================
+// Get Delivery Charge By Location
+//=================================================================================================
+// This function gets the delivery charge by location.
+// It gets the delivery charge from the database.
+//=================================================================================================
+
 exports.getDeliveryChargeByLocation = async (location) => {
   try {
     if (!location) return null;
 
-    // Try to find an exact match first
+    // First, try to find exact location match
     let deliveryCharge = await DeliveryCharge.findOne({
       location: { $regex: new RegExp(`^${location}$`, 'i') },
       isActive: true
@@ -350,24 +355,41 @@ exports.getDeliveryChargeByLocation = async (location) => {
       return {
         charge: deliveryCharge.charge,
         cityType: deliveryCharge.cityType,
-        cityName: deliveryCharge.location
+        cityName: deliveryCharge.location,
+        description: deliveryCharge.description
       };
     }
 
-    // Define city tiers with corresponding delivery charges
+    // Get tier charges from database
+    const tierCharges = await DeliveryCharge.find({
+      cityType: { $in: ['tier1', 'tier2', 'tier3', 'tier4'] },
+      isActive: true
+    }).sort({ cityType: 1 });
+
+    // Create a map of tier charges from database
+    const tierChargeMap = {};
+    tierCharges.forEach(charge => {
+      tierChargeMap[charge.cityType] = {
+        charge: charge.charge,
+        description: charge.description,
+        cities: charge.cities || []
+      };
+    });
+
+    // Define city tiers with their cities
     const cityTiers = [
       {
         tier: 'tier1',
         cities: ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 'Ahmedabad', 'Pune', 'Surat'],
-        charge: 40,
-        description: 'Tier 1 - Major Metropolitan City'
+        fallbackCharge: 40,
+        fallbackDescription: 'Tier 1 - Major Metropolitan City'
       },
       {
         tier: 'tier2',
         cities: ['Jaipur', 'Lucknow', 'Kanpur', 'Nagpur', 'Visakhapatnam', 'Indore', 'Thane', 'Bhopal', 'Patna',
                 'Vadodara', 'Ghaziabad', 'Ludhiana', 'Agra', 'Nashik', 'Faridabad'],
-        charge: 60,
-        description: 'Tier 2 - Emerging Metropolitan City'
+        fallbackCharge: 60,
+        fallbackDescription: 'Tier 2 - Emerging Metropolitan City'
       },
       {
         tier: 'tier3',
@@ -375,54 +397,78 @@ exports.getDeliveryChargeByLocation = async (location) => {
                 'Allahabad', 'Prayagraj', 'Ranchi', 'Jabalpur', 'Coimbatore', 'Vijayawada', 'Jodhpur', 'Madurai',
                 'Raipur', 'Guwahati', 'Chandigarh', 'Thiruvananthapuram', 'Kochi', 'Bhubaneswar', 'Dehradun',
                 'Mysuru', 'Mysore', 'Gurugram', 'Gurgaon'],
-        charge: 80,
-        description: 'Tier 3 - Other Key City'
+        fallbackCharge: 80,
+        fallbackDescription: 'Tier 3 - Other Key City'
       }
     ];
 
-    // Check which tier the city belongs to
+    // Check if location matches any tier cities
     for (const tier of cityTiers) {
-      // First check for exact match (case-insensitive)
+      // Check database cities first
+      const dbTierData = tierChargeMap[tier.tier];
+      if (dbTierData && dbTierData.cities.length > 0) {
+        const dbCityMatch = dbTierData.cities.some(city =>
+          location.toLowerCase() === city.toLowerCase() ||
+          location.toLowerCase().includes(city.toLowerCase()) ||
+          city.toLowerCase().includes(location.toLowerCase())
+        );
+
+        if (dbCityMatch) {
+          return {
+            charge: dbTierData.charge,
+            cityType: tier.tier,
+            cityName: location,
+            description: dbTierData.description
+          };
+        }
+      }
+
+      // Check predefined cities with database charge
       const exactMatch = tier.cities.some(city =>
         location.toLowerCase() === city.toLowerCase()
       );
 
       if (exactMatch) {
-        console.log(`Exact match found for ${location} in tier ${tier.tier}`);
+        const charge = dbTierData ? dbTierData.charge : tier.fallbackCharge;
+        const description = dbTierData ? dbTierData.description : tier.fallbackDescription;
+
         return {
-          charge: tier.charge,
+          charge: charge,
           cityType: tier.tier,
           cityName: location,
-          description: tier.description
+          description: description
         };
       }
 
-      // Then check for partial match (city name contained in location)
       const partialMatch = tier.cities.some(city => {
-        // Check if city name is contained in location
         const cityInLocation = location.toLowerCase().includes(city.toLowerCase());
-        // Also check if location is contained in city name (for cases like "Navi Mumbai" when location is just "Mumbai")
         const locationInCity = city.toLowerCase().includes(location.toLowerCase()) && location.length >= 4;
         return cityInLocation || locationInCity;
       });
 
       if (partialMatch) {
-        console.log(`Partial match found for ${location} in tier ${tier.tier}`);
+        const charge = dbTierData ? dbTierData.charge : tier.fallbackCharge;
+        const description = dbTierData ? dbTierData.description : tier.fallbackDescription;
+
         return {
-          charge: tier.charge,
+          charge: charge,
           cityType: tier.tier,
           cityName: location,
-          description: tier.description
+          description: description
         };
       }
     }
 
-    // If no match found, return higher charge for smaller cities/towns
+    // Default to tier4 charge from database or fallback
+    const tier4Data = tierChargeMap['tier4'];
+    const defaultCharge = tier4Data ? tier4Data.charge : 100;
+    const defaultDescription = tier4Data ? tier4Data.description : 'Small Town/Village';
+
     return {
-      charge: 100,
+      charge: defaultCharge,
       cityType: 'tier4',
       cityName: location,
-      description: 'Small Town/Village'
+      description: defaultDescription
     };
   } catch (error) {
     console.error('Error fetching delivery charge by location:', error);
@@ -430,22 +476,25 @@ exports.getDeliveryChargeByLocation = async (location) => {
   }
 };
 
-// Get delivery charge by state
+//=================================================================================================
+// Get Delivery Charge By State
+//=================================================================================================
+// This function gets the delivery charge by state.
+// It gets the delivery charge from the database.
+//=================================================================================================
+
 exports.getDeliveryChargeByState = async (state) => {
   try {
-    // Find all delivery charges for the state
+
     const deliveryCharges = await DeliveryCharge.find({ state, isActive: true });
 
-    // If no charges found, return null
     if (!deliveryCharges || deliveryCharges.length === 0) {
       return null;
     }
 
-    // Check if there are any major cities in this state
     const majorCityCharges = deliveryCharges.filter(charge => charge.cityType === 'major');
     const minorCityCharges = deliveryCharges.filter(charge => charge.cityType === 'minor');
 
-    // If we have both types, calculate separate averages
     if (majorCityCharges.length > 0 && minorCityCharges.length > 0) {
       const majorTotalCharge = majorCityCharges.reduce((sum, charge) => sum + charge.charge, 0);
       const majorAvgCharge = majorTotalCharge / majorCityCharges.length;
@@ -453,11 +502,9 @@ exports.getDeliveryChargeByState = async (state) => {
       const minorTotalCharge = minorCityCharges.reduce((sum, charge) => sum + charge.charge, 0);
       const minorAvgCharge = minorTotalCharge / minorCityCharges.length;
 
-      // Return the average of both types
       return (majorAvgCharge + minorAvgCharge) / 2;
     }
 
-    // Otherwise, calculate average charge for all cities in the state
     const totalCharge = deliveryCharges.reduce((sum, charge) => sum + charge.charge, 0);
     return totalCharge / deliveryCharges.length;
   } catch (error) {
@@ -466,29 +513,73 @@ exports.getDeliveryChargeByState = async (state) => {
   }
 };
 
-// Get default delivery charge based on city tier
-exports.getDefaultDeliveryCharge = (cityTier = null) => {
-  switch (cityTier) {
-    case 'tier1':
+//=================================================================================================
+// Get Default Delivery Charge
+//=================================================================================================
+// This function gets the default delivery charge.
+// It gets the default delivery charge from the database.
+//=================================================================================================
+
+exports.getDefaultDeliveryCharge = async (cityTier = null) => {
+  try {
+    // If a specific tier is requested, try to get it from database first
+    if (cityTier) {
+      const tierCharge = await DeliveryCharge.findOne({
+        cityType: cityTier,
+        isActive: true
+      });
+
+      if (tierCharge) {
+        return {
+          charge: tierCharge.charge,
+          description: tierCharge.description
+        };
+      }
+    }
+
+    // Get tier4 (default) from database
+    const defaultTierCharge = await DeliveryCharge.findOne({
+      cityType: 'tier4',
+      isActive: true
+    });
+
+    if (defaultTierCharge) {
       return {
-        charge: 40,
-        description: 'Tier 1 - Major Metropolitan City'
+        charge: defaultTierCharge.charge,
+        description: defaultTierCharge.description
       };
-    case 'tier2':
-      return {
-        charge: 60,
-        description: 'Tier 2 - Emerging Metropolitan City'
-      };
-    case 'tier3':
-      return {
-        charge: 80,
-        description: 'Tier 3 - Other Key City'
-      };
-    case 'tier4':
-    default:
-      return {
-        charge: 100,
-        description: 'Tier 4 - Small Town/Village'
-      };
+    }
+
+    // Fallback to hardcoded values if database doesn't have the data
+    switch (cityTier) {
+      case 'tier1':
+        return {
+          charge: 40,
+          description: 'Tier 1 - Major Metropolitan City'
+        };
+      case 'tier2':
+        return {
+          charge: 60,
+          description: 'Tier 2 - Emerging Metropolitan City'
+        };
+      case 'tier3':
+        return {
+          charge: 80,
+          description: 'Tier 3 - Other Key City'
+        };
+      case 'tier4':
+      default:
+        return {
+          charge: 100,
+          description: 'Tier 4 - Small Town/Village'
+        };
+    }
+  } catch (error) {
+    console.error('Error fetching default delivery charge:', error);
+    // Return fallback values in case of error
+    return {
+      charge: 100,
+      description: 'Standard Delivery'
+    };
   }
 };

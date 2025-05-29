@@ -16,13 +16,11 @@ const moment = require("moment");
  */
 exports.renderSalesReport = async (req, res) => {
   try {
-    console.log("Generating sales report...");
     const adminId = req.session.admin;
     if (!adminId) {
       return res.status(StatusCodes.UNAUTHORIZED).redirect("/admin/login");
     }
 
-    // Get filter parameters
     const filter = req.query.filter || 'custom';
     const paymentMethod = req.query.paymentMethod || 'all';
     const orderStatus = req.query.orderStatus || 'all';
@@ -31,17 +29,14 @@ exports.renderSalesReport = async (req, res) => {
     const productsSortBy = req.query.productsSortBy || 'revenue';
     const productsSortOrder = req.query.productsSortOrder || 'desc';
 
-    // Pagination parameters for orders
     const page = Math.max(parseInt(req.query.page) || 1, 1); // Ensure page is at least 1
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    // Pagination parameters for top products
     const productsPage = Math.max(parseInt(req.query.productsPage) || 1, 1);
     const productsLimit = parseInt(req.query.productsLimit) || 5;
     const productsSkip = (productsPage - 1) * productsLimit;
 
-    // Date filtering logic
     let startDate, endDate;
     const now = new Date();
 
@@ -70,7 +65,6 @@ exports.renderSalesReport = async (req, res) => {
           ? moment(req.query.endDate).endOf('day').toDate()
           : moment().endOf('day').toDate();
 
-        // Validate dates
         if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
           throw new Error("Invalid date format");
         }
@@ -80,19 +74,12 @@ exports.renderSalesReport = async (req, res) => {
         endDate = moment().endOf('day').toDate();
       }
     }
-
-    console.log(`Filters: filter=${filter}, startDate=${startDate}, endDate=${endDate}, paymentMethod=${paymentMethod}, orderStatus=${orderStatus}`);
-    console.log(`Pagination: page=${page}, limit=${limit}, skip=${skip}`);
-    console.log(`Sorting: sortBy=${sortBy}, sortOrder=${sortOrder}`);
-
-    // Build match stage for aggregation
     let matchStage = { orderDate: { $gte: startDate, $lte: endDate } };
 
     if (paymentMethod !== 'all') {
       matchStage.paymentMethod = paymentMethod;
     }
 
-    // Define aggregation pipelines
     const ordersPipeline = [
       { $match: matchStage },
       { $unwind: "$orderedItems" },
@@ -234,7 +221,6 @@ exports.renderSalesReport = async (req, res) => {
       }
     ];
 
-    // Payment method distribution pipeline
     const paymentMethodPipeline = [
       { $match: matchStage },
       ...(orderStatus !== 'all' ? [
@@ -251,7 +237,6 @@ exports.renderSalesReport = async (req, res) => {
       }
     ];
 
-    // Top products pipeline
     const topProductsPipeline = [
       { $match: matchStage },
       { $unwind: "$orderedItems" },
@@ -265,7 +250,7 @@ exports.renderSalesReport = async (req, res) => {
         }
       },
       { $unwind: { path: "$productDetails", preserveNullAndEmptyArrays: true } },
-      // Add lookup for category information
+
       {
         $lookup: {
           from: "categories",
@@ -288,7 +273,7 @@ exports.renderSalesReport = async (req, res) => {
           offerPercentage: { $first: "$productDetails.offerPercentage" },
           offerType: { $first: "$productDetails.offerType" },
           discountPercentage: { $first: "$orderedItems.discountPercentage" },
-          // Calculate original revenue based on product's original price
+
           originalRevenue: {
             $sum: {
               $multiply: [
@@ -324,7 +309,6 @@ exports.renderSalesReport = async (req, res) => {
       { $limit: productsLimit }
     ];
 
-    // Top products count pipeline for pagination
     const topProductsCountPipeline = [
       { $match: matchStage },
       { $unwind: "$orderedItems" },
@@ -337,7 +321,6 @@ exports.renderSalesReport = async (req, res) => {
       { $count: "total" }
     ];
 
-    // Status distribution pipeline
     const statusDistributionPipeline = [
       { $match: matchStage },
       { $unwind: "$orderedItems" },
@@ -351,7 +334,6 @@ exports.renderSalesReport = async (req, res) => {
       { $sort: { count: -1 } }
     ];
 
-    // Execute all aggregations in parallel
     const [orders, countResult, summaryResult, paymentMethodData, topProducts, topProductsCountResult, statusDistribution] = await Promise.all([
       Order.aggregate(ordersPipeline),
       Order.aggregate(countPipeline),
@@ -362,7 +344,6 @@ exports.renderSalesReport = async (req, res) => {
       Order.aggregate(statusDistributionPipeline)
     ]);
 
-    // Process summary data
     const summary = summaryResult[0] || {
       totalOrders: 0,
       totalSales: 0,
@@ -375,7 +356,6 @@ exports.renderSalesReport = async (req, res) => {
       discountPercentage: 0
     };
 
-    // Process payment method data
     const paymentSummary = {
       cod: { count: 0, total: 0, avg: 0 },
       razorpay: { count: 0, total: 0, avg: 0 },
@@ -392,9 +372,8 @@ exports.renderSalesReport = async (req, res) => {
       }
     });
 
-    // Format orders for display
     const formattedOrders = orders.map(order => {
-      // Format ordered items
+
       const orderedItems = order.items.map((item, index) => {
         const productDetail = order.products[index];
 
@@ -408,7 +387,6 @@ exports.renderSalesReport = async (req, res) => {
         };
       });
 
-      // Use orderNumber if available, otherwise use a shortened version of the ID (5 digits)
       const displayOrderId = order.orderNumber || `MK${order._id.toString().slice(-5)}`;
 
       return {
@@ -432,26 +410,21 @@ exports.renderSalesReport = async (req, res) => {
       };
     });
 
-    // Get pagination data for orders
     const totalItems = countResult.length > 0 ? countResult[0].total : 0;
     const totalPages = Math.ceil(totalItems / limit);
 
-    // Get pagination data for top products
     const totalProductItems = topProductsCountResult.length > 0 ? topProductsCountResult[0].total : 0;
     const totalProductPages = Math.ceil(totalProductItems / productsLimit);
 
-    // Format status distribution data
     const formattedStatusDistribution = statusDistribution.map(status => ({
       status: status._id || 'Unknown',
       count: status.count,
       revenue: status.revenue
     }));
 
-    // Prepare sales by date data for chart
     const salesByDateMap = {};
     const dateFormat = 'YYYY-MM-DD';
 
-    // Initialize with all dates in the range
     let currentDate = moment(startDate);
     const endMoment = moment(endDate);
 
@@ -461,7 +434,6 @@ exports.renderSalesReport = async (req, res) => {
       currentDate.add(1, 'days');
     }
 
-    // Fill in actual sales data
     orders.forEach(order => {
       const orderDate = moment(order.orderDate).format(dateFormat);
       if (salesByDateMap[orderDate] !== undefined) {
@@ -469,21 +441,18 @@ exports.renderSalesReport = async (req, res) => {
       }
     });
 
-    // Prepare payment method data for chart
     const salesByPaymentMethod = {
       cod: 0,
       razorpay: 0,
       wallet: 0
     };
 
-    // Fill in payment method data
     Object.keys(paymentSummary).forEach(method => {
       if (salesByPaymentMethod[method] !== undefined) {
         salesByPaymentMethod[method] = paymentSummary[method].total || 0;
       }
     });
 
-    // Calculate offer summary data
     const offerSummary = {
       productOffers: { count: 0, savings: 0 },
       categoryOffers: { count: 0, savings: 0 },
@@ -491,7 +460,6 @@ exports.renderSalesReport = async (req, res) => {
       totalSavings: summary.totalDiscount || 0
     };
 
-    // Count products with offers by type
     topProducts.forEach(product => {
       if (product.offerPercentage > 0) {
         if (product.offerType === 'product') {
@@ -504,24 +472,21 @@ exports.renderSalesReport = async (req, res) => {
       }
     });
 
-    // Count coupon usage and calculate savings
     orders.forEach(order => {
       if (order.couponApplied && order.coupon) {
         offerSummary.coupons.count++;
-        // Calculate approximate coupon savings
+
         if (order.discount > 0) {
           offerSummary.coupons.savings += order.discount;
         }
       }
     });
 
-    // Make sure total savings is the sum of all savings types
     offerSummary.totalSavings =
       offerSummary.productOffers.savings +
       offerSummary.categoryOffers.savings +
       offerSummary.coupons.savings;
 
-    // Prepare data for rendering
     const renderData = {
       orders: formattedOrders,
       summary,
@@ -565,13 +530,12 @@ exports.renderSalesReport = async (req, res) => {
       isAjaxRequest: req.xhr || (req.headers['x-requested-with'] === 'XMLHttpRequest')
     };
 
-    // Check if this is an AJAX request
     if (renderData.isAjaxRequest) {
-      // For AJAX requests, render the page normally
-      // The client-side JS will extract only the needed parts
+
+
       res.render("admin/admin-sales-report", renderData);
     } else {
-      // For regular requests, render the full page
+
       res.render("admin/admin-sales-report", renderData);
     }
   } catch (error) {
@@ -583,7 +547,12 @@ exports.renderSalesReport = async (req, res) => {
   }
 };
 
-// AJAX endpoint for sales report orders pagination
+//=================================================================================================
+// Get Sales Report Orders
+//=================================================================================================
+// This function gets the sales report orders with pagination.
+// It displays the sales report orders in the sales report orders page.
+//=================================================================================================
 exports.getSalesReportOrders = async (req, res) => {
   try {
     const adminId = req.session.admin;
@@ -591,19 +560,16 @@ exports.getSalesReportOrders = async (req, res) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    // Get filter parameters
     const filter = req.query.filter || 'custom';
     const paymentMethod = req.query.paymentMethod || 'all';
     const orderStatus = req.query.orderStatus || 'all';
     const sortBy = req.query.sortBy || 'date';
     const sortOrder = req.query.sortOrder || 'desc';
 
-    // Pagination parameters for orders
     const page = Math.max(parseInt(req.query.page) || 1, 1);
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    // Date filtering logic
     let startDate, endDate;
     if (filter === 'today') {
       startDate = moment().startOf('day').toDate();
@@ -637,13 +603,11 @@ exports.getSalesReportOrders = async (req, res) => {
       }
     }
 
-    // Build match stage for aggregation
     let matchStage = { orderDate: { $gte: startDate, $lte: endDate } };
     if (paymentMethod !== 'all') {
       matchStage.paymentMethod = paymentMethod;
     }
 
-    // Orders pipeline
     const ordersPipeline = [
       { $match: matchStage },
       { $unwind: "$orderedItems" },
@@ -713,7 +677,6 @@ exports.getSalesReportOrders = async (req, res) => {
       { $limit: limit }
     ];
 
-    // Count pipeline
     const countPipeline = [
       { $match: matchStage },
       ...(orderStatus !== 'all' ? [
@@ -724,13 +687,11 @@ exports.getSalesReportOrders = async (req, res) => {
       { $count: "total" }
     ];
 
-    // Execute aggregations
     const [orders, countResult] = await Promise.all([
       Order.aggregate(ordersPipeline),
       Order.aggregate(countPipeline)
     ]);
 
-    // Format orders for display
     const formattedOrders = orders.map(order => {
       const orderedItems = order.items.map((item, index) => {
         const productDetail = order.products[index];
@@ -767,7 +728,6 @@ exports.getSalesReportOrders = async (req, res) => {
       };
     });
 
-    // Get pagination data
     const totalItems = countResult.length > 0 ? countResult[0].total : 0;
     const totalPages = Math.ceil(totalItems / limit);
 
@@ -789,7 +749,12 @@ exports.getSalesReportOrders = async (req, res) => {
   }
 };
 
-// AJAX endpoint for sales report products pagination
+//=================================================================================================
+// Get Sales Report Products
+//=================================================================================================
+// This function gets the sales report products with pagination.
+// It displays the sales report products in the sales report products page.
+//=================================================================================================
 exports.getSalesReportProducts = async (req, res) => {
   try {
     const adminId = req.session.admin;
@@ -797,19 +762,16 @@ exports.getSalesReportProducts = async (req, res) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    // Get filter parameters
     const filter = req.query.filter || 'custom';
     const paymentMethod = req.query.paymentMethod || 'all';
     const orderStatus = req.query.orderStatus || 'all';
     const productsSortBy = req.query.productsSortBy || 'revenue';
     const productsSortOrder = req.query.productsSortOrder || 'desc';
 
-    // Pagination parameters for products
     const productsPage = Math.max(parseInt(req.query.page) || 1, 1);
     const productsLimit = parseInt(req.query.limit) || 5;
     const productsSkip = (productsPage - 1) * productsLimit;
 
-    // Date filtering logic
     let startDate, endDate;
     if (filter === 'today') {
       startDate = moment().startOf('day').toDate();
@@ -843,13 +805,11 @@ exports.getSalesReportProducts = async (req, res) => {
       }
     }
 
-    // Build match stage for aggregation
     let matchStage = { orderDate: { $gte: startDate, $lte: endDate } };
     if (paymentMethod !== 'all') {
       matchStage.paymentMethod = paymentMethod;
     }
 
-    // Top products pipeline
     const topProductsPipeline = [
       { $match: matchStage },
       { $unwind: "$orderedItems" },
@@ -920,7 +880,6 @@ exports.getSalesReportProducts = async (req, res) => {
       { $limit: productsLimit }
     ];
 
-    // Top products count pipeline for pagination
     const topProductsCountPipeline = [
       { $match: matchStage },
       { $unwind: "$orderedItems" },
@@ -933,13 +892,11 @@ exports.getSalesReportProducts = async (req, res) => {
       { $count: "total" }
     ];
 
-    // Execute aggregations
     const [topProducts, topProductsCountResult] = await Promise.all([
       Order.aggregate(topProductsPipeline),
       Order.aggregate(topProductsCountPipeline)
     ]);
 
-    // Get pagination data for top products
     const totalProductItems = topProductsCountResult.length > 0 ? topProductsCountResult[0].total : 0;
     const totalProductPages = Math.ceil(totalProductItems / productsLimit);
 
@@ -961,6 +918,12 @@ exports.getSalesReportProducts = async (req, res) => {
   }
 };
 
+//=================================================================================================
+// Download Sales Report
+//=================================================================================================
+// This function downloads the sales report as a CSV file.
+// It generates a CSV file and sends it to the client.
+//=================================================================================================   
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
@@ -970,20 +933,17 @@ const path = require('path');
  */
 exports.downloadSalesReport = async (req, res) => {
   try {
-    console.log("Generating sales report CSV...");
     const adminId = req.session.admin;
     if (!adminId) {
       return res.status(StatusCodes.UNAUTHORIZED).redirect("/admin/login");
     }
 
-    // Get filter parameters
     const filter = req.query.filter || 'custom';
     const paymentMethod = req.query.paymentMethod || 'all';
     const orderStatus = req.query.orderStatus || 'all';
     const sortBy = req.query.sortBy || 'date';
     const sortOrder = req.query.sortOrder || 'desc';
 
-    // Date filtering logic
     let startDate, endDate;
     const now = new Date();
 
@@ -1012,7 +972,6 @@ exports.downloadSalesReport = async (req, res) => {
           ? moment(req.query.endDate).endOf('day').toDate()
           : moment().endOf('day').toDate();
 
-        // Validate dates
         if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
           throw new Error("Invalid date format");
         }
@@ -1022,21 +981,16 @@ exports.downloadSalesReport = async (req, res) => {
         endDate = moment().endOf('day').toDate();
       }
     }
-
-    console.log(`CSV Filters: filter=${filter}, startDate=${startDate}, endDate=${endDate}, paymentMethod=${paymentMethod}, orderStatus=${orderStatus}`);
-
-    // Build match stage for aggregation
     let matchStage = { orderDate: { $gte: startDate, $lte: endDate } };
 
     if (paymentMethod !== 'all') {
       matchStage.paymentMethod = paymentMethod;
     }
 
-    // Define aggregation pipeline for CSV export
     const csvPipeline = [
       { $match: matchStage },
       { $unwind: "$orderedItems" },
-      // Filter by order status if specified
+
       ...(orderStatus !== 'all' ? [{ $match: { "orderedItems.status": orderStatus } }] : []),
       {
         $lookup: {
@@ -1093,15 +1047,11 @@ exports.downloadSalesReport = async (req, res) => {
       { $sort: sortBy === 'amount' ? { totalAmount: sortOrder === 'asc' ? 1 : -1 } : { orderDate: sortOrder === 'asc' ? 1 : -1 } }
     ];
 
-    // Execute aggregation
     const orderItems = await Order.aggregate(csvPipeline);
-    console.log(`Retrieved ${orderItems.length} order items for CSV export`);
-
-    // Generate CSV content
     let csvContent = "Order ID,Date,Customer,Email,Payment Method,Payment Status,Product,Category,Quantity,Original Price,Discounted Price,Discount Amount,Status,Total Amount\n";
 
     orderItems.forEach(item => {
-      // Use orderNumber if available, otherwise use a shortened version of the ID (5 digits)
+
       const orderId = item.orderNumber || `MK${item._id.toString().slice(-5)}`;
       const date = moment(item.orderDate).format('YYYY-MM-DD HH:mm');
       const customerName = item.customerName || 'Unknown';
@@ -1121,23 +1071,19 @@ exports.downloadSalesReport = async (req, res) => {
       csvContent += `"${orderId}","${date}","${customerName}","${customerEmail}","${paymentMethod}","${paymentStatus}","${productName}","${productCategory}","${quantity}","${originalPrice}","${discountedPrice}","${discountAmount}","${status}","${totalAmount}"\n`;
     });
 
-    // Add summary row
     const totalQuantity = orderItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
     const totalAmount = orderItems.reduce((sum, item) => sum + (item.totalAmount || 0), 0).toFixed(2);
     const totalDiscount = orderItems.reduce((sum, item) => sum + (item.totalDiscount || 0), 0).toFixed(2);
 
     csvContent += `\n"TOTAL","","","","","","","","${totalQuantity}","","","${totalDiscount}","","${totalAmount}"\n`;
 
-    // Set headers for CSV download
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename=sales-report-${moment().format('YYYY-MM-DD')}.csv`);
 
-    // Send CSV content
     res.send(csvContent);
-    console.log("CSV report generated and sent successfully");
   } catch (error) {
     console.error("Error downloading sales report CSV:", error);
-    // Render the error page instead of sending a plain text response
+
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).render("admin/admin-error", {
       message: "Failed to generate CSV sales report",
       activePage: "reports"
@@ -1150,20 +1096,17 @@ exports.downloadSalesReport = async (req, res) => {
  */
 exports.downloadSalesReportPDF = async (req, res) => {
   try {
-    console.log("Generating sales report PDF...");
     const adminId = req.session.admin;
     if (!adminId) {
       return res.status(StatusCodes.UNAUTHORIZED).redirect("/admin/login");
     }
 
-    // Get filter parameters
     const filter = req.query.filter || 'custom';
     const paymentMethod = req.query.paymentMethod || 'all';
     const orderStatus = req.query.orderStatus || 'all';
     const sortBy = req.query.sortBy || 'date';
     const sortOrder = req.query.sortOrder || 'desc';
 
-    // Date filtering logic
     let startDate, endDate;
     const now = new Date();
 
@@ -1192,7 +1135,6 @@ exports.downloadSalesReportPDF = async (req, res) => {
           ? moment(req.query.endDate).endOf('day').toDate()
           : moment().endOf('day').toDate();
 
-        // Validate dates
         if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
           throw new Error("Invalid date format");
         }
@@ -1203,14 +1145,12 @@ exports.downloadSalesReportPDF = async (req, res) => {
       }
     }
 
-    // Build match stage for aggregation
     let matchStage = { orderDate: { $gte: startDate, $lte: endDate } };
 
     if (paymentMethod !== 'all') {
       matchStage.paymentMethod = paymentMethod;
     }
 
-    // Get orders with populated product details
     const ordersPipeline = [
       { $match: matchStage },
       { $unwind: "$orderedItems" },
@@ -1254,7 +1194,6 @@ exports.downloadSalesReportPDF = async (req, res) => {
       }
     ];
 
-    // Add sorting
     switch (sortBy) {
       case 'amount':
         ordersPipeline.push({ $sort: { finalAmount: sortOrder === 'asc' ? 1 : -1 } });
@@ -1267,7 +1206,6 @@ exports.downloadSalesReportPDF = async (req, res) => {
 
     const orders = await Order.aggregate(ordersPipeline);
 
-    // Get summary data
     const summaryPipeline = [
       { $match: matchStage },
       { $unwind: "$orderedItems" },
@@ -1319,7 +1257,6 @@ exports.downloadSalesReportPDF = async (req, res) => {
     summary.totalOrders = summary.totalOrders.length;
     summary.avgOrderValue = summary.totalOrders > 0 ? summary.totalSales / summary.totalOrders : 0;
 
-    // Get payment method distribution
     const paymentMethodPipeline = [
       { $match: matchStage },
       {
@@ -1341,7 +1278,6 @@ exports.downloadSalesReportPDF = async (req, res) => {
       };
     });
 
-    // Calculate offer summary data for PDF
     const offerSummary = {
       productOffers: { count: 0, savings: 0 },
       categoryOffers: { count: 0, savings: 0 },
@@ -1349,11 +1285,10 @@ exports.downloadSalesReportPDF = async (req, res) => {
       totalSavings: summary.totalDiscount || 0
     };
 
-    // Count products with offers by type from orders
     const productsWithOffers = new Map();
 
     orders.forEach(order => {
-      // Check for product and category offers
+
       if (order.productDetails && order.productDetails.offerPercentage > 0) {
         const productId = order.productDetails._id.toString();
         if (!productsWithOffers.has(productId)) {
@@ -1368,17 +1303,15 @@ exports.downloadSalesReportPDF = async (req, res) => {
         product.totalDiscount += itemDiscount;
       }
 
-      // Check for coupon usage
       if (order.couponApplied && order.coupon) {
         offerSummary.coupons.count++;
-        // Calculate approximate coupon savings
+
         if (order.discount > 0) {
           offerSummary.coupons.savings += order.discount;
         }
       }
     });
 
-    // Count products by offer type
     productsWithOffers.forEach(product => {
       if (product.offerType === 'product') {
         offerSummary.productOffers.count++;
@@ -1389,13 +1322,11 @@ exports.downloadSalesReportPDF = async (req, res) => {
       }
     });
 
-    // Make sure total savings is the sum of all savings types
     offerSummary.totalSavings =
       offerSummary.productOffers.savings +
       offerSummary.categoryOffers.savings +
       offerSummary.coupons.savings;
 
-    // Get top products for PDF
     const topProductsPipeline = [
       { $match: matchStage },
       { $unwind: "$orderedItems" },
@@ -1429,7 +1360,7 @@ exports.downloadSalesReportPDF = async (req, res) => {
           originalPrice: { $first: "$productDetails.price" },
           offerPercentage: { $first: "$productDetails.offerPercentage" },
           offerType: { $first: "$productDetails.offerType" },
-          // Calculate original revenue based on product's original price
+
           originalRevenue: {
             $sum: {
               $multiply: [
@@ -1459,7 +1390,6 @@ exports.downloadSalesReportPDF = async (req, res) => {
 
     const topProducts = await Order.aggregate(topProductsPipeline);
 
-    // Create a new PDF document with better margins and layout
     const doc = new PDFDocument({
       margin: 50,
       autoFirstPage: true,
@@ -1475,13 +1405,11 @@ exports.downloadSalesReportPDF = async (req, res) => {
       }
     });
 
-    // Set up page numbering
     let pageNumber = 1;
     doc.on('pageAdded', () => {
       pageNumber++;
     });
 
-    // Helper function to check if we need a new page
     const checkNewPage = (currentY, neededSpace = 150) => {
       if (currentY + neededSpace > doc.page.height - 100) {
         doc.addPage();
@@ -1490,28 +1418,22 @@ exports.downloadSalesReportPDF = async (req, res) => {
       return currentY;
     };
 
-    // Helper function to format currency
     const formatCurrency = (amount) => {
       return '$' + amount.toLocaleString('en-US', { maximumFractionDigits: 2 });
     };
 
-    // Set response headers for PDF download
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=mangeyko-sales-report-${moment(startDate).format('YYYY-MM-DD')}-to-${moment(endDate).format('YYYY-MM-DD')}.pdf`);
 
-    // Pipe the PDF to the response
     doc.pipe(res);
 
-    // Add content to the PDF - Professional Header
     doc.fontSize(22).fillColor('#333333').text('MANGEYKO', { align: 'center' });
     doc.fontSize(10).fillColor('#666666').text('E-Commerce Sales Report', { align: 'center' });
     doc.moveDown(0.5);
 
-    // Add a styled report title
     doc.fontSize(16).fillColor('#000000').text('SALES REPORT', { align: 'center' });
     doc.fontSize(12).fillColor('#666666').text(`Period: ${moment(startDate).format('DD MMM YYYY')} to ${moment(endDate).format('DD MMM YYYY')}`, { align: 'center' });
 
-    // Add report filters
     let filterText = '';
     if (paymentMethod !== 'all') {
       filterText += `Payment Method: ${paymentMethod.toUpperCase()}, `;
@@ -1526,36 +1448,29 @@ exports.downloadSalesReportPDF = async (req, res) => {
 
     doc.moveDown(1);
 
-    // Add a styled line under the header
     doc.strokeColor('#4e73df').lineWidth(2)
        .moveTo(50, doc.y)
        .lineTo(doc.page.width - 50, doc.y)
        .stroke();
     doc.moveDown(1.5);
 
-    // Summary section with better layout and styling
     doc.fontSize(14).fillColor('#4e73df').text('SALES SUMMARY', { underline: false });
     doc.moveDown(0.5);
 
-    // Create a styled box for summary data
     const boxTop = doc.y;
     const boxHeight = 120;
 
-    // Draw a light background for the summary box
     doc.fillColor('#f8f9fc').roundedRect(50, boxTop, doc.page.width - 100, boxHeight, 5).fill();
     doc.fillColor('#000000'); // Reset text color
 
-    // Create a two-column layout for summary data
     const col1X = 70;
     const col2X = doc.page.width / 2 + 20;
     let currentY = boxTop + 15;
 
-    // Column 1 - with better styling
     doc.fontSize(10).fillColor('#666666').text(`Total Orders:`, col1X, currentY);
     doc.fontSize(10).fillColor('#000000').text(`${summary.totalOrders}`, col1X + 150, currentY, { align: 'left' });
     currentY += 20;
 
-    // Original amount (before discounts)
     const originalAmount = summary.totalOriginalValue || summary.totalSales;
     doc.fontSize(10).fillColor('#666666').text(`Original Amount:`, col1X, currentY);
     doc.fontSize(10).fillColor('#000000').text(`${formatCurrency(originalAmount)}`, col1X + 150, currentY, { align: 'left' });
@@ -1565,7 +1480,6 @@ exports.downloadSalesReportPDF = async (req, res) => {
     doc.fontSize(10).fillColor('#000000').text(`${formatCurrency(summary.totalSales)}`, col1X + 150, currentY, { align: 'left' });
     currentY += 20;
 
-    // Net sales (already includes discounts)
     const summaryNetSales = summary.totalSales;
     doc.fontSize(10).fillColor('#666666').text(`Net Sales:`, col1X, currentY);
     doc.fontSize(10).fillColor('#000000').text(`${formatCurrency(summaryNetSales)}`, col1X + 150, currentY, { align: 'left' });
@@ -1574,10 +1488,8 @@ exports.downloadSalesReportPDF = async (req, res) => {
     doc.fontSize(10).fillColor('#666666').text(`Total Products Sold:`, col1X, currentY);
     doc.fontSize(10).fillColor('#000000').text(`${summary.totalProducts}`, col1X + 150, currentY, { align: 'left' });
 
-    // Reset Y position for column 2
     currentY = boxTop + 15;
 
-    // Column 2 - with better styling
     doc.fontSize(10).fillColor('#666666').text(`Average Order Value:`, col2X, currentY);
     doc.fontSize(10).fillColor('#000000').text(`${formatCurrency(summary.avgOrderValue)}`, col2X + 150, currentY, { align: 'left' });
     currentY += 20;
@@ -1590,49 +1502,39 @@ exports.downloadSalesReportPDF = async (req, res) => {
     doc.fontSize(10).fillColor('#000000').text(`${formatCurrency(summary.maxOrderValue)}`, col2X + 150, currentY, { align: 'left' });
     currentY += 20;
 
-    // Add discount information if available
     if (summary.totalDiscount) {
       doc.fontSize(10).fillColor('#666666').text(`Total Discount:`, col2X, currentY);
       doc.fontSize(10).fillColor('#000000').text(`${formatCurrency(summary.totalDiscount)}`, col2X + 150, currentY, { align: 'left' });
       currentY += 20;
 
-      // Calculate and display discount percentage
       const discountPercentage = (summary.totalDiscount / (summary.totalSales + summary.totalDiscount) * 100).toFixed(2);
       doc.fontSize(10).fillColor('#666666').text(`Discount Percentage:`, col2X, currentY);
       doc.fontSize(10).fillColor('#000000').text(`${discountPercentage}%`, col2X + 150, currentY, { align: 'left' });
     }
 
-    // Move down after the summary section
     doc.y = boxTop + boxHeight + 20;
 
-    // Check if we need a new page for payment methods
     doc.y = checkNewPage(doc.y, 150);
 
-    // Payment Method Summary with styled table layout
     doc.fontSize(14).fillColor('#4e73df').text('PAYMENT METHODS', { underline: false });
     doc.moveDown(0.5);
 
-    // Create a table for payment methods
     const methodTableTop = doc.y;
     const methodX = 70;
     const countX = 250;
     const totalX = 350;
     const avgX = 450;
 
-    // Draw table header background
     doc.fillColor('#4e73df').rect(50, methodTableTop, doc.page.width - 100, 20).fill();
 
-    // Add table headers with white text
     doc.fillColor('#ffffff');
     doc.fontSize(10).text('PAYMENT METHOD', methodX, methodTableTop + 5, { bold: true });
     doc.fontSize(10).text('ORDERS', countX, methodTableTop + 5, { bold: true });
     doc.fontSize(10).text('AMOUNT', totalX, methodTableTop + 5, { bold: true });
     doc.fontSize(10).text('AVG. ORDER', avgX, methodTableTop + 5, { bold: true });
 
-    // Reset fill color for table content
     doc.fillColor('#000000');
 
-    // Add payment method rows with alternating background
     let methodY = methodTableTop + 20;
     let rowCount = 0;
 
@@ -1640,16 +1542,13 @@ exports.downloadSalesReportPDF = async (req, res) => {
       const data = paymentSummary[method];
       const avg = data.count > 0 ? data.total / data.count : 0;
 
-      // Check if we need a new page
       methodY = checkNewPage(methodY, 30);
 
-      // Add alternating row background
       if (rowCount % 2 === 0) {
         doc.fillColor('#f8f9fc').rect(50, methodY, doc.page.width - 100, 20).fill();
       }
       doc.fillColor('#000000'); // Reset text color
 
-      // Format method name nicely
       const methodName = method.charAt(0).toUpperCase() + method.slice(1);
 
       doc.fontSize(10).text(methodName, methodX, methodY + 5);
@@ -1661,10 +1560,8 @@ exports.downloadSalesReportPDF = async (req, res) => {
       rowCount++;
     });
 
-    // Add a total row with bold styling
     methodY = checkNewPage(methodY, 30);
 
-    // Add total row background
     doc.fillColor('#eaecf4').rect(50, methodY, doc.page.width - 100, 25).fill();
     doc.fillColor('#000000'); // Reset text color
 
@@ -1678,17 +1575,13 @@ exports.downloadSalesReportPDF = async (req, res) => {
        .text(`${formatCurrency(totalAmount)}`, totalX, methodY + 7)
        .text(`${formatCurrency(totalAvg)}`, avgX, methodY + 7);
 
-    // Add original amount row (before discounts)
     methodY += 25;
 
-    // Check if we need a new page
     methodY = checkNewPage(methodY, 30);
 
-    // Add original amount row background
     doc.fillColor('#e8f4f8').rect(50, methodY, doc.page.width - 100, 25).fill();
     doc.fillColor('#000000'); // Reset text color
 
-    // Calculate original amount (before discounts)
     const paymentOriginalAmount = summary.totalOriginalValue || totalAmount;
     const originalAvg = totalCount > 0 ? paymentOriginalAmount / totalCount : 0;
 
@@ -1698,17 +1591,13 @@ exports.downloadSalesReportPDF = async (req, res) => {
        .text(`${formatCurrency(paymentOriginalAmount)}`, totalX, methodY + 7)
        .text(`${formatCurrency(originalAvg)}`, avgX, methodY + 7);
 
-    // Add net sales row (after discounts)
     methodY += 25;
 
-    // Check if we need a new page
     methodY = checkNewPage(methodY, 30);
 
-    // Add net sales row background
     doc.fillColor('#d1ecf1').rect(50, methodY, doc.page.width - 100, 25).fill();
     doc.fillColor('#000000'); // Reset text color
 
-    // Show net sales (already includes discounts)
     const paymentNetSales = totalAmount;
     const netAvg = totalCount > 0 ? paymentNetSales / totalCount : 0;
 
@@ -1718,69 +1607,55 @@ exports.downloadSalesReportPDF = async (req, res) => {
        .text(`${formatCurrency(paymentNetSales)}`, totalX, methodY + 7)
        .text(`${formatCurrency(netAvg)}`, avgX, methodY + 7);
 
-    // Reset font
     doc.font('Helvetica');
 
-    // Add a border around the entire table
     doc.strokeColor('#d1d3e2').lineWidth(1)
        .rect(50, methodTableTop, doc.page.width - 100, methodY + 25 - methodTableTop)
        .stroke();
 
-    // Move down after the table
     doc.y = methodY + 35;
 
-    // Check if we need a new page for filters
     doc.y = checkNewPage(doc.y, 150);
 
-    // Filter Information with better layout and styling
     doc.fontSize(14).fillColor('#4e73df').text('APPLIED FILTERS', { underline: false });
     doc.moveDown(0.5);
 
-    // Create a styled box for filter data
     const filterBoxTop = doc.y;
     const filterBoxHeight = 100;
 
-    // Draw a light background for the filter box
     doc.fillColor('#f8f9fc').roundedRect(50, filterBoxTop, doc.page.width - 100, filterBoxHeight, 5).fill();
     doc.fillColor('#000000'); // Reset text color
 
-    // Create a two-column layout for filters
     const filterY = filterBoxTop + 15;
     const filterLabelX = 70;
     const filterValueX = 220;
     const filterLabel2X = doc.page.width / 2 + 20;
     const filterValue2X = filterLabel2X + 150;
 
-    // Add filter information with icons and better styling - Column 1
     doc.fontSize(10).fillColor('#666666').text('Date Range:', filterLabelX, filterY);
     doc.fontSize(10).fillColor('#000000').text(`${filter === 'custom' ? 'Custom' : filter.charAt(0).toUpperCase() + filter.slice(1)}`, filterValueX, filterY);
 
     doc.fontSize(10).fillColor('#666666').text('Payment Method:', filterLabelX, filterY + 30);
     doc.fontSize(10).fillColor('#000000').text(`${paymentMethod === 'all' ? 'All Methods' : paymentMethod.toUpperCase()}`, filterValueX, filterY + 30);
 
-    // Column 2
     doc.fontSize(10).fillColor('#666666').text('Order Status:', filterLabel2X, filterY);
     doc.fontSize(10).fillColor('#000000').text(`${orderStatus === 'all' ? 'All Statuses' : orderStatus.charAt(0).toUpperCase() + orderStatus.slice(1)}`, filterValue2X, filterY);
 
     doc.fontSize(10).fillColor('#666666').text('Sort By:', filterLabel2X, filterY + 30);
     doc.fontSize(10).fillColor('#000000').text(`${sortBy === 'date' ? 'Date' : 'Amount'} (${sortOrder === 'asc' ? 'Ascending' : 'Descending'})`, filterValue2X, filterY + 30);
 
-    // Add a note about the filters
     doc.fontSize(8).fillColor('#666666')
        .text('Note: This report shows data filtered according to the criteria above. For a complete report, reset all filters.',
              70, filterY + 60, { width: doc.page.width - 140, align: 'center' });
 
-    // Move down after filters
     doc.y = filterBoxTop + filterBoxHeight + 20;
 
-    // Add Top Products section (with additional null check)
     if (topProducts && Array.isArray(topProducts) && topProducts.length > 0) {
       doc.y = checkNewPage(doc.y, 200);
 
       doc.fontSize(14).fillColor('#4e73df').text('TOP SELLING PRODUCTS', { underline: false });
       doc.moveDown(0.5);
 
-      // Create a table for top products
       const productsTableTop = doc.y;
       const rankX = 60;
       const productX = 90;
@@ -1790,10 +1665,8 @@ exports.downloadSalesReportPDF = async (req, res) => {
       const revenueX = 430;
       const originalX = 500;
 
-      // Draw table header background
       doc.fillColor('#4e73df').rect(50, productsTableTop, doc.page.width - 100, 20).fill();
 
-      // Add table headers with white text
       doc.fillColor('#ffffff');
       doc.fontSize(10).text('RANK', rankX, productsTableTop + 5, { bold: true });
       doc.fontSize(10).text('PRODUCT', productX, productsTableTop + 5, { bold: true });
@@ -1803,45 +1676,36 @@ exports.downloadSalesReportPDF = async (req, res) => {
       doc.fontSize(10).text('REVENUE', revenueX, productsTableTop + 5, { bold: true });
       doc.fontSize(10).text('ORIGINAL', originalX, productsTableTop + 5, { bold: true });
 
-      // Reset fill color for table content
       doc.fillColor('#000000');
 
-      // Add product rows with alternating background
       let productY = productsTableTop + 20;
 
       topProducts.forEach((product, index) => {
-        // Skip products with missing essential data
+
         if (!product) return;
 
-        // Check if we need a new page
         productY = checkNewPage(productY, 30);
 
-        // Add alternating row background
         if (index % 2 === 0) {
           doc.fillColor('#f8f9fc').rect(50, productY, doc.page.width - 100, 25).fill();
         }
         doc.fillColor('#000000'); // Reset text color
 
-        // Format product name (truncate if too long)
         const productName = product.name || product.productName || 'Unknown Product';
         const truncatedName = productName.length > 25 ?
           productName.substring(0, 22) + '...' : productName;
 
-        // Format category name
         const categoryName = product.category || 'Uncategorized';
 
-        // Calculate price with and without discount (with null checks)
         const originalPrice = product.originalPrice || 0;
         const quantity = product.quantity || 0;
         const revenue = product.revenue || 0;
         const discountedPrice = quantity > 0 ? revenue / quantity : 0;
         const productOriginalAmount = originalPrice * quantity;
 
-        // Format unit price display (with null check)
         const offerPercentage = product.offerPercentage || 0;
         const priceDisplay = formatCurrency(discountedPrice);
 
-        // Add row data (using our safer variables)
         doc.fontSize(9).text(`#${index + 1}`, rankX, productY + 7);
         doc.fontSize(9).text(truncatedName, productX, productY + 7, { width: 130 });
         doc.fontSize(9).text(categoryName, categoryX, productY + 7, { width: 70 });
@@ -1853,46 +1717,37 @@ exports.downloadSalesReportPDF = async (req, res) => {
         productY += 25;
       });
 
-      // Add a border around the entire table
       doc.strokeColor('#d1d3e2').lineWidth(1)
          .rect(50, productsTableTop, doc.page.width - 100, productY - productsTableTop)
          .stroke();
 
-      // Move down after the table
       doc.y = productY + 20;
     }
 
-    // Add Offers Summary section if there are any offers
     if (offerSummary && (offerSummary.productOffers.count > 0 || offerSummary.categoryOffers.count > 0 || offerSummary.coupons.count > 0)) {
       doc.y = checkNewPage(doc.y, 180);
 
       doc.fontSize(14).fillColor('#4e73df').text('OFFERS & DISCOUNTS', { underline: false });
       doc.moveDown(0.5);
 
-      // Create a table for offers summary
       const offerTableTop = doc.y;
       const offerTypeX = 70;
       const offerCountX = 250;
       const offerSavingsX = 350;
       const offerPercentX = 450;
 
-      // Draw table header background
       doc.fillColor('#4e73df').rect(50, offerTableTop, doc.page.width - 100, 20).fill();
 
-      // Add table headers with white text
       doc.fillColor('#ffffff');
       doc.fontSize(10).text('OFFER TYPE', offerTypeX, offerTableTop + 5, { bold: true });
       doc.fontSize(10).text('PRODUCTS', offerCountX, offerTableTop + 5, { bold: true });
       doc.fontSize(10).text('SAVINGS', offerSavingsX, offerTableTop + 5, { bold: true });
       doc.fontSize(10).text('% OF TOTAL', offerPercentX, offerTableTop + 5, { bold: true });
 
-      // Reset fill color for table content
       doc.fillColor('#000000');
 
-      // Add offer rows with alternating background
       let offerY = offerTableTop + 20;
 
-      // Product Offers row
       doc.fillColor('#f8f9fc').rect(50, offerY, doc.page.width - 100, 20).fill();
       doc.fillColor('#000000'); // Reset text color
 
@@ -1907,7 +1762,6 @@ exports.downloadSalesReportPDF = async (req, res) => {
 
       offerY += 20;
 
-      // Category Offers row
       doc.fillColor('#ffffff').rect(50, offerY, doc.page.width - 100, 20).fill();
       doc.fillColor('#000000'); // Reset text color
 
@@ -1922,7 +1776,6 @@ exports.downloadSalesReportPDF = async (req, res) => {
 
       offerY += 20;
 
-      // Coupons row
       doc.fillColor('#f8f9fc').rect(50, offerY, doc.page.width - 100, 20).fill();
       doc.fillColor('#000000'); // Reset text color
 
@@ -1937,7 +1790,6 @@ exports.downloadSalesReportPDF = async (req, res) => {
 
       offerY += 20;
 
-      // Total row with bold styling
       doc.fillColor('#eaecf4').rect(50, offerY, doc.page.width - 100, 25).fill();
       doc.fillColor('#000000'); // Reset text color
 
@@ -1951,26 +1803,20 @@ exports.downloadSalesReportPDF = async (req, res) => {
          .text(`${formatCurrency(offerSummary.totalSavings)}`, offerSavingsX, offerY + 7)
          .text(`${totalSavingsPercent}% of sales`, offerPercentX, offerY + 7);
 
-      // Reset font
       doc.font('Helvetica');
 
-      // Add a border around the entire table
       doc.strokeColor('#d1d3e2').lineWidth(1)
          .rect(50, offerTableTop, doc.page.width - 100, offerY + 25 - offerTableTop)
          .stroke();
 
-      // Move down after the table
       doc.y = offerY + 35;
     }
 
-    // Check if we need a new page for orders table
     doc.y = checkNewPage(doc.y, 200);
 
-    // Orders Table with improved layout
     doc.fontSize(14).fillColor('#4e73df').text('ORDER DETAILS', { underline: false });
     doc.moveDown(0.5);
 
-    // Table headers with better styling and adjusted spacing
     const tableTop = doc.y;
     const orderIdX = 60;
     const dateX = 160;
@@ -1979,10 +1825,8 @@ exports.downloadSalesReportPDF = async (req, res) => {
     const amountX = 420;
     const statusX = 490;
 
-    // Draw table header background
     doc.fillColor('#4e73df').rect(50, tableTop, doc.page.width - 100, 20).fill();
 
-    // Add table headers with white text
     doc.fillColor('#ffffff');
     doc.fontSize(10).text('ORDER ID', orderIdX, tableTop + 5);
     doc.fontSize(10).text('DATE', dateX, tableTop + 5);
@@ -1991,12 +1835,10 @@ exports.downloadSalesReportPDF = async (req, res) => {
     doc.fontSize(10).text('AMOUNT', amountX, tableTop + 5);
     doc.fontSize(10).text('STATUS', statusX, tableTop + 5);
 
-    // Reset fill color for table content
     doc.fillColor('#000000');
 
     let tableRow = tableTop + 20;
 
-    // Group orders by order ID
     const groupedOrders = {};
     orders.forEach(order => {
       if (!groupedOrders[order.orderId]) {
@@ -2020,18 +1862,15 @@ exports.downloadSalesReportPDF = async (req, res) => {
       });
     });
 
-    // Add order rows with better styling and alternating backgrounds
     let orderRowCount = 0;
     Object.values(groupedOrders).forEach((order, index) => {
-      // Check if we need a new page
+
       tableRow = checkNewPage(tableRow, 50);
 
-      // If this is a new page, add the table headers again
       if (tableRow === 50) {
-        // Draw table header background
+
         doc.fillColor('#4e73df').rect(50, tableRow, doc.page.width - 100, 20).fill();
 
-        // Add table headers with white text (same as original headers)
         doc.fillColor('#ffffff');
         doc.fontSize(10).text('ORDER ID', orderIdX, tableRow + 5);
         doc.fontSize(10).text('DATE', dateX, tableRow + 5);
@@ -2040,40 +1879,34 @@ exports.downloadSalesReportPDF = async (req, res) => {
         doc.fontSize(10).text('AMOUNT', amountX, tableRow + 5);
         doc.fontSize(10).text('STATUS', statusX, tableRow + 5);
 
-        // Reset fill color for table content
         doc.fillColor('#000000');
 
         tableRow += 20;
       }
 
-      // Add alternating row background (height increased to match row height)
       if (orderRowCount % 2 === 0) {
         doc.fillColor('#f8f9fc').rect(50, tableRow, doc.page.width - 100, 30).fill();
       }
       doc.fillColor('#000000'); // Reset text color
 
-      // Use the display-friendly order ID (shorter format with only 5 digits)
       const truncatedOrderId = order.displayOrderId || order.orderNumber || `MK${order.orderId.toString().slice(-5)}`;
 
       const truncatedCustomerName = order.customerName.length > 15 ?
         order.customerName.substring(0, 12) + '...' : order.customerName;
 
-      // Format payment method nicely
       let paymentMethodText = 'Unknown';
       if (order.paymentMethod === 'cod') paymentMethodText = 'COD';
       else if (order.paymentMethod === 'razorpay') paymentMethodText = 'Razorpay';
       else if (order.paymentMethod === 'wallet') paymentMethodText = 'Wallet';
       else paymentMethodText = order.paymentMethod.toUpperCase();
 
-      // Add row data with consistent spacing and increased width for order ID
-      // Adjusted vertical position to center text in taller rows
+
       doc.fontSize(9).text(truncatedOrderId, orderIdX, tableRow + 10, { width: 90 });
       doc.fontSize(9).text(moment(order.orderDate).format('DD-MM-YYYY'), dateX, tableRow + 10, { width: 70 });
       doc.fontSize(9).text(truncatedCustomerName, customerX, tableRow + 10, { width: 90 });
       doc.fontSize(9).text(paymentMethodText, paymentX, tableRow + 10, { width: 70 });
       doc.fontSize(9).text(formatCurrency(order.finalAmount), amountX, tableRow + 10, { width: 60 });
 
-      // Determine overall status
       let overallStatus = 'Mixed';
       if (order.items.every(item => item.status === 'Delivered')) {
         overallStatus = 'Delivered';
@@ -2085,7 +1918,6 @@ exports.downloadSalesReportPDF = async (req, res) => {
         overallStatus = 'Shipped';
       }
 
-      // Add status with color coding
       let statusColor = '#6c757d'; // Default gray for Mixed
       if (overallStatus === 'Delivered') statusColor = '#28a745'; // Green
       else if (overallStatus === 'Cancelled') statusColor = '#dc3545'; // Red
@@ -2095,35 +1927,28 @@ exports.downloadSalesReportPDF = async (req, res) => {
       doc.fillColor(statusColor).text(overallStatus, statusX, tableRow + 10, { width: 70 });
       doc.fillColor('#000000'); // Reset text color
 
-      // Add more space between rows (increased for better readability)
       tableRow += 30;
       orderRowCount++;
     });
 
-    // Add a border around the entire table
     doc.strokeColor('#d1d3e2').lineWidth(1)
        .rect(50, tableTop, doc.page.width - 100, tableRow - tableTop)
        .stroke();
 
-    // Generate timestamp once to ensure consistency across pages
     const timestamp = moment().format('DD MMM YYYY, HH:mm:ss');
 
-    // Add footer to all pages using buffered pages
     const totalPages = doc.bufferedPageRange().count;
     for (let i = 0; i < totalPages; i++) {
       doc.switchToPage(i);
 
-      // Add page border with rounded corners
       doc.strokeColor('#d1d3e2').lineWidth(1)
          .roundedRect(50, 50, doc.page.width - 100, doc.page.height - 100, 5)
          .stroke();
 
-      // Add footer background
       doc.fillColor('#f8f9fc')
          .rect(50, doc.page.height - 70, doc.page.width - 100, 20)
          .fill();
 
-      // Add footer with page number and timestamp
       doc.fillColor('#4e73df')
          .fontSize(8)
          .text(
@@ -2142,7 +1967,6 @@ exports.downloadSalesReportPDF = async (req, res) => {
            { align: 'right', width: doc.page.width - 100 }
          );
 
-      // Add a small logo or watermark at the bottom center
       doc.fillColor('#e8e8e8')
          .fontSize(16)
          .text(
@@ -2153,12 +1977,11 @@ exports.downloadSalesReportPDF = async (req, res) => {
          );
     }
 
-    // Finalize the PDF and end the stream
     doc.end();
 
   } catch (error) {
     console.error("Error generating PDF sales report:", error);
-    // Render the error page instead of sending a plain text response
+
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).render("admin/admin-error", {
       message: "Failed to generate PDF sales report",
       activePage: "reports"
@@ -2166,7 +1989,12 @@ exports.downloadSalesReportPDF = async (req, res) => {
   }
 };
 
-// Export all functions
+//=================================================================================================
+// Module Exports
+//=================================================================================================
+// This exports the report controller functions.
+// It exports the report controller functions to be used in the admin routes.
+//=================================================================================================
 module.exports = {
   renderSalesReport: exports.renderSalesReport,
   getSalesReportOrders: exports.getSalesReportOrders,
