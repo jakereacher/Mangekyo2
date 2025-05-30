@@ -91,13 +91,13 @@
                                 </td>
                                 <td>
                                     <strong>
-                                        <%= coupon.type === 'percentage' ? coupon.discountValue + '%' : '$' + coupon.discountValue %>
+                                        <%= coupon.type === 'percentage' ? coupon.discountValue + '%' : '₹' + coupon.discountValue %>
                                     </strong>
                                 </td>
                                 <td>
                                     <small class="text-muted">
-                                        Min: $<%= coupon.minPrice %><br>
-                                        Max: <%= coupon.maxPrice ? '$' + coupon.maxPrice : '∞' %>
+                                        Min: ₹<%= coupon.minPrice %><br>
+                                        Max: <%= coupon.maxPrice ? '₹' + coupon.maxPrice : '∞' %>
                                     </small>
                                 </td>
                                 <td>

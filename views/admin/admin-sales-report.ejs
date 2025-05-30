@@ -185,7 +185,7 @@
                                             // Calculate discount as the difference between gross and net
                                             const totalDiscounts = grossRevenue - netAmount;
                                             %>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800">$<%= totalDiscounts.toLocaleString('en-US', { maximumFractionDigits: 2 }) %></div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800">₹<%= totalDiscounts.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %></div>
                                             <% if (grossRevenue > 0) { %>
                                                 <div class="text-xs text-warning mt-1">
                                                     <i class="fas fa-percentage"></i> <%= Math.round((totalDiscounts / grossRevenue) * 100) %>% of gross revenue
@@ -249,7 +249,7 @@
                                                 Average Order Value</div>
                                             <% const avgOrderValue = totalOrders > 0 ? (totalSales / totalOrders) : 0; %>
                                             <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                                $<%= avgOrderValue.toLocaleString('en-US', { maximumFractionDigits: 2 }) %>
+                                                ₹<%= avgOrderValue.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %>
                                             </div>
                                             <div class="text-xs text-muted mt-1">
                                                 <i class="fas fa-calculator"></i> Net revenue per order
@@ -285,34 +285,34 @@
                                         <tr>
                                             <td><i class="fas fa-money-bill-wave text-success me-1"></i> COD</td>
                                             <td><%= paymentSummary.cod ? paymentSummary.cod.count : 0 %></td>
-                                            <td>$<%= paymentSummary.cod ? paymentSummary.cod.total.toLocaleString('en-US', { maximumFractionDigits: 2 }) : '0.00' %></td>
+                                            <td>₹<%= paymentSummary.cod ? paymentSummary.cod.total.toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '0.00' %></td>
                                         </tr>
                                         <tr>
                                             <td><i class="fas fa-credit-card text-primary me-1"></i> Razorpay</td>
                                             <td><%= paymentSummary.razorpay ? paymentSummary.razorpay.count : 0 %></td>
-                                            <td>$<%= paymentSummary.razorpay ? paymentSummary.razorpay.total.toLocaleString('en-US', { maximumFractionDigits: 2 }) : '0.00' %></td>
+                                            <td>₹<%= paymentSummary.razorpay ? paymentSummary.razorpay.total.toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '0.00' %></td>
                                         </tr>
                                         <tr>
                                             <td><i class="fas fa-wallet text-info me-1"></i> Wallet</td>
                                             <td><%= paymentSummary.wallet ? paymentSummary.wallet.count : 0 %></td>
-                                            <td>$<%= paymentSummary.wallet ? paymentSummary.wallet.total.toLocaleString('en-US', { maximumFractionDigits: 2 }) : '0.00' %></td>
+                                            <td>₹<%= paymentSummary.wallet ? paymentSummary.wallet.total.toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '0.00' %></td>
                                         </tr>
                                         <tr class="table-active fw-bold">
                                             <td><i class="fas fa-calculator text-primary me-1"></i> Gross Total</td>
                                             <td><%= totalOrders %></td>
-                                            <td>$<%= grossRevenue.toLocaleString('en-US', { maximumFractionDigits: 2 }) %></td>
+                                            <td>₹<%= grossRevenue.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %></td>
                                         </tr>
                                         <% if (totalDiscounts > 0) { %>
                                             <tr class="table-warning">
                                                 <td><i class="fas fa-tags text-warning me-1"></i> Total Discounts</td>
                                                 <td>-</td>
-                                                <td class="text-warning fw-bold">-$<%= totalDiscounts.toLocaleString('en-US', { maximumFractionDigits: 2 }) %></td>
+                                                <td class="text-warning fw-bold">-₹<%= totalDiscounts.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %></td>
                                             </tr>
                                         <% } %>
                                         <tr class="table-success">
                                             <td><i class="fas fa-hand-holding-usd text-success me-1"></i> Net Revenue</td>
                                             <td><%= totalOrders %></td>
-                                            <td class="text-success fw-bold">$<%= netAmount.toLocaleString('en-US', { maximumFractionDigits: 2 }) %></td>
+                                            <td class="text-success fw-bold">₹<%= netAmount.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %></td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -339,22 +339,22 @@
                                         <tr>
                                             <td><i class="fas fa-tag text-success me-1"></i> Product Offers</td>
                                             <td><%= offerSummary && offerSummary.productOffers ? offerSummary.productOffers.count : 0 %></td>
-                                            <td>$<%= offerSummary && offerSummary.productOffers ? offerSummary.productOffers.savings.toLocaleString('en-US', { maximumFractionDigits: 2 }) : '0.00' %></td>
+                                            <td>₹<%= offerSummary && offerSummary.productOffers ? offerSummary.productOffers.savings.toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '0.00' %></td>
                                         </tr>
                                         <tr>
                                             <td><i class="fas fa-folder text-primary me-1"></i> Category Offers</td>
                                             <td><%= offerSummary && offerSummary.categoryOffers ? offerSummary.categoryOffers.count : 0 %></td>
-                                            <td>$<%= offerSummary && offerSummary.categoryOffers ? offerSummary.categoryOffers.savings.toLocaleString('en-US', { maximumFractionDigits: 2 }) : '0.00' %></td>
+                                            <td>₹<%= offerSummary && offerSummary.categoryOffers ? offerSummary.categoryOffers.savings.toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '0.00' %></td>
                                         </tr>
                                         <tr>
                                             <td><i class="fas fa-ticket-alt text-info me-1"></i> Coupons</td>
                                             <td><%= offerSummary && offerSummary.coupons ? offerSummary.coupons.count : 0 %></td>
-                                            <td>$<%= offerSummary && offerSummary.coupons ? offerSummary.coupons.savings.toLocaleString('en-US', { maximumFractionDigits: 2 }) : '0.00' %></td>
+                                            <td>₹<%= offerSummary && offerSummary.coupons ? offerSummary.coupons.savings.toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '0.00' %></td>
                                         </tr>
                                         <tr class="table-active fw-bold">
                                             <td>Total Savings</td>
                                             <td></td>
-                                            <td>$<%= totalDiscounts.toLocaleString('en-US', { maximumFractionDigits: 2 }) %></td>
+                                            <td>₹<%= totalDiscounts.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %></td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -366,7 +366,7 @@
                                     on their purchases
                                 </div>
                                 <div class="text-center mt-1 small text-muted">
-                                    <i class="fas fa-info-circle me-1"></i> Total savings: $<%= totalDiscounts.toLocaleString('en-US', { maximumFractionDigits: 2 }) %>
+                                    <i class="fas fa-info-circle me-1"></i> Total savings: ₹<%= totalDiscounts.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %>
                                 </div>
                             <% } %>
                         </div>
@@ -466,28 +466,28 @@
                                     <td class="align-middle text-end">
                                         <% if (product.originalPrice && product.originalPrice > (product.revenue / product.quantity)) { %>
                                             <span class="text-decoration-line-through text-muted">
-                                                $<%= product.originalPrice.toLocaleString('en-US', { maximumFractionDigits: 2 }) %>
+                                                ₹<%= product.originalPrice.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %>
                                             </span>
                                             <br>
                                             <span>
-                                                $<%= (product.revenue / product.quantity).toLocaleString('en-US', { maximumFractionDigits: 2 }) %>
+                                                ₹<%= (product.revenue / product.quantity).toLocaleString('en-IN', { maximumFractionDigits: 2 }) %>
                                             </span>
                                         <% } else { %>
-                                            $<%= (product.revenue / product.quantity).toLocaleString('en-US', { maximumFractionDigits: 2 }) %>
+                                            ₹<%= (product.revenue / product.quantity).toLocaleString('en-IN', { maximumFractionDigits: 2 }) %>
                                         <% } %>
                                     </td>
-                                    <td class="align-middle text-end fw-bold">$<%= product.revenue.toLocaleString('en-US', { maximumFractionDigits: 2 }) %></td>
+                                    <td class="align-middle text-end fw-bold">₹<%= product.revenue.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %></td>
                                     <td class="align-middle text-end">
                                         <% if (product.originalPrice && product.quantity) { %>
                                             <% const originalAmount = product.originalPrice * product.quantity; %>
-                                            $<%= originalAmount.toLocaleString('en-US', { maximumFractionDigits: 2 }) %>
+                                            ₹<%= originalAmount.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %>
                                             <% if (originalAmount > product.revenue) { %>
                                                 <small class="text-success">
                                                     (<%= Math.round((originalAmount - product.revenue) / originalAmount * 100) %>% off)
                                                 </small>
                                             <% } %>
                                         <% } else { %>
-                                            $<%= product.revenue.toLocaleString('en-US', { maximumFractionDigits: 2 }) %>
+                                            ₹<%= product.revenue.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %>
                                         <% } %>
                                     </td>
                                 </tr>
@@ -628,7 +628,7 @@
                                     <td class="align-middle text-center">
                                         <span class="badge bg-secondary"><%= order.orderedItems.length %></span>
                                     </td>
-                                    <td class="align-middle text-end fw-bold">$<%= order.finalAmount.toLocaleString('en-US', { maximumFractionDigits: 2 }) %></td>
+                                    <td class="align-middle text-end fw-bold">₹<%= order.finalAmount.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %></td>
                                     <td class="align-middle">
                                         <%
                                         let statusCounts = {};
@@ -899,7 +899,7 @@
                     <td class="align-middle text-center">
                         <span class="badge bg-secondary">${order.orderedItems.length}</span>
                     </td>
-                    <td class="align-middle text-end fw-bold">$${order.finalAmount.toLocaleString('en-US', { maximumFractionDigits: 2 })}</td>
+                    <td class="align-middle text-end fw-bold">₹${order.finalAmount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
                     <td class="align-middle">${statusHtml}</td>
                     <td class="align-middle">
                         <a href="/admin/orders/${order._id}" class="btn btn-sm btn-primary">
@@ -954,23 +954,23 @@
                 if (product.originalPrice && product.originalPrice > unitPrice) {
                     priceHtml = `
                         <span class="text-decoration-line-through text-muted">
-                            $${product.originalPrice.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                            ₹${product.originalPrice.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                         </span>
                         <br>
-                        <span>$${unitPrice.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
+                        <span>₹${unitPrice.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
                     `;
                 } else {
-                    priceHtml = `$${unitPrice.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+                    priceHtml = `₹${unitPrice.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
                 }
 
                 let originalAmountHtml = '';
                 if (product.originalPrice && product.quantity) {
                     originalAmountHtml = `
-                        $${originalAmount.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                        ₹${originalAmount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                         ${originalAmount > product.revenue ? `<small class="text-success">(${discountPercentage}% off)</small>` : ''}
                     `;
                 } else {
-                    originalAmountHtml = `$${product.revenue.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+                    originalAmountHtml = `₹${product.revenue.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
                 }
 
                 const row = tbody.insertRow();
@@ -987,7 +987,7 @@
                     </td>
                     <td class="align-middle text-center">${offerHtml}</td>
                     <td class="align-middle text-end">${priceHtml}</td>
-                    <td class="align-middle text-end fw-bold">$${product.revenue.toLocaleString('en-US', { maximumFractionDigits: 2 })}</td>
+                    <td class="align-middle text-end fw-bold">₹${product.revenue.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
                     <td class="align-middle text-end">${originalAmountHtml}</td>
                 `;
             });

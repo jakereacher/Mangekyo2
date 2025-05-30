@@ -457,9 +457,9 @@
         document.getElementById('sampleProductPrice').textContent = sampleProductPrice.toFixed(2);
 
         if (discountTypeSelect.value === 'percentage') {
-          document.getElementById('sampleProductDiscount').textContent = `${discountValue}% ($${discountAmount.toFixed(2)})`;
+          document.getElementById('sampleProductDiscount').textContent = `${discountValue}% (₹${discountAmount.toFixed(2)})`;
         } else {
-          document.getElementById('sampleProductDiscount').textContent = `$${discountAmount.toFixed(2)}`;
+          document.getElementById('sampleProductDiscount').textContent = `₹${discountAmount.toFixed(2)}`;
         }
 
         document.getElementById('sampleProductFinalPrice').textContent = finalPrice.toFixed(2);
@@ -491,7 +491,7 @@
             discountAmount = maxDiscountAmount;
           }
 
-          document.getElementById('categoryDiscountExample').textContent = `${discountValue}% ($${discountAmount.toFixed(2)})`;
+          document.getElementById('categoryDiscountExample').textContent = `${discountValue}% (₹${discountAmount.toFixed(2)})`;
         } else {
           discountAmount = discountValue;
 
@@ -500,7 +500,7 @@
             discountAmount = samplePrice;
           }
 
-          document.getElementById('categoryDiscountExample').textContent = `$${discountAmount.toFixed(2)}`;
+          document.getElementById('categoryDiscountExample').textContent = `₹${discountAmount.toFixed(2)}`;
         }
 
         const finalPrice = samplePrice - discountAmount;

@@ -59,13 +59,13 @@
                     <% if (offer.discountType === 'percentage') { %>
                       <span class="badge bg-info"><%= offer.discountValue %>%</span>
                       <% if (offer.maxDiscountAmount) { %>
-                        <div class="small text-muted">Max: $<%= offer.maxDiscountAmount %></div>
+                        <div class="small text-muted">Max: ₹<%= offer.maxDiscountAmount %></div>
                       <% } %>
                     <% } else { %>
-                      <span class="badge bg-success">$<%= offer.discountValue %></span>
+                      <span class="badge bg-success">₹<%= offer.discountValue %></span>
                     <% } %>
                     <% if (offer.minPurchaseAmount > 0) { %>
-                      <div class="small text-muted">Min purchase: $<%= offer.minPurchaseAmount %></div>
+                      <div class="small text-muted">Min purchase: ₹<%= offer.minPurchaseAmount %></div>
                     <% } %>
                   </td>
                   <td>

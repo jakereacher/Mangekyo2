@@ -76,14 +76,14 @@
                                 <td>
                                     <% if (product.hasOffer) { %>
                                         <div class="d-flex align-items-center">
-                                            <span class="text-decoration-line-through text-muted me-2">$<%= product.price.toFixed(2) %></span>
-                                            <span class="fw-medium text-success">$<%= product.finalPrice.toFixed(2) %></span>
+                                            <span class="text-decoration-line-through text-muted me-2">₹<%= product.price.toFixed(2) %></span>
+                                            <span class="fw-medium text-success">₹<%= product.finalPrice.toFixed(2) %></span>
                                         </div>
                                         <span class="badge bg-success mt-1">
                                             <%= product.discountPercentage.toFixed(0) %>% OFF
                                         </span>
                                     <% } else { %>
-                                        <span class="fw-medium">$<%= (product.price ? product.price.toFixed(2) : (product.salePrice ? product.salePrice.toFixed(2) : (product.regularPrice ? product.regularPrice.toFixed(2) : '0.00'))) %></span>
+                                        <span class="fw-medium">₹<%= (product.price ? product.price.toFixed(2) : (product.salePrice ? product.salePrice.toFixed(2) : (product.regularPrice ? product.regularPrice.toFixed(2) : '0.00'))) %></span>
                                     <% } %>
                                 </td>
                                 <td>

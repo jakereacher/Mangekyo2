@@ -55,10 +55,10 @@
                 <% if (offer.discountType === 'percentage') { %>
                   <%= offer.discountValue %>%
                   <% if (offer.maxDiscountAmount) { %>
-                    (Max: $<%= offer.maxDiscountAmount %>)
+                    (Max: ₹<%= offer.maxDiscountAmount %>)
                   <% } %>
                 <% } else { %>
-                  $<%= offer.discountValue %>
+                  ₹<%= offer.discountValue %>
                 <% } %>
               </td>
               <td><%= new Date(offer.startDate).toLocaleDateString() %></td>

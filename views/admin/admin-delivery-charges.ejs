@@ -1,4 +1,4 @@
-<%- include("../../views/admin/partials/header", { activePage: 'delivery-charges' }) %>
+<%- include("partials/header", { activePage: 'delivery-charges' }) %>
 
 <style>
     .cities-container .badge {
@@ -49,164 +49,159 @@
     }
 </style>
 
-            <!-- Main Content -->
-            <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-                <nav class="navbar navbar-expand-lg navbar-light bg-light">
-                    <div class="container-fluid">
-                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-                            <span class="navbar-toggler-icon"></span>
-                        </button>
-                        <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                            <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-                                <li class="nav-item dropdown">
-                                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <i class="fas fa-bell"></i>
-                                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                                            3
-                                        </span>
-                                    </a>
-                                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                                        <li><a class="dropdown-item" href="#">New order received</a></li>
-                                        <li><a class="dropdown-item" href="#">New customer registered</a></li>
-                                        <li><a class="dropdown-item" href="#">Inventory alert</a></li>
-                                    </ul>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </nav>
-
-                <div class="main-content">
-                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                        <h1 class="h2">Delivery Charges Management</h1>
-                        <div class="btn-toolbar mb-2 mb-md-0">
-                            <div class="btn-group me-2">
-                                <span class="badge bg-info">Tier-based Delivery Charges</span>
-                            </div>
-                        </div>
-                    </div>
-
-<div class="container-fluid">
-
-
-    <!-- Content Row -->
-    <div class="row">
-        <div class="col-xl-12 col-lg-12">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">Manage Delivery Charges</h6>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-hover" id="deliveryChargesTable" width="100%" cellspacing="0">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>Tier</th>
-                                    <th>Description</th>
-                                    <th>Cities Included</th>
-                                    <th>Charge ($)</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <% if (deliveryCharges && deliveryCharges.length > 0) { %>
-                                    <% deliveryCharges.forEach(charge => { %>
-                                        <tr>
-                                            <td>
-                                                <%
-                                                let badgeClass = 'secondary';
-                                                let tierText = 'Unknown';
-
-                                                if (charge.cityType === 'tier1') {
-                                                    badgeClass = 'primary';
-                                                    tierText = 'Tier 1';
-                                                } else if (charge.cityType === 'tier2') {
-                                                    badgeClass = 'info';
-                                                    tierText = 'Tier 2';
-                                                } else if (charge.cityType === 'tier3') {
-                                                    badgeClass = 'success';
-                                                    tierText = 'Tier 3';
-                                                } else if (charge.cityType === 'tier4') {
-                                                    badgeClass = 'warning';
-                                                    tierText = 'Tier 4';
-                                                }
-                                                %>
-                                                <span class="badge bg-<%= badgeClass %> fs-6">
-                                                    <%= tierText %>
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <strong><%= charge.location %></strong>
-                                                <br>
-                                                <small class="text-muted"><%= charge.description %></small>
-                                            </td>
-                                            <td>
-                                                <div class="cities-container">
-                                                    <% if (Array.isArray(charge.cities)) { %>
-                                                        <% charge.cities.slice(0, 3).forEach(city => { %>
-                                                            <span class="badge bg-light text-dark me-1 mb-1"><%= city %></span>
-                                                        <% }); %>
-                                                        <% if (charge.cities.length > 3) { %>
-                                                            <span class="badge bg-secondary">+<%= charge.cities.length - 3 %> more</span>
-                                                        <% } %>
-                                                    <% } else { %>
-                                                        <small class="text-muted"><%= charge.cities %></small>
-                                                    <% } %>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <span class="h5 text-success">$<%= charge.charge.toFixed(2) %></span>
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-<%= charge.isActive ? 'success' : 'danger' %>">
-                                                    <%= charge.isActive ? 'Active' : 'Inactive' %>
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <button class="btn btn-sm btn-outline-primary edit-charge-btn"
-                                                        data-id="<%= charge._id %>"
-                                                        data-location="<%= charge.location %>"
-                                                        data-description="<%= charge.description %>"
-                                                        data-city-type="<%= charge.cityType %>"
-                                                        data-charge="<%= charge.charge %>"
-                                                        data-is-active="<%= charge.isActive %>"
-                                                        data-cities="<%= Array.isArray(charge.cities) ? JSON.stringify(charge.cities) : charge.cities %>"
-                                                        title="Edit delivery charge">
-                                                    <i class="fas fa-edit"></i> Edit
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    <% }); %>
-                                <% } else { %>
-                                    <tr>
-                                        <td colspan="6" class="text-center text-muted">
-                                            <i class="fas fa-info-circle"></i> No delivery charges configured.
-                                        </td>
-                                    </tr>
-                                <% } %>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+<!-- Delivery Charges Content -->
+<div class="content-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1><i class="fas fa-truck me-2"></i>Delivery Charges Management</h1>
+            <p class="text-muted mb-0">Manage tier-based delivery charges and city assignments</p>
         </div>
+        <div class="d-flex gap-2">
+            <span class="badge bg-info fs-6">
+                <i class="fas fa-info-circle me-1"></i>Tier-based System
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- Alert Messages -->
+<% if (typeof success !== 'undefined' && success) { %>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle me-2"></i><%= success %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+<% } %>
+
+<% if (typeof error !== 'undefined' && error) { %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i><%= error %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+<% } %>
+
+<!-- Info Alert -->
+<div class="alert alert-info" role="alert">
+    <i class="fas fa-info-circle me-2"></i>
+    <strong>Tier-based Delivery System:</strong> Delivery charges are automatically calculated based on city tiers.
+    You can edit charges and manage cities for each tier. Cities cannot belong to multiple tiers, and each tier must have different costs.
+</div>
+
+
+<!-- Delivery Charges Table -->
+<div class="card">
+    <div class="card-body">
+        <% if (deliveryCharges && deliveryCharges.length === 0) { %>
+            <div class="text-center py-5">
+                <i class="fas fa-truck fa-4x text-muted mb-3"></i>
+                <h5>No delivery charges configured</h5>
+                <p class="text-muted">Delivery charges will be automatically configured based on tier system</p>
+            </div>
+        <% } else { %>
+            <div class="table-responsive">
+                <table class="table table-hover" id="deliveryChargesTable">
+                    <thead>
+                        <tr>
+                            <th>Tier</th>
+                            <th>Description</th>
+                            <th>Cities Included</th>
+                            <th>Charge (₹)</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (deliveryCharges && deliveryCharges.length > 0) { %>
+                            <% deliveryCharges.forEach(charge => { %>
+                                <tr>
+                                    <td>
+                                        <%
+                                        let badgeClass = 'secondary';
+                                        let tierText = 'Unknown';
+
+                                        if (charge.cityType === 'tier1') {
+                                            badgeClass = 'primary';
+                                            tierText = 'Tier 1';
+                                        } else if (charge.cityType === 'tier2') {
+                                            badgeClass = 'info';
+                                            tierText = 'Tier 2';
+                                        } else if (charge.cityType === 'tier3') {
+                                            badgeClass = 'success';
+                                            tierText = 'Tier 3';
+                                        } else if (charge.cityType === 'tier4') {
+                                            badgeClass = 'warning';
+                                            tierText = 'Tier 4';
+                                        }
+                                        %>
+                                        <span class="badge bg-<%= badgeClass %> fs-6">
+                                            <%= tierText %>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="fw-medium"><%= charge.location %></div>
+                                        <small class="text-muted"><%= charge.description %></small>
+                                    </td>
+                                    <td>
+                                        <div class="cities-container">
+                                            <% if (Array.isArray(charge.cities)) { %>
+                                                <% charge.cities.slice(0, 3).forEach(city => { %>
+                                                    <span class="badge bg-light text-dark me-1 mb-1"><%= city %></span>
+                                                <% }); %>
+                                                <% if (charge.cities.length > 3) { %>
+                                                    <span class="badge bg-secondary">+<%= charge.cities.length - 3 %> more</span>
+                                                <% } %>
+                                            <% } else { %>
+                                                <small class="text-muted"><%= charge.cities %></small>
+                                            <% } %>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="h5 text-success">₹<%= charge.charge.toFixed(2) %></span>
+                                    </td>
+                                    <td>
+                                        <% if (charge.isActive) { %>
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check-circle me-1"></i>Active
+                                            </span>
+                                        <% } else { %>
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-times-circle me-1"></i>Inactive
+                                            </span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary edit-charge-btn"
+                                                data-id="<%= charge._id %>"
+                                                data-location="<%= charge.location %>"
+                                                data-description="<%= charge.description %>"
+                                                data-city-type="<%= charge.cityType %>"
+                                                data-charge="<%= charge.charge %>"
+                                                data-is-active="<%= charge.isActive %>"
+                                                data-cities="<%= Array.isArray(charge.cities) ? JSON.stringify(charge.cities) : charge.cities %>"
+                                                title="Edit delivery charge">
+                                            <i class="fas fa-edit me-1"></i>Edit
+                                        </button>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        <% } %>
     </div>
 </div>
 
 
 
 <!-- Edit Delivery Charge Modal -->
-<div class="modal fade" id="editDeliveryChargeModal" tabindex="-1" role="dialog" aria-labelledby="editDeliveryChargeModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
+<div class="modal fade" id="editDeliveryChargeModal" tabindex="-1" aria-labelledby="editDeliveryChargeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title" id="editDeliveryChargeModalLabel">
                     <i class="fas fa-edit me-2"></i>Edit Delivery Charge
                 </h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form id="editDeliveryChargeForm">
@@ -222,10 +217,10 @@
                         <div class="col-md-8">
                             <div class="form-group mb-3">
                                 <label for="editCharge" class="form-label">
-                                    <i class="fas fa-dollar-sign me-1"></i>Delivery Charge ($)
+                                    <i class="fas fa-rupee-sign me-1"></i>Delivery Charge (₹)
                                 </label>
                                 <div class="input-group">
-                                    <span class="input-group-text">$</span>
+                                    <span class="input-group-text">₹</span>
                                     <input type="number" class="form-control" id="editCharge" name="charge"
                                            min="0" step="0.01" required placeholder="Enter charge amount">
                                 </div>
@@ -276,7 +271,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     <i class="fas fa-times me-1"></i>Cancel
                 </button>
                 <button type="button" class="btn btn-primary" id="updateDeliveryChargeBtn">
@@ -373,8 +368,9 @@
             // Clear new city input
             $('#newCityInput').val('');
 
-            // Show modal using jQuery (most compatible)
-            $('#editDeliveryChargeModal').modal('show');
+            // Show modal using Bootstrap 5
+            const modal = new bootstrap.Modal(document.getElementById('editDeliveryChargeModal'));
+            modal.show();
             console.log('Modal shown'); // Debug log
         });
 
@@ -459,7 +455,7 @@
             }
 
             if (charge && !isNaN(charge) && parseFloat(charge) > 0) {
-                $('#chargePreview').html(`<i class="fas fa-info-circle text-info"></i> New charge will be: <strong>$${parseFloat(charge).toFixed(2)}</strong>`);
+                $('#chargePreview').html(`<i class="fas fa-info-circle text-info"></i> New charge will be: <strong>₹${parseFloat(charge).toFixed(2)}</strong>`);
                 $(this).removeClass('is-invalid').addClass('is-valid');
             } else if (charge) {
                 $('#chargePreview').html(`<i class="fas fa-exclamation-triangle text-warning"></i> Please enter a valid amount greater than 0`);
@@ -512,8 +508,9 @@
                         // Update the table row dynamically instead of reloading
                         updateTableRow(id, response.deliveryCharge);
 
-                        // Close the modal
-                        $('#editDeliveryChargeModal').modal('hide');
+                        // Close the modal using Bootstrap 5
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('editDeliveryChargeModal'));
+                        modal.hide();
 
                         // Show success message
                         Swal.fire({
@@ -545,12 +542,12 @@
 
             if ($row.length) {
                 // Update charge display
-                $row.find('td:nth-child(4)').html(`<span class="h5 text-success">$${updatedData.charge.toFixed(2)}</span>`);
+                $row.find('td:nth-child(4)').html(`<span class="h5 text-success">₹${updatedData.charge.toFixed(2)}</span>`);
 
                 // Update status badge
                 const statusBadge = updatedData.isActive ?
-                    '<span class="badge bg-success">Active</span>' :
-                    '<span class="badge bg-danger">Inactive</span>';
+                    '<span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Active</span>' :
+                    '<span class="badge bg-danger"><i class="fas fa-times-circle me-1"></i>Inactive</span>';
                 $row.find('td:nth-child(5)').html(statusBadge);
 
                 // Update cities display
@@ -584,7 +581,4 @@
     });
 </script>
 
-                </div>
-            </div>
-
-<%- include("../../views/admin/partials/footer") %>
+<%- include("partials/footer") %>
