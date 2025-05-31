@@ -337,6 +337,7 @@ const loadShop = async (req, res) => {
         offerInfo: offerInfo,
         offerName: hasOffer && bestOffer ? bestOffer.name : null,
         offerType: hasOffer && bestOffer ? bestOffer.type : null,
+        quantity: product.quantity,
         isNew: (Date.now() - new Date(product.createdAt)) < (7 * 24 * 60 * 60 * 1000)
       };
     }));
@@ -398,6 +399,7 @@ const loadShop = async (req, res) => {
         offerInfo: offerInfo,
         offerName: hasOffer && bestOffer ? bestOffer.name : null,
         offerType: hasOffer && bestOffer ? bestOffer.type : null,
+        quantity: product.quantity,
         isNew: (Date.now() - new Date(product.createdAt)) < (7 * 24 * 60 * 60 * 1000)
       };
     }));

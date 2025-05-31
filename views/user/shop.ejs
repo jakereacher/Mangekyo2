@@ -182,14 +182,19 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         <% if (locals.products) { %>
                             <% products.forEach(product => { %>
-                                <a href="/shop/product/<%= product._id %>" class="block">
-                                    <div class="bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-white transition border border-gray-700">
-                                        <div class="relative">
+                                <div class="bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-white transition border border-gray-700">
+                                    <div class="relative">
+                                        <a href="/shop/product/<%= product._id %>" class="block">
                                             <img src="<%= product.image %>" alt="<%= product.name %>" class="w-full h-64 object-cover">
-                                            <% if (product.isNew) { %>
+                                            <% if (product.quantity <= 0) { %>
+                                                <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                                                    <span class="bg-red-600 text-white text-sm font-bold px-3 py-1 rounded">OUT OF STOCK</span>
+                                                </div>
+                                            <% } %>
+                                            <% if (product.isNew && product.quantity > 0) { %>
                                                 <div class="absolute top-2 right-2 bg-white text-black text-xs font-bold px-2 py-1 rounded">NEW</div>
                                             <% } %>
-                                            <% if (product.hasOffer && product.discount > 0) { %>
+                                            <% if (product.hasOffer && product.discount > 0 && product.quantity > 0) { %>
                                                 <div class="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded">
                                                     <% if (product.discountType === 'fixed') { %>
                                                         ₹<%= Math.round(product.discountAmount) %> OFF
@@ -198,30 +203,46 @@
                                                     <% } %>
                                                 </div>
                                             <% } %>
-                                        </div>
-                                        <div class="p-4">
+                                        </a>
+                                    </div>
+                                    <div class="p-4">
+                                        <a href="/shop/product/<%= product._id %>" class="block">
                                             <h3 class="text-lg font-bold mb-1 text-white"><%= product.name %></h3>
                                             <p class="text-gray-400 text-sm mb-2"><%= product.category %></p>
-                                            <div class="flex justify-between items-center">
-                                                <div>
-                                                    <% if (product.hasOffer && product.discount > 0) { %>
-                                                        <div class="flex items-center">
-                                                            <span class="text-white font-bold">₹<%= product.displayPrice ? Math.round(product.displayPrice) : '0' %></span>
-                                                            <span class="text-gray-400 line-through text-sm ml-2">₹<%= product.price ? Math.round(product.price) : '0' %></span>
-                                                        </div>
-                                                    <% } else { %>
-                                                        <span class="text-white font-bold">₹<%= product.price ? Math.round(product.price) : '0' %></span>
-                                                    <% } %>
-                                                </div>
-                                                <button class="p-2 bg-white text-black rounded hover:bg-gray-300 transition">
+                                        </a>
+                                        <div class="flex justify-between items-center">
+                                            <div>
+                                                <% if (product.hasOffer && product.discount > 0) { %>
+                                                    <div class="flex items-center">
+                                                        <span class="text-white font-bold">₹<%= product.displayPrice ? Math.round(product.displayPrice) : '0' %></span>
+                                                        <span class="text-gray-400 line-through text-sm ml-2">₹<%= product.price ? Math.round(product.price) : '0' %></span>
+                                                    </div>
+                                                <% } else { %>
+                                                    <span class="text-white font-bold">₹<%= product.price ? Math.round(product.price) : '0' %></span>
+                                                <% } %>
+                                            </div>
+                                            <% if (locals.user && product.quantity > 0) { %>
+                                                <button class="add-to-cart-btn p-2 bg-white text-black rounded hover:bg-gray-300 transition"
+                                                        data-product-id="<%= product._id %>"
+                                                        data-product-name="<%= product.name %>">
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                                                     </svg>
                                                 </button>
-                                            </div>
+                                            <% } else if (locals.user && product.quantity <= 0) { %>
+                                                <span class="px-2 py-1 bg-red-600 text-white text-xs font-bold rounded">
+                                                    Out of Stock
+                                                </span>
+                                            <% } else { %>
+                                                <a href="/login" class="p-2 bg-white text-black rounded hover:bg-gray-300 transition">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                                    </svg>
+                                                </a>
+                                            <% } %>
                                         </div>
                                     </div>
-                                </a>
+                                </div>
                             <% }); %>
                         <% } else { %>
                             <!-- Placeholder Product Cards for Demo -->
@@ -296,14 +317,19 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <% if (locals.recommendedProducts && recommendedProducts.length > 0) { %>
                 <% recommendedProducts.forEach(product => { %>
-                    <a href="/shop/product/<%= product._id %>" class="block">
-                        <div class="bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-white transition border border-gray-700">
-                            <div class="relative">
+                    <div class="bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-white transition border border-gray-700">
+                        <div class="relative">
+                            <a href="/shop/product/<%= product._id %>" class="block">
                                 <img src="<%= product.image %>" alt="<%= product.name %>" class="w-full h-64 object-cover">
-                                <% if (product.isNew) { %>
+                                <% if (product.quantity <= 0) { %>
+                                    <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                                        <span class="bg-red-600 text-white text-sm font-bold px-3 py-1 rounded">OUT OF STOCK</span>
+                                    </div>
+                                <% } %>
+                                <% if (product.isNew && product.quantity > 0) { %>
                                     <div class="absolute top-2 right-2 bg-white text-black text-xs font-bold px-2 py-1 rounded">NEW</div>
                                 <% } %>
-                                <% if (product.hasOffer && product.discount > 0) { %>
+                                <% if (product.hasOffer && product.discount > 0 && product.quantity > 0) { %>
                                     <div class="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded">
                                         <% if (product.discountType === 'fixed') { %>
                                             ₹<%= Math.round(product.discountAmount) %> OFF
@@ -312,30 +338,46 @@
                                         <% } %>
                                     </div>
                                 <% } %>
-                            </div>
-                            <div class="p-4">
+                            </a>
+                        </div>
+                        <div class="p-4">
+                            <a href="/shop/product/<%= product._id %>" class="block">
                                 <h3 class="text-lg font-bold mb-1 text-white"><%= product.name %></h3>
                                 <p class="text-gray-400 text-sm mb-2"><%= product.category %></p>
-                                <div class="flex justify-between items-center">
-                                    <div>
-                                        <% if (product.hasOffer && product.discount > 0) { %>
-                                            <div class="flex items-center">
-                                                <span class="text-white font-bold">₹<%= product.displayPrice ? Math.round(product.displayPrice) : '0' %></span>
-                                                <span class="text-gray-400 line-through text-sm ml-2">₹<%= product.price ? Math.round(product.price) : '0' %></span>
-                                            </div>
-                                        <% } else { %>
-                                            <span class="text-white font-bold">₹<%= product.price ? Math.round(product.price) : '0' %></span>
-                                        <% } %>
-                                    </div>
-                                    <button class="p-2 bg-white text-black rounded hover:bg-gray-300 transition">
+                            </a>
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <% if (product.hasOffer && product.discount > 0) { %>
+                                        <div class="flex items-center">
+                                            <span class="text-white font-bold">₹<%= product.displayPrice ? Math.round(product.displayPrice) : '0' %></span>
+                                            <span class="text-gray-400 line-through text-sm ml-2">₹<%= product.price ? Math.round(product.price) : '0' %></span>
+                                        </div>
+                                    <% } else { %>
+                                        <span class="text-white font-bold">₹<%= product.price ? Math.round(product.price) : '0' %></span>
+                                    <% } %>
+                                </div>
+                                <% if (locals.user && product.quantity > 0) { %>
+                                    <button class="add-to-cart-btn p-2 bg-white text-black rounded hover:bg-gray-300 transition"
+                                            data-product-id="<%= product._id %>"
+                                            data-product-name="<%= product.name %>">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                                         </svg>
                                     </button>
-                                </div>
+                                <% } else if (locals.user && product.quantity <= 0) { %>
+                                    <span class="px-2 py-1 bg-red-600 text-white text-xs font-bold rounded">
+                                        Out of Stock
+                                    </span>
+                                <% } else { %>
+                                    <a href="/login" class="p-2 bg-white text-black rounded hover:bg-gray-300 transition">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                        </svg>
+                                    </a>
+                                <% } %>
                             </div>
                         </div>
-                    </a>
+                    </div>
                 <% }); %>
             <% } else { %>
                 <p class="text-gray-400">No recommended products available.</p>
@@ -421,5 +463,113 @@
                 this.appendChild(hiddenInput);
             }
         });
+
+        // Add to cart functionality
+        document.querySelectorAll('.add-to-cart-btn').forEach(button => {
+            button.addEventListener('click', async function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const productId = this.getAttribute('data-product-id');
+                const productName = this.getAttribute('data-product-name');
+                const originalContent = this.innerHTML;
+
+                // Show loading state
+                this.innerHTML = '<svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+                this.disabled = true;
+
+                try {
+                    const response = await fetch('/add-to-cart', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({
+                            productId: productId,
+                            quantity: 1
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        // Update cart count in header
+                        const cartCountElement = document.getElementById('cart-count');
+                        if (cartCountElement && data.cartCount !== undefined) {
+                            cartCountElement.textContent = data.cartCount;
+                            cartCountElement.style.display = data.cartCount > 0 ? 'flex' : 'none';
+
+                            // Add animation
+                            cartCountElement.style.transform = 'scale(1.2)';
+                            setTimeout(() => {
+                                cartCountElement.style.transform = 'scale(1)';
+                            }, 200);
+                        }
+
+                        // Show success message
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                title: 'Added to Cart!',
+                                text: `${productName} has been added to your cart`,
+                                icon: 'success',
+                                timer: 2000,
+                                showConfirmButton: false,
+                                background: '#1F2937',
+                                color: 'white'
+                            });
+                        } else {
+                            alert(`${productName} added to cart!`);
+                        }
+
+                        // Reset button
+                        this.innerHTML = originalContent;
+                        this.disabled = false;
+
+                    } else {
+                        // Show error message
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                title: 'Error',
+                                text: data.message || 'Failed to add product to cart',
+                                icon: 'error',
+                                confirmButtonColor: '#00ffff',
+                                background: '#1F2937',
+                                color: 'white'
+                            });
+                        } else {
+                            alert(data.message || 'Failed to add product to cart');
+                        }
+
+                        // Reset button
+                        this.innerHTML = originalContent;
+                        this.disabled = false;
+                    }
+                } catch (error) {
+                    console.error('Error adding to cart:', error);
+
+                    // Show error message
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            title: 'Error',
+                            text: 'Something went wrong. Please try again.',
+                            icon: 'error',
+                            confirmButtonColor: '#00ffff',
+                            background: '#1F2937',
+                            color: 'white'
+                        });
+                    } else {
+                        alert('Something went wrong. Please try again.');
+                    }
+
+                    // Reset button
+                    this.innerHTML = originalContent;
+                    this.disabled = false;
+                }
+            });
+        });
     });
 </script>
+
+<!-- SweetAlert2 for better notifications -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>

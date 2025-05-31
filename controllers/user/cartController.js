@@ -245,6 +245,39 @@ exports.renderCartPage = async (req, res) => {
 };
 
 //=================================================================================================
+// Get Cart Count
+//=================================================================================================
+// This function returns the current cart count for the user.
+// Used for AJAX requests to update cart count in real-time.
+//=================================================================================================
+exports.getCartCount = async (req, res) => {
+  try {
+    if (!req.session || !req.session.user) {
+      return res.status(StatusCodes.OK).json({
+        success: true,
+        cartCount: 0
+      });
+    }
+
+    const userId = req.session.user._id || req.session.user;
+    const cart = await Cart.findOne({ userId });
+    const cartCount = cart ? cart.products.length : 0;
+
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      cartCount
+    });
+  } catch (error) {
+    console.error("Error getting cart count:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Something went wrong",
+      cartCount: 0
+    });
+  }
+};
+
+//=================================================================================================
 // Remove From Cart
 //=================================================================================================
 // This function removes a product from the cart.

@@ -843,6 +843,21 @@
         console.log("Response data:", data);
 
         if (response.ok) {
+          // Update cart count in header
+          if (data.cartCount !== undefined) {
+            const cartCountElement = document.getElementById('cart-count');
+            if (cartCountElement) {
+              cartCountElement.textContent = data.cartCount;
+              cartCountElement.style.display = data.cartCount > 0 ? 'flex' : 'none';
+
+              // Add animation
+              cartCountElement.style.transform = 'scale(1.2)';
+              setTimeout(() => {
+                cartCountElement.style.transform = 'scale(1)';
+              }, 200);
+            }
+          }
+
           Swal.fire({
             title: 'Added to Cart!',
             text: 'Product added to your shopping bag',
@@ -1024,6 +1039,21 @@
       console.log("Quick add response:", data);
 
       if (response.ok) {
+        // Update cart count in header
+        if (data.cartCount !== undefined) {
+          const cartCountElement = document.getElementById('cart-count');
+          if (cartCountElement) {
+            cartCountElement.textContent = data.cartCount;
+            cartCountElement.style.display = data.cartCount > 0 ? 'flex' : 'none';
+
+            // Add animation
+            cartCountElement.style.transform = 'scale(1.2)';
+            setTimeout(() => {
+              cartCountElement.style.transform = 'scale(1)';
+            }, 200);
+          }
+        }
+
         Swal.fire({
           title: 'Added to Cart!',
           text: 'Product added to your shopping bag',

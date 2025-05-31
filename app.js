@@ -9,6 +9,7 @@ const db = require("./config/db");
 const userRouter = require("./routes/userRouter");
 const adminRouter = require("./routes/adminRouter");
 const { initOfferCronJobs } = require('./services/newOfferCronService');
+const { provideCartCount } = require('./middlewares/cartMiddleware');
 
 
 
@@ -62,6 +63,9 @@ app.use((req, res, next) => {
   res.set("Expires", "0");
   next();
 });
+
+// Add cart count middleware for user routes
+app.use(provideCartCount);
 
 
 app.use("/admin", adminRouter);

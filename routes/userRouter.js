@@ -38,6 +38,7 @@ const {
   removeFromCart,
   validateCart,
   refreshCartPrices,
+  getCartCount,
   handleProfileUpdate,
   renderProfilePage,
   handleAddress,
@@ -64,6 +65,7 @@ router.get("/shop/product/:id", checkExpiredOffers, loadProductDetail);
 // Cart Routes
 router.post("/add-to-cart",addToCart)
 router.get("/cart", renderCartPage)
+router.get("/cart/count", getCartCount)
 router.patch("/remove-from-cart", removeFromCart);
 router.post("/validate-cart", validateInventory, validateCart);
 router.post("/refresh-cart-prices", refreshCartPrices);
