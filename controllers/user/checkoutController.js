@@ -142,6 +142,12 @@ exports.renderCheckoutPage = async (req, res) => {
 
     const safeRazorpayKeyId = razorpayKeyId || 'rzp_test_UkVZCj9Q9Jy9Ja';
 
+    // Get session message and clear it
+    const sessionMessage = req.session.message;
+    if (req.session.message) {
+      delete req.session.message;
+    }
+
     res.render("checkout", {
       user,
       cartItems: validCartItems,
@@ -155,7 +161,8 @@ exports.renderCheckoutPage = async (req, res) => {
       currentStep: 1,
       isCodAllowed, // Pass COD eligibility to the frontend
       deliveryDescription, // Pass delivery description to the frontend
-      razorpayKeyId: safeRazorpayKeyId // Pass Razorpay key ID to the frontend
+      razorpayKeyId: safeRazorpayKeyId, // Pass Razorpay key ID to the frontend
+      message: sessionMessage // Pass session message to the frontend
     });
 
   } catch (error) {
@@ -224,15 +231,19 @@ exports.handleAddressSelection = async (req, res) => {
 // It places an order.
 //=================================================================================================
 exports.placeOrder = async (req, res) => {
-
+  // Force JSON response for all requests to this endpoint
   res.setHeader('Content-Type', 'application/json');
+
   try {
     const userId = req.session.user;
     const { paymentMethod, addressId, couponCode } = req.body;
+
+    // Check authentication
     if (!userId) {
       return res.status(StatusCodes.UNAUTHORIZED).json({
         success: false,
         message: "User not authenticated",
+        redirect: "/login"
       });
     }
 
@@ -675,34 +686,30 @@ exports.placeOrder = async (req, res) => {
   } catch (error) {
     console.error("Error placing order:", error);
 
-    const isAjaxRequest = req.xhr || req.headers.accept.includes('application/json');
+    // Ensure JSON response
+    res.setHeader('Content-Type', 'application/json');
 
-    if (isAjaxRequest) {
-      return res.status(StatusCodes.INTERNAL_SERVER_ERROR)
-        .header('Content-Type', 'application/json')
-        .json({
-          success: false,
-          message: "Failed to place order",
-          error: error.message,
-        });
-    }
-
-
+    // Determine appropriate error message and redirect URL
+    let errorMessage = "Failed to place order";
+    let redirectUrl = '/cart';
 
     if (error.message && error.message.includes("wallet")) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        success: false,
-        message: `Wallet payment failed: ${error.message}`,
-        error: error.message,
-        redirect: '/profile#wallet'
-      });
+      errorMessage = `Wallet payment failed: ${error.message}`;
+      redirectUrl = '/profile#wallet';
+    } else if (error.message && error.message.includes("stock")) {
+      errorMessage = "Some items in your cart are out of stock";
+      redirectUrl = '/cart';
+    } else if (error.message && error.message.includes("COD")) {
+      errorMessage = error.message;
+      redirectUrl = '/checkout';
     }
 
+    // Always return JSON
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
-      message: "Failed to place order",
+      message: errorMessage,
       error: error.message,
-      redirect: '/cart'
+      redirect: redirectUrl
     });
   }
 };

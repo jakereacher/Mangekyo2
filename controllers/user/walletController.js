@@ -123,6 +123,8 @@ const addMoney = async (req, res) => {
       errorMessage = "Database error occurred";
     }
 
+    // Ensure JSON content type is set
+    res.setHeader('Content-Type', 'application/json');
     res.status(statusCode).json({
       success: false,
       message: errorMessage,

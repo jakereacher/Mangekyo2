@@ -10,6 +10,7 @@ const userRouter = require("./routes/userRouter");
 const adminRouter = require("./routes/adminRouter");
 const { initOfferCronJobs } = require('./services/newOfferCronService');
 const { provideCartCount } = require('./middlewares/cartMiddleware');
+const { handleApiErrors, handleApiNotFound } = require('./middlewares/errorHandler');
 
 
 
@@ -67,9 +68,141 @@ app.use((req, res, next) => {
 // Add cart count middleware for user routes
 app.use(provideCartCount);
 
+// AGGRESSIVE middleware to prevent ALL JSON pages in browser (except for real AJAX API routes)
+app.use((req, res, next) => {
+  // Routes that should ALWAYS return JSON (for AJAX calls)
+  const allowedJsonRoutes = [
+    '/api/',
+    '/admin/api/',
+    '/cart/count',
+    '/wishlist/count',
+    '/wishlist/status',
+    '/wishlist/toggle',
+    '/add-to-cart',
+    '/remove-from-cart',
+    '/validate-cart',
+    '/refresh-cart-prices',
+    '/apply-coupon',
+    '/remove-coupon',
+    '/calculate-delivery-charge',
+    '/wallet/balance',
+    '/wallet/transactions',
+    '/razorpay/test',
+    '/wallet/test'
+  ];
+
+  // Check if this is a real API route that should return JSON
+  const isApiRoute = allowedJsonRoutes.some(route => req.originalUrl.includes(route)) ||
+                    req.originalUrl.startsWith('/api/') ||
+                    req.originalUrl.startsWith('/admin/api/');
+
+  if (!isApiRoute) {
+    // Check if this is an AJAX request
+    const isAjaxRequest = req.xhr ||
+                         req.headers.accept?.includes('application/json') ||
+                         req.headers['content-type']?.includes('application/json') ||
+                         req.get('X-Requested-With') === 'XMLHttpRequest' ||
+                         req.headers['x-requested-with'] === 'XMLHttpRequest';
+
+    if (!isAjaxRequest) {
+      // For ALL non-AJAX, non-API routes, override res.json to prevent JSON pages
+      const originalJson = res.json;
+      res.json = function(data) {
+        console.warn('🚫 BLOCKING JSON page for non-AJAX browser request:', req.originalUrl, 'Data:', data);
+
+      // Determine redirect URL based on the error and route
+      let redirectUrl = '/';
+
+      if (data && data.message) {
+        if (data.message.includes('not authenticated') || data.message.includes('User not authenticated') || data.message.includes('not logged in')) {
+          redirectUrl = '/login';
+        } else if (data.message.includes('cart is empty') || data.message.includes('cart')) {
+          redirectUrl = '/cart';
+        } else if (req.originalUrl.includes('checkout')) {
+          redirectUrl = '/checkout';
+        } else if (req.originalUrl.includes('profile')) {
+          redirectUrl = '/profile';
+        } else if (req.originalUrl.includes('orders')) {
+          redirectUrl = '/orders';
+        } else if (req.originalUrl.includes('wishlist')) {
+          redirectUrl = '/wishlist';
+        } else if (data.redirect) {
+          redirectUrl = data.redirect;
+        }
+      } else if (data && data.redirect) {
+        redirectUrl = data.redirect;
+      }
+
+      // Set session message
+      req.session.message = {
+        type: (data && data.success) ? 'success' : 'error',
+        text: (data && data.message) || 'An error occurred'
+      };
+
+      console.warn('🔄 Redirecting to:', redirectUrl, 'with message:', req.session.message.text);
+
+        // Force redirect instead of JSON
+        return res.redirect(redirectUrl);
+      };
+
+      // Also override res.status().json() chain
+      const originalStatus = res.status;
+      res.status = function(statusCode) {
+        const statusResult = originalStatus.call(this, statusCode);
+
+        // Override the json method on the returned object
+        const originalStatusJson = statusResult.json;
+        statusResult.json = function(data) {
+          console.warn('🚫 BLOCKING JSON page for non-AJAX browser request (via status):', req.originalUrl, 'Status:', statusCode, 'Data:', data);
+
+        // Use the same logic as above
+        let redirectUrl = '/';
+
+        if (data && data.message) {
+          if (data.message.includes('not authenticated') || data.message.includes('User not authenticated') || data.message.includes('not logged in')) {
+            redirectUrl = '/login';
+          } else if (data.message.includes('cart is empty') || data.message.includes('cart')) {
+            redirectUrl = '/cart';
+          } else if (req.originalUrl.includes('checkout')) {
+            redirectUrl = '/checkout';
+          } else if (req.originalUrl.includes('profile')) {
+            redirectUrl = '/profile';
+          } else if (req.originalUrl.includes('orders')) {
+            redirectUrl = '/orders';
+          } else if (req.originalUrl.includes('wishlist')) {
+            redirectUrl = '/wishlist';
+          } else if (data.redirect) {
+            redirectUrl = data.redirect;
+          }
+        } else if (data && data.redirect) {
+          redirectUrl = data.redirect;
+        }
+
+        // Set session message
+        req.session.message = {
+          type: (data && data.success) ? 'success' : 'error',
+          text: (data && data.message) || 'An error occurred'
+        };
+
+        console.warn('🔄 Redirecting to:', redirectUrl, 'with message:', req.session.message.text);
+
+        // Force redirect instead of JSON
+        return res.redirect(redirectUrl);
+      };
+
+      return statusResult;
+    };
+    }
+  }
+
+  next();
+});
 
 app.use("/admin", adminRouter);
 app.use("/", userRouter);
+
+// Handle API 404s after regular routes
+app.use(handleApiNotFound);
 
 
 
@@ -99,14 +232,8 @@ app.use((req, res) => {
   });
 });
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).render('error', {
-    message: 'Something went wrong!',
-    isAdmin: req.path.startsWith('/admin') // To use different error templates
-  });
-});
+// Error handling middleware - use our custom error handler
+app.use(handleApiErrors);
 
 
 

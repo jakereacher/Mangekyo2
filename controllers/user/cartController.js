@@ -15,6 +15,9 @@ const wishlistController = require('./wishlistController');
 //=================================================================================================
 
 exports.addToCart = async (req, res) => {
+  // Ensure we always return JSON
+  res.setHeader('Content-Type', 'application/json');
+
   try {
     const { productId, quantity = 1 } = req.body;
     if (!req.session || !req.session.user) {
@@ -230,13 +233,20 @@ exports.renderCartPage = async (req, res) => {
     const cartCount = currentCart ? currentCart.products.length : 0;
     const pricesUpdated = updated;
 
+    // Get session message and clear it
+    const message = req.session.message;
+    if (req.session.message) {
+      delete req.session.message;
+    }
+
     return res.render("cart", {
       name: "", // Can't access user name if session only stores userId
       userId,
       cartProducts,
       products: allProducts,
       cartCount,
-      pricesUpdated
+      pricesUpdated,
+      message
     });
   } catch (error) {
     console.error("Error rendering cart page:", error);
@@ -251,6 +261,9 @@ exports.renderCartPage = async (req, res) => {
 // Used for AJAX requests to update cart count in real-time.
 //=================================================================================================
 exports.getCartCount = async (req, res) => {
+  // Ensure we always return JSON
+  res.setHeader('Content-Type', 'application/json');
+
   try {
     if (!req.session || !req.session.user) {
       return res.status(StatusCodes.OK).json({
@@ -284,6 +297,9 @@ exports.getCartCount = async (req, res) => {
 // It removes a product from the cart.
 //=================================================================================================
 exports.removeFromCart = async (req, res) => {
+  // Ensure we always return JSON
+  res.setHeader('Content-Type', 'application/json');
+
   try {
     const { productId } = req.body;
     const userId = req.session?.user;
@@ -339,6 +355,9 @@ exports.removeFromCart = async (req, res) => {
 // It refreshes the cart prices.
 //=================================================================================================
 exports.refreshCartPrices = async (req, res) => {
+  // Ensure we always return JSON
+  res.setHeader('Content-Type', 'application/json');
+
   try {
     const userId = req.session?.user;
 
@@ -385,6 +404,9 @@ exports.refreshCartPrices = async (req, res) => {
 // It validates the cart.
 //=================================================================================================
 exports.validateCart = async (req, res) => {
+  // Ensure we always return JSON
+  res.setHeader('Content-Type', 'application/json');
+
   try {
     const userId = req.session?.user;
 

@@ -306,6 +306,38 @@ const getOrderDetails = async (req, res) => {
 
         offerType: item.product.offer && item.product.offer.discountType ? item.product.offer.discountType : 'percentage',
         totalPrice: (item.price * item.quantity).toFixed(2),
+
+        // Ensure return status fields are preserved
+        order_return_status: item.order_return_status || null,
+        returnReason: item.returnReason || null,
+        adminResponse: item.adminResponse || null,
+        order_return_request_date: item.order_return_request_date || null,
+        order_delivered_date: item.order_delivered_date || null,
+
+        // Calculate if return period is still valid (7 days from delivery)
+        canReturn: (() => {
+          const isDelivered = item.status === 'Delivered';
+          const hasDeliveryDate = !!item.order_delivered_date;
+          // Allow return if no return request has been made yet (null status) OR if return was rejected
+          const canMakeReturnRequest = !item.order_return_status || item.order_return_status === 'Rejected';
+          const withinReturnPeriod = hasDeliveryDate && (Date.now() - new Date(item.order_delivered_date).getTime()) <= (7 * 24 * 60 * 60 * 1000);
+
+          const canReturn = isDelivered && hasDeliveryDate && canMakeReturnRequest && withinReturnPeriod;
+
+          // Debug logging for troubleshooting (only for delivered items)
+          if (isDelivered) {
+            console.log(`Item ${item.product._id || item.product} return check:`, {
+              status: item.status,
+              deliveryDate: item.order_delivered_date,
+              returnStatus: item.order_return_status,
+              canMakeReturnRequest,
+              withinReturnPeriod,
+              canReturn
+            });
+          }
+
+          return canReturn;
+        })(),
       })),
       subtotal: subtotal.toFixed(2),
       shipping: shipping.toFixed(2),
@@ -878,7 +910,7 @@ const requestReturn = async (req, res) => {
     }
 
     // Check if there's already a pending return request
-    if (item.status === "Return Request" || item.order_return_status === "Pending") {
+    if (item.status === "Return Request" || (item.order_return_status === "Pending" && item.order_return_request_date)) {
       return res.status(400).json({
         success: false,
         message: "A return request for this item is already pending",
@@ -897,6 +929,7 @@ const requestReturn = async (req, res) => {
 
     item.status = "Return Request";
     item.order_return_request_date = new Date();
+    item.order_return_status = "Pending";
     item.returnReason = returnReason;
 
     await order.save();

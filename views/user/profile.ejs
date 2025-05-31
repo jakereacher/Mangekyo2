@@ -258,7 +258,7 @@
                                         </div>
                                         <div class="flex-1">
                                             <h4 class="font-medium">${item.product ? item.product.productName : 'Product not available'}</h4>
-                                            <p class="text-sm text-gray-600">Qty: ${item.quantity} × ₹${item.price.toFixed(2)}</p>
+                                            <p class="text-sm text-gray-600">Qty: ${item.quantity} × ₹${Math.round(item.price)}</p>
                                             <p class="text-xs mt-1">
                                                 Status:
                                                 <span class="${item.status === 'Delivered' ? 'text-green-600' : ''}
@@ -276,7 +276,7 @@
                             <div class="flex justify-between items-center mt-4 pt-3 border-t border-gray-200">
                                 <div>
                                     <p class="text-gray-600 text-sm">Ordered on ${new Date(order.orderDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
-                                    <p class="font-medium">Total: $${order.finalAmount.toFixed(2)}</p>
+                                    <p class="font-medium">Total: ₹${Math.round(order.finalAmount)}</p>
                                 </div>
                                 <div class="flex gap-2">
                                     <a href="/orders/${order._id}" class="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm flex items-center">

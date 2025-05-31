@@ -165,7 +165,7 @@
                     <div class="space-y-3 mb-4">
                         <div class="flex justify-between">
                             <span class="text-gray-600">Subtotal (<span id="itemCount"><%= order.items.length %></span> items)</span>
-                            <span id="subtotal">$<%= order.subtotal %></span>
+                            <span id="subtotal">₹<%= Math.round(parseFloat(order.subtotal)) %></span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-600">
@@ -174,16 +174,16 @@
                                     <span class="text-xs text-blue-600 block">(<%= order.deliveryDescription %>)</span>
                                 <% } %>
                             </span>
-                            <span id="shipping">$<%= order.shipping %></span>
+                            <span id="shipping">₹<%= Math.round(parseFloat(order.shipping)) %></span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-600">Tax</span>
-                            <span id="tax">$<%= order.tax %></span>
+                            <span id="tax">₹<%= Math.round(parseFloat(order.tax)) %></span>
                         </div>
                         <% if (order.discount > 0) { %>
                             <div class="flex justify-between">
                                 <span class="text-gray-600">Discount</span>
-                                <span id="discount">-$<%= order.discount %></span>
+                                <span id="discount">-₹<%= Math.round(parseFloat(order.discount)) %></span>
                             </div>
                             <% if (order.couponCode) { %>
                                 <div class="flex justify-between text-sm text-green-600">
@@ -196,16 +196,16 @@
                         <% if (order.discount > 0 && order.couponCode) { %>
                             <div class="flex justify-between font-bold text-lg line-through text-gray-500">
                                 <span>Original Total</span>
-                                <span id="originalTotal">$<%= (parseFloat(order.total) + parseFloat(order.discount)).toFixed(2) %></span>
+                                <span id="originalTotal">₹<%= Math.round(parseFloat(order.total) + parseFloat(order.discount)) %></span>
                             </div>
                             <div class="flex justify-between font-bold text-lg text-green-600 mt-1">
                                 <span>Total After Discount</span>
-                                <span id="total">$<%= order.total %></span>
+                                <span id="total">₹<%= Math.round(parseFloat(order.total)) %></span>
                             </div>
                         <% } else { %>
                             <div class="flex justify-between font-bold text-lg">
                                 <span>Total</span>
-                                <span id="total">$<%= order.total %></span>
+                                <span id="total">₹<%= Math.round(parseFloat(order.total)) %></span>
                             </div>
                         <% } %>
                     </div>
@@ -256,7 +256,7 @@
                         <i class="fas fa-tag mr-2"></i> Coupon Applied
                     </h2>
                     <p class="text-gray-600">Code: <span class="font-medium text-green-600"><%= order.couponCode %></span></p>
-                    <p class="text-gray-600">Discount: <span class="font-medium text-green-600">$<%= order.discount %></span></p>
+                    <p class="text-gray-600">Discount: <span class="font-medium text-green-600">₹<%= Math.round(parseFloat(order.discount)) %></span></p>
                 </div>
                 <% } %>
             </div>

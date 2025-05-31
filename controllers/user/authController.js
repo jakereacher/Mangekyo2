@@ -38,9 +38,15 @@ const DEMO_USERS = {
 const loadLoginpage = async (req, res) => {
   try {
     if (!req.session.user) {
+      // Get session message and clear it
+      const sessionMessage = req.session.message;
+      if (req.session.message) {
+        delete req.session.message;
+      }
+
       return res.render("login", {
         demoUsers: DEMO_USERS,
-        message: req.query.message
+        message: sessionMessage?.text || req.query.message
       });
     }
     res.redirect("/home");

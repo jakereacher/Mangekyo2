@@ -84,6 +84,26 @@
     </nav>
 
     <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- Session Messages -->
+        <% if (typeof message !== 'undefined' && message) { %>
+            <div class="alert mb-4 p-4 rounded-lg border">
+                <div class="flex items-center">
+                    <% if (message.type === 'error') { %>
+                        <i class="ri-error-warning-line text-red-500 mr-2"></i>
+                        <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded w-full">
+                    <% } else if (message.type === 'success') { %>
+                        <i class="ri-check-circle-line text-green-500 mr-2"></i>
+                        <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded w-full">
+                    <% } else { %>
+                        <i class="ri-information-line text-blue-500 mr-2"></i>
+                        <div class="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded w-full">
+                    <% } %>
+                        <%= message.text %>
+                    </div>
+                </div>
+            </div>
+        <% } %>
+
         <!-- Main Checkout Content -->
         <div class="flex flex-col lg:flex-row gap-6">
             <!-- Left Column - Checkout Steps -->
@@ -365,8 +385,8 @@
                             <span id="shippingPrice">₹<%= shipping %></span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Tax (9%)</span>
-                            <span>₹<%= tax %></span>
+                            <span class="text-gray-600">Tax (9% of subtotal)</span>
+                            <span id="taxAmount">₹<%= tax %></span>
                         </div>
                         <div id="discountSection" class="hidden">
                             <div class="flex justify-between">
@@ -522,6 +542,51 @@
     </div>
 
     <script>
+        // Check if current page is showing JSON content (error handling)
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if the page content looks like JSON
+            const bodyText = document.body.textContent.trim();
+            if (bodyText.startsWith('{') && bodyText.endsWith('}')) {
+                try {
+                    const jsonData = JSON.parse(bodyText);
+                    if (jsonData.success === false && jsonData.message) {
+                        // This is a JSON error response, show it properly
+                        Swal.fire({
+                            title: 'Error',
+                            text: jsonData.message,
+                            icon: 'error',
+                            confirmButtonText: 'OK'
+                        }).then(() => {
+                            // Redirect based on the error type
+                            if (jsonData.redirect) {
+                                window.location.href = jsonData.redirect;
+                            } else {
+                                window.location.href = '/checkout';
+                            }
+                        });
+                        return;
+                    }
+                } catch (parseError) {
+                    // Not JSON, continue normally
+                }
+            }
+        });
+
+        // Global error handler to prevent JSON pages from showing
+        window.addEventListener('error', function(e) {
+            // Check if we're dealing with a fetch error that might result in JSON display
+            if (e.message && e.message.includes('JSON')) {
+                console.error('JSON error detected:', e);
+                Swal.fire({
+                    title: 'Error',
+                    text: 'An error occurred while processing your request. Please try again.',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+                return true; // Prevent default error handling
+            }
+        });
+
         // Global variables to store checkout data
         let selectedAddressId = '<%= defaultAddress ? defaultAddress._id : "" %>';
         let selectedPaymentMethod = '';
@@ -531,7 +596,12 @@
         // Initialize current values for calculations
         window.currentSubtotal = parseFloat('<%= subtotal %>');
         window.currentShipping = parseFloat('<%= shipping %>');
+        // Tax should remain constant throughout checkout (9% of original subtotal)
         window.currentTax = parseFloat('<%= tax %>');
+        window.FIXED_TAX_AMOUNT = parseFloat('<%= tax %>'); // Store the fixed tax amount
+
+        // Log the fixed tax amount for debugging
+        console.log(`Tax is fixed at ₹${window.FIXED_TAX_AMOUNT} (9% of subtotal ₹${window.currentSubtotal}) and will remain constant throughout checkout`);
         let checkoutData = {
             addressId: selectedAddressId,
             paymentMethod: '',
@@ -583,10 +653,10 @@
             // Hide the discounted total section
             document.getElementById('discountedTotalSection').classList.add('hidden');
 
-            // Reset the final total using current values
-            const currentSubtotal = parseFloat('<%= subtotal %>');
+            // Reset the final total using current values with fixed tax
+            const currentSubtotal = window.currentSubtotal;
             const currentShipping = window.currentShipping !== undefined ? window.currentShipping : parseFloat('<%= shipping %>');
-            const currentTax = parseFloat('<%= tax %>');
+            const currentTax = window.FIXED_TAX_AMOUNT; // Use fixed tax amount
             const resetTotal = currentSubtotal + currentShipping + currentTax;
 
             console.log(`Resetting total with current values - Subtotal: ${currentSubtotal}, Shipping: ${currentShipping}, Tax: ${currentTax}, Total: ${resetTotal}`);
@@ -767,13 +837,13 @@
             async function applyCoupon() {
                 console.log('applyCoupon function called');
                 const couponCode = couponCodeInput.value.trim();
-                const subtotal = parseFloat('<%= subtotal %>');
+                const subtotal = window.currentSubtotal;
                 // Use the current shipping price if available, otherwise use the initial value
                 const shipping = window.currentShipping !== undefined ? window.currentShipping : parseFloat('<%= shipping %>');
-                const tax = parseFloat('<%= tax %>');
+                const tax = window.FIXED_TAX_AMOUNT; // Use fixed tax amount
                 const currentTotal = subtotal + shipping + tax;
 
-                console.log(`Applying coupon with current values - Subtotal: ${subtotal}, Shipping: ${shipping}, Tax: ${tax}, Total: ${currentTotal}`);
+                console.log(`Applying coupon with current values - Subtotal: ${subtotal}, Shipping: ${shipping}, Tax: ${tax} (fixed), Total: ${currentTotal}`);
 
                 if (!couponCode) {
                     showCouponError(
@@ -1056,15 +1126,15 @@
                                     console.log(`Updated shipping label with description: ${result.deliveryDescription}`);
                                 }
 
-                                // Update the total amount
-                                const subtotal = parseFloat('<%= subtotal %>');
-                                const tax = parseFloat('<%= tax %>');
+                                // Update the total amount using fixed tax
+                                const subtotal = window.currentSubtotal;
+                                const tax = window.FIXED_TAX_AMOUNT; // Use fixed tax amount
                                 const newTotal = subtotal + result.shipping + tax;
                                 console.log(`Calculating new total: ${subtotal} + ${result.shipping} + ${tax} = ${newTotal}`);
+                                console.log(`Tax remains fixed at: ₹${tax} (9% of original subtotal)`);
 
                                 // Store the current values for future calculations
-                                window.currentSubtotal = subtotal;
-                                window.currentTax = tax;
+                                window.currentShipping = result.shipping;
                                 window.currentTotal = newTotal;
 
                                 // Update the total in the UI
@@ -1467,12 +1537,13 @@
                     console.log('Direct coupon application response:', data);
 
                     if (data.success) {
-                        // Update global variables
+                        // Update global variables using current values with fixed tax
+                        const currentShipping = window.currentShipping !== undefined ? window.currentShipping : parseFloat('<%= shipping %>');
                         appliedCoupon = {
                             code: data.coupon.code,
                             couponId: data.coupon.id,
                             discount: data.discount,
-                            finalAmount: (subtotal + parseFloat('<%= shipping %>') + parseFloat('<%= tax %>')) - data.discount
+                            finalAmount: (subtotal + currentShipping + window.FIXED_TAX_AMOUNT) - data.discount
                         };
 
                         // Update checkout data
@@ -1574,7 +1645,8 @@
                 const response = await fetch('/checkout/place-order', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
                     },
                     body: JSON.stringify({
                         paymentMethod: selectedPaymentMethod,
@@ -1652,7 +1724,8 @@
                             const razorpayResponse = await fetch('/razorpay/create-order', {
                                 method: 'POST',
                                 headers: {
-                                    'Content-Type': 'application/json'
+                                    'Content-Type': 'application/json',
+                                    'X-Requested-With': 'XMLHttpRequest'
                                 },
                                 body: JSON.stringify({
                                     orderId: result.orderId
@@ -1770,7 +1843,8 @@
                                         const verifyResponse = await fetch('/razorpay/verify-payment', {
                                             method: 'POST',
                                             headers: {
-                                                'Content-Type': 'application/json'
+                                                'Content-Type': 'application/json',
+                                                'X-Requested-With': 'XMLHttpRequest'
                                             },
                                             body: JSON.stringify({
                                                 razorpay_order_id: response.razorpay_order_id,

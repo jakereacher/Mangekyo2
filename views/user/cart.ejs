@@ -145,6 +145,26 @@
 
     <!-- Main Content with Side-by-Side Layout -->
     <main class="container mx-auto px-4 py-6">
+        <!-- Session Messages -->
+        <% if (typeof message !== 'undefined' && message) { %>
+            <div class="alert alert-<%= message.type === 'error' ? 'danger' : message.type %> mb-4 p-4 rounded-lg border">
+                <div class="flex items-center">
+                    <% if (message.type === 'error') { %>
+                        <i class="ri-error-warning-line text-red-500 mr-2"></i>
+                        <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded w-full">
+                    <% } else if (message.type === 'success') { %>
+                        <i class="ri-check-circle-line text-green-500 mr-2"></i>
+                        <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded w-full">
+                    <% } else { %>
+                        <i class="ri-information-line text-blue-500 mr-2"></i>
+                        <div class="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded w-full">
+                    <% } %>
+                        <%= message.text %>
+                    </div>
+                </div>
+            </div>
+        <% } %>
+
         <% if (cartProducts && cartProducts.length > 0) { %>
             <!-- Side-by-side layout for cart items and checkout summary -->
             <div class="cart-layout flex flex-col md:flex-row gap-6">

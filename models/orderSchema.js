@@ -86,7 +86,7 @@ const orderSchema = new Schema({
       order_return_status: {
         type: String,
         enum: ["Pending", "Approved", "Rejected"],
-        default: "Pending",
+        default: null,
       },
       returnReason: {
         type: String,
