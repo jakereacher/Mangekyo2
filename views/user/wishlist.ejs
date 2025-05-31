@@ -43,7 +43,7 @@
                   </svg>
                 </button>
 
-                <% if (item.isOnOffer) { %>
+                <% if (item.hasOffer) { %>
                   <div class="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
                     <%= item.badge %>
                   </div>
@@ -60,14 +60,20 @@
 
                 <div class="flex items-center justify-between mt-4">
                   <div>
-                    <% if (item.isOnOffer) { %>
-                      <span class="text-gray-400 line-through text-sm mr-1">
-                        $<%= item.regularPrice ? item.regularPrice.toFixed(2) : '0.00' %>
+                    <% if (item.hasOffer && item.originalPrice) { %>
+                      <div class="flex items-center gap-2">
+                        <span class="text-lg font-bold text-[#00ffff]">
+                          ₹<%= item.finalPrice %>
+                        </span>
+                        <span class="text-gray-400 line-through text-sm">
+                          ₹<%= item.originalPrice %>
+                        </span>
+                      </div>
+                    <% } else { %>
+                      <span class="text-lg font-bold text-[#00ffff]">
+                        ₹<%= item.price || item.finalPrice %>
                       </span>
                     <% } %>
-                    <span class="text-lg font-bold text-[#00ffff]">
-                      $<%= item.salePrice ? item.salePrice.toFixed(2) : '0.00' %>
-                    </span>
                   </div>
 
                   <% if (item.outOfStock) { %>

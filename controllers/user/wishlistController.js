@@ -27,10 +27,20 @@ exports.getWishlist = async (req, res) => {
       .populate({
         path: 'products.productId',
         model: 'Product',
-        populate: {
-          path: 'category',
-          model: 'Category'
-        }
+        populate: [
+          {
+            path: 'category',
+            model: 'Category',
+            populate: {
+              path: 'offer',
+              model: 'Offer'
+            }
+          },
+          {
+            path: 'offer',
+            model: 'Offer'
+          }
+        ]
       })
       .exec();
 
@@ -55,20 +65,68 @@ exports.getWishlist = async (req, res) => {
         ? product.productImage[0]
         : null;
 
+      // Calculate pricing with offers
+      const basePrice = product.price || 0;
+      let finalPrice = basePrice;
+      let hasOffer = false;
+      let discountPercentage = 0;
+      let discountAmount = 0;
+      let discountType = null;
+
+      // Check for product offers
+      if (product.offer && product.offer.isActive &&
+          new Date() >= new Date(product.offer.startDate) &&
+          new Date() <= new Date(product.offer.endDate)) {
+        hasOffer = true;
+        discountType = product.offer.discountType;
+
+        if (product.offer.discountType === 'percentage') {
+          discountPercentage = product.offer.discountValue;
+          discountAmount = (basePrice * discountPercentage) / 100;
+          finalPrice = basePrice - discountAmount;
+        } else if (product.offer.discountType === 'fixed') {
+          discountAmount = product.offer.discountValue;
+          finalPrice = Math.max(0, basePrice - discountAmount);
+          discountPercentage = basePrice > 0 ? (discountAmount / basePrice) * 100 : 0;
+        }
+      }
+
+      // Check for category offers if no product offer
+      if (!hasOffer && product.category && product.category.offer &&
+          product.category.offer.isActive &&
+          new Date() >= new Date(product.category.offer.startDate) &&
+          new Date() <= new Date(product.category.offer.endDate)) {
+        hasOffer = true;
+        discountType = product.category.offer.discountType;
+
+        if (product.category.offer.discountType === 'percentage') {
+          discountPercentage = product.category.offer.discountValue;
+          discountAmount = (basePrice * discountPercentage) / 100;
+          finalPrice = basePrice - discountAmount;
+        } else if (product.category.offer.discountType === 'fixed') {
+          discountAmount = product.category.offer.discountValue;
+          finalPrice = Math.max(0, basePrice - discountAmount);
+          discountPercentage = basePrice > 0 ? (discountAmount / basePrice) * 100 : 0;
+        }
+      }
+
       return {
         id: product._id.toString(),
         name: product.productName,
         description: product.description,
         category: product.category?.name || 'General',
-        regularPrice: product.regularPrice,
-        salePrice: product.salePrice,
-        image: mainImage, // Just store the image filename
+        price: Math.round(basePrice),
+        finalPrice: Math.round(finalPrice),
+        originalPrice: hasOffer ? Math.round(basePrice) : null,
+        discount: Math.round(discountPercentage),
+        discountAmount: Math.round(discountAmount),
+        discountType: discountType,
+        hasOffer: hasOffer,
+        image: mainImage,
         status: product.status,
         quantity: product.quantity || 0,
         addedOn: item.addedOn,
-        isOnOffer: product.productOffer,
-        offerPercentage: product.offerPercentage,
-        badge: product.productOffer ? `${product.offerPercentage}% OFF` : null,
+        badge: hasOffer ? (discountType === 'fixed' ? `₹${Math.round(discountAmount)} OFF` : `${Math.round(discountPercentage)}% OFF`) : null,
         inCart: cartProductIds.includes(product._id.toString()),
         outOfStock: product.quantity <= 0
       };

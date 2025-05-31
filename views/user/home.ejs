@@ -62,6 +62,16 @@
                         <% } else if (new Date() - product.createdAt < 7 * 24 * 60 * 60 * 1000 && product.quantity > 0) { %>
                             <div class="absolute top-2 right-2 bg-white text-black text-xs font-bold px-2 py-1 rounded">NEW</div>
                         <% } %>
+
+                        <% if (locals.user) { %>
+                            <button class="wishlist-btn absolute top-2 left-2 p-1 bg-white bg-opacity-80 rounded-full hover:bg-opacity-100 transition"
+                                    data-product-id="<%= product._id %>"
+                                    data-product-name="<%= product.productName %>">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                </svg>
+                            </button>
+                        <% } %>
                     </a>
                 </div>
                 <div class="p-4">
@@ -163,6 +173,143 @@
         window.addEventListener('scroll', function () {
             const scrollPercentage = window.scrollY / (window.innerHeight / 2);
             glitchText.style.opacity = scrollPercentage < 1 ? 1 - scrollPercentage : 0;
+        });
+
+        // Load initial wishlist state
+        async function loadWishlistState() {
+            const wishlistButtons = document.querySelectorAll('.wishlist-btn');
+
+            for (const button of wishlistButtons) {
+                const productId = button.getAttribute('data-product-id');
+
+                try {
+                    const response = await fetch(`/wishlist/status/${productId}`);
+                    const data = await response.json();
+
+                    if (data.success && data.isInWishlist) {
+                        button.innerHTML = `
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500" fill="red" viewBox="0 0 24 24" stroke="red">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                            </svg>
+                        `;
+                    }
+                } catch (error) {
+                    console.error('Error loading wishlist state for product:', productId, error);
+                }
+            }
+        }
+
+        // Load wishlist state on page load
+        loadWishlistState();
+
+        // Wishlist functionality
+        document.querySelectorAll('.wishlist-btn').forEach(button => {
+            button.addEventListener('click', async function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const productId = this.getAttribute('data-product-id');
+                const productName = this.getAttribute('data-product-name');
+                const heartIcon = this.querySelector('svg');
+                const originalContent = this.innerHTML;
+
+                // Show loading state
+                this.innerHTML = '<svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+                this.disabled = true;
+
+                try {
+                    const response = await fetch('/wishlist/toggle', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({
+                            productId: productId
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        // Update heart icon based on action
+                        if (data.action === 'added') {
+                            this.innerHTML = `
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500" fill="red" viewBox="0 0 24 24" stroke="red">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                </svg>
+                            `;
+
+                            if (typeof Swal !== 'undefined') {
+                                Swal.fire({
+                                    title: 'Added to Wishlist!',
+                                    text: `${productName} has been added to your wishlist`,
+                                    icon: 'success',
+                                    timer: 2000,
+                                    showConfirmButton: false,
+                                    background: '#1F2937',
+                                    color: 'white'
+                                });
+                            }
+                        } else {
+                            this.innerHTML = `
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                </svg>
+                            `;
+
+                            if (typeof Swal !== 'undefined') {
+                                Swal.fire({
+                                    title: 'Removed from Wishlist',
+                                    text: `${productName} has been removed from your wishlist`,
+                                    icon: 'info',
+                                    timer: 2000,
+                                    showConfirmButton: false,
+                                    background: '#1F2937',
+                                    color: 'white'
+                                });
+                            }
+                        }
+
+                        this.disabled = false;
+
+                    } else {
+                        // Show error message
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                title: 'Error',
+                                text: data.error || 'Failed to update wishlist',
+                                icon: 'error',
+                                confirmButtonColor: '#00ffff',
+                                background: '#1F2937',
+                                color: 'white'
+                            });
+                        }
+
+                        // Reset button
+                        this.innerHTML = originalContent;
+                        this.disabled = false;
+                    }
+                } catch (error) {
+                    console.error('Error updating wishlist:', error);
+
+                    // Show error message
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            title: 'Error',
+                            text: 'Something went wrong. Please try again.',
+                            icon: 'error',
+                            confirmButtonColor: '#00ffff',
+                            background: '#1F2937',
+                            color: 'white'
+                        });
+                    }
+
+                    // Reset button
+                    this.innerHTML = originalContent;
+                    this.disabled = false;
+                }
+            });
         });
 
         // Add to cart functionality
