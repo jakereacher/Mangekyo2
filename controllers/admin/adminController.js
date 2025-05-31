@@ -606,7 +606,7 @@ const getDashboardOrders = async (req, res) => {
         orderId: order.orderNumber || `MK${order._id.toString().slice(-5)}`,
         customer: order.userId ? order.userId.name : "Unknown",
         date: moment(order.orderDate).format("MMM DD, YYYY"),
-        amount: `₹${order.finalAmount.toFixed(2)}`,
+        amount: `₹${Math.round(order.orderedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) + (order.shippingCharge || 0) + (order.taxAmount || 0) - (order.discount || 0))}`,
         status: overallStatus
       };
     });

@@ -141,11 +141,11 @@
         <div class="mb-6">
           <% if (product.hasOffer && product.discount > 0) { %>
             <div class="flex items-center mb-2">
-              <span class="text-3xl font-bold text-[#00ffff]">$<%= product.displayPrice ? product.displayPrice.toFixed(2) : '0.00' %></span>
-              <span class="text-gray-400 line-through text-xl ml-3">$<%= product.price ? product.price.toFixed(2) : '0.00' %></span>
+              <span class="text-3xl font-bold text-[#00ffff]">₹<%= product.displayPrice ? Math.round(product.displayPrice) : '0' %></span>
+              <span class="text-gray-400 line-through text-xl ml-3">₹<%= product.price ? Math.round(product.price) : '0' %></span>
               <span class="ml-3 bg-red-600 text-white text-sm px-2 py-1 rounded">
                 <% if (product.discountType === 'fixed') { %>
-                  $<%= Math.round(product.discountAmount) %> OFF
+                  ₹<%= Math.round(product.discountAmount) %> OFF
                 <% } else { %>
                   <%= Math.round(product.discount) %>% OFF
                 <% } %>
@@ -170,7 +170,7 @@
               </div>
             <% } %>
           <% } else { %>
-            <span class="text-3xl font-bold text-[#00ffff]">$<%= product.price ? product.price.toFixed(2) : '0.00' %></span>
+            <span class="text-3xl font-bold text-[#00ffff]">₹<%= product.price ? Math.round(product.price) : '0' %></span>
           <% } %>
         </div>
 
@@ -586,11 +586,11 @@
               <div>
                 <% if (relatedProduct.hasOffer && relatedProduct.discount > 0) { %>
                   <div class="flex items-center">
-                    <span class="text-lg font-bold text-[#00ffff]">$<%= relatedProduct.displayPrice ? relatedProduct.displayPrice.toFixed(2) : '0.00' %></span>
-                    <span class="text-gray-400 line-through text-sm ml-2">$<%= relatedProduct.price ? relatedProduct.price.toFixed(2) : '0.00' %></span>
+                    <span class="text-lg font-bold text-[#00ffff]">₹<%= relatedProduct.displayPrice ? Math.round(relatedProduct.displayPrice) : '0' %></span>
+                    <span class="text-gray-400 line-through text-sm ml-2">₹<%= relatedProduct.price ? Math.round(relatedProduct.price) : '0' %></span>
                   </div>
                 <% } else { %>
-                  <span class="text-lg font-bold text-[#00ffff]">$<%= relatedProduct.price ? relatedProduct.price.toFixed(2) : '0.00' %></span>
+                  <span class="text-lg font-bold text-[#00ffff]">₹<%= relatedProduct.price ? Math.round(relatedProduct.price) : '0' %></span>
                 <% } %>
               </div>
 

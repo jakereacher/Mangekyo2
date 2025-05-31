@@ -220,7 +220,7 @@
         }
 
         const finalPrice = samplePrice - discountAmount;
-        document.getElementById('productFinalPriceExample').textContent = finalPrice.toFixed(2);
+        document.getElementById('productFinalPriceExample').textContent = Math.round(finalPrice);
 
         productOfferPreview.style.display = 'block';
       } else {

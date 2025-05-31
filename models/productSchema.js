@@ -78,9 +78,9 @@ const productSchema = new Schema({
 productSchema.virtual('finalPrice').get(function() {
   if (this.offerPercentage > 0) {
     const discountAmount = (this.price * this.offerPercentage) / 100;
-    return this.price - discountAmount;
+    return Math.round(this.price - discountAmount);
   }
-  return this.price;
+  return Math.round(this.price);
 });
 
 // Method to calculate and update offer details

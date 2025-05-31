@@ -15,23 +15,23 @@
             <!-- Filters Sidebar (Reused from shop.ejs) -->
             <div class="bg-gray-800 p-6 rounded-lg">
                 <h3 class="text-2xl font-bold mb-6 text-[#00ffff]">Filters</h3>
-                
+
                 <form id="filterForm" action="/products" method="GET" class="space-y-8">
                     <!-- Search -->
                     <div>
                         <label for="search" class="block mb-2 font-medium">Search</label>
                         <div class="relative">
-                            <input 
-                                type="text" 
-                                id="search" 
-                                name="search" 
+                            <input
+                                type="text"
+                                id="search"
+                                name="search"
                                 value="<%= locals.query ? query.search || '' : '' %>"
-                                placeholder="Search products..." 
+                                placeholder="Search products..."
                                 class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-[#00ffff] focus:outline-none"
                             >
-                            <button 
-                                type="button" 
-                                id="clearSearch" 
+                            <button
+                                type="button"
+                                id="clearSearch"
                                 class="absolute right-3 top-3 text-gray-400 hover:text-white"
                                 <%= !locals.query || !query.search ? 'style="display: none;"' : '' %>
                             >
@@ -41,13 +41,13 @@
                             </button>
                         </div>
                     </div>
-                    
+
                     <!-- Sort -->
                     <div>
                         <label for="sort" class="block mb-2 font-medium">Sort By</label>
-                        <select 
-                            id="sort" 
-                            name="sort" 
+                        <select
+                            id="sort"
+                            name="sort"
                             class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-[#00ffff] focus:outline-none"
                         >
                             <option value="default" <%= locals.query && query.sort === 'default' ? 'selected' : '' %>>Featured</option>
@@ -57,17 +57,17 @@
                             <option value="name_desc" <%= locals.query && query.sort === 'name_desc' ? 'selected' : '' %>>Name: Z to A</option>
                         </select>
                     </div>
-                    
+
                     <!-- Category Filter -->
                     <div>
                         <h4 class="font-medium mb-2">Categories</h4>
                         <div class="space-y-2">
                             <div class="flex items-center">
-                                <input 
-                                    type="checkbox" 
-                                    id="category_all" 
-                                    name="category" 
-                                    value="all" 
+                                <input
+                                    type="checkbox"
+                                    id="category_all"
+                                    name="category"
+                                    value="all"
                                     class="mr-2 accent-[#00ffff]"
                                     <%= !locals.query || !query.category || query.category === 'all' ? 'checked' : '' %>
                                 >
@@ -76,11 +76,11 @@
                             <% if (locals.categories && categories.length > 0) { %>
                                 <% categories.forEach(cat => { %>
                                     <div class="flex items-center">
-                                        <input 
-                                            type="checkbox" 
-                                            id="category_<%= cat.name.toLowerCase() %>" 
-                                            name="category" 
-                                            value="<%= cat.name.toLowerCase() %>" 
+                                        <input
+                                            type="checkbox"
+                                            id="category_<%= cat.name.toLowerCase() %>"
+                                            name="category"
+                                            value="<%= cat.name.toLowerCase() %>"
                                             class="mr-2 accent-[#00ffff]"
                                             <%= locals.query && query.category && query.category.includes(cat.name.toLowerCase()) ? 'checked' : '' %>
                                         >
@@ -90,54 +90,54 @@
                             <% } %>
                         </div>
                     </div>
-                    
+
                     <!-- Price Range Filter -->
                     <div>
                         <h4 class="font-medium mb-2">Price Range</h4>
                         <div class="flex flex-col space-y-4">
                             <div>
                                 <label for="min_price" class="text-sm">Min Price ($)</label>
-                                <input 
-                                    type="number" 
-                                    id="min_price" 
-                                    name="min_price" 
-                                    min="0" 
+                                <input
+                                    type="number"
+                                    id="min_price"
+                                    name="min_price"
+                                    min="0"
                                     value="<%= locals.query && query.min_price ? query.min_price : '0' %>"
                                     class="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-[#00ffff] focus:outline-none"
                                 >
                             </div>
                             <div>
                                 <label for="max_price" class="text-sm">Max Price ($)</label>
-                                <input 
-                                    type="number" 
-                                    id="max_price" 
-                                    name="max_price" 
-                                    min="0" 
+                                <input
+                                    type="number"
+                                    id="max_price"
+                                    name="max_price"
+                                    min="0"
                                     value="<%= locals.query && query.max_price ? query.max_price : '200' %>"
                                     class="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-[#00ffff] focus:outline-none"
                                 >
                             </div>
                             <div class="relative pt-5">
                                 <div class="h-1 bg-gray-600 rounded-full">
-                                    <div 
-                                        id="priceRangeIndicator" 
+                                    <div
+                                        id="priceRangeIndicator"
                                         class="absolute h-1 bg-[#00ffff] rounded-full"
                                     ></div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Apply Filters Button -->
                     <div class="flex space-x-3">
-                        <button 
-                            type="submit" 
+                        <button
+                            type="submit"
                             class="px-6 py-3 bg-[#00ffff] text-black font-bold rounded-lg hover:bg-[#0088ff] transition w-full"
                         >
                             Apply Filters
                         </button>
-                        <button 
-                            type="button" 
+                        <button
+                            type="button"
                             id="resetFilters"
                             class="px-6 py-3 border border-[#00ffff] text-[#00ffff] font-bold rounded-lg hover:bg-gray-700 transition"
                         >
@@ -146,7 +146,7 @@
                     </div>
                 </form>
             </div>
-            
+
             <!-- Products Grid -->
             <div class="lg:col-span-3">
                 <div class="flex justify-between items-center mb-6">
@@ -158,7 +158,7 @@
                         <% } %>
                     </h2>
                 </div>
-                
+
                 <% if (locals.products && products.length === 0) { %>
                     <div class="bg-gray-800 rounded-lg p-8 text-center">
                         <h3 class="text-xl font-bold mb-2">No Products Found</h3>
@@ -188,9 +188,9 @@
                                             <div class="flex justify-between items-center">
                                                 <div>
                                                     <% if (product.originalPrice && product.originalPrice > product.price) { %>
-                                                        <span class="text-gray-400 line-through text-sm mr-2">$<%= product.originalPrice.toFixed(2) %></span>
+                                                        <span class="text-gray-400 line-through text-sm mr-2">₹<%= product.originalPrice.toFixed(2) %></span>
                                                     <% } %>
-                                                    <span class="text-[#00ffff] font-bold">$<%= product.price.toFixed(2) %></span>
+                                                    <span class="text-[#00ffff] font-bold">₹<%= product.price.toFixed(2) %></span>
                                                 </div>
                                                 <button class="p-2 bg-[#00ffff] text-black rounded hover:bg-[#0088ff] transition">
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -204,7 +204,7 @@
                             <% }); %>
                         <% } %>
                     </div>
-                    
+
                     <!-- Pagination -->
                     <div class="mt-12 flex justify-center items-center space-x-2">
                         <% if (currentPage > 1) { %>
@@ -236,12 +236,12 @@
 <%- include("../../views/user/partials/footer") %>
 
 <script>
-    
+
     document.addEventListener('DOMContentLoaded', function() {
         const minPrice = document.getElementById('min_price');
         const maxPrice = document.getElementById('max_price');
         const priceIndicator = document.getElementById('priceRangeIndicator');
-        
+
         function updatePriceRangeIndicator() {
             const min = parseInt(minPrice.value || 0);
             const max = parseInt(maxPrice.value || 200);
@@ -251,11 +251,11 @@
             priceIndicator.style.left = leftPos + '%';
             priceIndicator.style.right = rightPos + '%';
         }
-        
+
         updatePriceRangeIndicator();
         minPrice.addEventListener('input', updatePriceRangeIndicator);
         maxPrice.addEventListener('input', updatePriceRangeIndicator);
-        
+
         const searchInput = document.getElementById('search');
         const clearSearchBtn = document.getElementById('clearSearch');
         if (searchInput && clearSearchBtn) {
@@ -267,24 +267,24 @@
                 this.style.display = 'none';
             });
         }
-        
+
         const resetBtn = document.getElementById('resetFilters');
         if (resetBtn) {
             resetBtn.addEventListener('click', function() {
                 window.location.href = '/products';
             });
         }
-        
+
         const allCategoriesCheckbox = document.getElementById('category_all');
         const categoryCheckboxes = document.querySelectorAll('input[name="category"]:not([value="all"])');
-        
+
         if (allCategoriesCheckbox) {
             allCategoriesCheckbox.addEventListener('change', function() {
                 if (this.checked) {
                     categoryCheckboxes.forEach(checkbox => checkbox.checked = false);
                 }
             });
-            
+
             categoryCheckboxes.forEach(checkbox => {
                 checkbox.addEventListener('change', function() {
                     if (this.checked) allCategoriesCheckbox.checked = false;
@@ -299,7 +299,7 @@
             const selectedCategories = Array.from(categoryCheckboxes)
                 .map(cb => cb.value)
                 .filter(val => val !== 'all');
-            
+
             if (selectedCategories.length > 0) {
                 const hiddenInput = document.createElement('input');
                 hiddenInput.type = 'hidden';

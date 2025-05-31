@@ -466,17 +466,17 @@
                                     <td class="align-middle text-end">
                                         <% if (product.originalPrice && product.originalPrice > (product.revenue / product.quantity)) { %>
                                             <span class="text-decoration-line-through text-muted">
-                                                ₹<%= product.originalPrice.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %>
+                                                ₹<%= Math.round(product.originalPrice).toLocaleString('en-IN') %>
                                             </span>
                                             <br>
                                             <span>
-                                                ₹<%= (product.revenue / product.quantity).toLocaleString('en-IN', { maximumFractionDigits: 2 }) %>
+                                                ₹<%= Math.round(product.revenue / product.quantity).toLocaleString('en-IN') %>
                                             </span>
                                         <% } else { %>
-                                            ₹<%= (product.revenue / product.quantity).toLocaleString('en-IN', { maximumFractionDigits: 2 }) %>
+                                            ₹<%= Math.round(product.revenue / product.quantity).toLocaleString('en-IN') %>
                                         <% } %>
                                     </td>
-                                    <td class="align-middle text-end fw-bold">₹<%= product.revenue.toLocaleString('en-IN', { maximumFractionDigits: 2 }) %></td>
+                                    <td class="align-middle text-end fw-bold">₹<%= Math.round(product.revenue).toLocaleString('en-IN') %></td>
                                     <td class="align-middle text-end">
                                         <% if (product.originalPrice && product.quantity) { %>
                                             <% const originalAmount = product.originalPrice * product.quantity; %>
@@ -899,7 +899,7 @@
                     <td class="align-middle text-center">
                         <span class="badge bg-secondary">${order.orderedItems.length}</span>
                     </td>
-                    <td class="align-middle text-end fw-bold">₹${order.finalAmount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+                    <td class="align-middle text-end fw-bold">₹${Math.round(order.orderedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) + order.shippingCharge + (order.taxAmount || 0) - (order.discount || 0)).toLocaleString('en-IN')}</td>
                     <td class="align-middle">${statusHtml}</td>
                     <td class="align-middle">
                         <a href="/admin/orders/${order._id}" class="btn btn-sm btn-primary">
@@ -954,23 +954,23 @@
                 if (product.originalPrice && product.originalPrice > unitPrice) {
                     priceHtml = `
                         <span class="text-decoration-line-through text-muted">
-                            ₹${product.originalPrice.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                            ₹${Math.round(product.originalPrice).toLocaleString('en-IN')}
                         </span>
                         <br>
-                        <span>₹${unitPrice.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                        <span>₹${Math.round(unitPrice).toLocaleString('en-IN')}</span>
                     `;
                 } else {
-                    priceHtml = `₹${unitPrice.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+                    priceHtml = `₹${Math.round(unitPrice).toLocaleString('en-IN')}`;
                 }
 
                 let originalAmountHtml = '';
                 if (product.originalPrice && product.quantity) {
                     originalAmountHtml = `
-                        ₹${originalAmount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                        ₹${Math.round(originalAmount).toLocaleString('en-IN')}
                         ${originalAmount > product.revenue ? `<small class="text-success">(${discountPercentage}% off)</small>` : ''}
                     `;
                 } else {
-                    originalAmountHtml = `₹${product.revenue.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+                    originalAmountHtml = `₹${Math.round(product.revenue).toLocaleString('en-IN')}`;
                 }
 
                 const row = tbody.insertRow();

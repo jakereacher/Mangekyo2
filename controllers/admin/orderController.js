@@ -89,7 +89,7 @@ exports.getAllOrders = async (req, res) => {
       customerName: order.userId.fullName,
       customerEmail: order.userId.email,
       formattedOrderDate: new Date(order.orderDate).toLocaleDateString(),
-      finalAmount: order.finalAmount || order.totalPrice + order.shippingCharge + (order.taxAmount || 0),
+      finalAmount: order.orderedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) + order.shippingCharge + (order.taxAmount || 0) - (order.discount || 0),
 
       displayOrderId: order.orderNumber || `MK${order._id.toString().slice(-5)}`
     }));

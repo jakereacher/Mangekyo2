@@ -104,17 +104,17 @@
                                     <p class="text-sm text-gray-600">Quantity: <%= item.quantity %></p>
                                     <p class="text-sm text-gray-600">
                                         <% if (item.originalPrice && item.originalPrice > item.price) { %>
-                                            Price: <span class="line-through text-gray-400">$<%= item.originalPrice.toFixed(2) %></span>
-                                            <span class="text-green-600 font-medium">$<%= item.price.toFixed(2) %></span>
+                                            Price: <span class="line-through text-gray-400">₹<%= Math.round(item.originalPrice) %></span>
+                                            <span class="text-green-600 font-medium">₹<%= Math.round(item.price) %></span>
                                             <% if (item.discountPercentage > 0) { %>
                                                 <% if (item.offerType === 'fixed') { %>
-                                                    <span class="bg-red-600 text-white text-xs px-2 py-0.5 rounded ml-1">$<%= (item.originalPrice - item.price).toFixed(2) %> OFF</span>
+                                                    <span class="bg-red-600 text-white text-xs px-2 py-0.5 rounded ml-1">₹<%= Math.round(item.originalPrice - item.price) %> OFF</span>
                                                 <% } else { %>
                                                     <span class="bg-red-600 text-white text-xs px-2 py-0.5 rounded ml-1"><%= Math.round(item.discountPercentage) %>% OFF</span>
                                                 <% } %>
                                             <% } %>
                                         <% } else { %>
-                                            Price: $<%= item.price.toFixed(2) %>
+                                            Price: ₹<%= Math.round(item.price) %>
                                         <% } %>
                                     </p>
                                     <p class="text-sm text-gray-600">Status: <span class="item-status <%= item.status === 'Cancelled' ? 'text-red-600' : '' %>"><%= item.status %></span></p>
@@ -133,7 +133,7 @@
                                     <% } else { %>
                                         <p class="font-medium">₹<%= (item.price * item.quantity).toFixed(2) %></p>
                                     <% } %>
-                                    <% if (item.status === 'Delivered') { %>
+                                    <% if (item.status === 'Delivered' && item.order_return_status !== 'Rejected' && item.order_return_status !== 'Pending') { %>
                                         <button onclick="returnOrder('<%= item.product._id %>', '<%= order._id %>')"
                                                 class="bg-purple-600 text-white px-6 py-2 rounded hover:bg-purple-700 transition flex items-center">
                                             <i class="fas fa-undo-alt mr-2"></i> Return Order
@@ -726,55 +726,113 @@
                 <% }); %>
             ];
 
-            // Filter out cancelled items
+            // Check if order has any cancelled items
+            const cancelledItems = orderItems.filter(item => item.status === 'Cancelled');
             const nonCancelledItems = orderItems.filter(item => item.status !== 'Cancelled');
+            const allItemsCancelled = cancelledItems.length === orderItems.length;
 
-            // Calculate subtotal for non-cancelled items
-            const subtotal = nonCancelledItems.reduce((sum, item) => sum + item.totalPrice, 0);
+            // Calculate subtotal for ALL items (including cancelled) to show original cost
+            const originalSubtotal = orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
+
+            // Calculate subtotal for non-cancelled items for payment purposes
+            const activeSubtotal = nonCancelledItems.reduce((sum, item) => sum + item.totalPrice, 0);
 
             // Get shipping and tax
             const shipping = <%= parseFloat(order.shipping) %>;
             const tax = <%= parseFloat(order.tax) %>;
 
-            // Calculate final amount
-            let finalAmount = subtotal + shipping + tax;
+            // Calculate original final amount (for display)
+            let originalFinalAmount = originalSubtotal + shipping + tax;
+
+            // Calculate active final amount (for payment)
+            let activeFinalAmount = activeSubtotal + shipping + tax;
 
             // Apply discount if applicable
             <% if (order.discount && parseFloat(order.discount) > 0) { %>
                 const discount = <%= parseFloat(order.discount) %>;
-                finalAmount -= discount;
+                originalFinalAmount -= discount;
+                activeFinalAmount -= discount;
             <% } %>
 
-            // Ensure amount is not negative
-            finalAmount = Math.max(finalAmount, 0);
+            // Ensure amounts are not negative
+            originalFinalAmount = Math.max(originalFinalAmount, 0);
+            activeFinalAmount = Math.max(activeFinalAmount, 0);
 
-            // Round to 2 decimal places to match Razorpay's calculation
-            finalAmount = Math.round(finalAmount * 100) / 100;
+            // Round amounts
+            originalFinalAmount = Math.round(originalFinalAmount);
+            activeFinalAmount = Math.round(activeFinalAmount);
 
-            // Update the UI
-            document.getElementById('itemCount').textContent = nonCancelledItems.length;
-            document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
-            document.getElementById('shipping').textContent = `$${shipping.toFixed(2)}`;
-            document.getElementById('tax').textContent = `$${tax.toFixed(2)}`;
+            // Update the UI - Show original amounts with cancellation notice
+            document.getElementById('itemCount').textContent = orderItems.length;
+            document.getElementById('subtotal').textContent = `₹${Math.round(originalSubtotal)}`;
+            document.getElementById('shipping').textContent = `₹${Math.round(shipping)}`;
+            document.getElementById('tax').textContent = `₹${Math.round(tax)}`;
             <% if (order.discount && parseFloat(order.discount) > 0) { %>
-                document.getElementById('discount').textContent = `-$${parseFloat(order.discount).toFixed(2)}`;
+                document.getElementById('discount').textContent = `₹${Math.round(parseFloat(order.discount))}`;
                 // Update both original and discounted totals
-                const originalAmount = subtotal + shipping + tax;
-                document.getElementById('originalTotal').textContent = `$${originalAmount.toFixed(2)}`;
+                const originalAmount = originalSubtotal + shipping + tax;
+                document.getElementById('originalTotal').textContent = `₹${Math.round(originalAmount)}`;
             <% } %>
-            document.getElementById('total').textContent = `$${finalAmount.toFixed(2)}`;
+            document.getElementById('total').textContent = `₹${Math.round(originalFinalAmount)}`;
 
-            // Log the exact amount that will be sent to Razorpay (in cents)
-            const razorpayAmount = Math.max(100, Math.round(finalAmount * 100));
-            console.log('Amount to be charged by Razorpay (in cents):', razorpayAmount);
-            console.log('Amount to be charged by Razorpay (in dollars):', razorpayAmount / 100);
+            // Add cancellation notice if items are cancelled
+            if (cancelledItems.length > 0) {
+                const orderSummary = document.querySelector('.bg-white.rounded-lg.shadow-md.p-6');
+                if (orderSummary && !document.getElementById('cancellationNotice')) {
+                    // Calculate refund amount
+                    const refundAmount = cancelledItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+                    const notice = document.createElement('div');
+                    notice.id = 'cancellationNotice';
+                    notice.className = 'bg-red-50 border border-red-200 rounded-lg p-4 mb-4';
+
+                    if (allItemsCancelled) {
+                        notice.innerHTML = `
+                            <div class="flex items-center">
+                                <svg class="w-5 h-5 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                                </svg>
+                                <div>
+                                    <h4 class="text-red-800 font-medium">Order Cancelled</h4>
+                                    <p class="text-red-600 text-sm">This entire order has been cancelled. The amounts shown above reflect the original order value.</p>
+                                    <% if (order.paymentMethod === 'razorpay' || order.paymentMethod === 'wallet') { %>
+                                        <p class="text-green-600 text-sm font-medium mt-1">₹${Math.round(refundAmount)} has been refunded to your wallet.</p>
+                                    <% } %>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        notice.innerHTML = `
+                            <div class="flex items-center">
+                                <svg class="w-5 h-5 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                </svg>
+                                <div>
+                                    <h4 class="text-red-800 font-medium">Partial Cancellation</h4>
+                                    <p class="text-red-600 text-sm">${cancelledItems.length} item(s) in this order have been cancelled. The amounts shown above reflect the original order value.</p>
+                                    <% if (order.paymentMethod === 'razorpay' || order.paymentMethod === 'wallet') { %>
+                                        <p class="text-green-600 text-sm font-medium mt-1">₹${Math.round(refundAmount)} has been refunded to your wallet.</p>
+                                    <% } %>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    orderSummary.insertBefore(notice, orderSummary.firstChild);
+                }
+            }
+
+            // Log the exact amount that will be sent to Razorpay (in paise) - use active amount for payment
+            const razorpayAmount = Math.max(100, Math.round(activeFinalAmount * 100));
+            console.log('Amount to be charged by Razorpay (in paise):', razorpayAmount);
+            console.log('Amount to be charged by Razorpay (in rupees):', razorpayAmount / 100);
 
             return {
                 nonCancelledItems,
-                subtotal,
+                subtotal: activeSubtotal, // Use active subtotal for payment calculations
                 shipping,
                 tax,
-                finalAmount,
+                finalAmount: activeFinalAmount, // Use active final amount for payment
                 razorpayAmount
             };
         }

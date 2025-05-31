@@ -69,38 +69,38 @@ const getValidOffersForProduct = async (productId) => {
   if (productOffers.length > 0) {
     // Use a sample price to compare discounts
     const samplePrice = product.price || 1000;
-    
+
     // Start with the first offer
     bestProductOffer = productOffers[0];
     let maxDiscount = bestProductOffer.calculateDiscount(samplePrice);
-    
+
     // Compare with other offers
     for (let i = 1; i < productOffers.length; i++) {
       const currentOffer = productOffers[i];
       const currentDiscount = currentOffer.calculateDiscount(samplePrice);
-      
+
       if (currentDiscount > maxDiscount) {
         maxDiscount = currentDiscount;
         bestProductOffer = currentOffer;
       }
     }
   }
-  
+
   // Find the best category offer (highest discount)
   let bestCategoryOffer = null;
   if (categoryOffers.length > 0) {
     // Use a sample price to compare discounts
     const samplePrice = product.price || 1000;
-    
+
     // Start with the first offer
     bestCategoryOffer = categoryOffers[0];
     let maxDiscount = bestCategoryOffer.calculateDiscount(samplePrice);
-    
+
     // Compare with other offers
     for (let i = 1; i < categoryOffers.length; i++) {
       const currentOffer = categoryOffers[i];
       const currentDiscount = currentOffer.calculateDiscount(samplePrice);
-      
+
       if (currentDiscount > maxDiscount) {
         maxDiscount = currentDiscount;
         bestCategoryOffer = currentOffer;
@@ -177,8 +177,8 @@ const getBestOfferForProduct = async (productId, price) => {
 
   return {
     hasOffer: !!bestOffer,
-    discountAmount: maxDiscount,
-    finalPrice: price - maxDiscount,
+    discountAmount: Math.round(maxDiscount),
+    finalPrice: Math.round(price - maxDiscount),
     offer: bestOffer
   };
 };
@@ -196,8 +196,8 @@ const applyOffersToProducts = async (products) => {
 
     productsWithOffers.push({
       ...product.toObject ? product.toObject() : product,
-      offerPrice: offerResult.finalPrice,
-      discountAmount: offerResult.discountAmount,
+      offerPrice: Math.round(offerResult.finalPrice),
+      discountAmount: Math.round(offerResult.discountAmount),
       hasOffer: offerResult.hasOffer,
       appliedOffer: offerResult.offer,
       offerType: offerResult.offer ? offerResult.offer.type : null

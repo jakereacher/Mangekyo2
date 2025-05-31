@@ -113,8 +113,8 @@ router.post("/apply-coupon", couponController.applyCoupon);
 router.post("/remove-coupon", couponController.removeAppliedCoupon);
 
 // Razorpay Payment Routes
-router.post("/razorpay/create-order", razorpayController.createRazorpayOrder);
-router.post("/razorpay/verify-payment", razorpayController.verifyRazorpayPayment);
+router.post("/razorpay/create-order", userAuth, razorpayController.createRazorpayOrder);
+router.post("/razorpay/verify-payment", userAuth, razorpayController.verifyRazorpayPayment);
 router.get("/razorpay/test", (req, res) => {
   const { razorpay, razorpayKeyId } = require("../config/razorpay");
   res.json({

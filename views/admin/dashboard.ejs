@@ -51,8 +51,8 @@ function formatCurrency(amount) {
         amount = 0;
     }
 
-    // Convert to number and format with Indian Rupee
-    return '₹' + Number(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    // Convert to number and format with Indian Rupee (no decimal points)
+    return '₹' + Math.round(Number(amount)).toLocaleString('en-IN');
 }
 %>
 

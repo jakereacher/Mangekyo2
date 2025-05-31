@@ -182,7 +182,7 @@
                                         <% if (item.priceChanged) { %>
                                             <div class="text-sm text-green-600 font-medium">Price updated!</div>
                                         <% } %>
-                                        <span class="font-bold text-lg">$<%= item.price.toFixed(2) %></span>
+                                        <span class="font-bold text-lg">₹<%= Math.round(item.price) %></span>
                                     </div>
                                 </div>
 
@@ -206,7 +206,7 @@
                                             </div>
                                         </button>
                                     </div>
-                                    <span class="font-medium text-gray-700 mx-4 product-total-price">$<%= item.totalPrice.toFixed(2) %></span>
+                                    <span class="font-medium text-gray-700 mx-4 product-total-price">₹<%= Math.round(item.totalPrice) %></span>
                                     <button class="remove-item-btn text-sm text-gray-600 hover:text-primary flex items-center gap-1">
                                         <div class="w-4 h-4 flex items-center justify-center">
                                             <i class="ri-delete-bin-line"></i>
@@ -236,12 +236,12 @@
                         <div class="price-summary mb-6">
                             <div class="flex justify-between mb-3">
                                 <span class="text-gray-600">Subtotal</span>
-                                <span class="font-medium">$<%= cartProducts.reduce((total, item) => total + item.totalPrice, 0).toFixed(2) %></span>
+                                <span class="font-medium">₹<%= cartProducts.reduce((total, item) => total + item.totalPrice, 0).toFixed(2) %></span>
                             </div>
 
                             <div class="flex justify-between mb-3">
                                 <span class="text-gray-600">Shipping</span>
-                                <span class="font-medium">$5.99</span>
+                                <span class="font-medium">₹5.99</span>
                             </div>
 
                             <div class="flex justify-between mb-3">
@@ -250,7 +250,7 @@
                                     const subtotal = cartProducts.reduce((total, item) => total + item.totalPrice, 0);
                                     const tax = subtotal * 0.08;
                                 %>
-                                <span class="font-medium">$<%= tax.toFixed(2) %></span>
+                                <span class="font-medium">₹<%= tax.toFixed(2) %></span>
                             </div>
 
                             <div class="h-px bg-gray-200 my-4"></div>
@@ -260,7 +260,7 @@
                                 <%
                                     const total = subtotal + 5.99 + tax;
                                 %>
-                                <span>$<%= total.toFixed(2) %></span>
+                                <span>₹<%= total.toFixed(2) %></span>
                             </div>
                         </div>
 
@@ -561,20 +561,20 @@
                                 document.querySelector('.price-summary').innerHTML = `
                                     <div class="flex justify-between mb-3">
                                         <span class="text-gray-600">Subtotal</span>
-                                        <span class="font-medium">$0.00</span>
+                                        <span class="font-medium">₹0.00</span>
                                     </div>
                                     <div class="flex justify-between mb-3">
                                         <span class="text-gray-600">Shipping</span>
-                                        <span class="font-medium">$0.00</span>
+                                        <span class="font-medium">₹0.00</span>
                                     </div>
                                     <div class="flex justify-between mb-3">
                                         <span class="text-gray-600">Tax (8%)</span>
-                                        <span class="font-medium">$0.00</span>
+                                        <span class="font-medium">₹0.00</span>
                                     </div>
                                     <div class="h-px bg-gray-200 my-4"></div>
                                     <div class="flex justify-between font-bold text-lg">
                                         <span>Total</span>
-                                        <span>$0.00</span>
+                                        <span>₹0.00</span>
                                     </div>
                                 `;
                             } else {

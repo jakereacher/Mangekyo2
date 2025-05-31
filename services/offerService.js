@@ -220,8 +220,8 @@ const getBestOfferForProduct = async (productId, price) => {
 
   return {
     hasOffer: !!bestOffer,
-    discountAmount: maxDiscount,
-    finalPrice: price - maxDiscount,
+    discountAmount: Math.round(maxDiscount),
+    finalPrice: Math.round(price - maxDiscount),
     offer: bestOffer
   };
 };
@@ -239,8 +239,8 @@ const applyOffersToProducts = async (products) => {
 
     productsWithOffers.push({
       ...product.toObject ? product.toObject() : product,
-      offerPrice: offerResult.finalPrice,
-      discountAmount: offerResult.discountAmount,
+      offerPrice: Math.round(offerResult.finalPrice),
+      discountAmount: Math.round(offerResult.discountAmount),
       hasOffer: offerResult.hasOffer,
       appliedOffer: offerResult.offer
     });

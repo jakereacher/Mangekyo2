@@ -22,6 +22,9 @@ const crypto = require("crypto");
  * @param {Object} res - Express response object
  */
 const addMoney = async (req, res) => {
+  // Ensure we always return JSON
+  res.setHeader('Content-Type', 'application/json');
+
   try {
     if (!req.session || !req.session.user) {
       console.error("User not authenticated");
@@ -61,16 +64,25 @@ const addMoney = async (req, res) => {
     const shortUserId = userId.toString().slice(-6); // Use last 6 chars of user ID
     const timestamp = Date.now().toString().slice(-10); // Use last 10 digits of timestamp
     const receipt = `wallet_${shortUserId}_${timestamp}`;
-    // Convert USD to INR for Razorpay (to enable Indian payment methods)
-    const usdToInrRate = 83; // Approximate conversion rate
-    const amountInINR = amount * usdToInrRate;
+
+    // Razorpay requires amount in paise (smallest currency unit for INR)
+    // Convert rupees to paise by multiplying by 100
+    const amountInPaise = Math.max(100, Math.round(amount * 100));
+
+    console.log('Wallet add money - Payment calculation:', {
+      requestedAmountInRupees: amount,
+      amountInPaise: amountInPaise,
+      note: 'Razorpay requires paise: ₹' + amount + ' = ' + amountInPaise + ' paise'
+    });
 
     const options = {
-      amount: amountInINR * 100, // amount in the smallest currency unit (paise)
+      amount: amountInPaise, // amount in paise (required by Razorpay)
       currency: "INR",
       receipt: receipt,
       payment_capture: 1 // Auto-capture payment
     };
+
+    console.log('Creating Razorpay order for wallet with options:', options);
     const razorpayOrder = await razorpay.orders.create(options);
     const transaction = new WalletTransaction({
       user: userId,
@@ -132,6 +144,9 @@ const addMoney = async (req, res) => {
  * @param {Object} res - Express response object
  */
 const verifyPayment = async (req, res) => {
+  // Ensure we always return JSON
+  res.setHeader('Content-Type', 'application/json');
+
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, amount } = req.body;
     const userId = req.session.user;
@@ -223,6 +238,9 @@ const verifyPayment = async (req, res) => {
  * @param {Object} res - Express response object
  */
 const getWalletBalance = async (req, res) => {
+  // Ensure we always return JSON
+  res.setHeader('Content-Type', 'application/json');
+
   try {
     const userId = req.session.user;
     const user = await User.findById(userId);
@@ -280,6 +298,9 @@ const getWalletBalance = async (req, res) => {
  * @param {Object} res - Express response object
  */
 const getWalletTransactions = async (req, res) => {
+  // Ensure we always return JSON
+  res.setHeader('Content-Type', 'application/json');
+
   try {
     const userId = req.session.user;
     const page = parseInt(req.query.page) || 1;

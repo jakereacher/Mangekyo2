@@ -64,11 +64,11 @@ exports.addToCart = async (req, res) => {
 
     const offerResult = await offerService.getBestOfferForProduct(product._id, basePrice);
 
-    let price = offerResult.finalPrice;
+    let price = Math.round(offerResult.finalPrice);
 
     if (price < 0) price = 0;
 
-    const totalPrice = price * quantity;
+    const totalPrice = Math.round(price * quantity);
 
     if (!cart) {
       cart = new Cart({
@@ -155,14 +155,14 @@ const refreshCartPrices = async (userId) => {
 
       const basePrice = product.price || 0;
       const offerResult = await offerService.getBestOfferForProduct(product._id, basePrice);
-      const currentBestPrice = offerResult.finalPrice;
+      const currentBestPrice = Math.round(offerResult.finalPrice);
 
       const priceDifference = Math.abs(item.price - currentBestPrice);
       const shouldUpdatePrice = priceDifference > 0.01; // 1 cent threshold
 
       if (shouldUpdatePrice) {
         item.price = currentBestPrice;
-        item.totalPrice = currentBestPrice * item.quantity;
+        item.totalPrice = Math.round(currentBestPrice * item.quantity);
         pricesUpdated = true;
       }
     }
@@ -216,10 +216,10 @@ exports.renderCartPage = async (req, res) => {
             product: productDetails,
             quantity: item.quantity,
             added_at: item.added_at,
-            price: item.price,
-            totalPrice: item.totalPrice,
-            currentPrice: offerResult.finalPrice,
-            priceChanged: Math.abs(item.price - offerResult.finalPrice) > 0.01
+            price: Math.round(item.price),
+            totalPrice: Math.round(item.totalPrice),
+            currentPrice: Math.round(offerResult.finalPrice),
+            priceChanged: Math.abs(item.price - Math.round(offerResult.finalPrice)) > 0.01
           };
         })
       );

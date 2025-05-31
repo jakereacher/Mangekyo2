@@ -68,7 +68,12 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <strong>₹<%= order.finalAmount.toFixed(2) %></strong>
+                                    <%
+                                    // Calculate original order amount from all items (including cancelled)
+                                    const originalSubtotal = order.orderedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                                    const originalTotal = originalSubtotal + (order.shippingCharge || 0) + (order.taxAmount || (originalSubtotal * 0.09)) - (order.discount || 0);
+                                    %>
+                                    <strong>₹<%= Math.round(originalTotal) %></strong>
                                 </td>
                                 <td>
                                     <div class="btn-group btn-group-sm" role="group">

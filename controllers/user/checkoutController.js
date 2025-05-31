@@ -135,8 +135,8 @@ exports.renderCheckoutPage = async (req, res) => {
       }
     }
 
-    const tax = subtotal * 0.09; // Using 9% tax rate consistently across the application
-    const total = subtotal + shipping + tax;
+    const tax = Math.round(subtotal * 0.09); // Using 9% tax rate consistently across the application
+    const total = Math.round(subtotal + shipping + tax);
 
     const isCodAllowed = total <= 1000;
 
@@ -146,10 +146,10 @@ exports.renderCheckoutPage = async (req, res) => {
       user,
       cartItems: validCartItems,
       cartCount: validCartItems.length,
-      subtotal: subtotal.toFixed(2),
-      shipping: shipping.toFixed(2),
-      tax: tax.toFixed(2),
-      total: total.toFixed(2),
+      subtotal: Math.round(subtotal),
+      shipping: Math.round(shipping),
+      tax: Math.round(tax),
+      total: Math.round(total),
       addresses: user.address ? user.address.filter(addr => addr !== null) : [],
       defaultAddress,
       currentStep: 1,
@@ -327,10 +327,10 @@ exports.placeOrder = async (req, res) => {
       });
     }
 
-    const subtotal = validItems.reduce(
+    const subtotal = Math.round(validItems.reduce(
       (sum, item) => sum + item.price * item.quantity,
       0
-    );
+    ));
 
 
     if (!selectedAddress) {
@@ -364,7 +364,7 @@ exports.placeOrder = async (req, res) => {
       }
     }
 
-    const tax = subtotal * 0.09; // Using 9% tax rate consistently across the application
+    const tax = Math.round(subtotal * 0.09); // Using 9% tax rate consistently across the application
 
     let coupon = null;
     let discount = 0;
@@ -440,16 +440,16 @@ exports.placeOrder = async (req, res) => {
       }
 
       if (coupon.type === "percentage") {
-        discount = (subtotal * coupon.discountValue) / 100;
+        discount = Math.round((subtotal * coupon.discountValue) / 100);
         if (coupon.maxDiscount && discount > coupon.maxDiscount) {
-          discount = coupon.maxDiscount;
+          discount = Math.round(coupon.maxDiscount);
         }
       } else {
-        discount = coupon.discountValue;
+        discount = Math.round(coupon.discountValue);
       }
     }
 
-    const finalAmount = (subtotal + shipping + tax) - discount;
+    const finalAmount = Math.round((subtotal + shipping + tax) - discount);
 
     const isCodAllowed = finalAmount <= 1000;
 

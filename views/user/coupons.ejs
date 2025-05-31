@@ -106,14 +106,14 @@
                     <% if (coupon.isActive) { %>
                         <div class="coupon-ribbon">ACTIVE</div>
                     <% } %>
-                    
+
                     <div class="coupon-header">
                         <span class="coupon-code"><%= coupon.code %></span>
                         <span class="coupon-discount">
                             <% if (coupon.discountType === 'percentage') { %>
                                 <%= coupon.discountValue %>% OFF
                             <% } else { %>
-                                $<%= coupon.discountValue %> OFF
+                                ₹<%= coupon.discountValue %> OFF
                             <% } %>
                         </span>
                     </div>
@@ -124,7 +124,7 @@
                     <div class="coupon-meta">
                         <div>
                             <span class="text-muted">Min. spend: </span>
-                            <span>$<%= coupon.minOrderAmount || 0 %></span>
+                            <span>₹<%= coupon.minOrderAmount || 0 %></span>
                         </div>
                         <div>
                             <span class="text-muted">Uses left: </span>
