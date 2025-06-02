@@ -22,6 +22,16 @@
                     if (currentPeriod === 'today') periodText = 'Today';
                     else if (currentPeriod === 'week') periodText = 'This Week';
                     else if (currentPeriod === 'year') periodText = 'This Year';
+                    else if (currentPeriod === 'month' && typeof month !== 'undefined' && month) {
+                        // If a specific month is selected, show the month name
+                        const [year, monthNum] = month.split('-');
+                        const monthNames = [
+                            'January', 'February', 'March', 'April', 'May', 'June',
+                            'July', 'August', 'September', 'October', 'November', 'December'
+                        ];
+                        const monthName = monthNames[parseInt(monthNum) - 1];
+                        periodText = `${monthName} ${year}`;
+                    }
                     %>
                     <%= periodText %>
                 </button>
@@ -38,6 +48,33 @@
                     <li><a class="dropdown-item <%= currentPeriod === 'year' ? 'active' : '' %>" href="?period=year">
                         <i class="fas fa-calendar me-2"></i>This Year
                     </a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><h6 class="dropdown-header">Select Specific Month</h6></li>
+                    <%
+                    const currentDate = new Date();
+                    const currentYear = currentDate.getFullYear();
+                    const currentMonth = currentDate.getMonth();
+                    const months = [
+                        'January', 'February', 'March', 'April', 'May', 'June',
+                        'July', 'August', 'September', 'October', 'November', 'December'
+                    ];
+
+                    // Show current year and previous year months
+                    for (let year = currentYear; year >= currentYear - 1; year--) {
+                        const startMonth = (year === currentYear) ? currentMonth : 11;
+                        for (let month = startMonth; month >= 0; month--) {
+                            const monthName = months[month];
+                            const monthValue = `${year}-${String(month + 1).padStart(2, '0')}`;
+                            const isCurrentMonth = year === currentYear && month === currentMonth;
+                    %>
+                    <li><a class="dropdown-item" href="?period=month&month=<%= monthValue %>">
+                        <i class="fas fa-calendar-day me-2"></i><%= monthName %> <%= year %>
+                        <% if (isCurrentMonth) { %><span class="badge bg-primary ms-1">Current</span><% } %>
+                    </a></li>
+                    <%
+                        }
+                    }
+                    %>
                 </ul>
             </div>
         </div>
@@ -784,6 +821,95 @@ function formatCurrency(amount) {
                                             </li>
                                         </ul>
                                     </nav>
+                                </div>
+                            <% } %>
+                        </div>
+                    </div>
+
+                    <!-- Top Reviewed Products -->
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-star text-warning me-2"></i>Top Reviewed Products
+                            </h5>
+                            <a href="/admin/products" class="btn btn-sm btn-outline-warning">View All Products</a>
+                        </div>
+                        <div class="card-body">
+                            <% if (topReviewedProducts && topReviewedProducts.length > 0) { %>
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Product</th>
+                                                <th>Category</th>
+                                                <th>Price</th>
+                                                <th>Reviews</th>
+                                                <th>Rating</th>
+                                                <th>Latest Review</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <% topReviewedProducts.forEach(product => { %>
+                                                <tr>
+                                                    <td>
+                                                        <div class="fw-bold text-truncate" style="max-width: 200px;" title="<%= product.productName %>">
+                                                            <%= product.productName %>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-secondary"><%= product.category %></span>
+                                                    </td>
+                                                    <td>
+                                                        <span class="fw-bold text-success">₹<%= Math.round(product.price) %></span>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-primary">
+                                                            <i class="fas fa-comments me-1"></i><%= product.reviewCount %>
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <div class="d-flex align-items-center">
+                                                            <span class="me-1"><%= product.averageRating %></span>
+                                                            <div class="text-warning">
+                                                                <% for(let i = 1; i <= 5; i++) { %>
+                                                                    <i class="fas fa-star<%= i <= Math.floor(product.averageRating) ? '' : (i - 0.5 <= product.averageRating ? '-half-alt' : ' text-muted') %>"></i>
+                                                                <% } %>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <small class="text-muted">
+                                                            <%= new Date(product.latestReview).toLocaleDateString('en-US', {
+                                                                month: 'short',
+                                                                day: 'numeric',
+                                                                year: 'numeric'
+                                                            }) %>
+                                                        </small>
+                                                    </td>
+                                                    <td>
+                                                        <a href="/admin/products/<%= product._id %>" class="btn btn-sm btn-info me-1" title="View Product">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
+                                                        <a href="/shop/product/<%= product._id %>" target="_blank" class="btn btn-sm btn-outline-primary" title="View on Site">
+                                                            <i class="fas fa-external-link-alt"></i>
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            <% }); %>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            <% } else { %>
+                                <div class="text-center py-4">
+                                    <div class="mb-3">
+                                        <i class="fas fa-star-half-alt text-muted" style="font-size: 3rem;"></i>
+                                    </div>
+                                    <h6 class="text-muted">No Reviewed Products Yet</h6>
+                                    <p class="text-muted small">Products will appear here once customers start leaving reviews.</p>
+                                    <a href="/admin/products" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-plus me-1"></i>Manage Products
+                                    </a>
                                 </div>
                             <% } %>
                         </div>

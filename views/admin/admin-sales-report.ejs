@@ -415,7 +415,6 @@
                     <thead class="table-light">
                         <tr>
                             <th>#</th>
-                            <th>Product Image</th>
                             <th>Product Name</th>
                             <th>Category</th>
                             <th class="text-center">Quantity</th>
@@ -430,15 +429,6 @@
                             <% topProducts.forEach((product, index) => { %>
                                 <tr>
                                     <td class="align-middle"><%= (productsPagination.page - 1) * productsPagination.limit + index + 1 %></td>
-                                    <td class="align-middle" style="width: 60px;">
-                                        <% if (product.image) { %>
-                                            <img src="<%= product.image %>" alt="<%= product.name %>" class="img-thumbnail" style="max-width: 50px; max-height: 50px;">
-                                        <% } else { %>
-                                            <div class="bg-light text-center p-2 rounded">
-                                                <i class="fas fa-image text-muted"></i>
-                                            </div>
-                                        <% } %>
-                                    </td>
                                     <td class="align-middle">
                                         <strong><%= product.name %></strong>
                                         <% if (product.brand) { %>
@@ -494,7 +484,7 @@
                             <% }); %>
                         <% } else { %>
                             <tr>
-                                <td colspan="9" class="text-center py-4">
+                                <td colspan="8" class="text-center py-4">
                                     <div class="text-muted">
                                         <i class="fas fa-box fa-3x mb-3"></i>
                                         <p>No products found for the selected period</p>
@@ -815,7 +805,7 @@
 
         // Show loading state
         const tbody = document.querySelector('#topProductsTable tbody');
-        tbody.innerHTML = '<tr><td colspan="9" class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
 
         // Build query parameters
         const params = new URLSearchParams({
@@ -837,7 +827,7 @@
             })
             .catch(error => {
                 console.error('Error loading products:', error);
-                tbody.innerHTML = '<tr><td colspan="9" class="text-center text-danger">Error loading products</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error loading products</td></tr>';
             });
     }
 
@@ -934,12 +924,7 @@
                 const originalAmount = product.originalPrice ? product.originalPrice * product.quantity : product.revenue;
                 const discountPercentage = originalAmount > product.revenue ? Math.round((originalAmount - product.revenue) / originalAmount * 100) : 0;
 
-                let imageHtml = '';
-                if (product.image) {
-                    imageHtml = `<img src="${product.image}" alt="${product.name}" class="img-thumbnail" style="max-width: 50px; max-height: 50px;">`;
-                } else {
-                    imageHtml = `<div class="bg-light text-center p-2 rounded"><i class="fas fa-image text-muted"></i></div>`;
-                }
+
 
                 let offerHtml = '';
                 if (product.offerPercentage && product.offerPercentage > 0) {
@@ -976,7 +961,6 @@
                 const row = tbody.insertRow();
                 row.innerHTML = `
                     <td class="align-middle">${serialNumber}</td>
-                    <td class="align-middle" style="width: 60px;">${imageHtml}</td>
                     <td class="align-middle">
                         <strong>${product.name}</strong>
                         ${product.brand ? `<div class="small text-muted">${product.brand}</div>` : ''}
@@ -994,7 +978,7 @@
         } else {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="9" class="text-center py-4">
+                    <td colspan="8" class="text-center py-4">
                         <div class="text-muted">
                             <i class="fas fa-box fa-3x mb-3"></i>
                             <p>No products found for the selected period</p>

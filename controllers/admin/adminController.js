@@ -6,6 +6,7 @@ const User = require("../../models/userSchema");
 const Order = require("../../models/orderSchema");
 const Product = require("../../models/productSchema");
 const Category = require("../../models/categorySchema");
+const Review = require("../../models/reviewSchema");
 const mongoose = require("mongoose");
 const bcrypt = require('bcrypt');
 const moment = require("moment");
@@ -60,6 +61,79 @@ const login = async (req, res) => {
 };
 
 //=================================================================================================
+// Get Top Reviewed Products
+//=================================================================================================
+// This function gets the top reviewed products for the dashboard.
+// It aggregates products by review count and average rating.
+//=================================================================================================
+const getTopReviewedProducts = async () => {
+  try {
+    const topReviewedProducts = await Review.aggregate([
+      {
+        $group: {
+          _id: "$product",
+          reviewCount: { $sum: 1 },
+          averageRating: { $avg: "$rating" },
+          latestReview: { $max: "$createdAt" }
+        }
+      },
+      {
+        $lookup: {
+          from: "products",
+          localField: "_id",
+          foreignField: "_id",
+          as: "productInfo"
+        }
+      },
+      {
+        $unwind: "$productInfo"
+      },
+      {
+        $lookup: {
+          from: "categories",
+          localField: "productInfo.category",
+          foreignField: "_id",
+          as: "categoryInfo"
+        }
+      },
+      {
+        $unwind: { path: "$categoryInfo", preserveNullAndEmptyArrays: true }
+      },
+      {
+        $project: {
+          _id: 1,
+          productName: "$productInfo.productName",
+          productImage: "$productInfo.image",
+          category: { $ifNull: ["$categoryInfo.name", "Uncategorized"] },
+          price: "$productInfo.price",
+          reviewCount: 1,
+          averageRating: { $round: ["$averageRating", 1] },
+          latestReview: 1,
+          isBlocked: "$productInfo.isBlocked"
+        }
+      },
+      {
+        $match: {
+          isBlocked: { $ne: true },
+          reviewCount: { $gte: 1 }
+        }
+      },
+      {
+        $sort: { reviewCount: -1, averageRating: -1 }
+      },
+      {
+        $limit: 10
+      }
+    ]);
+
+    return topReviewedProducts;
+  } catch (error) {
+    console.error('Error fetching top reviewed products:', error);
+    return [];
+  }
+};
+
+//=================================================================================================
 // Load Dashboard
 //=================================================================================================
 // This function loads the dashboard page.
@@ -76,6 +150,7 @@ const loadDashboard = async(req, res) => {
 
     // Enhanced filtering parameters
     const period = req.query.period || 'month';
+    const month = req.query.month; // For specific month selection (format: YYYY-MM)
     const paymentMethod = req.query.paymentMethod || 'all';
     const orderStatus = req.query.orderStatus || 'all';
     const sortBy = req.query.sortBy || 'date';
@@ -110,8 +185,40 @@ const loadDashboard = async(req, res) => {
           break;
         case 'month':
         default:
-          startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-          endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+          if (month) {
+            // Handle specific month selection (format: YYYY-MM)
+            const [year, monthNum] = month.split('-');
+            const selectedYear = parseInt(year);
+            const selectedMonth = parseInt(monthNum) - 1; // JavaScript months are 0-indexed
+
+            startDate = new Date(selectedYear, selectedMonth, 1);
+
+            // Check if it's the current month
+            const now = new Date();
+            const isCurrentMonth = selectedYear === now.getFullYear() && selectedMonth === now.getMonth();
+
+            if (isCurrentMonth) {
+              // For current month, end date is current date
+              endDate = new Date();
+              endDate.setHours(23, 59, 59, 999);
+            } else {
+              // For past months, end date is the last day of that month
+              endDate = new Date(selectedYear, selectedMonth + 1, 1);
+            }
+          } else {
+            // Default to current month
+            startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+            // For current month, end date should be current date if it's the current month
+            // For past months, end date should be the last day of that month
+            const isCurrentMonth = currentDate.getFullYear() === new Date().getFullYear() &&
+                                   currentDate.getMonth() === new Date().getMonth();
+            if (isCurrentMonth) {
+              endDate = new Date(); // Current date and time
+              endDate.setHours(23, 59, 59, 999); // End of current day
+            } else {
+              endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+            }
+          }
           groupFormat = { year: { $year: "$orderDate" }, month: { $month: "$orderDate" }, day: { $dayOfMonth: "$orderDate" } };
           break;
       }
@@ -186,7 +293,18 @@ const loadDashboard = async(req, res) => {
         revenueData.values.push(monthData ? (monthData.revenue || 0) : 0);
       }
     } else {
-      const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+      // Handle month view (either current month or specific month)
+      let targetYear, targetMonth;
+      if (month) {
+        const [year, monthNum] = month.split('-');
+        targetYear = parseInt(year);
+        targetMonth = parseInt(monthNum) - 1; // JavaScript months are 0-indexed
+      } else {
+        targetYear = currentDate.getFullYear();
+        targetMonth = currentDate.getMonth();
+      }
+
+      const daysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
       for (let i = 1; i <= daysInMonth; i++) {
         const dayData = revenueByPeriod.find(d => d && d._id && typeof d._id.day === 'number' && d._id.day === i);
         revenueData.labels.push(i.toString());
@@ -405,6 +523,9 @@ const loadDashboard = async(req, res) => {
       stock: product.quantity
     }));
 
+    // Get top reviewed products
+    const topReviewedProducts = await getTopReviewedProducts();
+
     // Format filter dates for display
     const formatDate = (date) => {
       return date.toISOString().split('T')[0];
@@ -415,6 +536,7 @@ const loadDashboard = async(req, res) => {
       activePage: 'dashboard',
       isDemoAdmin: req.session.isDemoAdmin || false,
       currentPeriod: period,
+      month: month, // Pass the selected month to the view
       filters: {
         startDate: req.query.startDate || formatDate(startDate),
         endDate: req.query.endDate || formatDate(endDate),
@@ -437,6 +559,7 @@ const loadDashboard = async(req, res) => {
       categoryData: formattedCategoryData,
       recentOrders: formattedOrders,
       latestProducts: formattedProducts,
+      topReviewedProducts: topReviewedProducts,
       pagination: {
         orders: {
           currentPage: orderPage,
@@ -477,6 +600,7 @@ const loadDashboard = async(req, res) => {
       },
       recentOrders: [],
       latestProducts: [],
+      topReviewedProducts: [],
       pagination: {
         orders: {
           currentPage: 1,
@@ -530,6 +654,7 @@ const getDashboardOrders = async (req, res) => {
 
     // Get filter parameters from query
     const period = req.query.period || 'month';
+    const month = req.query.month; // For specific month selection (format: YYYY-MM)
     const paymentMethod = req.query.paymentMethod || 'all';
     const orderStatus = req.query.orderStatus || 'all';
 
@@ -557,8 +682,40 @@ const getDashboardOrders = async (req, res) => {
           break;
         case 'month':
         default:
-          startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-          endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+          if (month) {
+            // Handle specific month selection (format: YYYY-MM)
+            const [year, monthNum] = month.split('-');
+            const selectedYear = parseInt(year);
+            const selectedMonth = parseInt(monthNum) - 1; // JavaScript months are 0-indexed
+
+            startDate = new Date(selectedYear, selectedMonth, 1);
+
+            // Check if it's the current month
+            const now = new Date();
+            const isCurrentMonth = selectedYear === now.getFullYear() && selectedMonth === now.getMonth();
+
+            if (isCurrentMonth) {
+              // For current month, end date is current date
+              endDate = new Date();
+              endDate.setHours(23, 59, 59, 999);
+            } else {
+              // For past months, end date is the last day of that month
+              endDate = new Date(selectedYear, selectedMonth + 1, 1);
+            }
+          } else {
+            // Default to current month
+            startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+            // For current month, end date should be current date if it's the current month
+            // For past months, end date should be the last day of that month
+            const isCurrentMonth = currentDate.getFullYear() === new Date().getFullYear() &&
+                                   currentDate.getMonth() === new Date().getMonth();
+            if (isCurrentMonth) {
+              endDate = new Date(); // Current date and time
+              endDate.setHours(23, 59, 59, 999); // End of current day
+            } else {
+              endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+            }
+          }
           break;
       }
     }

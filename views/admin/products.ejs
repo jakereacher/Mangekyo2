@@ -43,7 +43,6 @@
             <table class="table table-hover">
                 <thead>
                     <tr>
-                        <th>Image</th>
                         <th>Product</th>
                         <th>Category</th>
                         <th>Price</th>
@@ -56,18 +55,6 @@
                     <% if (products && products.length > 0) { %>
                         <% products.forEach(product => { %>
                             <tr>
-                                <td>
-                                    <% if (product.productImage && product.productImage.length > 0) { %>
-                                        <img src="/uploads/product-images/<%= product.productImage[0] %>"
-                                             class="rounded" style="width: 60px; height: 60px; object-fit: cover;"
-                                             alt="<%= product.productName %>">
-                                    <% } else { %>
-                                        <div class="bg-light rounded d-flex align-items-center justify-content-center"
-                                             style="width: 60px; height: 60px;">
-                                            <i class="fas fa-image text-muted"></i>
-                                        </div>
-                                    <% } %>
-                                </td>
                                 <td>
                                     <div class="fw-medium"><%= product.productName %></div>
                                     <small class="text-muted">ID: <%= product._id.toString().slice(-8) %></small>
