@@ -34,14 +34,14 @@ const initOfferCronJobs = () => {
         // Deactivate the offer
         offer.isActive = false;
         await offer.save();
-        
+
         console.log(`Deactivated expired offer: ${offer.name} (${offer._id})`);
 
         // Handle product offers
         if (offer.type === 'product') {
           // Get all products with this offer
           const products = await Product.find({ offer: offer._id });
-          
+
           // Remove offer references from products
           for (const product of products) {
             product.offer = null;
@@ -49,23 +49,23 @@ const initOfferCronJobs = () => {
             product.offerPercentage = 0;
             product.offerEndDate = null;
             await product.save();
-            
+
             console.log(`Removed offer reference from product: ${product.productName} (${product._id})`);
           }
         }
-        
+
         // Handle category offers
         if (offer.type === 'category') {
           // Get all categories with this offer
           const categories = await Category.find({ offer: offer._id });
-          
+
           // Remove offer references from categories
           for (const category of categories) {
             category.offer = null;
             await category.save();
-            
+
             console.log(`Removed offer reference from category: ${category.name} (${category._id})`);
-            
+
             // Update all products in this category
             const products = await Product.find({ category: category._id });
             for (const product of products) {
@@ -76,7 +76,7 @@ const initOfferCronJobs = () => {
                 product.offerPercentage = 0;
                 product.offerEndDate = null;
                 await product.save();
-                
+
                 console.log(`Removed category offer reference from product: ${product.productName} (${product._id})`);
               }
             }
@@ -86,7 +86,7 @@ const initOfferCronJobs = () => {
 
       console.log(`Completed offer expiration check. Deactivated ${expiredOffers.length} offers.`);
     } catch (error) {
-      console.error('Error in offer expiration cron job:', error);
+      // Error in offer expiration cron job - silently continue
     }
   });
 

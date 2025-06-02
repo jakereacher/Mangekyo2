@@ -60,10 +60,7 @@ exports.getAllDeliveryCharges = async (req, res) => {
       try {
 
         tierCharges = await DeliveryCharge.insertMany(defaultTierCharges);
-        console.log('Default tier charges created successfully'); // Debug log
       } catch (insertError) {
-        console.error('Error creating default tier charges:', insertError);
-
         tierCharges = defaultTierCharges.map((charge, index) => ({
           ...charge,
           _id: `temp_${index}` // Temporary ID for display
@@ -82,14 +79,11 @@ exports.getAllDeliveryCharges = async (req, res) => {
       cities: Array.isArray(charge.cities) ? charge.cities : (charge.cities ? charge.cities.split(', ').map(city => city.trim()) : [])
     }));
 
-    console.log('Formatted tier charges:', formattedTierCharges); // Debug log
-
     res.render('admin/admin-delivery-charges', {
       deliveryCharges: formattedTierCharges,
       activePage: 'delivery-charges'
     });
   } catch (error) {
-    console.error('Error fetching delivery charges:', error);
 
     const fallbackTierCharges = [
       {

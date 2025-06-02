@@ -433,6 +433,7 @@ const loadProductDetail = async (req, res) => {
     const productId = req.params.id;
     const now = new Date();
     const offerService = require('../../services/newOfferService');
+    const Review = require('../../models/reviewSchema');
 
 
     if (!mongoose.Types.ObjectId.isValid(productId)) {
@@ -509,6 +510,25 @@ const loadProductDetail = async (req, res) => {
       finalPrice
     });
 
+    // Fetch reviews for this product
+    const reviews = await Review.find({
+      product: productId,
+      isBlocked: false
+    })
+    .populate('user', 'name')
+    .sort({ createdAt: -1 })
+    .limit(5); // Show latest 5 reviews on product page
+
+    // Calculate rating distribution
+    const allReviews = await Review.find({ product: productId, isBlocked: false });
+    const ratingDistribution = {
+      5: 0, 4: 0, 3: 0, 2: 0, 1: 0
+    };
+
+    allReviews.forEach(review => {
+      ratingDistribution[review.rating]++;
+    });
+
     const productData = {
       _id: product._id,
       name: product.productName,
@@ -527,13 +547,13 @@ const loadProductDetail = async (req, res) => {
       stock: product.quantity,
       isNew: (Date.now() - new Date(product.createdAt)) < (7 * 24 * 60 * 60 * 1000),
       rating: product.averageRating || 0,
-      reviewCount: 0, // Placeholder
+      reviewCount: product.reviewCount || 0,
       coupons: [], // Placeholder
       highlights: [], // Placeholder
       specifications: {}, // Placeholder
       longDescription: product.description,
-      reviews: [], // Placeholder
-      ratingDistribution: null, // Placeholder
+      reviews: reviews,
+      ratingDistribution: ratingDistribution,
       isBlocked: product.isBlocked, // Pass blocked status
       status: product.status // Pass availability status
     };

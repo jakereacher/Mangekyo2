@@ -1177,18 +1177,13 @@ function formatCurrency(amount) {
                 }
             }
 
-            // Debug: Log chart data
-            console.log('Chart Data:', chartData);
-
             // Validate data before initializing charts
             if (chartData.products.labels.length === 0) {
-                console.warn('No product data available');
                 document.getElementById('topProductsChart').parentElement.innerHTML =
                     '<div class="text-center p-4"><i class="fas fa-info-circle text-muted"></i><br>No product sales data available for the selected period</div>';
             }
 
             if (chartData.categories.labels.length === 0) {
-                console.warn('No category data available');
                 document.getElementById('categoryChart').parentElement.innerHTML =
                     '<div class="text-center p-4"><i class="fas fa-info-circle text-muted"></i><br>No category sales data available for the selected period</div>';
             }

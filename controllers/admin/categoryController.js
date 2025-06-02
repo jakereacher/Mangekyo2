@@ -65,7 +65,6 @@ const categoryInfo = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("Error in categoryInfo:", error);
     res.redirect("/admin/pageerror");
   }
 };

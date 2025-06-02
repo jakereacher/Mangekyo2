@@ -62,6 +62,10 @@ const productSchema = new Schema({
     type: Number,
     default: 0
   },
+  reviewCount: {
+    type: Number,
+    default: 0
+  },
   isFeatured: {
     type: Boolean,
     default: false
@@ -110,7 +114,6 @@ productSchema.methods.updateOfferDetails = async function() {
     // Double-check offer validity
     const offer = offerResult.offer;
     if (!offer.isActive || offer.startDate > now || offer.endDate < now) {
-      console.log(`Skipping expired or inactive offer: ${offer.name} (${offer._id})`);
       // Clear offer details
       this.offerPercentage = 0;
       this.offer = null;

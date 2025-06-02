@@ -9,6 +9,7 @@ const wishlistController = require("../controllers/user/wishlistController");
 const checkoutController = require("../controllers/user/checkoutController");
 const orderController = require("../controllers/user/orderController");
 const couponController = require("../controllers/user/couponController");
+const reviewController = require("../controllers/user/reviewController");
 const razorpayController = require("../controllers/user/razorpayController");
 const paymentController = require("../controllers/user/paymentController");
 const walletController = require("../controllers/user/walletController");
@@ -103,6 +104,13 @@ router.post('/wishlist/toggle', wishlistController.toggleWishlist);
 router.delete('/wishlist/remove/:productId', wishlistController.removeFromWishlist);
 router.get('/wishlist/status/:productId', wishlistController.getWishlistStatus);
 router.get('/wishlist/count', wishlistController.getWishlistCount);
+
+//review routes
+router.post('/reviews/add', userAuth, reviewController.addReview);
+router.get('/reviews/product/:productId', reviewController.getProductReviews);
+router.get('/reviews/stats/:productId', reviewController.getReviewStats);
+router.get('/reviews/can-review/:productId', reviewController.canUserReview);
+router.delete('/reviews/delete/:reviewId', userAuth, reviewController.deleteReview);
 
 // Delivery Charges
 router.post("/calculate-delivery-charge", deliveryController.calculateDeliveryCharge);

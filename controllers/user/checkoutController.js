@@ -684,8 +684,6 @@ exports.placeOrder = async (req, res) => {
       redirect: `/orders/${newOrder._id}`
     });
   } catch (error) {
-    console.error("Error placing order:", error);
-
     // Ensure JSON response
     res.setHeader('Content-Type', 'application/json');
 

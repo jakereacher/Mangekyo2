@@ -460,53 +460,71 @@
               </div>
 
               <!-- Write Review Button -->
-              <button class="mt-6 w-full px-4 py-2 bg-[#00ffff] text-black font-bold rounded-lg hover:bg-[#0088ff] transition">
+              <button id="writeReviewBtn" class="mt-6 w-full px-4 py-2 bg-[#00ffff] text-black font-bold rounded-lg hover:bg-[#0088ff] transition">
                 Write a Review
               </button>
             </div>
 
             <!-- Review List -->
             <div class="md:col-span-2">
-              <% if (product.reviews && product.reviews.length> 0) { %>
-              <div class="space-y-6">
-                <% product.reviews.forEach(review=> { %>
-                <div class="p-4 bg-gray-800 rounded-lg">
-                  <div class="flex justify-between mb-2">
-                    <h4 class="font-bold">
-                      <%= review.title %>
-                    </h4>
-                    <div class="flex">
-                      <% for(let i=1; i <=5; i++) { %>
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 <%= i <= review.rating ? 'text-yellow-400' : 'text-gray-600' %>" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                      <% } %>
+              <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold">Recent Reviews</h3>
+                <% if (product.reviewCount > 5) { %>
+                <button id="loadMoreReviews" class="text-[#00ffff] hover:text-[#0088ff] text-sm">
+                  View All Reviews
+                </button>
+                <% } %>
+              </div>
+
+              <div id="reviewsList">
+                <% if (product.reviews && product.reviews.length > 0) { %>
+                <div class="space-y-6">
+                  <% product.reviews.forEach(review => { %>
+                  <div class="p-4 bg-gray-800 rounded-lg">
+                    <div class="flex justify-between mb-2">
+                      <h4 class="font-bold">
+                        <%= review.title %>
+                      </h4>
+                      <div class="flex">
+                        <% for(let i=1; i <= 5; i++) { %>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 <%= i <= review.rating ? 'text-yellow-400' : 'text-gray-600' %>" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                        <% } %>
+                      </div>
+                    </div>
+
+                    <p class="text-gray-300 mb-2">
+                      <%= review.content %>
+                    </p>
+
+                    <div class="flex justify-between items-center text-sm text-gray-400">
+                      <div class="flex items-center">
+                        <span class="font-medium">
+                          <%= review.user.name %>
+                        </span>
+                        <% if (review.isVerifiedPurchase) { %>
+                        <span class="ml-2 px-2 py-1 bg-green-600 text-green-100 text-xs rounded">
+                          Verified Purchase
+                        </span>
+                        <% } %>
+                      </div>
+                      <div class="flex items-center space-x-2">
+                        <span>
+                          <%= new Date(review.createdAt).toLocaleDateString() %>
+                        </span>
+                        <% if (user && review.user._id.toString() === user._id.toString()) { %>
+                        <button onclick="deleteReview('<%= review._id %>')"
+                                class="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded border border-red-400 hover:border-red-300 transition"
+                                title="Delete Review">
+                          Delete
+                        </button>
+                        <% } %>
+                      </div>
                     </div>
                   </div>
-
-                  <p class="text-gray-300 mb-2">
-                    <%= review.content %>
-                  </p>
-
-                  <div class="flex justify-between text-sm text-gray-400">
-                    <span>
-                      <%= review.user %>
-                    </span>
-                    <span>
-                      <%= new Date(review.date).toLocaleDateString() %>
-                    </span>
-                  </div>
-
-                  <% if (review.images && review.images.length> 0) { %>
-                  <div class="mt-3 flex space-x-2">
-                    <% review.images.forEach(image=> { %>
-                    <img src="<%= image %>" alt="Review image" class="w-16 h-16 object-cover rounded">
-                    <% }); %>
-                  </div>
-                  <% } %>
+                  <% }); %>
                 </div>
-                <% }); %>
-              </div>
 
               <!-- Pagination -->
               <div class="mt-6 flex justify-center">
@@ -524,7 +542,7 @@
                 <h3 class="text-lg font-bold mb-2">No Reviews Yet</h3>
                 <p class="text-gray-400 mb-4">Be the first to review this product!
                 </p>
-                <button class="px-6 py-2 bg-[#00ffff] text-black font-bold rounded-lg hover:bg-[#0088ff] transition">
+                <button id="writeFirstReviewBtn" class="px-6 py-2 bg-[#00ffff] text-black font-bold rounded-lg hover:bg-[#0088ff] transition">
                   Write a Review
                 </button>
               </div>
@@ -1117,6 +1135,343 @@
       notification.remove();
     }, 3000);
   }
+
+  // Review functionality
+  document.addEventListener('DOMContentLoaded', function() {
+    const writeReviewBtn = document.getElementById('writeReviewBtn');
+    const writeFirstReviewBtn = document.getElementById('writeFirstReviewBtn');
+    const loadMoreReviews = document.getElementById('loadMoreReviews');
+    const productId = '<%= product._id %>';
+
+    // Handle write review button clicks
+    if (writeReviewBtn) {
+      writeReviewBtn.addEventListener('click', () => openReviewModal());
+    }
+    if (writeFirstReviewBtn) {
+      writeFirstReviewBtn.addEventListener('click', () => openReviewModal());
+    }
+
+    // Handle load more reviews
+    if (loadMoreReviews) {
+      loadMoreReviews.addEventListener('click', () => loadAllReviews());
+    }
+
+    // Check if user can review this product
+    checkReviewEligibility();
+  });
+
+  async function checkReviewEligibility() {
+    try {
+      const response = await fetch(`/reviews/can-review/<%= product._id %>`);
+      const data = await response.json();
+
+      if (!data.canReview) {
+        const writeReviewBtn = document.getElementById('writeReviewBtn');
+        const writeFirstReviewBtn = document.getElementById('writeFirstReviewBtn');
+
+        if (writeReviewBtn) {
+          writeReviewBtn.disabled = true;
+          writeReviewBtn.textContent = data.reason;
+          writeReviewBtn.classList.remove('bg-[#00ffff]', 'hover:bg-[#0088ff]');
+          writeReviewBtn.classList.add('bg-gray-600', 'cursor-not-allowed');
+        }
+        if (writeFirstReviewBtn) {
+          writeFirstReviewBtn.disabled = true;
+          writeFirstReviewBtn.textContent = data.reason;
+          writeFirstReviewBtn.classList.remove('bg-[#00ffff]', 'hover:bg-[#0088ff]');
+          writeFirstReviewBtn.classList.add('bg-gray-600', 'cursor-not-allowed');
+        }
+      }
+    } catch (error) {
+      console.error('Error checking review eligibility:', error);
+    }
+  }
+
+  function openReviewModal() {
+    Swal.fire({
+      title: 'Write a Review',
+      html: `
+        <div class="text-left">
+          <div class="mb-4">
+            <label class="block text-sm font-medium mb-2">Rating</label>
+            <div class="flex space-x-1" id="starRating" style="justify-content: flex-start;">
+              <svg class="w-8 h-8 cursor-pointer star-rating text-gray-400" data-rating="1" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+              </svg>
+              <svg class="w-8 h-8 cursor-pointer star-rating text-gray-400" data-rating="2" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+              </svg>
+              <svg class="w-8 h-8 cursor-pointer star-rating text-gray-400" data-rating="3" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+              </svg>
+              <svg class="w-8 h-8 cursor-pointer star-rating text-gray-400" data-rating="4" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+              </svg>
+              <svg class="w-8 h-8 cursor-pointer star-rating text-gray-400" data-rating="5" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+              </svg>
+            </div>
+          </div>
+          <div class="mb-4">
+            <label class="block text-sm font-medium mb-2">Review Title</label>
+            <input type="text" id="reviewTitle" class="w-full px-3 py-2 border border-gray-600 rounded-lg bg-gray-700 text-white"
+                   placeholder="Summarize your review" maxlength="100">
+          </div>
+          <div class="mb-4">
+            <label class="block text-sm font-medium mb-2">Review Content</label>
+            <textarea id="reviewContent" rows="4" class="w-full px-3 py-2 border border-gray-600 rounded-lg bg-gray-700 text-white"
+                      placeholder="Share your experience with this product" maxlength="1000"></textarea>
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Submit Review',
+      cancelButtonText: 'Cancel',
+      confirmButtonColor: '#00ffff',
+      background: '#1F2937',
+      color: 'white',
+      didOpen: () => {
+        // Add small delay to ensure DOM is ready
+        setTimeout(() => {
+          // Add star rating functionality
+          const stars = document.querySelectorAll('.star-rating');
+          let selectedRating = 0;
+
+          function updateStarDisplay(rating) {
+            stars.forEach((star, index) => {
+              if (index < rating) {
+                star.classList.remove('text-gray-400');
+                star.classList.add('text-yellow-400');
+              } else {
+                star.classList.remove('text-yellow-400');
+                star.classList.add('text-gray-400');
+              }
+            });
+          }
+
+          stars.forEach((star, index) => {
+            star.style.cursor = 'pointer';
+            star.addEventListener('click', function(e) {
+              e.preventDefault();
+              e.stopPropagation();
+              selectedRating = parseInt(this.dataset.rating);
+              updateStarDisplay(selectedRating);
+              window.selectedRating = selectedRating;
+              console.log('Selected rating:', selectedRating);
+            });
+
+            star.addEventListener('mouseenter', function() {
+              const rating = parseInt(this.dataset.rating);
+              updateStarDisplay(rating);
+            });
+
+            star.addEventListener('mouseleave', function() {
+              updateStarDisplay(selectedRating);
+            });
+          });
+
+          const starContainer = document.getElementById('starRating');
+          if (starContainer) {
+            starContainer.addEventListener('mouseleave', function() {
+              updateStarDisplay(selectedRating);
+            });
+          }
+
+          // Initialize rating
+          window.selectedRating = selectedRating;
+          console.log('Star rating initialized');
+        }, 100);
+      },
+      preConfirm: () => {
+        const rating = window.selectedRating;
+        const title = document.getElementById('reviewTitle').value.trim();
+        const content = document.getElementById('reviewContent').value.trim();
+
+        if (!rating) {
+          Swal.showValidationMessage('Please select a rating');
+          return false;
+        }
+        if (!title) {
+          Swal.showValidationMessage('Please enter a review title');
+          return false;
+        }
+        if (!content) {
+          Swal.showValidationMessage('Please enter review content');
+          return false;
+        }
+
+        return { rating, title, content };
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        submitReview(result.value);
+      }
+    });
+  }
+
+  async function submitReview(reviewData) {
+    try {
+      const response = await fetch('/reviews/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          productId: '<%= product._id %>',
+          ...reviewData
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        Swal.fire({
+          title: 'Review Submitted!',
+          text: 'Thank you for your review. It will be visible shortly.',
+          icon: 'success',
+          confirmButtonColor: '#00ffff',
+          background: '#1F2937',
+          color: 'white'
+        }).then(() => {
+          // Reload the page to show the new review
+          window.location.reload();
+        });
+      } else {
+        Swal.fire({
+          title: 'Error',
+          text: data.message || 'Failed to submit review',
+          icon: 'error',
+          confirmButtonColor: '#00ffff',
+          background: '#1F2937',
+          color: 'white'
+        });
+      }
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      Swal.fire({
+        title: 'Error',
+        text: 'An error occurred while submitting your review',
+        icon: 'error',
+        confirmButtonColor: '#00ffff',
+        background: '#1F2937',
+        color: 'white'
+      });
+    }
+  }
+
+  async function loadAllReviews() {
+    try {
+      const response = await fetch(`/reviews/product/<%= product._id %>?limit=20`);
+      const data = await response.json();
+
+      if (response.ok && data.reviews) {
+        const reviewsList = document.getElementById('reviewsList');
+        const currentUserId = '<%= user ? user._id : "" %>';
+        const reviewsHtml = data.reviews.map(review => `
+          <div class="p-4 bg-gray-800 rounded-lg">
+            <div class="flex justify-between mb-2">
+              <h4 class="font-bold">${review.title}</h4>
+              <div class="flex">
+                ${[1,2,3,4,5].map(i => `
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ${i <= review.rating ? 'text-yellow-400' : 'text-gray-600'}" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                  </svg>
+                `).join('')}
+              </div>
+            </div>
+            <p class="text-gray-300 mb-2">${review.content}</p>
+            <div class="flex justify-between items-center text-sm text-gray-400">
+              <div class="flex items-center">
+                <span class="font-medium">${review.user.name}</span>
+                ${review.isVerifiedPurchase ? '<span class="ml-2 px-2 py-1 bg-green-600 text-green-100 text-xs rounded">Verified Purchase</span>' : ''}
+              </div>
+              <div class="flex items-center space-x-2">
+                <span>${new Date(review.createdAt).toLocaleDateString()}</span>
+                ${currentUserId && review.user._id === currentUserId ?
+                  `<button onclick="deleteReview('${review._id}')"
+                           class="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded border border-red-400 hover:border-red-300 transition"
+                           title="Delete Review">
+                     Delete
+                   </button>` : ''}
+              </div>
+            </div>
+          </div>
+        `).join('');
+
+        reviewsList.innerHTML = `<div class="space-y-6">${reviewsHtml}</div>`;
+
+        // Hide the "View All Reviews" button
+        const loadMoreBtn = document.getElementById('loadMoreReviews');
+        if (loadMoreBtn) {
+          loadMoreBtn.style.display = 'none';
+        }
+      }
+    } catch (error) {
+      console.error('Error loading reviews:', error);
+    }
+  }
+
+  // Delete review function
+  async function deleteReview(reviewId) {
+    try {
+      const result = await Swal.fire({
+        title: 'Delete Review?',
+        text: 'Are you sure you want to delete this review? This action cannot be undone.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Yes, delete it!',
+        cancelButtonText: 'Cancel',
+        background: '#1F2937',
+        color: 'white'
+      });
+
+      if (result.isConfirmed) {
+        const response = await fetch(`/reviews/delete/${reviewId}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          Swal.fire({
+            title: 'Deleted!',
+            text: 'Your review has been deleted successfully.',
+            icon: 'success',
+            confirmButtonColor: '#00ffff',
+            background: '#1F2937',
+            color: 'white'
+          }).then(() => {
+            // Reload the page to update the reviews
+            window.location.reload();
+          });
+        } else {
+          Swal.fire({
+            title: 'Error',
+            text: data.message || 'Failed to delete review',
+            icon: 'error',
+            confirmButtonColor: '#00ffff',
+            background: '#1F2937',
+            color: 'white'
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting review:', error);
+      Swal.fire({
+        title: 'Error',
+        text: 'An error occurred while deleting your review',
+        icon: 'error',
+        confirmButtonColor: '#00ffff',
+        background: '#1F2937',
+        color: 'white'
+      });
+    }
+  }
 </script>
 
 <!-- SweetAlert2 CDN -->
@@ -1138,5 +1493,16 @@
   .swal2-toast {
     background-color: #374151 !important;
     color: white !important;
+  }
+  .star-rating {
+    cursor: pointer !important;
+    transition: color 0.2s ease !important;
+  }
+  .star-rating:hover {
+    color: #FACC15 !important;
+  }
+  #starRating {
+    display: flex !important;
+    gap: 4px !important;
   }
 </style>

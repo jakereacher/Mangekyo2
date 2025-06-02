@@ -539,7 +539,6 @@ exports.renderSalesReport = async (req, res) => {
       res.render("admin/admin-sales-report", renderData);
     }
   } catch (error) {
-    console.error("Error generating sales report:", error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).render("admin/admin-error", {
       message: "Failed to generate sales report",
       activePage: "reports"
@@ -744,7 +743,6 @@ exports.getSalesReportOrders = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("Sales report orders error:", error);
     res.status(500).json({ error: 'Failed to fetch orders' });
   }
 };
@@ -923,7 +921,7 @@ exports.getSalesReportProducts = async (req, res) => {
 //=================================================================================================
 // This function downloads the sales report as a CSV file.
 // It generates a CSV file and sends it to the client.
-//=================================================================================================   
+//=================================================================================================
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
@@ -1980,8 +1978,6 @@ exports.downloadSalesReportPDF = async (req, res) => {
     doc.end();
 
   } catch (error) {
-    console.error("Error generating PDF sales report:", error);
-
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).render("admin/admin-error", {
       message: "Failed to generate PDF sales report",
       activePage: "reports"

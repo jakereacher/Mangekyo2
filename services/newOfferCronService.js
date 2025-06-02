@@ -39,33 +39,33 @@ const initOfferCronJobs = () => {
       // Remove offer references from products
       const productsUpdated = await Product.updateMany(
         { offer: { $in: offerIds } },
-        { 
-          $set: { 
+        {
+          $set: {
             offer: null,
             productOffer: false,
             offerPercentage: 0,
             offerType: null,
             offerEndDate: null
-          } 
+          }
         }
       );
 
       // Remove offer references from categories
       const categoriesUpdated = await Category.updateMany(
         { offer: { $in: offerIds } },
-        { 
-          $set: { 
+        {
+          $set: {
             offer: null,
             categoryOffer: 0,
             offerType: null,
             offerEndDate: null
-          } 
+          }
         }
       );
 
       console.log(`Updated ${productsUpdated.modifiedCount} products and ${categoriesUpdated.modifiedCount} categories to remove expired offers`);
     } catch (error) {
-      console.error('Error in offer expiration cron job:', error);
+      // Error in offer expiration cron job - silently continue
     }
   });
 

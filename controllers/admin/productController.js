@@ -29,7 +29,7 @@ const getProductAddPage = async (req, res) => {
 //=================================================================================================
 // This function adds a new product to the database.
 // It validates the product data and creates a new product object.
-//================================================================================================= 
+//=================================================================================================
 const addProducts = async (req, res) => {
   try {
     const products = req.body;
@@ -76,7 +76,6 @@ if (req.files && req.files.length > 0) {
       return res.redirect("/admin/add-products?error=Product+already+exists");
     }
   } catch (error) {
-    console.error("Error saving product:", error);
     return res.redirect("/admin/pageerror");
   }
 };
@@ -149,7 +148,6 @@ const getProductList = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("Error fetching products:", error);
     res.redirect("/admin/pageerror");
   }
 };
@@ -175,7 +173,7 @@ const deleteProduct = async (req, res) => {
         try {
           await fs.promises.unlink(imagePath);
         } catch (unlinkError) {
-          console.warn(`Failed to delete image ${imagePath}: ${unlinkError.message}`);
+          // Failed to delete image - continue silently
         }
       }
     }
@@ -183,7 +181,6 @@ const deleteProduct = async (req, res) => {
     await Product.findByIdAndDelete(productId);
     return res.redirect("/admin/products");
   } catch (error) {
-    console.error("Error deleting product:", error);
     return res.redirect("/admin/pageerror");
   }
 };

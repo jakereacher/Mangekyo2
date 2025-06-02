@@ -9,19 +9,6 @@ const Product = require("../../models/productSchema");
 const Wallet = require("../../models/walletSchema");
 const WalletTransaction = require("../../models/walletTransactionSchema");
 const StatusCodes = require("../../utils/httpStatusCodes");
-const winston = require("winston");
-
-//=================================================================================================
-// Logger
-//=================================================================================================
-// This is a logger for the order controller.
-// It logs the errors and other information to the console and a file.
-//=================================================================================================
-const logger = winston.createLogger({
-  level: "error",
-  format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
-  transports: [new winston.transports.File({ filename: "error.log" }), new winston.transports.Console()],
-});
 
 //=================================================================================================
 // Calculate Overall Status
@@ -66,7 +53,6 @@ exports.getAllOrders = async (req, res) => {
   try {
     const adminId = req.session.admin;
     if (!adminId) {
-      logger.error("Unauthorized access to /admin/orders", { adminId: null });
       return res.status(StatusCodes.UNAUTHORIZED).redirect("/admin/login");
     }
 
@@ -107,7 +93,6 @@ exports.getAllOrders = async (req, res) => {
       activePage: "orders",
     });
   } catch (error) {
-    logger.error("Error fetching all orders", { error: error.message, stack: error.stack });
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).render("admin/error", {
       message: "Failed to load orders",
       activePage: "orders",
@@ -126,12 +111,10 @@ exports.getAdminOrderDetails = async (req, res) => {
     const { orderId } = req.params;
     const adminId = req.session.admin;
     if (!adminId) {
-      logger.error("Unauthorized access to /admin/orders/:orderId", { orderId, adminId: null });
       return res.status(StatusCodes.UNAUTHORIZED).redirect("/admin/login");
     }
 
     if (!mongoose.Types.ObjectId.isValid(orderId)) {
-      logger.error("Invalid orderId format", { orderId });
       return res.status(StatusCodes.BAD_REQUEST).render("admin/error", {
         message: "Invalid order ID",
         activePage: "orders",
@@ -144,7 +127,6 @@ exports.getAdminOrderDetails = async (req, res) => {
       .lean();
 
     if (!order) {
-      logger.error("Order not found", { orderId });
       return res.status(StatusCodes.NOT_FOUND).render("admin/error", {
         message: "Order not found",
         activePage: "orders",
@@ -215,11 +197,6 @@ exports.getAdminOrderDetails = async (req, res) => {
       activePage: "orders",
     });
   } catch (error) {
-    logger.error("Error fetching admin order details", {
-      orderId: req.params.orderId,
-      error: error.message,
-      stack: error.stack,
-    });
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).render("admin/error", {
       message: "Failed to load order details",
       activePage: "orders",
@@ -239,7 +216,6 @@ exports.updateOrderItemStatus = async (req, res) => {
     const { productId, status } = req.body;
     const adminId = req.session.admin;
     if (!adminId) {
-      logger.error("Unauthorized attempt to update item status", { orderId, productId, adminId: null });
       return res.status(StatusCodes.UNAUTHORIZED).json({
         success: false,
         message: "Admin not authenticated",
@@ -247,7 +223,6 @@ exports.updateOrderItemStatus = async (req, res) => {
     }
 
     if (!mongoose.Types.ObjectId.isValid(orderId)) {
-      logger.error("Invalid orderId format", { orderId });
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
         message: "Invalid order ID",
@@ -255,7 +230,6 @@ exports.updateOrderItemStatus = async (req, res) => {
     }
 
     if (!mongoose.Types.ObjectId.isValid(productId)) {
-      logger.error("Invalid productId format", { productId });
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
         message: "Invalid product ID",
@@ -264,7 +238,6 @@ exports.updateOrderItemStatus = async (req, res) => {
 
     const validStatuses = ["Processing", "Shipped", "Delivered", "Cancelled"];
     if (!validStatuses.includes(status)) {
-      logger.error("Invalid status provided", { orderId, productId, status });
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
         message: "Invalid status",
@@ -273,7 +246,6 @@ exports.updateOrderItemStatus = async (req, res) => {
 
     const order = await Order.findById(orderId);
     if (!order) {
-      logger.error("Order not found for status update", { orderId });
       return res.status(StatusCodes.NOT_FOUND).json({
         success: false,
         message: "Order not found",
@@ -282,7 +254,6 @@ exports.updateOrderItemStatus = async (req, res) => {
 
     const item = order.orderedItems.find((item) => item.product.toString() === productId);
     if (!item) {
-      logger.error("Item not found in order", { orderId, productId });
       return res.status(StatusCodes.NOT_FOUND).json({
         success: false,
         message: "Item not found in order",
@@ -303,7 +274,6 @@ exports.updateOrderItemStatus = async (req, res) => {
           updatedProduct.status = "Available";
           await updatedProduct.save();
         }
-        logger.info("Restored product quantity", { productId, quantity: item.quantity });
 
         if (order.paymentStatus === "Paid" || order.paymentMethod === "razorpay" || order.paymentMethod === "wallet") {
           const refundAmount = item.price * item.quantity;
@@ -324,8 +294,6 @@ exports.updateOrderItemStatus = async (req, res) => {
             orderId: orderId
           });
           await transaction.save();
-
-          logger.info("Added refund to user wallet", { userId: order.userId, amount: refundAmount });
         }
 
         order.cancelledBy = "admin";
@@ -361,11 +329,6 @@ exports.updateOrderItemStatus = async (req, res) => {
 
       if (item.status === "Cancelled" && status !== "Cancelled") {
         if (product.quantity < item.quantity) {
-          logger.error("Insufficient stock for status update", {
-            productId,
-            available: product.quantity,
-            required: item.quantity,
-          });
           return res.status(StatusCodes.BAD_REQUEST).json({
             success: false,
             message: `Insufficient stock to ship item ${product.productName}. Available: ${product.quantity}`,
@@ -382,7 +345,6 @@ exports.updateOrderItemStatus = async (req, res) => {
           updatedProduct.status = "Out of Stock";
           await updatedProduct.save();
         }
-        logger.info("Reduced product quantity", { productId, quantity: item.quantity });
       }
 
       if (status === "Delivered" && item.status !== "Delivered") {
@@ -394,7 +356,6 @@ exports.updateOrderItemStatus = async (req, res) => {
         item.order_cancel_reason = "Cancelled by admin";
       }
 
-      const oldStatus = item.status;
       item.status = status;
 
       await order.save();
@@ -402,31 +363,18 @@ exports.updateOrderItemStatus = async (req, res) => {
       if (order.paymentMethod === "cod" && order.orderedItems.every((item) => item.status === "Delivered")) {
         order.paymentStatus = "Paid";
         await order.save();
-        logger.info("Updated payment status to Paid", { orderId });
       }
       res.status(StatusCodes.OK).json({
         success: true,
         message: "Item status updated successfully",
       });
     } catch (error) {
-      logger.error("Error updating item status", {
-        orderId: req.params.orderId,
-        productId: req.body.productId,
-        error: error.message,
-        stack: error.stack,
-      });
       res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
         success: false,
         message: "Failed to update item status",
       });
     }
   } catch (error) {
-    logger.error("Error updating item status", {
-      orderId: req.params.orderId,
-      productId: req.body.productId,
-      error: error.message,
-      stack: error.stack,
-    });
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: "Failed to update item status",
@@ -445,7 +393,6 @@ exports.getReturnRequests = async (req, res) => {
   try {
     const adminId = req.session.admin;
     if (!adminId) {
-      logger.error("Unauthorized access to /admin/return-requests", { adminId: null });
       return res.status(StatusCodes.UNAUTHORIZED).redirect("/admin/login");
     }
 
@@ -518,7 +465,6 @@ exports.getReturnRequests = async (req, res) => {
       }
     });
   } catch (error) {
-    logger.error("Error fetching return requests", { error: error.message, stack: error.stack });
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).render("admin-error", {
       message: "Failed to load return requests",
       activePage: "returns",
@@ -538,7 +484,6 @@ exports.approveReturn = async (req, res) => {
     const { productId } = req.body;
     const adminId = req.session.admin;
     if (!adminId) {
-      logger.error("Unauthorized attempt to approve return", { orderId, productId, adminId: null });
       return res.status(StatusCodes.UNAUTHORIZED).json({
         success: false,
         message: "Admin not authenticated",
@@ -546,7 +491,6 @@ exports.approveReturn = async (req, res) => {
     }
 
     if (!mongoose.Types.ObjectId.isValid(orderId) || !mongoose.Types.ObjectId.isValid(productId)) {
-      logger.error("Invalid orderId or productId format", { orderId, productId });
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
         message: "Invalid order or product ID",
@@ -555,7 +499,6 @@ exports.approveReturn = async (req, res) => {
 
     const order = await Order.findById(orderId);
     if (!order) {
-      logger.error("Order not found for return approval", { orderId });
       return res.status(StatusCodes.NOT_FOUND).json({
         success: false,
         message: "Order not found",
@@ -585,7 +528,6 @@ exports.approveReturn = async (req, res) => {
 
     const item = order.orderedItems.find((item) => item.product.toString() === productId);
     if (!item) {
-      logger.error("Item not found in order", { orderId, productId });
       return res.status(StatusCodes.NOT_FOUND).json({
         success: false,
         message: "Item not found in order",
@@ -593,7 +535,6 @@ exports.approveReturn = async (req, res) => {
     }
 
     if (item.status !== "Return Request" || item.order_return_status !== "Pending") {
-      logger.error("Item does not have a pending return request", { orderId, productId, status: item.status });
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
         message: "Item does not have a pending return request",
@@ -627,21 +568,11 @@ exports.approveReturn = async (req, res) => {
       wallet.balance += refundAmount;
       await wallet.save();
 
-      logger.info("Added refund to user wallet", {
-      userId: order.userId,
-      amount: refundAmount,
-      });
-
-await transaction.save();
-logger.info("Transaction recorded for refund", {
-  transactionId: transaction._id,
-  userId: order.userId,
-});
+      await transaction.save();
 
       await Product.findByIdAndUpdate(productId, {
         $inc: { quantity: item.quantity },
       });
-      logger.info("Restored product quantity", { productId, quantity: item.quantity });
 
       await order.save();
       res.status(StatusCodes.OK).json({
@@ -649,19 +580,12 @@ logger.info("Transaction recorded for refund", {
         message: "Return approved and refund added to user wallet",
       });
     } catch (error) {
-      logger.error("Error processing return approval", { orderId, productId, error: error.message, stack: error.stack });
       res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
         success: false,
         message: "Failed to process return approval",
       });
     }
   } catch (error) {
-    logger.error("Error approving return", {
-      orderId: req.params.orderId,
-      productId: req.body.productId,
-      error: error.message,
-      stack: error.stack,
-    });
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: "Failed to approve return",
@@ -681,7 +605,6 @@ exports.rejectReturn = async (req, res) => {
     const { productId, adminResponse } = req.body;
     const adminId = req.session.admin;
     if (!adminId) {
-      logger.error("Unauthorized attempt to reject return", { orderId, productId, adminId: null });
       return res.status(StatusCodes.UNAUTHORIZED).json({
         success: false,
         message: "Admin not authenticated",
@@ -689,7 +612,6 @@ exports.rejectReturn = async (req, res) => {
     }
 
     if (!mongoose.Types.ObjectId.isValid(orderId) || !mongoose.Types.ObjectId.isValid(productId)) {
-      logger.error("Invalid orderId or productId format", { orderId, productId });
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
         message: "Invalid order or product ID",
@@ -697,7 +619,6 @@ exports.rejectReturn = async (req, res) => {
     }
 
     if (!adminResponse || adminResponse.trim() === "") {
-      logger.error("Missing admin response for return rejection", { orderId, productId });
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
         message: "Admin response is required for rejection",
@@ -706,7 +627,6 @@ exports.rejectReturn = async (req, res) => {
 
     const order = await Order.findById(orderId);
     if (!order) {
-      logger.error("Order not found for return rejection", { orderId });
       return res.status(StatusCodes.NOT_FOUND).json({
         success: false,
         message: "Order not found",
@@ -715,7 +635,6 @@ exports.rejectReturn = async (req, res) => {
 
     const item = order.orderedItems.find((item) => item.product.toString() === productId);
     if (!item) {
-      logger.error("Item not found in order", { orderId, productId });
       return res.status(StatusCodes.NOT_FOUND).json({
         success: false,
         message: "Item not found in order",
@@ -723,7 +642,6 @@ exports.rejectReturn = async (req, res) => {
     }
 
     if (item.status !== "Return Request" || item.order_return_status !== "Pending") {
-      logger.error("Item does not have a pending return request", { orderId, productId, status: item.status });
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
         message: "Item does not have a pending return request",
@@ -740,12 +658,6 @@ exports.rejectReturn = async (req, res) => {
       message: "Return request rejected",
     });
   } catch (error) {
-    logger.error("Error rejecting return", {
-      orderId: req.params.orderId,
-      productId: req.body.productId,
-      error: error.message,
-      stack: error.stack,
-    });
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: "Failed to reject return",

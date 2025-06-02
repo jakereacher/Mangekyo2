@@ -204,8 +204,6 @@ const addCoupon = async (req, res) => {
       coupon: newCoupon,
     });
   } catch (error) {
-    console.error("Error adding coupon:", error);
-
     if (error.code === 11000) {
       return res.status(StatusCodes.CONFLICT).json({
         success: false,
@@ -330,7 +328,7 @@ const restoreCoupon = async (req, res) => {
 //=================================================================================================
 // This function edits a coupon in the database.
 // It updates the coupon's code, type, discount value, limit, min price, max price, start date, and expiry date.
-//================================================================================================= 
+//=================================================================================================
 const editCoupon = async (req, res) => {
   try {
     const {
@@ -487,8 +485,6 @@ const editCoupon = async (req, res) => {
       coupon,
     });
   } catch (error) {
-    console.error("Error editing coupon:", error);
-
     if (error.code === 11000) {
       return res.status(StatusCodes.CONFLICT).json({
         success: false,

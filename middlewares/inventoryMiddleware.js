@@ -79,7 +79,6 @@ const validateInventory = async (req, res, next) => {
     }
 
     if (inventoryIssues.length > 0) {
-      console.warn('Inventory validation failed during checkout', { userId, issues: inventoryIssues });
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
         message: "Some items in your cart are unavailable or out of stock",

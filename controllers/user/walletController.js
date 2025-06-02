@@ -104,8 +104,6 @@ const addMoney = async (req, res) => {
       transactionId: transaction._id
     });
   } catch (error) {
-    console.error("Error adding money to wallet:", error);
-
     let errorMessage = "Failed to add money to wallet";
     let statusCode = StatusCodes.INTERNAL_SERVER_ERROR;
 
@@ -343,7 +341,6 @@ const getWalletTransactions = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("Error getting wallet transactions:", error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: "Failed to get wallet transactions",

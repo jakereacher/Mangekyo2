@@ -15,8 +15,6 @@ const StatusCodes = require('../utils/httpStatusCodes');
  * @param {Function} next - Next middleware function
  */
 const handleApiErrors = (err, req, res, next) => {
-  console.error('Error caught by error handler:', err);
-
   // Check if response has already been sent
   if (res.headersSent) {
     return next(err);
@@ -154,8 +152,6 @@ const ensureJsonForCheckout = (req, res, next) => {
       // For non-AJAX requests, override res.json to force redirects
       const originalJson = res.json;
       res.json = function(data) {
-        console.warn('Preventing JSON response for non-AJAX checkout request:', req.originalUrl);
-
         // Determine redirect URL based on the error
         let redirectUrl = '/cart';
         if (data.message && (data.message.includes('not authenticated') || data.message.includes('User not authenticated'))) {

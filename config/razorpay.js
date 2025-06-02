@@ -22,9 +22,9 @@ const razorpay = new Razorpay({
 
 // Test the Razorpay instance
 try {
-  console.log('Initializing Razorpay with key ID:', razorpayKeyId);
+  // Razorpay initialized successfully
 } catch (error) {
-  console.error('Error initializing Razorpay:', error);
+  // Error initializing Razorpay - silently continue
 }
 
 module.exports = {

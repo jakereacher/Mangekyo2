@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const app = express();
 const path = require("path");
+const morgan = require("morgan");
 const passport = require("./config/passport");
 const session = require("express-session");
 const flash = require('connect-flash');
@@ -9,6 +10,7 @@ const db = require("./config/db");
 const userRouter = require("./routes/userRouter");
 const adminRouter = require("./routes/adminRouter");
 const { initOfferCronJobs } = require('./services/newOfferCronService');
+const { initLogRotation } = require('./services/logRotationService');
 const { provideCartCount } = require('./middlewares/cartMiddleware');
 const { handleApiErrors, handleApiNotFound } = require('./middlewares/errorHandler');
 
@@ -18,6 +20,104 @@ const { handleApiErrors, handleApiNotFound } = require('./middlewares/errorHandl
 db();
 // Initialize offer cron jobs
 initOfferCronJobs();
+// Initialize log rotation service
+initLogRotation();
+
+//=================================================================================================
+// Morgan HTTP Request Logging Configuration
+//=================================================================================================
+
+// Custom Morgan tokens for enhanced logging
+morgan.token('user-id', (req) => {
+  if (req.session?.user) {
+    return req.session.user._id || req.session.user.toString() || 'authenticated';
+  }
+  return 'anonymous';
+});
+
+morgan.token('route-type', (req) => {
+  if (req.originalUrl.startsWith('/admin')) return 'ADMIN';
+  if (req.originalUrl.startsWith('/api')) return 'API';
+  if (req.xhr || req.headers.accept?.includes('application/json')) return 'AJAX';
+  return 'WEB';
+});
+
+morgan.token('session-id', (req) => {
+  return req.sessionID ? req.sessionID.substring(0, 8) : 'no-session';
+});
+
+morgan.token('req-size', (req) => {
+  const size = req.get('content-length');
+  return size ? `${size}b` : '0b';
+});
+
+morgan.token('user-agent-short', (req) => {
+  const ua = req.get('user-agent') || '';
+  if (ua.includes('Chrome')) return 'Chrome';
+  if (ua.includes('Firefox')) return 'Firefox';
+  if (ua.includes('Safari')) return 'Safari';
+  if (ua.includes('Edge')) return 'Edge';
+  if (ua.includes('Postman')) return 'Postman';
+  if (ua.includes('curl')) return 'curl';
+  return 'Other';
+});
+
+// Skip function for static files
+const skipStatic = (req, res) => {
+  return req.url.startsWith('/public') ||
+         req.url.startsWith('/images') ||
+         req.url.startsWith('/css') ||
+         req.url.startsWith('/js') ||
+         req.url.startsWith('/uploads') ||
+         req.url === '/favicon.ico' ||
+         req.url === '/health' ||
+         req.url === '/ping';
+};
+
+// Configure Morgan based on environment
+if (process.env.NODE_ENV === 'production') {
+  // Production: Log to files with detailed information
+  const fs = require('fs');
+  const logsDir = path.join(__dirname, 'logs');
+  if (!fs.existsSync(logsDir)) {
+    fs.mkdirSync(logsDir, { recursive: true });
+  }
+
+  // 1. General access log
+  const accessLogStream = fs.createWriteStream(path.join(logsDir, 'access.log'), { flags: 'a' });
+  app.use(morgan(':remote-addr - :user-id [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent" :response-time ms - Session: :session-id - Size: :req-size', {
+    stream: accessLogStream,
+    skip: skipStatic
+  }));
+
+  // 2. Error log (4xx and 5xx responses)
+  const errorLogStream = fs.createWriteStream(path.join(logsDir, 'error.log'), { flags: 'a' });
+  app.use(morgan(':date[iso] ERROR :remote-addr :method :url :status :response-time ms - User: :user-id - Session: :session-id - ":user-agent"', {
+    stream: errorLogStream,
+    skip: (req, res) => res.statusCode < 400 || skipStatic(req, res)
+  }));
+
+  // 3. API-specific log
+  const apiLogStream = fs.createWriteStream(path.join(logsDir, 'api.log'), { flags: 'a' });
+  app.use(morgan(':date[iso] API :method :url :status :response-time ms - User: :user-id - Size: :req-size/:res[content-length]', {
+    stream: apiLogStream,
+    skip: (req, res) => {
+      const isApi = req.originalUrl.startsWith('/api') || req.xhr || req.headers.accept?.includes('application/json');
+      return !isApi || skipStatic(req, res);
+    }
+  }));
+
+} else {
+  // Development: Log to console with enhanced format
+  app.use(morgan(':route-type :method :url :status :response-time ms - :res[content-length] - User: :user-id - :user-agent-short', {
+    skip: skipStatic
+  }));
+
+  // Also log errors separately in development for easier debugging
+  app.use(morgan(':date[iso] ERROR :method :url :status :response-time ms - User: :user-id - :user-agent-short', {
+    skip: (req, res) => res.statusCode < 400 || skipStatic(req, res)
+  }));
+}
 
 app.use(flash());
 app.use(express.json({ limit: '50mb' }));
@@ -108,8 +208,6 @@ app.use((req, res, next) => {
       // For ALL non-AJAX, non-API routes, override res.json to prevent JSON pages
       const originalJson = res.json;
       res.json = function(data) {
-        console.warn('🚫 BLOCKING JSON page for non-AJAX browser request:', req.originalUrl, 'Data:', data);
-
       // Determine redirect URL based on the error and route
       let redirectUrl = '/';
 
@@ -139,8 +237,6 @@ app.use((req, res, next) => {
         text: (data && data.message) || 'An error occurred'
       };
 
-      console.warn('🔄 Redirecting to:', redirectUrl, 'with message:', req.session.message.text);
-
         // Force redirect instead of JSON
         return res.redirect(redirectUrl);
       };
@@ -153,8 +249,6 @@ app.use((req, res, next) => {
         // Override the json method on the returned object
         const originalStatusJson = statusResult.json;
         statusResult.json = function(data) {
-          console.warn('🚫 BLOCKING JSON page for non-AJAX browser request (via status):', req.originalUrl, 'Status:', statusCode, 'Data:', data);
-
         // Use the same logic as above
         let redirectUrl = '/';
 
@@ -183,8 +277,6 @@ app.use((req, res, next) => {
           type: (data && data.success) ? 'success' : 'error',
           text: (data && data.message) || 'An error occurred'
         };
-
-        console.warn('🔄 Redirecting to:', redirectUrl, 'with message:', req.session.message.text);
 
         // Force redirect instead of JSON
         return res.redirect(redirectUrl);

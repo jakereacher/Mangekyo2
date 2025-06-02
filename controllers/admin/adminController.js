@@ -55,7 +55,6 @@ const login = async (req, res) => {
     res.redirect('/admin/dashboard');
 
   } catch (error) {
-    console.error('Login error:', error);
     res.render('admin-login', { message: 'Login failed' });
   }
 };
@@ -454,7 +453,6 @@ const loadDashboard = async(req, res) => {
       }
     });
   } catch (error) {
-    console.error("Dashboard error:", error);
     // Provide empty data structures to prevent undefined errors
     res.render("admin/dashboard", {
       activePage: 'dashboard',
@@ -622,7 +620,6 @@ const getDashboardOrders = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("Dashboard orders error:", error);
     res.status(500).json({ error: 'Failed to fetch orders' });
   }
 };
@@ -675,7 +672,6 @@ const getDashboardProducts = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("Dashboard products error:", error);
     res.status(500).json({ error: 'Failed to fetch products' });
   }
 };

@@ -17,19 +17,19 @@ mongoose.connect(process.env.MONGO_URI)
 async function updateProductStatuses() {
   try {
     console.log('Starting product status update...');
-    
+
     // Find all products
     const products = await Product.find({});
     console.log(`Found ${products.length} products to check`);
-    
+
     let updatedCount = 0;
     let noChangeCount = 0;
-    
+
     // Update each product's status based on quantity
     for (const product of products) {
       const oldStatus = product.status;
       const newStatus = product.quantity > 0 ? 'Available' : 'Out of Stock';
-      
+
       if (oldStatus !== newStatus) {
         product.status = newStatus;
         await product.save();
@@ -39,18 +39,17 @@ async function updateProductStatuses() {
         noChangeCount++;
       }
     }
-    
+
     console.log('\nUpdate summary:');
     console.log(`- Total products checked: ${products.length}`);
     console.log(`- Products updated: ${updatedCount}`);
     console.log(`- Products already correct: ${noChangeCount}`);
     console.log('\nProduct status update completed successfully!');
-    
+
     // Close the MongoDB connection
     mongoose.connection.close();
     console.log('MongoDB connection closed');
   } catch (error) {
-    console.error('Error updating product statuses:', error);
     mongoose.connection.close();
     process.exit(1);
   }

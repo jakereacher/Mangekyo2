@@ -51,7 +51,6 @@ const customerInfo = async (req, res) => {
       searchParamsWithoutLimit: searchParamsWithoutLimit
     });
   } catch (error) {
-    console.error("Error in customerInfo:", error);
     res.redirect("/admin/pageerror");
   }
 };

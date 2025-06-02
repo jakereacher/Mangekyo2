@@ -69,7 +69,6 @@ async function addReferralReward(userId, amount, description) {
 
     return true;
   } catch (error) {
-    console.error(`Error adding referral reward to user ${userId}:`, error);
     return false;
   }
 }
@@ -97,7 +96,6 @@ async function sendVerificationEmail(email, otp) {
 
     return info.accepted.length > 0;
   } catch (error) {
-    console.error("Error sending email", error);
     return false;
   }
 }

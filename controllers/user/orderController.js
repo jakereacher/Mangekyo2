@@ -324,17 +324,7 @@ const getOrderDetails = async (req, res) => {
 
           const canReturn = isDelivered && hasDeliveryDate && canMakeReturnRequest && withinReturnPeriod;
 
-          // Debug logging for troubleshooting (only for delivered items)
-          if (isDelivered) {
-            console.log(`Item ${item.product._id || item.product} return check:`, {
-              status: item.status,
-              deliveryDate: item.order_delivered_date,
-              returnStatus: item.order_return_status,
-              canMakeReturnRequest,
-              withinReturnPeriod,
-              canReturn
-            });
-          }
+          // Return check for delivered items
 
           return canReturn;
         })(),
@@ -1227,13 +1217,6 @@ const cancelAllItems = async (req, res) => {
       });
 
   } catch (error) {
-    console.error("Error cancelling all items in order:", error);
-    console.error("Error stack:", error.stack);
-
-    console.error("Error details:", JSON.stringify({
-      message: error.message,
-      errorName: error.name
-    }));
 
     res.status(500)
       .header('Content-Type', 'application/json')

@@ -11,7 +11,8 @@ const userAuth =(req,res,next)=>{
                       req.originalUrl.includes('/wallet/') ||
                       req.originalUrl.includes('/checkout/') ||
                       req.originalUrl.includes('/cart/') ||
-                      req.originalUrl.includes('/orders/');
+                      req.originalUrl.includes('/orders/') ||
+                      req.originalUrl.includes('/reviews/');
 
   if(req.session.user){
     User.findById(req.session.user)
