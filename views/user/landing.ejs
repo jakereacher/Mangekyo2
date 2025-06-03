@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to Mangeyko</title>
+    <title>Welcome to Mangekyo</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         * {
@@ -11,7 +11,7 @@
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             overflow: hidden;
@@ -20,14 +20,14 @@
             background: black;
             filter: grayscale(100%); /* Apply grayscale to the entire page */
         }
-        
+
         .video-container {
             position: absolute;
             width: 100%;
             height: 100%;
             overflow: hidden;
         }
-        
+
         .video-bg {
             position: absolute;
             width: 100%;
@@ -36,11 +36,11 @@
             opacity: 0;
             transition: opacity 1.5s ease-in-out;
         }
-        
+
         .active-video {
             opacity: 0.7;
         }
-        
+
         @keyframes glitch {
             0% { text-shadow: 2px 2px #ff0000, -2px -2px #00ffff; }
             25% { text-shadow: -2px -2px #ff0000, 2px 2px #00ffff; }
@@ -48,14 +48,14 @@
             75% { text-shadow: -2px 2px #ff0000, 2px -2px #00ffff; }
             100% { text-shadow: 2px 2px #ff0000, -2px -2px #00ffff; }
         }
-        
+
         .glitch-text {
             font-size: 8rem;
             font-weight: bold;
             color: #00ffff;
             animation: glitch 0.2s infinite;
         }
-        
+
         .welcome-text {
             color: white;
             font-size: 1.5rem;
@@ -63,7 +63,7 @@
             letter-spacing: 2px;
             text-align: center;
         }
-        
+
         .login-btn {
             background: transparent;
             color: #00ffff;
@@ -79,7 +79,7 @@
             overflow: hidden;
             z-index: 1;
         }
-        
+
         .login-btn:before {
             content: '';
             position: absolute;
@@ -91,15 +91,15 @@
             transition: all 0.3s ease;
             z-index: -1;
         }
-        
+
         .login-btn:hover {
             color: black;
         }
-        
+
         .login-btn:hover:before {
             width: 100%;
         }
-        
+
         .content-wrapper {
             position: relative;
             z-index: 10;
@@ -111,7 +111,7 @@
             align-items: center;
             gap: 2rem;
         }
-        
+
         .overlay {
             position: absolute;
             top: 0;
@@ -130,54 +130,54 @@
             <source src="videos/4K Beautiful Anime Scenery.mp4" type="video/mp4">
         </video>
     </div>
-    
+
     <!-- Dark Overlay -->
     <div class="overlay"></div>
-    
+
     <!-- Content -->
     <div class="content-wrapper">
         <h1 class="glitch-text">ショップ</h1>
-        <p class="welcome-text">Welcome to Mangeyko - Your Ultimate Manga Merchandise Destination</p>
+        <p class="welcome-text">Welcome to Mangekyo - Your Ultimate Manga Merchandise Destination</p>
         <a href="/login" class="login-btn">LOGIN</a>
     </div>
-    
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const videos = document.querySelectorAll('.video-bg');
             let currentVideoIndex = 0;
-            
+
             // Start playing the first video
             videos[0].play();
-            
+
             // Function to switch to the next video
             function playNextVideo() {
                 // Remove active class from current video
                 videos[currentVideoIndex].classList.remove('active-video');
-                
+
                 // Increment index and reset if needed
                 currentVideoIndex = (currentVideoIndex + 1) % videos.length;
-                
+
                 // Add active class to next video and play it
                 videos[currentVideoIndex].classList.add('active-video');
                 videos[currentVideoIndex].currentTime = 0;
                 videos[currentVideoIndex].play();
             }
-            
+
             // Listen for video end event
             videos.forEach(video => {
                 video.addEventListener('ended', playNextVideo);
             });
-            
+
             // Ensure videos are preloaded
             videos.forEach(video => {
                 video.load();
             });
-            
+
             // Add click event to login button
             document.querySelector('.login-btn').addEventListener('mouseenter', function() {
                 const glitchText = document.querySelector('.glitch-text');
                 glitchText.style.animation = 'glitch 0.05s infinite';
-                
+
                 setTimeout(() => {
                     glitchText.style.animation = 'glitch 0.2s infinite';
                 }, 500);
