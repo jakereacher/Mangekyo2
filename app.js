@@ -349,21 +349,50 @@ app.use(handleApiErrors);
 
 
 
-// SSL certificate options
-const sslOptions = {
-  key: fs.readFileSync('/etc/letsencrypt/live/mangekyo.rohanjacob.store/privkey.pem'),
-  cert: fs.readFileSync('/etc/letsencrypt/live/mangekyo.rohanjacob.store/fullchain.pem'),
-};
+// Check if SSL certificates exist and start appropriate server
+const sslCertPath = '/etc/letsencrypt/live/mangekyo.rohanjacob.store/privkey.pem';
+const sslCertExists = fs.existsSync(sslCertPath);
 
-// Start HTTPS server on port 443
-https.createServer(sslOptions, app).listen(443, () => {
-  console.log('HTTPS server running on port 443');
-});
+if (sslCertExists && process.env.NODE_ENV === 'production') {
+  try {
+    // SSL certificate options
+    const sslOptions = {
+      key: fs.readFileSync('/etc/letsencrypt/live/mangekyo.rohanjacob.store/privkey.pem'),
+      cert: fs.readFileSync('/etc/letsencrypt/live/mangekyo.rohanjacob.store/fullchain.pem'),
+    };
 
-// Redirect HTTP requests to HTTPS
-http.createServer((req, res) => {
-  res.writeHead(301, { Location: `https://${req.headers.host}${req.url}` });
-  res.end();
-}).listen(80);
+    // Start HTTPS server on port 443
+    https.createServer(sslOptions, app).listen(443, () => {
+      console.log('HTTPS server running on port 443');
+    });
+
+    // Redirect HTTP requests to HTTPS
+    http.createServer((req, res) => {
+      res.writeHead(301, { Location: `https://${req.headers.host}${req.url}` });
+      res.end();
+    }).listen(80, () => {
+      console.log('HTTP redirect server running on port 80');
+    });
+
+  } catch (error) {
+    console.error('Failed to start HTTPS server:', error.message);
+    console.log('Falling back to HTTP server...');
+
+    // Fallback to HTTP
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`HTTP server running on port ${PORT} (HTTPS failed)`);
+    });
+  }
+} else {
+  // Development or no SSL certificates - use HTTP
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`HTTP server running on port ${PORT} (Development mode)`);
+    if (!sslCertExists) {
+      console.log('SSL certificates not found - running in HTTP mode');
+    }
+  });
+}
 
 module.exports = app;
