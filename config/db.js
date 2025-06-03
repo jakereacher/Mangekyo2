@@ -3,13 +3,31 @@ require('dotenv').config();
 
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI,{
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
+    // Simple connection without deprecated options
+    await mongoose.connect(process.env.MONGO_URI, {
+      // Only use essential connection options
+      serverSelectionTimeoutMS: 30000, // 30 seconds
+      socketTimeoutMS: 45000, // 45 seconds
     });
-    console.log(`DB connected`);
+
+    console.log(`DB connected successfully`);
+
+    // Set up connection event listeners
+    mongoose.connection.on('error', (err) => {
+      console.error('MongoDB connection error:', err);
+    });
+
+    mongoose.connection.on('disconnected', () => {
+      console.log('MongoDB disconnected');
+    });
+
+    mongoose.connection.on('reconnected', () => {
+      console.log('MongoDB reconnected');
+    });
+
   } catch (error) {
-    //process.exit(1);
+    console.error('Failed to connect to MongoDB:', error);
+    // Don't exit process, let the app handle the error gracefully
   }
 };
 

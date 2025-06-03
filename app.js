@@ -17,11 +17,26 @@ const { handleApiErrors, handleApiNotFound } = require('./middlewares/errorHandl
 
 
 
-db();
-// Initialize offer cron jobs
-initOfferCronJobs();
-// Initialize log rotation service
-initLogRotation();
+// Initialize database connection first
+const initializeApp = async () => {
+  try {
+    await db();
+
+    // Wait a bit for connection to be fully established
+    setTimeout(() => {
+      // Initialize offer cron jobs after database connection
+      initOfferCronJobs();
+      console.log('Cron jobs initialized after database connection');
+    }, 2000);
+
+    // Initialize log rotation service
+    initLogRotation();
+  } catch (error) {
+    console.error('Failed to initialize application:', error);
+  }
+};
+
+initializeApp();
 
 //=================================================================================================
 // Morgan HTTP Request Logging Configuration

@@ -519,42 +519,52 @@ const editCoupon = async (req, res) => {
 //=================================================================================================
 // This cron job updates the status of coupons based on their start and expiry dates.
 // It activates coupons that have started and are not active, and deactivates coupons that have expired.
+// Runs every 5 minutes to reduce database load
 //=================================================================================================
-cron.schedule("* * * * *", async () => {
+cron.schedule("*/5 * * * *", async () => {
   try {
+    // Check if database is connected before running cron job
+    if (mongoose.connection.readyState !== 1) {
+      console.log("Database not connected, skipping coupon status update");
+      return;
+    }
+
     const now = new Date();
 
-    const couponsToActivate = await Coupon.find({
-      startDate: { $lte: now },
-      isActive: false,
-      isDelete: false,
-    });
-
-    const activationUpdates = couponsToActivate.map((coupon) => {
-      coupon.isActive = true;
-      coupon.updated_at = now;
-      return coupon.save();
-    });
-
-    await Promise.all(activationUpdates);
-
-    const expiredCoupons = await Coupon.find({
-      expiryDate: { $lt: now },
-      isActive: true,
-      isDelete: false,
-    });
-
-    const deactivationUpdates = expiredCoupons.map((coupon) => {
-      coupon.isActive = false;
-      coupon.updated_at = now;
-      return coupon.save();
-    });
-
-    await Promise.all(deactivationUpdates);
-
-    console.log(
-      `Cron job: Activated ${activationUpdates.length} coupons, Deactivated ${deactivationUpdates.length} coupons`
+    // Use bulk operations for better performance
+    const activationResult = await Coupon.updateMany(
+      {
+        startDate: { $lte: now },
+        isActive: false,
+        isDelete: false,
+      },
+      {
+        $set: {
+          isActive: true,
+          updated_at: now
+        }
+      }
     );
+
+    const deactivationResult = await Coupon.updateMany(
+      {
+        expiryDate: { $lt: now },
+        isActive: true,
+        isDelete: false,
+      },
+      {
+        $set: {
+          isActive: false,
+          updated_at: now
+        }
+      }
+    );
+
+    if (activationResult.modifiedCount > 0 || deactivationResult.modifiedCount > 0) {
+      console.log(
+        `Coupon cron job: Activated ${activationResult.modifiedCount} coupons, Deactivated ${deactivationResult.modifiedCount} coupons`
+      );
+    }
   } catch (error) {
     console.error("Error running cron job for coupon status update:", error);
   }

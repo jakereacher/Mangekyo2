@@ -1,4 +1,5 @@
 const cron = require('node-cron');
+const mongoose = require('mongoose');
 const Offer = require('../models/offerSchema');
 const Product = require('../models/productSchema');
 const Category = require('../models/categorySchema');
@@ -13,6 +14,12 @@ const initOfferCronJobs = () => {
   // Run every hour
   cron.schedule('0 * * * *', async () => {
     try {
+      // Check if database is connected before running cron job
+      if (mongoose.connection.readyState !== 1) {
+        console.log("Database not connected, skipping offer expiration check");
+        return;
+      }
+
       const now = new Date();
       console.log(`[${now.toISOString()}] Running offer expiration check...`);
 
@@ -65,7 +72,7 @@ const initOfferCronJobs = () => {
 
       console.log(`Updated ${productsUpdated.modifiedCount} products and ${categoriesUpdated.modifiedCount} categories to remove expired offers`);
     } catch (error) {
-      // Error in offer expiration cron job - silently continue
+      console.error('Error in offer expiration cron job:', error);
     }
   });
 
