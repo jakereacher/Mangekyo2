@@ -3,9 +3,6 @@ const express = require("express");
 const app = express();
 const path = require("path");
 const morgan = require("morgan");
-const https = require("https");
-const http = require("http");
-const fs = require("fs");
 const passport = require("./config/passport");
 const session = require("express-session");
 const flash = require('connect-flash');
@@ -142,6 +139,17 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
+
+// Explicitly serve uploads directory for better AWS compatibility
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
+
+// Debug middleware for image requests (only in development)
+if (process.env.NODE_ENV !== 'production') {
+  app.use('/uploads', (req, res, next) => {
+    console.log(`📸 Image request: ${req.originalUrl}`);
+    next();
+  });
+}
 
 // Serve favicon.ico from root path
 app.get('/favicon.ico', (req, res) => {
@@ -349,50 +357,9 @@ app.use(handleApiErrors);
 
 
 
-// Check if SSL certificates exist and start appropriate server
-const sslCertPath = '/etc/letsencrypt/live/mangekyo.rohanjacob.store/privkey.pem';
-const sslCertExists = fs.existsSync(sslCertPath);
-
-if (sslCertExists && process.env.NODE_ENV === 'production') {
-  try {
-    // SSL certificate options
-    const sslOptions = {
-      key: fs.readFileSync('/etc/letsencrypt/live/mangekyo.rohanjacob.store/privkey.pem'),
-      cert: fs.readFileSync('/etc/letsencrypt/live/mangekyo.rohanjacob.store/fullchain.pem'),
-    };
-
-    // Start HTTPS server on port 443
-    https.createServer(sslOptions, app).listen(443, () => {
-      console.log('HTTPS server running on port 443');
-    });
-
-    // Redirect HTTP requests to HTTPS
-    http.createServer((req, res) => {
-      res.writeHead(301, { Location: `https://${req.headers.host}${req.url}` });
-      res.end();
-    }).listen(80, () => {
-      console.log('HTTP redirect server running on port 80');
-    });
-
-  } catch (error) {
-    console.error('Failed to start HTTPS server:', error.message);
-    console.log('Falling back to HTTP server...');
-
-    // Fallback to HTTP
-    const PORT = process.env.PORT || 3000;
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`HTTP server running on port ${PORT} (HTTPS failed)`);
-    });
-  }
-} else {
-  // Development or no SSL certificates - use HTTP
-  const PORT = process.env.PORT || 3000;
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`HTTP server running on port ${PORT} (Development mode)`);
-    if (!sslCertExists) {
-      console.log('SSL certificates not found - running in HTTP mode');
-    }
-  });
-}
+const PORT = process.env.PORT;
+app.listen(PORT, '0.0.0.0', () => {
+  console.log('Server running and accessible externally');
+});
 
 module.exports = app;
