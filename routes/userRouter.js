@@ -58,6 +58,17 @@ const {
 router.get("/", loadLandingpage);
 router.get("/signup", loadSignUppage);
 router.get("/login", loadLoginpage);
+router.get("/verify-otp", (req, res) => {
+  // Render OTP verification page if user has session data
+  if (req.session.userData && req.session.userOtp) {
+    const hasReferralCode = req.session.userData.referralCode && req.session.userData.referralCode.trim() !== '';
+    res.render("verify-otp", {
+      referralBonus: hasReferralCode
+    });
+  } else {
+    res.redirect("/signup");
+  }
+});
 router.get("/home", checkExpiredOffers, updateProductOffers, loadHome);
 router.get("/pageNotFound", pageNotFound);
 router.get("/forgot-password", loadForgotPassword);

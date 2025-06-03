@@ -55,9 +55,12 @@ const signup = async (req, res) => {
     }
 
     const otp = generateOtp();
+    console.log("Generated OTP for signup:", otp, "for email:", email);
+
     const emailSent = await sendVerificationEmail(email, otp);
 
     if (!emailSent) {
+      console.log("Failed to send OTP email to:", email);
       return res.render("signup", {
         message: "Failed to send OTP. Check email settings.",
         previousInput: { name, email, referralCode }
@@ -72,6 +75,12 @@ const signup = async (req, res) => {
       password: password.trim(),
       referralCode: referralCode ? referralCode.trim() : null
     };
+
+    console.log("Session data stored:", {
+      otp: req.session.userOtp,
+      timestamp: req.session.otpTimestamp,
+      userData: req.session.userData
+    });
 
     const hasReferralCode = referralCode && referralCode.trim() !== '';
     res.render("verify-otp", {

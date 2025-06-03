@@ -200,13 +200,29 @@
 
                 fetch('/verify-otp', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Accept': 'application/json'
+                    },
                     body: new URLSearchParams({ otp: otpValue })
                 })
                 .then(response => {
-    console.log('Sending OTP to server:', otpValue); // Log the OTP being sent
-    return response.json();
-})
+                    console.log('Sending OTP to server:', otpValue);
+                    console.log('Response status:', response.status);
+                    console.log('Response headers:', response.headers.get('content-type'));
+
+                    // Check if response is JSON
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        return response.json();
+                    } else {
+                        // If not JSON, get text and throw error
+                        return response.text().then(text => {
+                            console.error('Non-JSON response received:', text);
+                            throw new Error('Server returned non-JSON response');
+                        });
+                    }
+                })
                 .then(data => {
                     console.log('Server response:', data);
                     if (data.success) {
@@ -231,9 +247,17 @@
                 })
                 .catch(error => {
                     console.error('Error verifying OTP:', error);
+                    let errorMessage = 'An error occurred while verifying OTP.';
+
+                    if (error.message.includes('JSON.parse')) {
+                        errorMessage = 'Server response error. Please try again or contact support.';
+                    } else if (error.message.includes('non-JSON')) {
+                        errorMessage = 'Server configuration error. Please try again later.';
+                    }
+
                     Swal.fire({
                         title: 'Error!',
-                        text: 'An error occurred while verifying OTP.',
+                        text: errorMessage,
                         icon: 'error',
                         confirmButtonColor: '#00ffff',
                         confirmButtonText: 'OK'

@@ -188,7 +188,9 @@ app.use((req, res, next) => {
     '/wallet/balance',
     '/wallet/transactions',
     '/razorpay/test',
-    '/wallet/test'
+    '/wallet/test',
+    '/verify-otp',
+    '/resend-otp'
   ];
 
   // Check if this is a real API route that should return JSON

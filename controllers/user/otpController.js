@@ -75,6 +75,8 @@ async function addReferralReward(userId, amount, description) {
 
 async function sendVerificationEmail(email, otp) {
   try {
+    console.log("Attempting to send OTP email to:", email, "with OTP:", otp);
+
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
       port: 587,
@@ -89,36 +91,82 @@ async function sendVerificationEmail(email, otp) {
     const info = await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
-      subject: "verify your account",
-      text: `Your OTP is ${otp}`,
-      html: `<b> Your OTP:${otp}</b>`,
+      subject: "Verify Your Mangekyo Account",
+      text: `Your OTP for account verification is: ${otp}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #00ffff;">Verify Your Mangekyo Account</h2>
+          <p>Thank you for signing up! Please use the following OTP to verify your account:</p>
+          <div style="background-color: #f0f0f0; padding: 20px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 3px; margin: 20px 0;">
+            ${otp}
+          </div>
+          <p>This OTP will expire in 2 minutes.</p>
+          <p>If you didn't request this verification, please ignore this email.</p>
+        </div>
+      `,
     });
 
+    console.log("Email sent successfully:", info.messageId);
     return info.accepted.length > 0;
   } catch (error) {
+    console.error("Error sending verification email:", error);
     return false;
   }
 }
 
 const verifyOtp = async (req, res) => {
+    // Ensure response is always JSON
+    res.setHeader('Content-Type', 'application/json');
+
     try {
       const { otp } = req.body;
+
+      // Validate input
+      if (!otp || otp.trim() === '') {
+        return res.status(400).json({ success: false, message: "OTP is required" });
+      }
+
+      // Check session data
+      if (!req.session.userOtp || !req.session.userData || !req.session.otpTimestamp) {
+        return res.status(400).json({
+          success: false,
+          message: "Session expired. Please try signing up again."
+        });
+      }
+
       const otpTimestamp = req.session.otpTimestamp;
       const currentTime = Date.now();
       const timeDifference = (currentTime - otpTimestamp) / 1000;
+
+      console.log("OTP Verification Debug:", {
+        receivedOtp: otp,
+        receivedOtpType: typeof otp,
+        sessionOtp: req.session.userOtp,
+        sessionOtpType: typeof req.session.userOtp,
+        otpTimestamp,
+        currentTime,
+        timeDifference,
+        hasUserData: !!req.session.userData,
+        userEmail: req.session.userData?.email
+      });
+
       if (!otpTimestamp || timeDifference > 120) {
+        console.log("OTP expired - timeDifference:", timeDifference);
         return res.status(400).json({ success: false, message: "OTP has expired" });
       }
 
-      if (otp === req.session.userOtp) {
+      if (otp && req.session.userOtp && otp.toString().trim() === req.session.userOtp.toString().trim()) {
+        console.log("OTP matched, proceeding with user creation");
         const user = req.session.userData;
 
         if (!user) {
+          console.log("User data not found in session");
           return res.status(400).json({ success: false, message: "User data not found in session" });
         }
 
         const existingUser = await User.findOne({ email: user.email });
         if (existingUser) {
+          console.log("User already exists with email:", user.email);
           return res.status(400).json({
             success: false,
             message: "A user with this email already exists",
@@ -130,8 +178,17 @@ const verifyOtp = async (req, res) => {
           const referrer = await User.findOne({ referralCode: user.referralCode });
           if (referrer) {
             referrerId = referrer._id;
+            console.log("Found referrer:", referrerId);
+          } else {
+            console.log("Referral code provided but referrer not found:", user.referralCode);
           }
         }
+
+        console.log("Creating new user with data:", {
+          name: user.name,
+          email: user.email,
+          referredBy: referrerId
+        });
 
         const passwordHash = await securePassword(user.password);
         const saveUserData = new User({
@@ -143,23 +200,47 @@ const verifyOtp = async (req, res) => {
         });
 
         await saveUserData.save();
+        console.log("User saved successfully with ID:", saveUserData._id);
+
         req.session.user = saveUserData._id;
 
         if (referrerId) {
-          await processReferralReward(referrerId, saveUserData._id);
+          console.log("Processing referral reward for referrer:", referrerId, "and new user:", saveUserData._id);
+          try {
+            await processReferralReward(referrerId, saveUserData._id);
+            console.log("Referral reward processed successfully");
+          } catch (referralError) {
+            console.error("Error processing referral reward:", referralError);
+            // Don't fail the entire registration for referral errors
+          }
         }
 
+        // Clear session data
+        delete req.session.userOtp;
+        delete req.session.otpTimestamp;
+        delete req.session.userData;
+
+        console.log("OTP verification completed successfully");
         res.json({ success: true, redirectUrl: "/home" });
       } else {
+        console.log("OTP mismatch - received:", otp, "expected:", req.session.userOtp);
         res.status(400).json({ success: false, message: "Invalid OTP" });
       }
     } catch (error) {
       console.error("Error verifying OTP:", error);
-      res.status(500).json({ success: false, message: "An error occurred during verification" });
+      console.error("Error stack:", error.stack);
+
+      // Ensure we always return JSON even on error
+      if (!res.headersSent) {
+        res.status(500).json({ success: false, message: "An error occurred during verification" });
+      }
     }
   };
 
 const resendOtp = async (req, res) => {
+  // Ensure response is always JSON
+  res.setHeader('Content-Type', 'application/json');
+
   try {
     const email = req.session.userData?.email;
     if (!email) {
