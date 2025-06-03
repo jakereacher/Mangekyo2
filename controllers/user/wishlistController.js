@@ -2,7 +2,7 @@
  * WishlistController
  */
 
-const Wishlist = require('../../models/wishlistSchema');
+const Wishlist = require('../../models/wishListSchema');
 const Product = require('../../models/productSchema');
 const Cart = require('../../models/cartSchema');
 const User = require('../../models/userSchema');
