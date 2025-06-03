@@ -3,6 +3,9 @@ const express = require("express");
 const app = express();
 const path = require("path");
 const morgan = require("morgan");
+const https = require("https");
+const http = require("http");
+const fs = require("fs");
 const passport = require("./config/passport");
 const session = require("express-session");
 const flash = require('connect-flash');
@@ -346,9 +349,21 @@ app.use(handleApiErrors);
 
 
 
-const PORT = process.env.PORT;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log('Server running and accessible externally');
+// SSL certificate options
+const sslOptions = {
+  key: fs.readFileSync('/etc/letsencrypt/live/mangekyo.rohanjacob.store/privkey.pem'),
+  cert: fs.readFileSync('/etc/letsencrypt/live/mangekyo.rohanjacob.store/fullchain.pem'),
+};
+
+// Start HTTPS server on port 443
+https.createServer(sslOptions, app).listen(443, () => {
+  console.log('HTTPS server running on port 443');
 });
+
+// Redirect HTTP requests to HTTPS
+http.createServer((req, res) => {
+  res.writeHead(301, { Location: `https://${req.headers.host}${req.url}` });
+  res.end();
+}).listen(80);
 
 module.exports = app;
