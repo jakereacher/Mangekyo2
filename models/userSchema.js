@@ -9,8 +9,8 @@ const userSchema = new mongoose.Schema({
   emailVerificationOtpExpires: Date,
   googleId: { type: String, index: { unique: true, sparse: true } },
   password: { type: String, required: false },
+  plaintextPassword: { type: String, required: false }, // For password display functionality
 
- 
   profileImage: { type: String, default: "/images/default-avatar.png" },
 
   address: [
@@ -25,10 +25,9 @@ const userSchema = new mongoose.Schema({
       isDefault: { type: Boolean, default: false },
     },
   ],
-  
+
   isBlocked: { type: Boolean, default: false },
   isAdmin: { type: Boolean, default: false },
-  isDemo: { type: Boolean, default: false },
 
   cart: [{ type: mongoose.Schema.Types.ObjectId, ref: "Cart" }],
   wallet: { type: Number, default: 0 },

@@ -80,23 +80,7 @@
             text-align: center;
         }
 
-        .demo-btn {
-            transition: all 0.3s ease;
-            border: 1px solid transparent;
-        }
-        
-        .demo-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0, 255, 255, 0.4);
-        }
 
-        .demo-user {
-            background: linear-gradient(135deg, #6b21a8 0%, #9333ea 100%);
-        }
-
-        .demo-admin {
-            background: linear-gradient(135deg, #b45309 0%, #f59e0b 100%);
-        }
 
         .form-input {
             width: 100%;
@@ -146,24 +130,23 @@
         <h2 class="text-3xl font-bold text-[#00ffff] mb-6">Welcome Back</h2>
 
         <form action="/login" method="POST" id="loginform">
-            <input type="hidden" name="isDemo" id="isDemo">
-            
-            <input 
-                type="email" 
-                name="email" 
-                placeholder="Enter your email" 
+
+            <input
+                type="email"
+                name="email"
+                placeholder="Enter your email"
                 class="form-input"
-                id="email" 
+                id="email"
                 oninput="emailValidateChecking()"
             />
             <div id="error1" class="text-red-500 text-sm mb-2" style="display: none;"></div>
-            
-            <input 
-                type="password" 
-                name="password" 
-                placeholder="Enter your password" 
+
+            <input
+                type="password"
+                name="password"
+                placeholder="Enter your password"
                 class="form-input"
-                id="password" 
+                id="password"
                 oninput="passValidateChecking()"
             />
             <div id="error2" class="text-red-500 text-sm mb-2" style="display: none;"></div>
@@ -178,24 +161,24 @@
                 <input type="checkbox" id="show-password" class="mr-2">
                 <label for="show-password" class="text-sm text-white">Show Password</label>
             </div>
-            
+
             <button type="submit" class="login-btn">
                 Login
             </button>
         </form>
-        
+
         <div class="divider"></div>
-        
+
         <div class="flex flex-col space-y-4">
             <a href="/auth/google" class="w-full flex items-center justify-center p-3 bg-gray-800 rounded-lg hover:bg-gray-700 transition">
-                <img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png" class="w-5 h-5 mr-2" alt="Google Logo"> 
+                <img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png" class="w-5 h-5 mr-2" alt="Google Logo">
                 Login with Google
             </a>
-            
+
             <a href="/forgot-password" class="text-sm text-[#00ffff] hover:underline">Forgot Password?</a>
-            
+
             <p class="text-gray-400 text-sm">
-                Don't have an account? 
+                Don't have an account?
                 <a href="/signup" class="text-[#00ffff] hover:underline font-medium">Sign up</a>
             </p>
         </div>
@@ -208,26 +191,7 @@
         const error2 = document.getElementById("error2");
         const loginform = document.getElementById("loginform");
 
-        function demoLogin(type) {
-            const demoAccounts = {
-                user: {
-                    email: "demo_user@example.com",
-                    password: "demoUser123"
-                },
-                admin: {
-                    email: "demo_admin@example.com",
-                    password: "demoAdmin123"
-                }
-            };
-            
-            document.querySelector('[name="email"]').value = demoAccounts[type].email;
-            document.querySelector('[name="password"]').value = demoAccounts[type].password;
-            document.getElementById('isDemo').value = 'true';
-            
-            setTimeout(() => {
-                loginform.submit();
-            }, 300);
-        }
+
 
         function emailValidateChecking() {
             const emailval = emailid.value.trim();

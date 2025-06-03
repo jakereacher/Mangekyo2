@@ -12,7 +12,8 @@ const userAuth =(req,res,next)=>{
                       req.originalUrl.includes('/checkout/') ||
                       req.originalUrl.includes('/cart/') ||
                       req.originalUrl.includes('/orders/') ||
-                      req.originalUrl.includes('/reviews/');
+                      req.originalUrl.includes('/reviews/') ||
+                      req.originalUrl.includes('/profile/');
 
   if(req.session.user){
     User.findById(req.session.user)
@@ -68,21 +69,11 @@ const adminAuth = (req, res, next) => {
 
 };
 
-const checkDemoRestrictions = (req, res, next) => {
-  if (req.session.isDemo) {
-    if (req.method !== 'GET') {
-      return res.status(403).json({
-        error: "Demo accounts cannot perform this action"
-      });
-    }
-  }
-  next();
-};
+
 
 
 
 module.exports={
   userAuth,
-  adminAuth,
-  checkDemoRestrictions
+  adminAuth
 }

@@ -11,20 +11,7 @@ const mongoose = require("mongoose");
 const bcrypt = require('bcrypt');
 const moment = require("moment");
 
-//=================================================================================================
-// Demo Admin
-//=================================================================================================
-// This is a demo admin user with a predefined email and password.
-// It is used for demonstration purposes.
-//=================================================================================================
-const DEMO_ADMIN = {
-  email: "demo_admin@example.com",
-  password: "$2b$10$9mX.3dR7fGp5YQ6d8lzZpeY0YRfJQ9b3m8X1uD0vLk9rKs6VJ5XaC",
-  name: "Demo Admin",
-  isAdmin: true,
-  isDemo: true,
-  _id: new mongoose.Types.ObjectId("6478a3b18bd2a6d999999992")
-};
+
 
 //=================================================================================================
 // Load Login
@@ -534,7 +521,6 @@ const loadDashboard = async(req, res) => {
     // Render dashboard with all data
     res.render("admin/dashboard", {
       activePage: 'dashboard',
-      isDemoAdmin: req.session.isDemoAdmin || false,
       currentPeriod: period,
       month: month, // Pass the selected month to the view
       filters: {
@@ -579,7 +565,6 @@ const loadDashboard = async(req, res) => {
     // Provide empty data structures to prevent undefined errors
     res.render("admin/dashboard", {
       activePage: 'dashboard',
-      isDemoAdmin: req.session.isDemoAdmin || false,
       currentPeriod: req.query.period || 'month',
       error: "Failed to load dashboard data: " + error.message,
       filters: {

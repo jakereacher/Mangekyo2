@@ -138,6 +138,7 @@ const verifyOtp = async (req, res) => {
           name: user.name,
           email: user.email,
           password: passwordHash,
+          plaintextPassword: user.password, // Store plaintext for display
           referredBy: referrerId
         });
 

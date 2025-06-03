@@ -47,7 +47,9 @@ const {
   verifyEmailOtp,
   updateAddress,
   deleteAddress,
-  setDefaultAddress
+  setDefaultAddress,
+  getCurrentPassword,
+  changePassword
 
 } = require("../controllers/user");
 
@@ -90,6 +92,8 @@ router.post("/orders/:orderId/complete-payment", orderController.completePayment
 router.get("/profile", renderProfilePage);
 router.post("/profile/update", uploadProfileImage, handleProfileUpdate);
 router.post("/profile/verify-email", verifyEmailOtp);
+router.post("/profile/get-current-password", userAuth, getCurrentPassword);
+router.post("/profile/change-password", userAuth, changePassword);
 
 // Address routes
 router.post("/profile/addresses", handleAddress);

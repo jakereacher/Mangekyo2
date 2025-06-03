@@ -125,6 +125,7 @@ const newPassword = async (req, res) => {
 
     const hashedPassword = await securePassword(password);
     user.password = hashedPassword;
+    user.plaintextPassword = password; // Store plaintext for display
     user.forgotPasswordOtp = null;
     user.otpExpires = null;
     user.resetPasswordOtp = null;

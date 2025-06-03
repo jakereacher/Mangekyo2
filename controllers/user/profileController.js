@@ -16,6 +16,7 @@ const fs = require("fs");
 const path = require("path");
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
+const bcrypt = require('bcrypt');
 const { razorpayKeyId } = require("../../config/razorpay");
 
 const transporter = nodemailer.createTransport({
@@ -63,7 +64,7 @@ exports.renderProfilePage = async (req, res) => {
     const userId = req.session.user;
 
     const user = await User.findById(userId)
-      .select('-password -googleId -forgotPasswordOtp -otpExpires -resetPasswordOtp')
+      .select('-googleId -forgotPasswordOtp -otpExpires -resetPasswordOtp')
       .populate('wishlist')
       .populate({
         path: 'orderHistory',
@@ -207,7 +208,6 @@ exports.renderProfilePage = async (req, res) => {
       currentPage: 'profile',
       success: req.flash('success'),
       error: req.flash('error'),
-      isDemo: user.email.endsWith('@demo.com'),
       razorpayKeyId // Pass Razorpay key ID to the frontend
     });
 
@@ -746,6 +746,111 @@ exports.setDefaultAddress = async (req, res) => {
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: 'Server error'
+    });
+  }
+};
+
+/**
+ * Get current password for display
+ */
+exports.getCurrentPassword = async (req, res) => {
+  try {
+    const userId = req.session.user;
+
+    if (!userId) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: 'Not authenticated'
+      });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Check if user has a plaintext password stored
+    if (user.plaintextPassword) {
+      return res.json({
+        success: true,
+        password: user.plaintextPassword
+      });
+    }
+
+    // If no plaintext password, return a helpful message
+    return res.json({
+      success: true,
+      password: 'Set a new password below to enable password viewing'
+    });
+
+  } catch (error) {
+    console.error("Error getting current password:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: error.message || 'Failed to retrieve password'
+    });
+  }
+};
+
+/**
+ * Change user password
+ */
+exports.changePassword = async (req, res) => {
+  try {
+    const userId = req.session.user;
+    const { newPassword } = req.body;
+
+    if (!userId) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: 'Not authenticated'
+      });
+    }
+
+    if (!newPassword) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'New password is required'
+      });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'Password must be at least 8 characters long'
+      });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update the user's password (both hashed for security and plaintext for display)
+    await User.findByIdAndUpdate(userId, {
+      password: hashedPassword,
+      plaintextPassword: newPassword
+    });
+
+    return res.json({
+      success: true,
+      message: 'Password updated successfully'
+    });
+
+  } catch (error) {
+    console.error("Error changing password:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: error.message || 'Failed to change password'
     });
   }
 };

@@ -55,6 +55,8 @@ module.exports = {
   renderProfilePage: profileController.renderProfilePage, // Render profile page
   handleProfileUpdate: profileController.handleProfileUpdate, // Handle profile updates
   verifyEmailOtp:profileController.verifyEmailOTP,
+  getCurrentPassword: profileController.getCurrentPassword, // Get current password
+  changePassword: profileController.changePassword, // Change password
 
   // Address related
   handleAddress: profileController.handleAddress, // Handle address operations (add, update, delete, set default)
@@ -62,4 +64,6 @@ module.exports = {
   updateAddress: profileController.updateAddress, // Update a specific address by ID
   deleteAddress: profileController.deleteAddress, // Delete a specific address by ID
   setDefaultAddress: profileController.setDefaultAddress, // Set a specific address as default
+
+
 };
