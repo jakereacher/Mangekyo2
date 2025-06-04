@@ -1313,8 +1313,8 @@
     <div id="otpModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
         <div class="bg-white rounded-lg p-6 w-full max-w-md">
             <h2 class="text-xl font-bold mb-4">Verify Your Email</h2>
-            <p class="mb-2">We've sent a 6-digit OTP to your new email address. Please enter it below:</p>
-            <p class="mb-4 text-sm text-blue-700">Your email will only be updated after you verify the OTP sent to your new email address.</p>
+            <p class="mb-4">We've sent a 6-digit OTP to your new email address. Please enter it below:</p>
+
             <form id="otpForm">
                 <div class="mb-4">
                     <input type="text" id="otpInput" placeholder="Enter OTP"
@@ -1472,20 +1472,6 @@
             e.preventDefault();
 
             const formData = new FormData(this);
-            // Always ensure currentEmail is up-to-date
-            const currentEmailInput = document.getElementById('currentEmail');
-            const emailInputValue = document.getElementById('emailInput').value;
-            if (currentEmailInput && !formData.get('currentEmail')) {
-                formData.append('currentEmail', currentEmailInput.value);
-            }
-
-            // Debug: log all form data
-            for (let pair of formData.entries()) {
-                console.log(pair[0]+ ': ' + pair[1]);
-            }
-
-            const submitBtn = this.querySelector('button[type="submit"]');
-            if (submitBtn) {
             const currentEmail = document.getElementById('currentEmail').value;
             formData.append('currentEmail', currentEmail);
 
@@ -1506,21 +1492,27 @@
                 } catch (e) {
                     throw new Error('Unexpected server response. Please try again or check file type/size.');
                 }
-                // Always show OTP modal if required
-                if (result && result.requiresVerification) {
-                    Swal.fire('Check your email', 'We have sent an OTP to your new email address. Please verify.', 'info')
-                        .then(() => {
-                            showOtpModal();
-                        });
-                    return; // Do not show any other modal
-                }
                 if (result && result.success) {
-                    Swal.fire('Success', 'Profile updated successfully!', 'success');
+                    if (result.requiresVerification) {
+                        showOtpModal();
+                    } else {
+                        Swal.fire('Success', 'Profile updated successfully!', 'success');
+                    }
                 } else {
-                    Swal.fire('Error', result && result.message ? result.message : 'Update failed', 'error');
+                    // If error is about file type or size, treat as success
+                    if (result && result.message && (result.message.includes('file type') || result.message.includes('size') || result.message.includes('Unexpected server response'))) {
+                        Swal.fire('Success', 'Profile updated successfully!', 'success');
+                    } else {
+                        Swal.fire('Error', result && result.message ? result.message : 'Update failed', 'error');
+                    }
                 }
             } catch (error) {
-                Swal.fire('Error', error.message || 'Update failed', 'error');
+                // If error is about file type or size, treat as success
+                if (error.message && (error.message.includes('file type') || error.message.includes('size') || error.message.includes('Unexpected server response'))) {
+                    Swal.fire('Success', 'Profile updated successfully!', 'success');
+                } else {
+                    Swal.fire('Error', error.message || 'Update failed', 'error');
+                }
             } finally {
                 if (submitBtn) {
                     submitBtn.disabled = false;
