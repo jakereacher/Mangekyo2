@@ -13,7 +13,10 @@ const userAuth =(req,res,next)=>{
                       req.originalUrl.includes('/cart/') ||
                       req.originalUrl.includes('/orders/') ||
                       req.originalUrl.includes('/reviews/') ||
-                      req.originalUrl.includes('/profile/');
+                      req.originalUrl.includes('/profile/') ||
+                      req.originalUrl.includes('/user-available-coupons') ||
+                      req.originalUrl.includes('/apply-coupon') ||
+                      req.originalUrl.includes('/remove-coupon');
 
   if(req.session.user){
     User.findById(req.session.user)

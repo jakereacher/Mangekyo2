@@ -45,7 +45,7 @@
             <div class="bg-gray-900 rounded-xl overflow-hidden shadow-lg hover:shadow-white transition">
                 <div class="relative">
                     <a href="/shop/product/<%= product._id %>" class="block">
-                        <img src="/uploads/product-images/<%= product.productImage[0] %>" alt="<%= product.productName %>" class="w-full h-64 object-cover filter grayscale">
+                        <img src="uploads/product-images/<%= product.productImage[0] %>" alt="<%= product.productName %>" class="w-full h-64 object-cover filter grayscale">
                         <% if (product.quantity <= 0) { %>
                             <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
                                 <span class="bg-red-600 text-white text-sm font-bold px-3 py-1 rounded">OUT OF STOCK</span>

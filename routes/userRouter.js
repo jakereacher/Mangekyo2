@@ -133,9 +133,9 @@ router.post("/calculate-delivery-charge", deliveryController.calculateDeliveryCh
 // Coupons
 router.get("/active-coupons", couponController.renderCouponsPage);
 router.get("/coupon/:code", couponController.getCouponByCode);
-router.get("/user-available-coupons", couponController.getUserAvailableCoupons);
-router.post("/apply-coupon", couponController.applyCoupon);
-router.post("/remove-coupon", couponController.removeAppliedCoupon);
+router.get("/user-available-coupons", userAuth, couponController.getUserAvailableCoupons);
+router.post("/apply-coupon", userAuth, couponController.applyCoupon);
+router.post("/remove-coupon", userAuth, couponController.removeAppliedCoupon);
 
 // Razorpay Payment Routes
 router.post("/razorpay/create-order", userAuth, razorpayController.createRazorpayOrder);

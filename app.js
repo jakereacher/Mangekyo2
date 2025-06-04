@@ -140,17 +140,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
-// Explicitly serve uploads directory for better AWS compatibility
-app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
-
-// Debug middleware for image requests (only in development)
-if (process.env.NODE_ENV !== 'production') {
-  app.use('/uploads', (req, res, next) => {
-    console.log(`📸 Image request: ${req.originalUrl}`);
-    next();
-  });
-}
-
 // Serve favicon.ico from root path
 app.get('/favicon.ico', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/images/favicon/favicon.ico'));
@@ -317,6 +306,37 @@ app.use((req, res, next) => {
 
   next();
 });
+
+// Debug routes for OAuth troubleshooting (only in development or when DEBUG=true)
+if (process.env.NODE_ENV !== 'production' || process.env.DEBUG === 'true') {
+  // OAuth configuration debug route
+  app.get('/debug/oauth-config', (req, res) => {
+    try {
+      const config = {
+        success: true,
+        clientId: !!process.env.GOOGLE_CLIENT_ID,
+        clientSecret: !!process.env.GOOGLE_CLIENT_SECRET,
+        callbackUrl: process.env.GOOGLE_CALLBACK_URL,
+        nodeEnv: process.env.NODE_ENV,
+        currentDomain: req.get('host')
+      };
+
+      // Check if callback URL matches current domain
+      if (config.callbackUrl && !config.callbackUrl.includes(req.get('host'))) {
+        config.warning = 'Callback URL domain does not match current domain';
+      }
+
+      res.json(config);
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  console.log('🔧 Debug routes enabled at /debug/oauth-config');
+}
 
 app.use("/admin", adminRouter);
 app.use("/", userRouter);

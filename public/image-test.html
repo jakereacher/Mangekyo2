@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image Path Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .image-test { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        img { max-width: 200px; max-height: 200px; margin: 10px; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>Image Path Test</h1>
+    <p>This page tests if images are accessible via different path formats.</p>
+
+    <div class="image-test">
+        <h3>Image 1: 1742532397022-mitsubishi.jpg</h3>
+        <div>
+            <strong>Absolute path:</strong> /uploads/product-images/1742532397022-mitsubishi.jpg<br>
+            <img src="/uploads/product-images/1742532397022-mitsubishi.jpg" alt="Test 1" 
+                 onload="this.nextSibling.innerHTML='✅ Loaded successfully'" 
+                 onerror="this.nextSibling.innerHTML='❌ Failed to load'">
+            <span class="status"></span>
+        </div>
+        <div>
+            <strong>Relative path:</strong> uploads/product-images/1742532397022-mitsubishi.jpg<br>
+            <img src="uploads/product-images/1742532397022-mitsubishi.jpg" alt="Test 1" 
+                 onload="this.nextSibling.innerHTML='✅ Loaded successfully'" 
+                 onerror="this.nextSibling.innerHTML='❌ Failed to load'">
+            <span class="status"></span>
+        </div>
+    </div>
+    <div class="image-test">
+        <h3>Image 2: 1742532397025-pic.jpg</h3>
+        <div>
+            <strong>Absolute path:</strong> /uploads/product-images/1742532397025-pic.jpg<br>
+            <img src="/uploads/product-images/1742532397025-pic.jpg" alt="Test 2" 
+                 onload="this.nextSibling.innerHTML='✅ Loaded successfully'" 
+                 onerror="this.nextSibling.innerHTML='❌ Failed to load'">
+            <span class="status"></span>
+        </div>
+        <div>
+            <strong>Relative path:</strong> uploads/product-images/1742532397025-pic.jpg<br>
+            <img src="uploads/product-images/1742532397025-pic.jpg" alt="Test 2" 
+                 onload="this.nextSibling.innerHTML='✅ Loaded successfully'" 
+                 onerror="this.nextSibling.innerHTML='❌ Failed to load'">
+            <span class="status"></span>
+        </div>
+    </div>
+    <div class="image-test">
+        <h3>Image 3: 1742532397074-Thahir love.jpg</h3>
+        <div>
+            <strong>Absolute path:</strong> /uploads/product-images/1742532397074-Thahir love.jpg<br>
+            <img src="/uploads/product-images/1742532397074-Thahir love.jpg" alt="Test 3" 
+                 onload="this.nextSibling.innerHTML='✅ Loaded successfully'" 
+                 onerror="this.nextSibling.innerHTML='❌ Failed to load'">
+            <span class="status"></span>
+        </div>
+        <div>
+            <strong>Relative path:</strong> uploads/product-images/1742532397074-Thahir love.jpg<br>
+            <img src="uploads/product-images/1742532397074-Thahir love.jpg" alt="Test 3" 
+                 onload="this.nextSibling.innerHTML='✅ Loaded successfully'" 
+                 onerror="this.nextSibling.innerHTML='❌ Failed to load'">
+            <span class="status"></span>
+        </div>
+    </div>
+    <div class="image-test">
+        <h3>Image 4: 1742532435455-mitsubishi.jpg</h3>
+        <div>
+            <strong>Absolute path:</strong> /uploads/product-images/1742532435455-mitsubishi.jpg<br>
+            <img src="/uploads/product-images/1742532435455-mitsubishi.jpg" alt="Test 4" 
+                 onload="this.nextSibling.innerHTML='✅ Loaded successfully'" 
+                 onerror="this.nextSibling.innerHTML='❌ Failed to load'">
+            <span class="status"></span>
+        </div>
+        <div>
+            <strong>Relative path:</strong> uploads/product-images/1742532435455-mitsubishi.jpg<br>
+            <img src="uploads/product-images/1742532435455-mitsubishi.jpg" alt="Test 4" 
+                 onload="this.nextSibling.innerHTML='✅ Loaded successfully'" 
+                 onerror="this.nextSibling.innerHTML='❌ Failed to load'">
+            <span class="status"></span>
+        </div>
+    </div>
+    <div class="image-test">
+        <h3>Image 5: 1742532435456-pic.jpg</h3>
+        <div>
+            <strong>Absolute path:</strong> /uploads/product-images/1742532435456-pic.jpg<br>
+            <img src="/uploads/product-images/1742532435456-pic.jpg" alt="Test 5" 
+                 onload="this.nextSibling.innerHTML='✅ Loaded successfully'" 
+                 onerror="this.nextSibling.innerHTML='❌ Failed to load'">
+            <span class="status"></span>
+        </div>
+        <div>
+            <strong>Relative path:</strong> uploads/product-images/1742532435456-pic.jpg<br>
+            <img src="uploads/product-images/1742532435456-pic.jpg" alt="Test 5" 
+                 onload="this.nextSibling.innerHTML='✅ Loaded successfully'" 
+                 onerror="this.nextSibling.innerHTML='❌ Failed to load'">
+            <span class="status"></span>
+        </div>
+    </div>
+    <div class="image-test">
+        <h3>Image 6: 1742532435495-Thahir love.jpg</h3>
+        <div>
+            <strong>Absolute path:</strong> /uploads/product-images/1742532435495-Thahir love.jpg<br>
+            <img src="/uploads/product-images/1742532435495-Thahir love.jpg" alt="Test 6" 
+                 onload="this.nextSibling.innerHTML='✅ Loaded successfully'" 
+                 onerror="this.nextSibling.innerHTML='❌ Failed to load'">
+            <span class="status"></span>
+        </div>
+        <div>
+            <strong>Relative path:</strong> uploads/product-images/1742532435495-Thahir love.jpg<br>
+            <img src="uploads/product-images/1742532435495-Thahir love.jpg" alt="Test 6" 
+                 onload="this.nextSibling.innerHTML='✅ Loaded successfully'" 
+                 onerror="this.nextSibling.innerHTML='❌ Failed to load'">
+            <span class="status"></span>
+        </div>
+    </div>
+    <div class="image-test">
+        <h3>Image 7: 1742532435515-perfect_desktop_image.png</h3>
+        <div>
+            <strong>Absolute path:</strong> /uploads/product-images/1742532435515-perfect_desktop_image.png<br>
+            <img src="/uploads/product-images/1742532435515-perfect_desktop_image.png" alt="Test 7" 
+                 onload="this.nextSibling.innerHTML='✅ Loaded successfully'" 
+                 onerror="this.nextSibling.innerHTML='❌ Failed to load'">
+            <span class="status"></span>
+        </div>
+        <div>
+            <strong>Relative path:</strong> uploads/product-images/1742532435515-perfect_desktop_image.png<br>
+            <img src="uploads/product-images/1742532435515-perfect_desktop_image.png" alt="Test 7" 
+                 onload="this.nextSibling.innerHTML='✅ Loaded successfully'" 
+                 onerror="this.nextSibling.innerHTML='❌ Failed to load'">
+            <span class="status"></span>
+        </div>
+    </div>
+    <div class="image-test">
+        <h3>Image 8: 1742533770846-zoro1.jpg</h3>
+        <div>
+            <strong>Absolute path:</strong> /uploads/product-images/1742533770846-zoro1.jpg<br>
+            <img src="/uploads/product-images/1742533770846-zoro1.jpg" alt="Test 8" 
+                 onload="this.nextSibling.innerHTML='✅ Loaded successfully'" 
+                 onerror="this.nextSibling.innerHTML='❌ Failed to load'">
+            <span class="status"></span>
+        </div>
+        <div>
+            <strong>Relative path:</strong> uploads/product-images/1742533770846-zoro1.jpg<br>
+            <img src="uploads/product-images/1742533770846-zoro1.jpg" alt="Test 8" 
+                 onload="this.nextSibling.innerHTML='✅ Loaded successfully'" 
+                 onerror="this.nextSibling.innerHTML='❌ Failed to load'">
+            <span class="status"></span>
+        </div>
+    </div>
+    <div class="image-test">
+        <h3>Image 9: 1742533770850-nissan.jpg</h3>
+        <div>
+            <strong>Absolute path:</strong> /uploads/product-images/1742533770850-nissan.jpg<br>
+            <img src="/uploads/product-images/1742533770850-nissan.jpg" alt="Test 9" 
+                 onload="this.nextSibling.innerHTML='✅ Loaded successfully'" 
+                 onerror="this.nextSibling.innerHTML='❌ Failed to load'">
+            <span class="status"></span>
+        </div>
+        <div>
+            <strong>Relative path:</strong> uploads/product-images/1742533770850-nissan.jpg<br>
+            <img src="uploads/product-images/1742533770850-nissan.jpg" alt="Test 9" 
+                 onload="this.nextSibling.innerHTML='✅ Loaded successfully'" 
+                 onerror="this.nextSibling.innerHTML='❌ Failed to load'">
+            <span class="status"></span>
+        </div>
+    </div>
+    <div class="image-test">
+        <h3>Image 10: 1742534132136-zoro1.jpg</h3>
+        <div>
+            <strong>Absolute path:</strong> /uploads/product-images/1742534132136-zoro1.jpg<br>
+            <img src="/uploads/product-images/1742534132136-zoro1.jpg" alt="Test 10" 
+                 onload="this.nextSibling.innerHTML='✅ Loaded successfully'" 
+                 onerror="this.nextSibling.innerHTML='❌ Failed to load'">
+            <span class="status"></span>
+        </div>
+        <div>
+            <strong>Relative path:</strong> uploads/product-images/1742534132136-zoro1.jpg<br>
+            <img src="uploads/product-images/1742534132136-zoro1.jpg" alt="Test 10" 
+                 onload="this.nextSibling.innerHTML='✅ Loaded successfully'" 
+                 onerror="this.nextSibling.innerHTML='❌ Failed to load'">
+            <span class="status"></span>
+        </div>
+    </div>
+</body>
+</html>

@@ -238,7 +238,8 @@ const removeAppliedCoupon = async (req, res) => {
 //=================================================================================================
 const getUserAvailableCoupons = async (req, res) => {
   try {
-    const userId = req.session.user;
+    // Get user ID from session - handle both direct ID and object structure
+    const userId = req.session.user?._id || req.session.user;
 
     if (!userId) {
       return res.status(StatusCodes.UNAUTHORIZED).json({
@@ -259,6 +260,7 @@ const getUserAvailableCoupons = async (req, res) => {
       const userUsage = coupon.users.find(u => u.userId.toString() === userId.toString());
       const usedCount = userUsage ? userUsage.usedCount : 0;
       const remainingUses = coupon.usageLimit - usedCount;
+      const isUsable = remainingUses > 0 && coupon.totalUsedCount < coupon.totalUsageLimit;
 
       return {
         _id: coupon._id,
@@ -270,7 +272,7 @@ const getUserAvailableCoupons = async (req, res) => {
         expiryDate: coupon.expiryDate,
         usageLimit: coupon.usageLimit,
         remainingUses: remainingUses > 0 ? remainingUses : 0,
-        isUsable: remainingUses > 0 && coupon.totalUsedCount < coupon.totalUsageLimit
+        isUsable: isUsable
       };
     }).filter(coupon => coupon.isUsable);
 
