@@ -10,7 +10,7 @@ const Coupon = require("../../models/couponSchema");
 const Offer = require("../../models/offerSchema");
 const WalletTransaction = require("../../models/walletTransactionSchema");
 const StatusCodes = require("../../utils/httpStatusCodes");
-const { validateEmail, validateMobile, validateProfileName } = require('../../utils/helpers');
+const { validateEmail, validateMobile, validateProfileName, validateAddressName, validateCityOrState, validatePinCode, validateMobileStrict, validateAddressLine } = require('../../utils/helpers');
 const multer = require("../../helpers/multer");
 const fs = require("fs");
 const path = require("path");
@@ -424,6 +424,25 @@ exports.handleAddress = async (req, res) => {
             message: 'Missing required address fields'
           });
         }
+        // Backend validation for address fields
+        if (!validateAddressName(addressData.fullName)) {
+          return res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: 'Invalid full name. No numbers or empty spaces allowed.' });
+        }
+        if (!validateMobileStrict(addressData.mobile)) {
+          return res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: 'Invalid mobile number. Must be 10 digits.' });
+        }
+        if (!validatePinCode(addressData.pinCode)) {
+          return res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: 'Invalid PIN code. Must be 6 digits.' });
+        }
+        if (!validateAddressLine(addressData.addressLine)) {
+          return res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: 'Invalid address line. Cannot be empty or only spaces.' });
+        }
+        if (!validateCityOrState(addressData.city)) {
+          return res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: 'Invalid city. No numbers or empty spaces allowed.' });
+        }
+        if (!validateCityOrState(addressData.state)) {
+          return res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: 'Invalid state. No numbers or empty spaces allowed.' });
+        }
 
         const userDoc = await User.findById(userId);
         if (userDoc.address.length === 0) {
@@ -448,9 +467,24 @@ exports.handleAddress = async (req, res) => {
             message: 'Address ID is required for update'
           });
         }
-
-        if (addressData.city) {
-          addressData.city = addressData.city.trim().toLowerCase();
+        // Backend validation for address fields (if present in update)
+        if (addressData.fullName && !validateAddressName(addressData.fullName)) {
+          return res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: 'Invalid full name. No numbers or empty spaces allowed.' });
+        }
+        if (addressData.mobile && !validateMobileStrict(addressData.mobile)) {
+          return res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: 'Invalid mobile number. Must be 10 digits.' });
+        }
+        if (addressData.pinCode && !validatePinCode(addressData.pinCode)) {
+          return res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: 'Invalid PIN code. Must be 6 digits.' });
+        }
+        if (addressData.addressLine && !validateAddressLine(addressData.addressLine)) {
+          return res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: 'Invalid address line. Cannot be empty or only spaces.' });
+        }
+        if (addressData.city && !validateCityOrState(addressData.city)) {
+          return res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: 'Invalid city. No numbers or empty spaces allowed.' });
+        }
+        if (addressData.state && !validateCityOrState(addressData.state)) {
+          return res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: 'Invalid state. No numbers or empty spaces allowed.' });
         }
 
         const updateObj = {};

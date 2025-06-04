@@ -2126,6 +2126,95 @@
                 }
             });
         }
+
+        // Address validation helpers
+        function isValidAddressName(name) {
+            return typeof name === 'string' && name.trim().length > 0 && /^[A-Za-z\s]+$/.test(name) && !/\d/.test(name) && !/^\s+$/.test(name) && !/\s{2,}/.test(name);
+        }
+        function isValidCityOrState(value) {
+            return typeof value === 'string' && value.trim().length > 0 && /^[A-Za-z\s]+$/.test(value) && !/\d/.test(value) && !/^\s+$/.test(value) && !/\s{2,}/.test(value);
+        }
+        function isValidPinCode(pin) {
+            return typeof pin === 'string' && /^\d{6}$/.test(pin);
+        }
+        function isValidMobileStrict(mobile) {
+            return typeof mobile === 'string' && /^\d{10}$/.test(mobile);
+        }
+        function isValidAddressLine(line) {
+            return typeof line === 'string' && line.trim().length > 0 && !/^\s+$/.test(line);
+        }
+
+        function showFieldError(fieldId, msg) {
+            let err = document.getElementById(fieldId + 'Error');
+            if (!err) {
+                err = document.createElement('p');
+                err.id = fieldId + 'Error';
+                err.className = 'text-red-500 text-sm mt-1';
+                document.getElementById(fieldId).parentNode.appendChild(err);
+            }
+            err.innerText = msg;
+            err.style.display = 'block';
+        }
+        function hideFieldError(fieldId) {
+            const err = document.getElementById(fieldId + 'Error');
+            if (err) err.style.display = 'none';
+        }
+
+        // Address form validation
+        const addressForm = document.getElementById('addressForm');
+        if (addressForm) {
+            addressForm.addEventListener('submit', async function(e) {
+                let valid = true;
+                const fullName = document.getElementById('fullName').value;
+                const mobile = document.getElementById('mobile').value;
+                const pinCode = document.getElementById('pinCode').value;
+                const addressLine = document.getElementById('addressLine').value;
+                const city = document.getElementById('city').value;
+                const state = document.getElementById('state').value;
+
+                if (!isValidAddressName(fullName)) {
+                    showFieldError('fullName', 'Full name required, no numbers or only spaces.');
+                    valid = false;
+                } else {
+                    hideFieldError('fullName');
+                }
+                if (!isValidMobileStrict(mobile)) {
+                    showFieldError('mobile', 'Mobile must be 10 digits, numbers only.');
+                    valid = false;
+                } else {
+                    hideFieldError('mobile');
+                }
+                if (!isValidPinCode(pinCode)) {
+                    showFieldError('pinCode', 'PIN code must be 6 digits, numbers only.');
+                    valid = false;
+                } else {
+                    hideFieldError('pinCode');
+                }
+                if (!isValidAddressLine(addressLine)) {
+                    showFieldError('addressLine', 'Address line required, cannot be empty or only spaces.');
+                    valid = false;
+                } else {
+                    hideFieldError('addressLine');
+                }
+                if (!isValidCityOrState(city)) {
+                    showFieldError('city', 'City required, no numbers or only spaces.');
+                    valid = false;
+                } else {
+                    hideFieldError('city');
+                }
+                if (!isValidCityOrState(state)) {
+                    showFieldError('state', 'State required, no numbers or only spaces.');
+                    valid = false;
+                } else {
+                    hideFieldError('state');
+                }
+                if (!valid) {
+                    e.preventDefault();
+                    return false;
+                }
+                // ... existing code ...
+            });
+        }
     </script>
 </body>
 </html>
