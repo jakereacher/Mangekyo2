@@ -359,6 +359,11 @@ exports.verifyEmailOTP = async (req, res) => {
     user.emailVerificationOtpExpires = undefined;
     await user.save();
 
+    // Update session with new email
+    if (req.session && user.email) {
+      req.session.userEmail = user.email;
+    }
+
     return res.json({
       success: true,
       message: 'Email verified and updated successfully'

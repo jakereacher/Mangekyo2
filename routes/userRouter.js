@@ -101,7 +101,15 @@ router.post("/orders/:orderId/return",  orderController.requestReturn);
 router.post("/orders/:orderId/complete-payment", orderController.completePayment);
 //profile routes
 router.get("/profile", renderProfilePage);
-router.post("/profile/update", uploadProfileImage, handleProfileUpdate);
+router.post("/profile/update", function(req, res, next) {
+    uploadProfileImage(req, res, function(err) {
+        if (err) {
+            // Multer error (file type, size, etc.)
+            return res.status(400).json({ success: false, message: err.message });
+        }
+        next();
+    });
+}, handleProfileUpdate);
 router.post("/profile/verify-email", verifyEmailOtp);
 router.post("/profile/get-current-password", userAuth, getCurrentPassword);
 router.post("/profile/change-password", userAuth, changePassword);
