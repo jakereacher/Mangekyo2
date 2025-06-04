@@ -10,7 +10,7 @@ const Coupon = require("../../models/couponSchema");
 const Offer = require("../../models/offerSchema");
 const WalletTransaction = require("../../models/walletTransactionSchema");
 const StatusCodes = require("../../utils/httpStatusCodes");
-const { validateEmail, validateMobile } = require('../../utils/helpers');
+const { validateEmail, validateMobile, validateProfileName } = require('../../utils/helpers');
 const multer = require("../../helpers/multer");
 const fs = require("fs");
 const path = require("path");
@@ -253,6 +253,13 @@ exports.handleProfileUpdate = async (req, res) => {
     }
 
     const { name, email, currentEmail } = req.body;
+    // Use helper for name validation
+    if (!validateProfileName(name)) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'Name cannot be empty, only spaces, or contain multiple consecutive spaces.'
+      });
+    }
     const user = await User.findById(userId);
 
     let profileImagePath;

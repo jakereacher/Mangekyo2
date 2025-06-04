@@ -9,4 +9,8 @@ exports.validateEmail = (email) => {
     return re.test(mobile);
   };
   
+  exports.validateProfileName = (name) => {
+    return typeof name === 'string' && name.trim().length > 0 && !/^\s+$/.test(name) && !/\s{2,}/.test(name);
+  };
+  
   // Other shared utilities can go here

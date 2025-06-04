@@ -1468,56 +1468,66 @@
         });
 
         // Handle profile form submission
-        document.getElementById('editProfileForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
+        document.getElementById('editProfileForm').addEventListener('submit', function(e) {
+            const name = document.getElementById('nameInput').value;
+            if (!isValidProfileName(name)) {
+                e.preventDefault();
+                showNameError('Name cannot be empty or contain only spaces or multiple consecutive spaces.');
+                return false;
+            } else {
+                hideNameError();
+                // Only run async handler if validation passes
+                e.preventDefault();
+                (async () => {
+                    const formData = new FormData(editProfileForm);
+                    const currentEmail = document.getElementById('currentEmail').value;
+                    formData.append('currentEmail', currentEmail);
 
-            const formData = new FormData(this);
-            const currentEmail = document.getElementById('currentEmail').value;
-            formData.append('currentEmail', currentEmail);
-
-            const submitBtn = this.querySelector('button[type="submit"]');
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
-            }
-
-            try {
-                const response = await fetch('/profile/update', {
-                    method: 'POST',
-                    body: formData
-                });
-                let result;
-                try {
-                    result = await response.json();
-                } catch (e) {
-                    throw new Error('Unexpected server response. Please try again or check file type/size.');
-                }
-                if (result && result.success) {
-                    if (result.requiresVerification) {
-                        showOtpModal();
-                    } else {
-                        Swal.fire('Success', 'Profile updated successfully!', 'success');
+                    const submitBtn = editProfileForm.querySelector('button[type="submit"]');
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
                     }
-                } else {
-                    // If error is about file type or size, treat as success
-                    if (result && result.message && (result.message.includes('file type') || result.message.includes('size') || result.message.includes('Unexpected server response'))) {
-                        Swal.fire('Success', 'Profile updated successfully!', 'success');
-                    } else {
-                        Swal.fire('Error', result && result.message ? result.message : 'Update failed', 'error');
+
+                    try {
+                        const response = await fetch('/profile/update', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        let result;
+                        try {
+                            result = await response.json();
+                        } catch (e) {
+                            throw new Error('Unexpected server response. Please try again or check file type/size.');
+                        }
+                        if (result && result.success) {
+                            if (result.requiresVerification) {
+                                showOtpModal();
+                            } else {
+                                Swal.fire('Success', 'Profile updated successfully!', 'success');
+                            }
+                        } else {
+                            // If error is about file type or size, treat as success
+                            if (result && result.message && (result.message.includes('file type') || result.message.includes('size') || result.message.includes('Unexpected server response'))) {
+                                Swal.fire('Success', 'Profile updated successfully!', 'success');
+                            } else {
+                                Swal.fire('Error', result && result.message ? result.message : 'Update failed', 'error');
+                            }
+                        }
+                    } catch (error) {
+                        // If error is about file type or size, treat as success
+                        if (error.message && (error.message.includes('file type') || error.message.includes('size') || error.message.includes('Unexpected server response'))) {
+                            Swal.fire('Success', 'Profile updated successfully!', 'success');
+                        } else {
+                            Swal.fire('Error', error.message || 'Update failed', 'error');
+                        }
+                    } finally {
+                        if (submitBtn) {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Save Profile Changes';
+                        }
                     }
-                }
-            } catch (error) {
-                // If error is about file type or size, treat as success
-                if (error.message && (error.message.includes('file type') || error.message.includes('size') || error.message.includes('Unexpected server response'))) {
-                    Swal.fire('Success', 'Profile updated successfully!', 'success');
-                } else {
-                    Swal.fire('Error', error.message || 'Update failed', 'error');
-                }
-            } finally {
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Save Profile Changes';
-                }
+                })();
             }
         });
 
@@ -2077,6 +2087,44 @@
                     }
                 }, 500);
             }
+        }
+
+        // Add this before the profile form submission handler
+        function isValidProfileName(name) {
+            // No only spaces, no leading/trailing spaces, no empty, and no multiple consecutive spaces
+            return name.trim().length > 0 && !/^\s+$/.test(name) && !/\s{2,}/.test(name);
+        }
+
+        // Show error below the name input if invalid
+        function showNameError(msg) {
+            let err = document.getElementById('nameError');
+            if (!err) {
+                err = document.createElement('p');
+                err.id = 'nameError';
+                err.className = 'text-red-500 text-sm mt-1';
+                document.getElementById('nameInput').parentNode.appendChild(err);
+            }
+            err.innerText = msg;
+            err.style.display = 'block';
+        }
+        function hideNameError() {
+            const err = document.getElementById('nameError');
+            if (err) err.style.display = 'none';
+        }
+
+        // Add validation on form submit
+        const editProfileForm = document.getElementById('editProfileForm');
+        if (editProfileForm) {
+            editProfileForm.addEventListener('submit', function(e) {
+                const name = document.getElementById('nameInput').value;
+                if (!isValidProfileName(name)) {
+                    e.preventDefault();
+                    showNameError('Name cannot be empty or contain only spaces or multiple consecutive spaces.');
+                    return false;
+                } else {
+                    hideNameError();
+                }
+            });
         }
     </script>
 </body>
