@@ -91,7 +91,7 @@
                         <% order.items.forEach(item => { %>
                             <div class="flex items-start py-4 order-item" data-product-id="<%= item.product._id %>">
                                 <div class="w-16 h-16 bg-gray-100 rounded overflow-hidden mr-4">
-                                    <img src="<%= item.product.productImage && item.product.productImage.length > 0 ? '/uploads/product-images/' + item.product.productImage[0] : '/images/placeholder-product.jpg' %>"
+                                    <img src="<%= item.product.productImage && item.product.productImage.length > 0 && item.product.productImage[0] && item.product.productImage[0].trim() !== '' ? '/uploads/product-images/' + item.product.productImage[0] : '/images/keychain1.webp' %>"
                                          alt="<%= item.product.productName %>"
                                          class="w-full h-full object-cover">
                                 </div>

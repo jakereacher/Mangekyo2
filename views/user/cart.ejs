@@ -192,7 +192,7 @@
                     <% cartProducts.forEach((item, index) => { %>
                         <div class="cart-item bg-white border border-gray-100 rounded p-4 mb-4 flex flex-col md:flex-row gap-4 shadow-sm" data-product-id="<%= item.product._id %>">
                             <div class="flex-shrink-0">
-                                <img src="uploads/product-images/<%= item.product.productImage && item.product.productImage[0] || '/images/placeholder-product.jpg' %>" alt="<%= item.product.productName %>" class="w-24 h-24 object-cover object-top rounded">
+                                <img src="<%= item.product.productImage && item.product.productImage.length > 0 && item.product.productImage[0] && item.product.productImage[0].trim() !== '' ? '/uploads/product-images/' + item.product.productImage[0] : '/images/keychain1.webp' %>" alt="<%= item.product.productName %>" class="w-24 h-24 object-cover object-top rounded">
                             </div>
 
                             <div class="flex-grow">

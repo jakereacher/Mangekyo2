@@ -255,27 +255,41 @@ const editProduct = async (req, res) => {
     if (req.body.removedImages) {
       try {
         const removedIndices = JSON.parse(req.body.removedImages);
+        console.log("Removed indices:", removedIndices);
+        console.log("Current product images:", product.productImage);
 
+        // Process each image in the original array
         for (let i = 0; i < product.productImage.length; i++) {
-          if (!removedIndices.includes(parseInt(i))) {
-            existingImages.push(product.productImage[i]);
-          }
-          else if (product.productImage[i]) {
-            const imagePath = path.join("public", "uploads", "product-images", product.productImage[i]);
-            try {
-              await fs.promises.unlink(imagePath);
-              console.log(`Deleted image: ${imagePath}`);
-            } catch (unlinkError) {
-              console.warn(`Failed to delete image ${imagePath}: ${unlinkError.message}`);
+          const currentImage = product.productImage[i];
+
+          // If this index is marked for removal, delete the file
+          if (removedIndices.includes(parseInt(i))) {
+            if (currentImage && typeof currentImage === 'string' && currentImage.trim() !== '') {
+              const imagePath = path.join("public", "uploads", "product-images", currentImage);
+              try {
+                await fs.promises.unlink(imagePath);
+                console.log(`Successfully deleted image: ${imagePath}`);
+              } catch (unlinkError) {
+                console.warn(`Failed to delete image ${imagePath}: ${unlinkError.message}`);
+              }
+            }
+          } else {
+            // Keep this image if it's valid
+            if (currentImage && typeof currentImage === 'string' && currentImage.trim() !== '') {
+              existingImages.push(currentImage);
             }
           }
         }
+
+        console.log("Existing images after removal:", existingImages);
       } catch (error) {
         console.error("Error processing removed images:", error);
-        existingImages = [...product.productImage];
+        // Fallback: keep all existing images if there's an error
+        existingImages = product.productImage.filter(img => img && typeof img === 'string' && img.trim() !== '');
       }
     } else {
-      existingImages = [...product.productImage];
+      // No images to remove, filter out any empty/invalid images
+      existingImages = product.productImage.filter(img => img && typeof img === 'string' && img.trim() !== '');
     }
 
     const validTypes = ['image/jpeg', 'image/png'];
@@ -314,25 +328,34 @@ const editProduct = async (req, res) => {
       }
     }
 
+    // Combine existing and new images, ensuring all are valid
     const finalImages = [];
 
+    // Add existing images (already filtered)
     for (const img of existingImages) {
       if (img && typeof img === 'string' && img.trim() !== '') {
         finalImages.push(img);
       }
     }
 
+    // Add new images
     for (const img of newImages) {
       if (img && typeof img === 'string' && img.trim() !== '') {
         finalImages.push(img);
       }
     }
 
-    product.productImage = finalImages;
+    // Remove any duplicate images
+    const uniqueImages = [...new Set(finalImages)];
 
-    if (product.productImage.length < 1) {
+    console.log("Final unique images:", uniqueImages);
+
+    // Validate that we have at least one image
+    if (uniqueImages.length < 1) {
       return res.redirect(`/admin/edit-product/${productId}?error=Product+must+have+at+least+one+image`);
     }
+
+    product.productImage = uniqueImages;
 
     const categoryId = await Category.findOne({ name: products.category });
     if (!categoryId) {

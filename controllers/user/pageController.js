@@ -325,7 +325,7 @@ const loadShop = async (req, res) => {
       return {
         _id: product._id,
         name: product.productName,
-        image: product.productImage && product.productImage.length > 0 ? `/uploads/product-images/${product.productImage[0]}` : '/images/placeholder.jpg',
+        image: product.productImage && product.productImage.length > 0 && product.productImage[0] && product.productImage[0].trim() !== '' ? `/uploads/product-images/${product.productImage[0]}` : '/images/keychain1.webp',
         category: product.category?.name || 'Uncategorized',
         price: basePrice,
         displayPrice: finalPrice,
@@ -387,7 +387,7 @@ const loadShop = async (req, res) => {
       return {
         _id: product._id,
         name: product.productName,
-        image: product.productImage && product.productImage.length > 0 ? `/uploads/product-images/${product.productImage[0]}` : '/images/placeholder.jpg',
+        image: product.productImage && product.productImage.length > 0 && product.productImage[0] && product.productImage[0].trim() !== '' ? `/uploads/product-images/${product.productImage[0]}` : '/images/keychain1.webp',
         category: product.category?.name || 'Uncategorized',
         price: basePrice,
         displayPrice: finalPrice,
@@ -533,8 +533,8 @@ const loadProductDetail = async (req, res) => {
       _id: product._id,
       name: product.productName,
       description: product.description,
-      image: product.productImage && product.productImage.length > 0 ? `/uploads/product-images/${product.productImage[0]}` : '/images/placeholder.jpg',
-      gallery: product.productImage.map(img => `/uploads/product-images/${img}`),
+      image: product.productImage && product.productImage.length > 0 && product.productImage[0] && product.productImage[0].trim() !== '' ? `/uploads/product-images/${product.productImage[0]}` : '/images/keychain1.webp',
+      gallery: product.productImage && product.productImage.length > 0 ? product.productImage.filter(img => img && img.trim() !== '').map(img => `/uploads/product-images/${img}`) : ['/images/keychain1.webp'],
       category: product.category?.name || 'Uncategorized',
       price: basePrice,
       displayPrice: finalPrice,
@@ -626,7 +626,7 @@ const loadProductDetail = async (req, res) => {
       return {
         _id: related._id,
         name: related.productName,
-        image: related.productImage && related.productImage.length > 0 ? `/uploads/product-images/${related.productImage[0]}` : '/images/placeholder.jpg',
+        image: related.productImage && related.productImage.length > 0 && related.productImage[0] && related.productImage[0].trim() !== '' ? `/uploads/product-images/${related.productImage[0]}` : '/images/keychain1.webp',
         category: related.category?.name || 'Uncategorized',
         price: basePrice,
         displayPrice: finalPrice,

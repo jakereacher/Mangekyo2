@@ -99,7 +99,8 @@ const applyCoupon = async (req, res) => {
     }
 
     const numericCartTotal = Number(cartTotal);
-    if (isNaN(numericCartTotal)) {
+    if (isNaN(numericCartTotal) || numericCartTotal <= 0) {
+      console.log("Invalid cart total value:", cartTotal);
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
         message: "The cart total value is invalid. Please refresh the page and try again.",
@@ -198,9 +199,24 @@ const applyCoupon = async (req, res) => {
     });
   } catch (error) {
     console.error("Error applying coupon:", error);
+
+    // Provide more specific error messages based on error type
+    let errorMessage = "An unexpected error occurred while applying the coupon";
+
+    if (error.name === 'ValidationError') {
+      errorMessage = "Invalid coupon data. Please try again.";
+    } else if (error.name === 'CastError') {
+      errorMessage = "Invalid coupon format. Please check the coupon code.";
+    } else if (error.message && error.message.includes('timeout')) {
+      errorMessage = "Request timed out. Please try again.";
+    } else if (error.message && error.message.includes('network')) {
+      errorMessage = "Network error. Please check your connection and try again.";
+    }
+
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
-      message: "Something went wrong",
+      message: errorMessage,
+      errorType: "INTERNAL_ERROR"
     });
   }
 };
@@ -241,7 +257,10 @@ const getUserAvailableCoupons = async (req, res) => {
     // Get user ID from session - handle both direct ID and object structure
     const userId = req.session.user?._id || req.session.user;
 
+    console.log("Fetching coupons for user:", userId);
+
     if (!userId) {
+      console.log("No user ID found in session");
       return res.status(StatusCodes.UNAUTHORIZED).json({
         success: false,
         message: "User not authenticated",
@@ -249,43 +268,90 @@ const getUserAvailableCoupons = async (req, res) => {
     }
 
     const now = new Date();
-    const availableCoupons = await Coupon.find({
-      isActive: true,
-      isDelete: false,
-      startDate: { $lte: now },
-      expiryDate: { $gte: now }
-    });
+    console.log("Current date:", now);
 
-    const userCoupons = availableCoupons.map(coupon => {
-      const userUsage = coupon.users.find(u => u.userId.toString() === userId.toString());
-      const usedCount = userUsage ? userUsage.usedCount : 0;
-      const remainingUses = coupon.usageLimit - usedCount;
-      const isUsable = remainingUses > 0 && coupon.totalUsedCount < coupon.totalUsageLimit;
+    // Fetch available coupons with better error handling
+    let availableCoupons;
+    try {
+      availableCoupons = await Coupon.find({
+        isActive: true,
+        isDelete: false,
+        startDate: { $lte: now },
+        expiryDate: { $gte: now }
+      });
+      console.log(`Found ${availableCoupons.length} active coupons`);
+    } catch (dbError) {
+      console.error("Database error while fetching coupons:", dbError);
+      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Database error occurred while fetching coupons",
+        error: "Unable to retrieve coupon data"
+      });
+    }
 
-      return {
-        _id: coupon._id,
-        code: coupon.code,
-        type: coupon.type,
-        discountValue: coupon.discountValue,
-        minPrice: coupon.minPrice,
-        maxPrice: coupon.maxPrice,
-        expiryDate: coupon.expiryDate,
-        usageLimit: coupon.usageLimit,
-        remainingUses: remainingUses > 0 ? remainingUses : 0,
-        isUsable: isUsable
-      };
-    }).filter(coupon => coupon.isUsable);
+    // If no coupons found, return success with empty array
+    if (!availableCoupons || availableCoupons.length === 0) {
+      console.log("No active coupons found");
+      return res.status(StatusCodes.OK).json({
+        success: true,
+        coupons: [],
+        message: "No active coupons available at the moment"
+      });
+    }
+
+    // Process coupons with better error handling
+    const userCoupons = [];
+
+    for (const coupon of availableCoupons) {
+      try {
+        // Validate coupon data
+        if (!coupon.code || !coupon.type || coupon.discountValue === undefined) {
+          console.warn(`Skipping invalid coupon: ${coupon._id}`);
+          continue;
+        }
+
+        const userUsage = coupon.users ? coupon.users.find(u => u.userId.toString() === userId.toString()) : null;
+        const usedCount = userUsage ? userUsage.usedCount : 0;
+        const remainingUses = Math.max(0, (coupon.usageLimit || 1) - usedCount);
+        const totalUsageLimit = coupon.totalUsageLimit || 1000;
+        const totalUsedCount = coupon.totalUsedCount || 0;
+        const isUsable = remainingUses > 0 && totalUsedCount < totalUsageLimit;
+
+        if (isUsable) {
+          userCoupons.push({
+            _id: coupon._id,
+            code: coupon.code,
+            type: coupon.type,
+            discountValue: coupon.discountValue,
+            minPrice: coupon.minPrice || 0,
+            maxPrice: coupon.maxPrice,
+            expiryDate: coupon.expiryDate,
+            usageLimit: coupon.usageLimit || 1,
+            remainingUses: remainingUses,
+            isUsable: true
+          });
+        }
+      } catch (processingError) {
+        console.error(`Error processing coupon ${coupon._id}:`, processingError);
+        // Continue processing other coupons
+        continue;
+      }
+    }
+
+    console.log(`Processed ${userCoupons.length} usable coupons for user`);
 
     return res.status(StatusCodes.OK).json({
       success: true,
-      coupons: userCoupons
+      coupons: userCoupons,
+      message: userCoupons.length > 0 ? `Found ${userCoupons.length} available coupons` : "No coupons available for your account"
     });
+
   } catch (error) {
-    console.error("Error fetching user available coupons:", error);
+    console.error("Unexpected error in getUserAvailableCoupons:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
-      message: "Failed to fetch available coupons",
-      error: error.message
+      message: "An unexpected error occurred while fetching coupons",
+      error: "Please try again later or contact support if the problem persists"
     });
   }
 };

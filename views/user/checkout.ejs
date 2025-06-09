@@ -1444,12 +1444,27 @@
                     }
                 });
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+                let data;
+                try {
+                    const responseText = await response.text();
+                    console.log('Raw coupons response:', responseText);
 
-                const data = await response.json();
-                console.log('Coupons response:', data);
+                    if (!response.ok) {
+                        // Try to parse error response
+                        try {
+                            const errorData = JSON.parse(responseText);
+                            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+                        } catch (parseError) {
+                            throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+                        }
+                    }
+
+                    data = JSON.parse(responseText);
+                    console.log('Parsed coupons response:', data);
+                } catch (parseError) {
+                    console.error('Error parsing response:', parseError);
+                    throw new Error('Invalid response format from server');
+                }
 
                 if (data.success && data.coupons && data.coupons.length > 0) {
                     let html = '';
@@ -1497,22 +1512,58 @@
                     console.log(`Displayed ${data.coupons.length} coupons`);
                 } else {
                     console.log('No coupons available or response not successful');
-                    couponsContainer.innerHTML = `
-                        <div class="text-center py-8">
-                            <i class="fas fa-tag text-gray-300 text-5xl mb-3"></i>
-                            <h3 class="text-lg font-medium text-gray-700">No coupons available</h3>
-                            <p class="text-gray-500 mt-1">You don't have any active coupons at the moment.</p>
-                            <p class="text-gray-400 text-sm mt-2">Check back later for new offers!</p>
-                        </div>
-                    `;
+
+                    // Check if it's a successful response with no coupons vs an error
+                    if (data.success === false) {
+                        // Handle error response
+                        const errorMessage = data.message || 'Failed to load coupons';
+                        console.error('Server error:', errorMessage);
+
+                        couponsContainer.innerHTML = `
+                            <div class="text-center py-8">
+                                <i class="fas fa-exclamation-triangle text-yellow-500 text-5xl mb-3"></i>
+                                <h3 class="text-lg font-medium text-gray-700">Unable to Load Coupons</h3>
+                                <p class="text-gray-500 mt-1">${errorMessage}</p>
+                                <button onclick="fetchAvailableCoupons()" class="mt-3 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+                                    <i class="fas fa-redo mr-1"></i> Try Again
+                                </button>
+                            </div>
+                        `;
+                    } else {
+                        // Handle successful response with no coupons
+                        couponsContainer.innerHTML = `
+                            <div class="text-center py-8">
+                                <i class="fas fa-tag text-gray-300 text-5xl mb-3"></i>
+                                <h3 class="text-lg font-medium text-gray-700">No Coupons Available</h3>
+                                <p class="text-gray-500 mt-1">You don't have any active coupons at the moment.</p>
+                                <p class="text-gray-400 text-sm mt-2">Check back later for new offers!</p>
+                            </div>
+                        `;
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching coupons:', error);
+
+                // Provide user-friendly error messages
+                let userMessage = 'Unable to load coupons at the moment';
+                let technicalMessage = error.message;
+
+                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    userMessage = 'Network connection issue';
+                    technicalMessage = 'Please check your internet connection and try again';
+                } else if (error.message.includes('Invalid response format')) {
+                    userMessage = 'Server communication error';
+                    technicalMessage = 'The server response was not in the expected format';
+                } else if (error.message.includes('HTTP error')) {
+                    userMessage = 'Server error occurred';
+                    technicalMessage = 'The server encountered an issue while processing your request';
+                }
+
                 couponsContainer.innerHTML = `
                     <div class="text-center py-8">
                         <i class="fas fa-exclamation-circle text-red-500 text-5xl mb-3"></i>
-                        <h3 class="text-lg font-medium text-gray-700">Failed to load coupons</h3>
-                        <p class="text-gray-500 mt-1">Error: ${error.message}</p>
+                        <h3 class="text-lg font-medium text-gray-700">${userMessage}</h3>
+                        <p class="text-gray-500 mt-1">${technicalMessage}</p>
                         <button onclick="fetchAvailableCoupons()" class="mt-3 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
                             <i class="fas fa-redo mr-1"></i> Try Again
                         </button>
