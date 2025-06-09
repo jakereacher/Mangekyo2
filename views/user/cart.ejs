@@ -260,15 +260,10 @@
                             </div>
 
                             <div class="flex justify-between mb-3">
-                                <span class="text-gray-600">Shipping</span>
-                                <span class="font-medium">₹5.99</span>
-                            </div>
-
-                            <div class="flex justify-between mb-3">
-                                <span class="text-gray-600">Tax (8%)</span>
+                                <span class="text-gray-600">Tax (9%)</span>
                                 <%
                                     const subtotal = cartProducts.reduce((total, item) => total + item.totalPrice, 0);
-                                    const tax = subtotal * 0.08;
+                                    const tax = subtotal * 0.09;
                                 %>
                                 <span class="font-medium">₹<%= tax.toFixed(2) %></span>
                             </div>
@@ -278,7 +273,7 @@
                             <div class="flex justify-between font-bold text-lg">
                                 <span>Total</span>
                                 <%
-                                    const total = subtotal + 5.99 + tax;
+                                    const total = subtotal + tax;
                                 %>
                                 <span>₹<%= total.toFixed(2) %></span>
                             </div>
@@ -584,11 +579,7 @@
                                         <span class="font-medium">₹0.00</span>
                                     </div>
                                     <div class="flex justify-between mb-3">
-                                        <span class="text-gray-600">Shipping</span>
-                                        <span class="font-medium">₹0.00</span>
-                                    </div>
-                                    <div class="flex justify-between mb-3">
-                                        <span class="text-gray-600">Tax (8%)</span>
+                                        <span class="text-gray-600">Tax (9%)</span>
                                         <span class="font-medium">₹0.00</span>
                                     </div>
                                     <div class="h-px bg-gray-200 my-4"></div>
@@ -678,3 +669,4 @@
     </script>
 </body>
 </html>
+

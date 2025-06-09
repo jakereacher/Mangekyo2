@@ -1,0 +1,25 @@
+1. Remove this shipping block:
+```
+<div class="flex justify-between mb-3">
+    <span class="text-gray-600">Shipping</span>
+    <span class="font-medium">₹5.99</span>
+</div>
+```
+
+2. Change the total calculation from:
+```
+const total = subtotal + 5.99 + tax;
+```
+
+to:
+```
+const total = subtotal + tax;
+```
+
+3. Also remove shipping from the empty cart display:
+```
+<div class="flex justify-between mb-3">
+    <span class="text-gray-600">Shipping</span>
+    <span class="font-medium">₹0.00</span>
+</div>
+```
