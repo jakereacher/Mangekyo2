@@ -56,13 +56,16 @@ const getValidOffersForProduct = async (productId) => {
   }).sort({ createdAt: -1 }); // Sort by creation date, newest first
 
   // Get category offers for the product's category
-  const categoryOffers = await Offer.find({
-    type: 'category',
-    applicableCategories: product.category._id,
-    isActive: true,
-    startDate: { $lte: now },
-    endDate: { $gte: now }
-  }).sort({ createdAt: -1 }); // Sort by creation date, newest first
+  let categoryOffers = [];
+  if (product.category && product.category._id) {
+    categoryOffers = await Offer.find({
+      type: 'category',
+      applicableCategories: product.category._id,
+      isActive: true,
+      startDate: { $lte: now },
+      endDate: { $gte: now }
+    }).sort({ createdAt: -1 }); // Sort by creation date, newest first
+  }
 
   // Find the best product offer (highest discount)
   let bestProductOffer = null;
