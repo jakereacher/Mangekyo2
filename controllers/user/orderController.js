@@ -639,6 +639,15 @@ const cancelOrder = async (req, res) => {
         message: "Order not found",
       });
     }
+
+    // Prevent cancellation of payment failed orders
+    if (order.paymentStatus === 'Failed') {
+      return res.status(400).json({
+        success: false,
+        message: "Orders with failed payment cannot be cancelled. Please contact support if needed.",
+      });
+    }
+
     const item = order.orderedItems.find(
       (item) => item.product.toString() === productId
     );
@@ -1074,6 +1083,15 @@ const cancelAllItems = async (req, res) => {
         message: "Order not found",
       });
     }
+
+    // Prevent cancellation of payment failed orders
+    if (order.paymentStatus === 'Failed') {
+      return res.status(400).json({
+        success: false,
+        message: "Orders with failed payment cannot be cancelled. Please contact support if needed.",
+      });
+    }
+
     console.log('Order structure:', {
       id: order._id,
       orderNumber: order.orderNumber,

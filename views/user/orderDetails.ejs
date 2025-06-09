@@ -135,7 +135,7 @@
                                             <i class="fas fa-undo-alt mr-2"></i> Return Order
                                         </button>
                                     <% } %>
-                                    <% if (item.status === 'Processing') { %>
+                                    <% if (item.status === 'Processing' && order.paymentStatus !== 'Failed') { %>
                                         <button onclick="cancelOrder('<%= order._id %>','<%= item.product._id %>')"
                                                 class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition flex items-center">
                                             <i class="fas fa-times-circle mr-2"></i> Cancel Order
@@ -265,7 +265,7 @@
                     <i class="fas fa-arrow-left mr-2"></i> Back to Profile
                 </a>
 
-                <% if (order.items.some(item => item.status === 'Processing')) { %>
+                <% if (order.items.some(item => item.status === 'Processing') && order.paymentStatus !== 'Failed') { %>
                     <button onclick="cancelAllItems('<%= order._id %>')"
                             class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition flex items-center">
                         <i class="fas fa-times-circle mr-2"></i> Cancel All
