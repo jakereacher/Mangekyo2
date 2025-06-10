@@ -6,6 +6,7 @@ const Wishlist = require('../../models/wishListSchema');
 const Product = require('../../models/productSchema');
 const Cart = require('../../models/cartSchema');
 const User = require('../../models/userSchema');
+const StatusCodes = require('../../utils/httpStatusCodes');
 
 //=================================================================================================
 // Get Wishlist
@@ -139,7 +140,7 @@ exports.getWishlist = async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching wishlist:', error);
-    res.status(500).render('error', { message: 'Failed to load wishlist', user: req.user });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).render('error', { message: 'Failed to load wishlist', user: req.user });
   }
 };
 
@@ -155,7 +156,7 @@ exports.addToWishlist = async (req, res) => {
     const userId = req.session.user;
 
     if (!userId) {
-      return res.status(401).json({
+      return res.status(StatusCodes.UNAUTHORIZED).json({
         success: false,
         error: 'Please login to add items to wishlist'
       });
@@ -192,7 +193,7 @@ exports.addToWishlist = async (req, res) => {
     });
   } catch (error) {
     console.error('Error adding to wishlist:', error);
-    res.status(500).json({
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: 'Failed to add to wishlist'
     });
@@ -211,7 +212,7 @@ exports.removeFromWishlist = async (req, res) => {
     const userId = req.session.user;
 
     if (!userId) {
-      return res.status(401).json({
+      return res.status(StatusCodes.UNAUTHORIZED).json({
         success: false,
         error: 'Please login to remove items from wishlist'
       });
@@ -238,7 +239,7 @@ exports.removeFromWishlist = async (req, res) => {
     }
   } catch (error) {
     console.error('Error removing from wishlist:', error);
-    res.status(500).json({
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: 'Failed to remove from wishlist'
     });
@@ -257,7 +258,7 @@ exports.toggleWishlist = async (req, res) => {
     const userId = req.session.user;
 
     if (!userId) {
-      return res.status(401).json({
+      return res.status(StatusCodes.UNAUTHORIZED).json({
         success: false,
         error: 'Please login to update your wishlist'
       });
@@ -298,7 +299,7 @@ exports.toggleWishlist = async (req, res) => {
     res.json(result);
   } catch (error) {
     console.error('Error toggling wishlist item:', error);
-    res.status(500).json({
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: 'Failed to update wishlist'
     });
@@ -365,7 +366,7 @@ exports.getWishlistStatus = async (req, res) => {
     });
   } catch (error) {
     console.error('Error checking wishlist status:', error);
-    res.status(500).json({
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: 'Failed to check wishlist status'
     });
@@ -398,9 +399,10 @@ exports.getWishlistCount = async (req, res) => {
     });
   } catch (error) {
     console.error('Error counting wishlist items:', error);
-    res.status(500).json({
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: 'Failed to count wishlist items'
     });
   }
 };
+

@@ -8,6 +8,7 @@ const WalletTransaction = require("../../models/walletTransactionSchema");
 const nodemailer = require("nodemailer");
 require("dotenv").config();
 const bcrypt = require("bcrypt");
+const StatusCodes = require("../../utils/httpStatusCodes");
 
 async function securePassword(password) {
   const saltRounds = 10;
@@ -123,12 +124,12 @@ const verifyOtp = async (req, res) => {
 
       // Validate input
       if (!otp || otp.trim() === '') {
-        return res.status(400).json({ success: false, message: "OTP is required" });
+        return res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "OTP is required" });
       }
 
       // Check session data
       if (!req.session.userOtp || !req.session.userData || !req.session.otpTimestamp) {
-        return res.status(400).json({
+        return res.status(StatusCodes.BAD_REQUEST).json({
           success: false,
           message: "Session expired. Please try signing up again."
         });
@@ -152,7 +153,7 @@ const verifyOtp = async (req, res) => {
 
       if (!otpTimestamp || timeDifference > 120) {
         console.log("OTP expired - timeDifference:", timeDifference);
-        return res.status(400).json({ success: false, message: "OTP has expired" });
+        return res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "OTP has expired" });
       }
 
       if (otp && req.session.userOtp && otp.toString().trim() === req.session.userOtp.toString().trim()) {
@@ -161,13 +162,13 @@ const verifyOtp = async (req, res) => {
 
         if (!user) {
           console.log("User data not found in session");
-          return res.status(400).json({ success: false, message: "User data not found in session" });
+          return res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "User data not found in session" });
         }
 
         const existingUser = await User.findOne({ email: user.email });
         if (existingUser) {
           console.log("User already exists with email:", user.email);
-          return res.status(400).json({
+          return res.status(StatusCodes.BAD_REQUEST).json({
             success: false,
             message: "A user with this email already exists",
           });
@@ -224,7 +225,7 @@ const verifyOtp = async (req, res) => {
         res.json({ success: true, redirectUrl: "/home" });
       } else {
         console.log("OTP mismatch - received:", otp, "expected:", req.session.userOtp);
-        res.status(400).json({ success: false, message: "Invalid OTP" });
+        res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "Invalid OTP" });
       }
     } catch (error) {
       console.error("Error verifying OTP:", error);
@@ -232,7 +233,7 @@ const verifyOtp = async (req, res) => {
 
       // Ensure we always return JSON even on error
       if (!res.headersSent) {
-        res.status(500).json({ success: false, message: "An error occurred during verification" });
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "An error occurred during verification" });
       }
     }
   };
@@ -244,7 +245,7 @@ const resendOtp = async (req, res) => {
   try {
     const email = req.session.userData?.email;
     if (!email) {
-      return res.status(400).json({ success: false, message: "Email not found in session" });
+      return res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "Email not found in session" });
     }
 
     const otp = generateOtp();
@@ -253,13 +254,13 @@ const resendOtp = async (req, res) => {
 
     const emailSent = await sendVerificationEmail(email, otp);
     if (emailSent) {
-      return res.status(200).json({ success: true, message: "OTP resent successfully" });
+      return res.status(StatusCodes.OK).json({ success: true, message: "OTP resent successfully" });
     } else {
-      return res.status(500).json({ success: false, message: "Failed to resend OTP" });
+      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Failed to resend OTP" });
     }
   } catch (error) {
     console.error("Error resending OTP:", error);
-    return res.status(500).json({ success: false, message: "Internal server error" });
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Internal server error" });
   }
 };
 

@@ -5,6 +5,7 @@
 
 const Category = require("../../models/categorySchema");
 const Product = require("../../models/productSchema");
+const StatusCodes = require("../../utils/httpStatusCodes");
 
 //=================================================================================================
 // Category Info
@@ -80,17 +81,17 @@ const addCategory = async (req, res) => {
   try {
 
     if (!name) {
-      return res.status(400).json({ error: "Category name is required" });
+      return res.status(StatusCodes.BAD_REQUEST).json({ error: "Category name is required" });
     }
 
     const nameRegex = /^[A-Za-z\s]+$/;
     if (!nameRegex.test(name)) {
-      return res.status(400).json({ error: "Category name can only contain letters and spaces (no numbers or special characters)" });
+      return res.status(StatusCodes.BAD_REQUEST).json({ error: "Category name can only contain letters and spaces (no numbers or special characters)" });
     }
 
     const existingCategory = await Category.findOne({ name });
     if (existingCategory) {
-      return res.status(400).json({ error: "Category already exists" });
+      return res.status(StatusCodes.BAD_REQUEST).json({ error: "Category already exists" });
     }
 
     const newCategory = new Category({
@@ -101,7 +102,7 @@ const addCategory = async (req, res) => {
     return res.json({ message: "Category added successfully" });
   } catch (error) {
     console.error("Error in addCategory:", error);
-    return res.status(500).json({ error: error.message || "Internal server error" });
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: error.message || "Internal server error" });
   }
 };
 
@@ -165,12 +166,12 @@ const editCategory = async (req, res) => {
     const { categoryName, description, isListed } = req.body;
 
     if (!categoryName) {
-      return res.status(400).json({ error: "Category name is required" });
+      return res.status(StatusCodes.BAD_REQUEST).json({ error: "Category name is required" });
     }
 
     const nameRegex = /^[A-Za-z\s]+$/;
     if (!nameRegex.test(categoryName)) {
-      return res.status(400).json({ error: "Category name can only contain letters and spaces (no numbers or special characters)" });
+      return res.status(StatusCodes.BAD_REQUEST).json({ error: "Category name can only contain letters and spaces (no numbers or special characters)" });
     }
 
     const existingCategory = await Category.findOne({
@@ -179,7 +180,7 @@ const editCategory = async (req, res) => {
     });
 
     if (existingCategory) {
-      return res.status(400).json({ error: "Category already exists" });
+      return res.status(StatusCodes.BAD_REQUEST).json({ error: "Category already exists" });
     }
 
     const updatedCategory = await Category.findByIdAndUpdate(
@@ -193,17 +194,17 @@ const editCategory = async (req, res) => {
     );
 
     if (!updatedCategory) {
-      return res.status(404).json({ error: "Category not found" });
+      return res.status(StatusCodes.NOT_FOUND).json({ error: "Category not found" });
     }
 
-    return res.status(200).json({
+    return res.status(StatusCodes.OK).json({
       message: "Category updated successfully",
       category: updatedCategory
     });
 
   } catch (error) {
     console.error("Error in editCategory:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: "Internal server error" });
   }
 };
 
@@ -221,11 +222,11 @@ const deleteCategory = async (req, res) => {
 
     await Category.findByIdAndDelete(categoryId);
 
-    res.status(200).json({ message: "Category deleted successfully" });
+    res.status(StatusCodes.OK).json({ message: "Category deleted successfully" });
   } catch (error) {
     console.error("Error deleting category:", error);
 
-    res.status(500).json({ error: "Internal server error" });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: "Internal server error" });
   }
 };
 

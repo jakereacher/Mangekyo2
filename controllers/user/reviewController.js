@@ -2,6 +2,7 @@ const Review = require('../../models/reviewSchema');
 const Product = require('../../models/productSchema');
 const Order = require('../../models/orderSchema');
 const User = require('../../models/userSchema');
+const StatusCodes = require('../../utils/httpStatusCodes');
 
 //=================================================================================================
 // Add Review
@@ -13,14 +14,14 @@ const addReview = async (req, res) => {
 
     // Validate input
     if (!productId || !rating || !title || !content) {
-      return res.status(400).json({
+      return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
         message: 'All fields are required'
       });
     }
 
     if (rating < 1 || rating > 5) {
-      return res.status(400).json({
+      return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
         message: 'Rating must be between 1 and 5'
       });
@@ -29,7 +30,7 @@ const addReview = async (req, res) => {
     // Check if product exists
     const product = await Product.findById(productId);
     if (!product) {
-      return res.status(404).json({
+      return res.status(StatusCodes.NOT_FOUND).json({
         success: false,
         message: 'Product not found'
       });
@@ -38,7 +39,7 @@ const addReview = async (req, res) => {
     // Check if user has already reviewed this product
     const existingReview = await Review.findOne({ user: userId, product: productId });
     if (existingReview) {
-      return res.status(400).json({
+      return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
         message: 'You have already reviewed this product'
       });
@@ -66,14 +67,14 @@ const addReview = async (req, res) => {
     // Update product's average rating and review count
     await updateProductRating(productId);
 
-    res.status(201).json({
+    res.status(StatusCodes.CREATED).json({
       success: true,
       message: 'Review added successfully'
     });
 
   } catch (error) {
     console.error('Error adding review:', error);
-    res.status(500).json({
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: 'Failed to add review'
     });
@@ -120,7 +121,7 @@ const getProductReviews = async (req, res) => {
 
   } catch (error) {
     console.error('Error fetching reviews:', error);
-    res.status(500).json({
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: 'Failed to fetch reviews'
     });
@@ -192,7 +193,7 @@ const getReviewStats = async (req, res) => {
 
   } catch (error) {
     console.error('Error fetching review stats:', error);
-    res.status(500).json({
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: 'Failed to fetch review statistics'
     });
@@ -240,7 +241,7 @@ const canUserReview = async (req, res) => {
 
   } catch (error) {
     console.error('Error checking review eligibility:', error);
-    res.status(500).json({
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: 'Failed to check review eligibility'
     });
@@ -273,7 +274,7 @@ const deleteReview = async (req, res) => {
     const userId = req.session.user;
 
     if (!userId) {
-      return res.status(401).json({
+      return res.status(StatusCodes.UNAUTHORIZED).json({
         success: false,
         message: 'Authentication required'
       });
@@ -282,7 +283,7 @@ const deleteReview = async (req, res) => {
     // Find the review
     const review = await Review.findById(reviewId);
     if (!review) {
-      return res.status(404).json({
+      return res.status(StatusCodes.NOT_FOUND).json({
         success: false,
         message: 'Review not found'
       });
@@ -290,7 +291,7 @@ const deleteReview = async (req, res) => {
 
     // Check if the user is the author of the review
     if (review.user.toString() !== userId.toString()) {
-      return res.status(403).json({
+      return res.status(StatusCodes.FORBIDDEN).json({
         success: false,
         message: 'You can only delete your own reviews'
       });
@@ -304,14 +305,14 @@ const deleteReview = async (req, res) => {
     // Update product's average rating and review count
     await updateProductRating(productId);
 
-    res.status(200).json({
+    res.status(StatusCodes.OK).json({
       success: true,
       message: 'Review deleted successfully'
     });
 
   } catch (error) {
     console.error('Error deleting review:', error);
-    res.status(500).json({
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: 'Failed to delete review'
     });

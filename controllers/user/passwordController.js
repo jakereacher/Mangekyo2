@@ -6,6 +6,7 @@ const User = require("../../models/userSchema");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const { generateOtp, sendVerificationEmail } = require("./otpController");
+const StatusCodes = require("../../utils/httpStatusCodes");
 
 //=================================================================================================
 // Secure Password
@@ -32,7 +33,7 @@ const loadForgotPassword = async (req, res) => {
     res.render("forgot-password", { message: "" });
   } catch (error) {
     console.log("Forgot password page not found", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Server error" });
   }
 };
 
@@ -47,7 +48,7 @@ const resetPassword = async (req, res) => {
     const { email } = req.body;
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({ success: false, message: "No account found" });
+      return res.status(StatusCodes.NOT_FOUND).json({ success: false, message: "No account found" });
     }
 
     const resetToken = crypto.randomBytes(20).toString("hex");
@@ -61,7 +62,7 @@ const resetPassword = async (req, res) => {
 
     const emailSent = await sendVerificationEmail(email, otp);
     if (!emailSent) {
-      return res.status(500).json({ success: false, message: "Failed to send OTP" });
+      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Failed to send OTP" });
     }
 
     res.json({
@@ -72,7 +73,7 @@ const resetPassword = async (req, res) => {
     });
   } catch (error) {
     console.error("Reset password error:", error);
-    res.status(500).json({ success: false, message: "An error occurred" });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "An error occurred" });
   }
 };
 
@@ -97,7 +98,7 @@ const loadNewPassword = async (req, res) => {
     res.render("new-password", { token: token, message: "" });
   } catch (error) {
     console.error("Load new password error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Server error" });
   }
 };
 
@@ -116,11 +117,11 @@ const newPassword = async (req, res) => {
     });
 
     if (!user) {
-      return res.status(400).json({ success: false, message: "Invalid or expired token" });
+      return res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "Invalid or expired token" });
     }
 
     if (user.resetPasswordOtp !== otp) {
-      return res.status(400).json({ success: false, message: "Invalid OTP" });
+      return res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "Invalid OTP" });
     }
 
     const hashedPassword = await securePassword(password);
@@ -134,7 +135,7 @@ const newPassword = async (req, res) => {
     res.json({ success: true, message: "Password reset successfully" });
   } catch (error) {
     console.error("New password error:", error);
-    res.status(500).json({ success: false, message: "An error occurred" });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "An error occurred" });
   }
 };
 
@@ -151,3 +152,4 @@ module.exports = {
   loadNewPassword,
   newPassword
 };
+

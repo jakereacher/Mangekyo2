@@ -10,6 +10,7 @@ const Review = require("../../models/reviewSchema");
 const mongoose = require("mongoose");
 const bcrypt = require('bcrypt');
 const moment = require("moment");
+const StatusCodes = require("../../utils/httpStatusCodes");
 
 
 
@@ -630,7 +631,7 @@ const loadDashboard = async(req, res) => {
 const getDashboardOrders = async (req, res) => {
   try {
     if (!req.session.admin) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return res.status(StatusCodes.UNAUTHORIZED).json({ error: 'Unauthorized' });
     }
 
     const orderPage = parseInt(req.query.page) || 1;
@@ -762,7 +763,7 @@ const getDashboardOrders = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch orders' });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: 'Failed to fetch orders' });
   }
 };
 //=================================================================================================
@@ -774,7 +775,7 @@ const getDashboardOrders = async (req, res) => {
 const getDashboardProducts = async (req, res) => {
   try {
     if (!req.session.admin) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return res.status(StatusCodes.UNAUTHORIZED).json({ error: 'Unauthorized' });
     }
 
     const productPage = parseInt(req.query.page) || 1;
@@ -814,7 +815,7 @@ const getDashboardProducts = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch products' });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: 'Failed to fetch products' });
   }
 };
 
