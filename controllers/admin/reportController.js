@@ -1417,7 +1417,22 @@ exports.downloadSalesReportPDF = async (req, res) => {
     };
 
     const formatCurrency = (amount) => {
-      return '$' + amount.toLocaleString('en-US', { maximumFractionDigits: 2 });
+      // Handle undefined, null, or non-numeric values
+      if (amount === undefined || amount === null || isNaN(amount)) {
+        amount = 0;
+      }
+
+      // Convert to number and ensure it's valid
+      const numAmount = parseFloat(amount) || 0;
+
+      // Simple formatting with fixed decimal places
+      const formatted = numAmount.toFixed(2);
+
+      // Add thousand separators manually
+      const parts = formatted.split('.');
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+      return '₹' + parts.join('.');
     };
 
     res.setHeader('Content-Type', 'application/pdf');
@@ -1456,7 +1471,7 @@ exports.downloadSalesReportPDF = async (req, res) => {
     doc.moveDown(0.5);
 
     const boxTop = doc.y;
-    const boxHeight = 120;
+    const boxHeight = 140;
 
     doc.fillColor('#f8f9fc').roundedRect(50, boxTop, doc.page.width - 100, boxHeight, 5).fill();
     doc.fillColor('#000000'); // Reset text color
@@ -1465,68 +1480,81 @@ exports.downloadSalesReportPDF = async (req, res) => {
     const col2X = doc.page.width / 2 + 20;
     let currentY = boxTop + 15;
 
-    doc.fontSize(10).fillColor('#666666').text(`Total Orders:`, col1X, currentY);
-    doc.fontSize(10).fillColor('#000000').text(`${summary.totalOrders}`, col1X + 150, currentY, { align: 'left' });
-    currentY += 20;
+    // Use the exact same calculation logic as the web report
+    const netAmount = summary.totalSales || 0;
+    const backendGross = summary.totalOriginalValue || 0;
+    const backendDiscount = summary.totalDiscount || 0;
 
-    const originalAmount = summary.totalOriginalValue || summary.totalSales;
-    doc.fontSize(10).fillColor('#666666').text(`Original Amount:`, col1X, currentY);
-    doc.fontSize(10).fillColor('#000000').text(`${formatCurrency(originalAmount)}`, col1X + 150, currentY, { align: 'left' });
-    currentY += 20;
+    // If backend gross is less than net, calculate gross as net + discount
+    const summaryGrossRevenue = backendGross >= netAmount ? backendGross : (netAmount + Math.abs(backendDiscount));
+    const netRevenue = netAmount;
 
-    doc.fontSize(10).fillColor('#666666').text(`Total Revenue:`, col1X, currentY);
-    doc.fontSize(10).fillColor('#000000').text(`${formatCurrency(summary.totalSales)}`, col1X + 150, currentY, { align: 'left' });
-    currentY += 20;
+    // Calculate discount as the difference between gross and net (same as web report)
+    const totalDiscounts = summaryGrossRevenue - netAmount;
 
-    const summaryNetSales = summary.totalSales;
-    doc.fontSize(10).fillColor('#666666').text(`Net Sales:`, col1X, currentY);
-    doc.fontSize(10).fillColor('#000000').text(`${formatCurrency(summaryNetSales)}`, col1X + 150, currentY, { align: 'left' });
-    currentY += 20;
+    // Debug logging to understand the calculations
+    console.log('PDF Sales Report Calculations:');
+    console.log('- Summary totalOriginalValue:', summary.totalOriginalValue);
+    console.log('- Summary totalSales (net):', summary.totalSales);
+    console.log('- Summary totalDiscount:', summary.totalDiscount);
+    console.log('- Backend gross:', backendGross);
+    console.log('- Backend discount:', backendDiscount);
+    console.log('- Calculated summaryGrossRevenue:', summaryGrossRevenue);
+    console.log('- Calculated netRevenue:', netRevenue);
+    console.log('- Calculated totalDiscounts:', totalDiscounts);
+    console.log('- Orders count for calculation:', orders.length);
 
-    doc.fontSize(10).fillColor('#666666').text(`Total Products Sold:`, col1X, currentY);
-    doc.fontSize(10).fillColor('#000000').text(`${summary.totalProducts}`, col1X + 150, currentY, { align: 'left' });
+    // Left column - Main financial metrics (matching web report order)
+    doc.fontSize(10).fillColor('#666666').text(`Gross Revenue:`, col1X, currentY);
+    doc.fontSize(10).fillColor('#000000').text(`${formatCurrency(summaryGrossRevenue)}`, col1X + 120, currentY, { align: 'left' });
+    doc.fontSize(8).fillColor('#999999').text(`Before discounts & offers`, col1X, currentY + 12);
+    currentY += 25;
 
+    doc.fontSize(10).fillColor('#666666').text(`Total Discounts:`, col1X, currentY);
+    doc.fontSize(10).fillColor('#000000').text(`${formatCurrency(totalDiscounts)}`, col1X + 120, currentY, { align: 'left' });
+    if (summaryGrossRevenue > 0) {
+      const discountPercentage = Math.round((totalDiscounts / summaryGrossRevenue) * 100);
+      doc.fontSize(8).fillColor('#999999').text(`${discountPercentage}% of gross revenue`, col1X, currentY + 12);
+    }
+    currentY += 25;
+
+    doc.fontSize(10).fillColor('#666666').text(`Net Revenue:`, col1X, currentY);
+    doc.fontSize(10).fillColor('#000000').text(`${formatCurrency(netRevenue)}`, col1X + 120, currentY, { align: 'left' });
+    doc.fontSize(8).fillColor('#999999').text(`After discounts & offers`, col1X, currentY + 12);
+    currentY += 25;
+
+    // Right column - Order metrics
     currentY = boxTop + 15;
 
+    doc.fontSize(10).fillColor('#666666').text(`Total Orders:`, col2X, currentY);
+    doc.fontSize(10).fillColor('#000000').text(`${summary.totalOrders}`, col2X + 120, currentY, { align: 'left' });
+    doc.fontSize(8).fillColor('#999999').text(`${summary.totalProducts} products sold`, col2X, currentY + 12);
+    currentY += 25;
+
+    // Calculate average order value based on net revenue (like web report)
+    const avgOrderValue = summary.totalOrders > 0 ? (netRevenue / summary.totalOrders) : 0;
     doc.fontSize(10).fillColor('#666666').text(`Average Order Value:`, col2X, currentY);
-    doc.fontSize(10).fillColor('#000000').text(`${formatCurrency(summary.avgOrderValue)}`, col2X + 150, currentY, { align: 'left' });
-    currentY += 20;
-
-    doc.fontSize(10).fillColor('#666666').text(`Minimum Order Value:`, col2X, currentY);
-    doc.fontSize(10).fillColor('#000000').text(`${formatCurrency(summary.minOrderValue)}`, col2X + 150, currentY, { align: 'left' });
-    currentY += 20;
-
-    doc.fontSize(10).fillColor('#666666').text(`Maximum Order Value:`, col2X, currentY);
-    doc.fontSize(10).fillColor('#000000').text(`${formatCurrency(summary.maxOrderValue)}`, col2X + 150, currentY, { align: 'left' });
-    currentY += 20;
-
-    if (summary.totalDiscount) {
-      doc.fontSize(10).fillColor('#666666').text(`Total Discount:`, col2X, currentY);
-      doc.fontSize(10).fillColor('#000000').text(`${formatCurrency(summary.totalDiscount)}`, col2X + 150, currentY, { align: 'left' });
-      currentY += 20;
-
-      const discountPercentage = (summary.totalDiscount / (summary.totalSales + summary.totalDiscount) * 100).toFixed(2);
-      doc.fontSize(10).fillColor('#666666').text(`Discount Percentage:`, col2X, currentY);
-      doc.fontSize(10).fillColor('#000000').text(`${discountPercentage}%`, col2X + 150, currentY, { align: 'left' });
-    }
+    doc.fontSize(10).fillColor('#000000').text(`${formatCurrency(avgOrderValue)}`, col2X + 120, currentY, { align: 'left' });
+    doc.fontSize(8).fillColor('#999999').text(`Net revenue per order`, col2X, currentY + 12);
+    currentY += 25;
 
     doc.y = boxTop + boxHeight + 20;
 
     doc.y = checkNewPage(doc.y, 150);
 
-    doc.fontSize(14).fillColor('#4e73df').text('PAYMENT METHODS', { underline: false });
+    doc.fontSize(14).fillColor('#4e73df').text('PAYMENT METHODS BREAKDOWN', { underline: false });
     doc.moveDown(0.5);
 
     const methodTableTop = doc.y;
     const methodX = 70;
-    const countX = 250;
-    const totalX = 350;
+    const countX = 220;
+    const totalX = 320;
     const avgX = 450;
 
     doc.fillColor('#4e73df').rect(50, methodTableTop, doc.page.width - 100, 20).fill();
 
     doc.fillColor('#ffffff');
-    doc.fontSize(10).text('PAYMENT METHOD', methodX, methodTableTop + 5, { bold: true });
+    doc.fontSize(10).text('METHOD', methodX, methodTableTop + 5, { bold: true });
     doc.fontSize(10).text('ORDERS', countX, methodTableTop + 5, { bold: true });
     doc.fontSize(10).text('AMOUNT', totalX, methodTableTop + 5, { bold: true });
     doc.fontSize(10).text('AVG. ORDER', avgX, methodTableTop + 5, { bold: true });
@@ -1547,7 +1575,12 @@ exports.downloadSalesReportPDF = async (req, res) => {
       }
       doc.fillColor('#000000'); // Reset text color
 
-      const methodName = method.charAt(0).toUpperCase() + method.slice(1);
+      // Format method names to match web report
+      let methodName = 'Unknown';
+      if (method === 'cod') methodName = 'Cash on Delivery';
+      else if (method === 'razorpay') methodName = 'Razorpay';
+      else if (method === 'wallet') methodName = 'Wallet';
+      else methodName = method.charAt(0).toUpperCase() + method.slice(1);
 
       doc.fontSize(10).text(methodName, methodX, methodY + 5);
       doc.fontSize(10).text(`${data.count}`, countX, methodY + 5);
@@ -1560,49 +1593,53 @@ exports.downloadSalesReportPDF = async (req, res) => {
 
     methodY = checkNewPage(methodY, 30);
 
-    doc.fillColor('#eaecf4').rect(50, methodY, doc.page.width - 100, 25).fill();
+    // Gross Total Row
+    doc.fillColor('#e8f4f8').rect(50, methodY, doc.page.width - 100, 25).fill();
     doc.fillColor('#000000'); // Reset text color
 
     const totalCount = Object.values(paymentSummary).reduce((sum, data) => sum + data.count, 0);
     const totalAmount = Object.values(paymentSummary).reduce((sum, data) => sum + data.total, 0);
-    const totalAvg = totalCount > 0 ? totalAmount / totalCount : 0;
+    // Use the same gross revenue calculation as in summary section
+    const paymentGrossRevenue = summaryGrossRevenue;
+    const grossAvg = totalCount > 0 ? paymentGrossRevenue / totalCount : 0;
 
     doc.fontSize(10).font('Helvetica-Bold')
-       .text('TOTAL', methodX, methodY + 7)
+       .text('GROSS TOTAL', methodX, methodY + 7)
        .text(`${totalCount}`, countX, methodY + 7)
-       .text(`${formatCurrency(totalAmount)}`, totalX, methodY + 7)
-       .text(`${formatCurrency(totalAvg)}`, avgX, methodY + 7);
+       .text(`${formatCurrency(paymentGrossRevenue)}`, totalX, methodY + 7)
+       .text(`${formatCurrency(grossAvg)}`, avgX, methodY + 7);
 
     methodY += 25;
 
-    methodY = checkNewPage(methodY, 30);
+    // Total Discounts Row (if applicable)
+    const paymentTotalDiscounts = paymentGrossRevenue - totalAmount;
+    if (paymentTotalDiscounts > 0) {
+      methodY = checkNewPage(methodY, 30);
 
-    doc.fillColor('#e8f4f8').rect(50, methodY, doc.page.width - 100, 25).fill();
-    doc.fillColor('#000000'); // Reset text color
+      doc.fillColor('#fff3cd').rect(50, methodY, doc.page.width - 100, 25).fill();
+      doc.fillColor('#000000'); // Reset text color
 
-    const paymentOriginalAmount = summary.totalOriginalValue || totalAmount;
-    const originalAvg = totalCount > 0 ? paymentOriginalAmount / totalCount : 0;
+      doc.fontSize(10).font('Helvetica-Bold')
+         .text('TOTAL DISCOUNTS', methodX, methodY + 7)
+         .text('-', countX, methodY + 7)
+         .text(`-${formatCurrency(paymentTotalDiscounts)}`, totalX, methodY + 7)
+         .text('', avgX, methodY + 7);
 
-    doc.fontSize(10).font('Helvetica-Bold')
-       .text('ORIGINAL AMOUNT', methodX, methodY + 7)
-       .text('', countX, methodY + 7)
-       .text(`${formatCurrency(paymentOriginalAmount)}`, totalX, methodY + 7)
-       .text(`${formatCurrency(originalAvg)}`, avgX, methodY + 7);
+      methodY += 25;
+    }
 
-    methodY += 25;
-
+    // Net Revenue Row
     methodY = checkNewPage(methodY, 30);
 
     doc.fillColor('#d1ecf1').rect(50, methodY, doc.page.width - 100, 25).fill();
     doc.fillColor('#000000'); // Reset text color
 
-    const paymentNetSales = totalAmount;
-    const netAvg = totalCount > 0 ? paymentNetSales / totalCount : 0;
+    const netAvg = totalCount > 0 ? totalAmount / totalCount : 0;
 
     doc.fontSize(10).font('Helvetica-Bold')
-       .text('NET SALES', methodX, methodY + 7)
-       .text('', countX, methodY + 7)
-       .text(`${formatCurrency(paymentNetSales)}`, totalX, methodY + 7)
+       .text('NET REVENUE', methodX, methodY + 7)
+       .text(`${totalCount}`, countX, methodY + 7)
+       .text(`${formatCurrency(totalAmount)}`, totalX, methodY + 7)
        .text(`${formatCurrency(netAvg)}`, avgX, methodY + 7);
 
     doc.font('Helvetica');
