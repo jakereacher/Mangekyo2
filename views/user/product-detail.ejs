@@ -83,17 +83,32 @@
         </div>
 
         <!-- Image Gallery -->
-        <% if (product.gallery && product.gallery.length> 0) { %>
-        <div class="grid grid-cols-5 gap-2">
+        <%
+        // Calculate total images (main + gallery)
+        const totalImages = 1 + (product.gallery ? product.gallery.length : 0);
+        %>
+        <% if (totalImages > 1) { %>
+        <div class="grid grid-cols-<%= Math.min(totalImages, 5) %> gap-2">
+          <!-- Main Image Thumbnail -->
           <div class="rounded-lg overflow-hidden border-2 border-[#00ffff] cursor-pointer" onclick="changeMainImage('<%= product.image %>')">
             <img src="<%= product.image %>" alt="<%= product.name %> - Main" class="w-full h-20 object-cover">
           </div>
 
-          <% product.gallery.forEach((image, index)=> { %>
-          <div class="rounded-lg overflow-hidden border-2 border-transparent hover:border-[#00ffff] transition cursor-pointer" onclick="changeMainImage('<%= image %>')">
-            <img src="<%= image %>" alt="<%= product.name %> - Gallery <%= index + 1 %>" class="w-full h-20 object-cover">
+          <!-- Additional Gallery Images -->
+          <% if (product.gallery && product.gallery.length > 0) { %>
+            <% product.gallery.forEach((image, index)=> { %>
+            <div class="rounded-lg overflow-hidden border-2 border-transparent hover:border-[#00ffff] transition cursor-pointer" onclick="changeMainImage('<%= image %>')">
+              <img src="<%= image %>" alt="<%= product.name %> - Image <%= index + 2 %>" class="w-full h-20 object-cover">
+            </div>
+            <% }); %>
+          <% } %>
+        </div>
+        <% } else { %>
+        <!-- Single Image - Show main image thumbnail -->
+        <div class="grid grid-cols-1 gap-2">
+          <div class="rounded-lg overflow-hidden border-2 border-[#00ffff] cursor-pointer">
+            <img src="<%= product.image %>" alt="<%= product.name %> - Main" class="w-full h-20 object-cover">
           </div>
-          <% }); %>
         </div>
         <% } %>
       </div>

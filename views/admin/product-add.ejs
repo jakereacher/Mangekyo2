@@ -3,10 +3,10 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css">
 <style>
     .error-message {
-        color: red;
-        font-size: 0.875em;
+        color: #dc3545;
+        font-size: 0.875rem;
         margin-top: 0.25rem;
-        min-height: 1.25em;
+        min-height: 1.25rem;
     }
 
     .thumbnails-container {
@@ -14,6 +14,7 @@
         overflow-x: auto;
         gap: 10px;
         padding: 10px 0;
+        min-height: 60px;
     }
 
     .thumbnail {
@@ -21,6 +22,12 @@
         height: 100px;
         object-fit: cover;
         border: 1px solid #ddd;
+        border-radius: 8px;
+        transition: transform 0.2s ease;
+    }
+
+    .thumbnail:hover {
+        transform: scale(1.05);
     }
 
     .image-preview {
@@ -31,8 +38,13 @@
         margin-bottom: 10px;
         display: none;
         object-fit: contain;
-        border: 1px solid #ddd;
-        border-radius: 4px;
+        border: 2px dashed #dee2e6;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+
+    .image-preview:hover {
+        border-color: #007bff;
     }
 
     .image-cropper {
@@ -45,6 +57,27 @@
         position: relative;
         max-width: 100%;
         height: 300px;
+    }
+
+    .card-header {
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .form-label {
+        font-weight: 500;
+        color: #495057;
+    }
+
+    .btn-primary {
+        background-color: #007bff;
+        border-color: #007bff;
+        transition: all 0.2s ease;
+    }
+
+    .btn-primary:hover {
+        background-color: #0056b3;
+        border-color: #0056b3;
+        transform: translateY(-1px);
     }
 </style>
 
@@ -61,27 +94,27 @@
                     <form method="POST" action="/admin/add-products" enctype="multipart/form-data"
                         onsubmit="return validateForm()">
                         <div class="mb-4">
-                            <label for="product_name" class="form-label">Product Name</label>
-                            <input type="text" placeholder="Type here" name="productName"
-                                class="form-control border" id="product_name">
+                            <label for="product_name" class="form-label">Product Name <span class="text-danger">*</span></label>
+                            <input type="text" placeholder="Enter product name" name="productName"
+                                class="form-control border" id="product_name" required>
                             <div id="productName-error" class="error-message"></div>
                         </div>
 
                         <div class="mb-4">
-                            <label class="form-label">Full description</label>
-                            <textarea placeholder="Type here" id="descriptionid" name="description"
-                                class="form-control border" rows="4"></textarea>
+                            <label class="form-label">Product Description <span class="text-danger">*</span></label>
+                            <textarea placeholder="Enter detailed product description" id="descriptionid" name="description"
+                                class="form-control border" rows="4" required></textarea>
                             <div id="description-error" class="error-message"></div>
                         </div>
 
                         <div class="row">
                             <div class="col-lg-6">
                                 <div class="mb-4">
-                                    <label class="form-label">Price</label>
+                                    <label class="form-label">Product Price <span class="text-danger">*</span></label>
                                     <div class="input-group">
                                         <span class="input-group-text">₹</span>
-                                        <input placeholder="Enter price" name="price" type="number" step="0.01" min="0"
-                                            class="form-control border">
+                                        <input placeholder="Enter price (e.g., 999.99)" name="price" type="number" step="0.01" min="0"
+                                            class="form-control border" required>
                                     </div>
                                     <div id="price-error" class="error-message"></div>
                                     <small class="form-text text-muted">
@@ -91,36 +124,44 @@
                             </div>
                             <div class="col-lg-6">
                                 <div class="mb-4">
-                                    <label class="form-label">Quantity</label>
-                                    <input placeholder="Enter quantity" name="quantity" type="number" min="0" step="1"
-                                        class="form-control border">
+                                    <label class="form-label">Stock Quantity <span class="text-danger">*</span></label>
+                                    <input placeholder="Enter available quantity" name="quantity" type="number" min="0" step="1"
+                                        class="form-control border" required>
+                                    <small class="form-text text-muted">Enter 0 if out of stock</small>
                                     <div id="quantity-error" class="error-message"></div>
                                 </div>
                             </div>
                         </div>
 
                         <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">Product Category</h5>
+                            </div>
                             <div class="card-body">
                                 <div class="row gx-2">
-                                    <div class="col-sm-6 mb-3">
-                                        <label class="form-label">Category</label>
-                                        <select class="form-select border" style="width: 150px;" name="category">
-                                            <option value="">Categories</option>
+                                    <div class="col-sm-8 mb-3">
+                                        <label class="form-label">Select Category <span class="text-danger">*</span></label>
+                                        <select class="form-select border" name="category" required>
+                                            <option value="">-- Select a Category --</option>
                                             <% for(let i=0; i<cat.length; i++){ %>
                                                 <option value="<%=cat[i].name%>">
                                                     <%=cat[i].name%>
                                                 </option>
                                             <% } %>
                                         </select>
+                                        <small class="form-text text-muted">Choose the most appropriate category for this product</small>
                                         <div id="category-error" class="error-message"></div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="card mb-2">
-                            <div class="card-header">
-                                <h4>Choose images</h4>
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-images me-2"></i>Product Images <span class="text-danger">*</span>
+                                </h5>
+                                <small class="text-muted">Upload at least 3 high-quality product images</small>
                             </div>
                             <div class="card-body">
                                 <div class="thumbnails-container" id="addedImagesContainer"></div>
@@ -184,8 +225,13 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="mb-4">
-                            <button type="submit" class="btn btn-primary">Publish</button>
+                        <div class="mb-4 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus-circle me-2"></i>Add Product
+                            </button>
+                            <a href="/admin/products" class="btn btn-secondary">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
                         </div>
                     </form>
                 </div>
@@ -258,8 +304,8 @@
         }
 
         const croppedCanvas = croppers[index].getCroppedCanvas({
-            width: 200,
-            height: 200
+            width: 440,
+            height: 440
         });
 
         if (!croppedCanvas) {
@@ -271,9 +317,16 @@
         croppedCanvas.toBlob(function(blob) {
             const fileName = `cropped-img-${Date.now()}-${index}.jpeg`;
             const imgFile = new File([blob], fileName, { type: 'image/jpeg' });
+
+            // Clear the input first to prevent duplicates
+            input.value = '';
+
             const dataTransfer = new DataTransfer();
             dataTransfer.items.add(imgFile);
             input.files = dataTransfer.files;
+
+            console.log(`Cropped image ${index} saved:`, fileName);
+
             cropperContainer.style.display = 'none';
             croppers[index].destroy();
             delete croppers[index];
@@ -292,6 +345,16 @@
             document.getElementById('input3'),
             document.getElementById('input4')
         ];
+
+        // Debug: Log all files being uploaded
+        console.log("=== FORM VALIDATION DEBUG ===");
+        imageInputs.forEach((input, index) => {
+            if (input.files && input.files.length > 0) {
+                console.log(`Input ${index + 1} has ${input.files.length} file(s):`, Array.from(input.files).map(f => f.name));
+            } else {
+                console.log(`Input ${index + 1} has no files`);
+            }
+        });
 
         const errorElements = {
             productName: document.getElementById('productName-error'),
@@ -373,6 +436,53 @@
     const inputs = document.querySelectorAll('input, textarea, select');
     inputs.forEach(input => {
         input.addEventListener('input', validateForm);
+    });
+
+    // Debug form submission
+    document.querySelector('form').addEventListener('submit', function(e) {
+        console.log("=== FORM SUBMISSION DEBUG ===");
+        const formData = new FormData(this);
+
+        // Count images first
+        const imageFiles = formData.getAll('images[]');
+        console.log(`Total images being submitted: ${imageFiles.length}`);
+
+        // Create a map to track duplicate file names
+        const fileNameCounts = {};
+
+        imageFiles.forEach((file, index) => {
+            console.log(`Image ${index + 1}: ${file.name} (${file.size} bytes)`);
+
+            // Track file name occurrences
+            if (fileNameCounts[file.name]) {
+                fileNameCounts[file.name]++;
+                console.log(`⚠️  DUPLICATE DETECTED: ${file.name} appears ${fileNameCounts[file.name]} times`);
+            } else {
+                fileNameCounts[file.name] = 1;
+            }
+        });
+
+        // Log duplicates summary
+        const duplicates = Object.entries(fileNameCounts).filter(([name, count]) => count > 1);
+        if (duplicates.length > 0) {
+            console.log("🚨 DUPLICATE FILES FOUND:");
+            duplicates.forEach(([name, count]) => {
+                console.log(`  - ${name}: ${count} times`);
+            });
+        } else {
+            console.log("✅ No duplicate files detected");
+        }
+
+        // Check each input individually
+        console.log("=== INDIVIDUAL INPUT ANALYSIS ===");
+        for (let i = 1; i <= 4; i++) {
+            const input = document.getElementById(`input${i}`);
+            if (input.files && input.files.length > 0) {
+                console.log(`Input ${i}: ${input.files[0].name} (${input.files[0].size} bytes)`);
+            } else {
+                console.log(`Input ${i}: No file`);
+            }
+        }
     });
 </script>
 

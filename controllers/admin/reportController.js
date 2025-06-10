@@ -1432,7 +1432,8 @@ exports.downloadSalesReportPDF = async (req, res) => {
       const parts = formatted.split('.');
       parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
-      return '₹' + parts.join('.');
+      // Use "Rs." instead of Unicode rupee symbol for PDF compatibility
+      return 'Rs.' + parts.join('.');
     };
 
     res.setHeader('Content-Type', 'application/pdf');

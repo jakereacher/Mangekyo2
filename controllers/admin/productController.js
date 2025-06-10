@@ -33,24 +33,104 @@ const getProductAddPage = async (req, res) => {
 const addProducts = async (req, res) => {
   try {
     const products = req.body;
+    console.log("Add Product - Request body:", products);
+    console.log("Add Product - Files received:", req.files ? req.files.length : 0);
+
+    // Debug: Log detailed information about each file received
+    if (req.files && req.files.length > 0) {
+      console.log("=== DETAILED FILE ANALYSIS ===");
+      req.files.forEach((file, index) => {
+        console.log(`File ${index + 1}:`, {
+          fieldname: file.fieldname,
+          originalname: file.originalname,
+          filename: file.filename,
+          mimetype: file.mimetype,
+          size: file.size,
+          path: file.path
+        });
+      });
+    }
+
     const productExists = await Product.findOne({ productName: products.productName });
 
     if (!productExists) {
       const images = [];
 
+      if (req.files && req.files.length > 0) {
+        console.log("Add Product - Processing files:", req.files.map(f => f.filename));
 
-if (req.files && req.files.length > 0) {
-  for (let i = 0; i < req.files.length; i++) {
-    const imagePath = path.join("public", "uploads", "product-images", req.files[i].filename);
+        // Use Sets to track processed files and prevent duplicates
+        const processedFilenames = new Set();
+        const processedSizes = new Set();
+        const processedCombinations = new Set();
 
-    try {
-      await fs.promises.rename(req.files[i].path, imagePath);
-      images.push(req.files[i].filename);
-    } catch (error) {
-      console.error(`Error saving image: ${error.message}`);
-    }
-  }
-}
+        for (let i = 0; i < req.files.length; i++) {
+          const file = req.files[i];
+          console.log(`Processing file ${i + 1}:`, {
+            filename: file.filename,
+            originalname: file.originalname,
+            size: file.size,
+            mimetype: file.mimetype
+          });
+
+          // Skip empty files or files with 0 size
+          if (!file || file.size === 0) {
+            console.log(`Skipping empty file at index ${i}`);
+            continue;
+          }
+
+          // Create a unique identifier for this file (size + original name)
+          const fileIdentifier = `${file.originalname}_${file.size}`;
+
+          // Skip if we've already processed this exact file
+          if (processedCombinations.has(fileIdentifier)) {
+            console.log(`🚨 Skipping duplicate file: ${file.originalname} (${file.size} bytes)`);
+            continue;
+          }
+
+          // Skip if we've already processed this filename
+          if (processedFilenames.has(file.filename)) {
+            console.log(`Skipping duplicate filename: ${file.filename}`);
+            continue;
+          }
+
+          // Validate file type
+          const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+          if (!validTypes.includes(file.mimetype)) {
+            console.log(`Skipping invalid file type: ${file.mimetype} for file ${file.filename}`);
+            continue;
+          }
+
+          const imagePath = path.join("public", "uploads", "product-images", file.filename);
+
+          try {
+            await fs.promises.rename(file.path, imagePath);
+            images.push(file.filename);
+            processedFilenames.add(file.filename);
+            processedSizes.add(file.size);
+            processedCombinations.add(fileIdentifier);
+            console.log(`✅ Successfully processed image: ${file.filename}`);
+          } catch (error) {
+            console.error(`❌ Error saving image: ${error.message}`);
+          }
+        }
+      }
+
+      // Remove any potential duplicates from the final array
+      const uniqueImages = [...new Set(images)];
+      console.log("Add Product - Original images array:", images);
+      console.log("Add Product - Final unique images array:", uniqueImages);
+      console.log("Add Product - Removed duplicates:", images.length - uniqueImages.length);
+
+      // Additional validation: ensure we have valid images
+      if (uniqueImages.length === 0) {
+        console.log("❌ No valid images to save");
+        return res.redirect("/admin/add-products?error=Please+upload+at+least+one+valid+image");
+      }
+
+      if (uniqueImages.length < 3) {
+        console.log(`⚠️  Only ${uniqueImages.length} unique images found, but 3 are recommended`);
+      }
 
       const categoryId = await Category.findOne({ name: products.category });
       if (!categoryId) {
@@ -66,11 +146,12 @@ if (req.files && req.files.length > 0) {
         price: products.price,
         createdOn: new Date(),
         quantity: products.quantity,
-        productImage: images,
+        productImage: uniqueImages,
         status: status,
       });+
 
       await newProduct.save();
+      console.log("Add Product - Product saved with images:", newProduct.productImage);
       return res.redirect("/admin/add-products");
     } else {
       return res.redirect("/admin/add-products?error=Product+already+exists");
@@ -254,28 +335,30 @@ const editProduct = async (req, res) => {
 
     if (req.body.removedImages) {
       try {
-        const removedIndices = JSON.parse(req.body.removedImages);
-        console.log("Removed indices:", removedIndices);
+        const removedImageNames = JSON.parse(req.body.removedImages);
+        console.log("Removed image names:", removedImageNames);
         console.log("Current product images:", product.productImage);
 
         // Process each image in the original array
-        for (let i = 0; i < product.productImage.length; i++) {
-          const currentImage = product.productImage[i];
-
-          // If this index is marked for removal, delete the file
-          if (removedIndices.includes(parseInt(i))) {
-            if (currentImage && typeof currentImage === 'string' && currentImage.trim() !== '') {
+        for (const currentImage of product.productImage) {
+          if (currentImage && typeof currentImage === 'string' && currentImage.trim() !== '') {
+            // If this image is marked for removal, delete the file from filesystem
+            if (removedImageNames.includes(currentImage)) {
               const imagePath = path.join("public", "uploads", "product-images", currentImage);
               try {
+                // Check if file exists before attempting to delete
+                await fs.promises.access(imagePath);
                 await fs.promises.unlink(imagePath);
-                console.log(`Successfully deleted image: ${imagePath}`);
+                console.log(`Successfully deleted image file: ${imagePath}`);
               } catch (unlinkError) {
-                console.warn(`Failed to delete image ${imagePath}: ${unlinkError.message}`);
+                if (unlinkError.code === 'ENOENT') {
+                  console.warn(`Image file not found (already deleted): ${imagePath}`);
+                } else {
+                  console.warn(`Failed to delete image ${imagePath}: ${unlinkError.message}`);
+                }
               }
-            }
-          } else {
-            // Keep this image if it's valid
-            if (currentImage && typeof currentImage === 'string' && currentImage.trim() !== '') {
+            } else {
+              // Keep this image if it's not marked for removal
               existingImages.push(currentImage);
             }
           }
@@ -349,13 +432,16 @@ const editProduct = async (req, res) => {
     const uniqueImages = [...new Set(finalImages)];
 
     console.log("Final unique images:", uniqueImages);
+    console.log("Original product images before update:", product.productImage);
 
     // Validate that we have at least one image
     if (uniqueImages.length < 1) {
       return res.redirect(`/admin/edit-product/${productId}?error=Product+must+have+at+least+one+image`);
     }
 
+    // Update the product images
     product.productImage = uniqueImages;
+    console.log("Product images after update:", product.productImage);
 
     const categoryId = await Category.findOne({ name: products.category });
     if (!categoryId) {
@@ -375,6 +461,12 @@ const editProduct = async (req, res) => {
     }
 
     await product.save();
+    console.log("Product saved successfully with images:", product.productImage);
+
+    // Verify the product was saved correctly by fetching it again
+    const savedProduct = await Product.findById(productId);
+    console.log("Verification - Product images in database:", savedProduct.productImage);
+
     return res.redirect("/admin/products");
   } catch (error) {
     console.error("Error updating product:", error);

@@ -322,10 +322,19 @@ const loadShop = async (req, res) => {
         finalPrice
       });
 
+      // Filter valid images for shop products
+      const shopValidImages = product.productImage ? product.productImage.filter(img =>
+        img &&
+        typeof img === 'string' &&
+        img.trim() !== '' &&
+        img !== 'undefined' &&
+        img !== 'null'
+      ) : [];
+
       return {
         _id: product._id,
         name: product.productName,
-        image: product.productImage && product.productImage.length > 0 && product.productImage[0] && product.productImage[0].trim() !== '' ? `/uploads/product-images/${product.productImage[0]}` : '/images/keychain1.webp',
+        image: shopValidImages.length > 0 ? `/uploads/product-images/${shopValidImages[0]}` : '/images/keychain1.webp',
         category: product.category?.name || 'Uncategorized',
         price: basePrice,
         displayPrice: finalPrice,
@@ -384,10 +393,19 @@ const loadShop = async (req, res) => {
         finalPrice
       });
 
+      // Filter valid images for recommended products
+      const recommendedValidImages = product.productImage ? product.productImage.filter(img =>
+        img &&
+        typeof img === 'string' &&
+        img.trim() !== '' &&
+        img !== 'undefined' &&
+        img !== 'null'
+      ) : [];
+
       return {
         _id: product._id,
         name: product.productName,
-        image: product.productImage && product.productImage.length > 0 && product.productImage[0] && product.productImage[0].trim() !== '' ? `/uploads/product-images/${product.productImage[0]}` : '/images/keychain1.webp',
+        image: recommendedValidImages.length > 0 ? `/uploads/product-images/${recommendedValidImages[0]}` : '/images/keychain1.webp',
         category: product.category?.name || 'Uncategorized',
         price: basePrice,
         displayPrice: finalPrice,
@@ -529,12 +547,24 @@ const loadProductDetail = async (req, res) => {
       ratingDistribution[review.rating]++;
     });
 
+    // Filter and validate product images to ensure only valid images are shown
+    const validImages = product.productImage ? product.productImage.filter(img =>
+      img &&
+      typeof img === 'string' &&
+      img.trim() !== '' &&
+      img !== 'undefined' &&
+      img !== 'null'
+    ) : [];
+
+    console.log(`Product ${product._id} - Original images:`, product.productImage);
+    console.log(`Product ${product._id} - Valid images:`, validImages);
+
     const productData = {
       _id: product._id,
       name: product.productName,
       description: product.description,
-      image: product.productImage && product.productImage.length > 0 && product.productImage[0] && product.productImage[0].trim() !== '' ? `/uploads/product-images/${product.productImage[0]}` : '/images/keychain1.webp',
-      gallery: product.productImage && product.productImage.length > 0 ? product.productImage.filter(img => img && img.trim() !== '').map(img => `/uploads/product-images/${img}`) : ['/images/keychain1.webp'],
+      image: validImages.length > 0 ? `/uploads/product-images/${validImages[0]}` : '/images/keychain1.webp',
+      gallery: validImages.length > 1 ? validImages.slice(1).map(img => `/uploads/product-images/${img}`) : [],
       category: product.category?.name || 'Uncategorized',
       price: basePrice,
       displayPrice: finalPrice,
@@ -623,10 +653,19 @@ const loadProductDetail = async (req, res) => {
         finalPrice
       });
 
+      // Filter valid images for related products
+      const relatedValidImages = related.productImage ? related.productImage.filter(img =>
+        img &&
+        typeof img === 'string' &&
+        img.trim() !== '' &&
+        img !== 'undefined' &&
+        img !== 'null'
+      ) : [];
+
       return {
         _id: related._id,
         name: related.productName,
-        image: related.productImage && related.productImage.length > 0 && related.productImage[0] && related.productImage[0].trim() !== '' ? `/uploads/product-images/${related.productImage[0]}` : '/images/keychain1.webp',
+        image: relatedValidImages.length > 0 ? `/uploads/product-images/${relatedValidImages[0]}` : '/images/keychain1.webp',
         category: related.category?.name || 'Uncategorized',
         price: basePrice,
         displayPrice: finalPrice,

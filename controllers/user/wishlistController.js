@@ -62,9 +62,16 @@ exports.getWishlist = async (req, res) => {
       const product = item.productId;
       if (!product) return null;
 
-      const mainImage = product.productImage && product.productImage.length > 0
-        ? product.productImage[0]
-        : null;
+      // Filter and validate product images to ensure only valid images are shown
+      const validImages = product.productImage ? product.productImage.filter(img =>
+        img &&
+        typeof img === 'string' &&
+        img.trim() !== '' &&
+        img !== 'undefined' &&
+        img !== 'null'
+      ) : [];
+
+      const mainImage = validImages.length > 0 ? validImages[0] : null;
 
       // Calculate pricing with offers
       const basePrice = product.price || 0;
