@@ -529,6 +529,24 @@
                     data: $.param(data),
                     success: function(response) {
                         if (response.success) {
+                            // Reset the form immediately after successful submission
+                            $('#addCouponForm')[0].reset();
+
+                            // Clear any validation states
+                            $('#addCouponForm').find('.is-invalid').removeClass('is-invalid');
+                            $('#addCouponForm').find('.is-valid').removeClass('is-valid');
+
+                            // Clear flatpickr date pickers
+                            if (startDatePicker) {
+                                startDatePicker.clear();
+                            }
+                            if (expiryDatePicker) {
+                                expiryDatePicker.clear();
+                            }
+
+                            // Reset discount type to default
+                            $('#discountType').val('percentage').trigger('change');
+
                             // Hide the add coupon modal
                             $('#addCouponModal').modal('hide');
 
@@ -1036,6 +1054,48 @@
                     location.reload();
                 });
             }
+
+            // Clear form when add coupon modal is hidden
+            $('#addCouponModal').on('hidden.bs.modal', function () {
+                // Reset the form
+                $('#addCouponForm')[0].reset();
+
+                // Clear any custom validation states
+                $('#addCouponForm').find('.is-invalid').removeClass('is-invalid');
+                $('#addCouponForm').find('.is-valid').removeClass('is-valid');
+
+                // Reset flatpickr date pickers
+                if (startDatePicker) {
+                    startDatePicker.clear();
+                }
+                if (expiryDatePicker) {
+                    expiryDatePicker.clear();
+                }
+
+                // Reset discount type to default and trigger change
+                $('#discountType').val('percentage').trigger('change');
+            });
+
+            // Clear form when add coupon modal is shown (additional safety)
+            $('#addCouponModal').on('show.bs.modal', function () {
+                // Reset the form
+                $('#addCouponForm')[0].reset();
+
+                // Clear any custom validation states
+                $('#addCouponForm').find('.is-invalid').removeClass('is-invalid');
+                $('#addCouponForm').find('.is-valid').removeClass('is-valid');
+
+                // Reset flatpickr date pickers
+                if (startDatePicker) {
+                    startDatePicker.clear();
+                }
+                if (expiryDatePicker) {
+                    expiryDatePicker.clear();
+                }
+
+                // Reset discount type to default and trigger change
+                $('#discountType').val('percentage').trigger('change');
+            });
         });
 
         // Export function
