@@ -195,14 +195,14 @@
         discountSymbol.textContent = '%';
       } else {
         maxDiscountContainer.style.display = 'none';
-        discountSymbol.textContent = '$';
+        discountSymbol.textContent = '₹';
       }
       updateCategoryOfferPreview();
     });
 
     // Update discount symbol when discount type changes
     discountTypeSelect.addEventListener('change', function() {
-      discountSymbol.textContent = this.value === 'percentage' ? '%' : '$';
+      discountSymbol.textContent = this.value === 'percentage' ? '%' : '₹';
     });
 
     // Update category selection count
