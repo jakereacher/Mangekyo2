@@ -39,16 +39,16 @@
             <small class="form-text text-muted">3-50 characters, letters, numbers and spaces only</small>
           </div>
           <div class="col-md-6">
-            <label for="discountType" class="form-label">How to Calculate Discount <span class="text-danger">*</span></label>
+            <label for="discountType" class="form-label">Discount Type <span class="text-danger">*</span></label>
             <select class="form-select" id="discountType" name="discountType" required>
-              <option value="">Select Calculation Method</option>
-              <option value="percentage">Percentage Off (e.g., 10% off)</option>
-              <option value="fixed">Fixed Amount Off (e.g., ₹100 off)</option>
+              <option value="">Choose discount type</option>
+              <option value="percentage">Percentage Discount (e.g., 10% off)</option>
+              <option value="fixed">Fixed Amount Discount (e.g., ₹100 off)</option>
             </select>
             <div class="invalid-feedback">
               Please select a discount type
             </div>
-            <small class="form-text text-muted">Choose how the discount will be calculated</small>
+            <small class="form-text text-muted">Choose between percentage or fixed amount discount</small>
           </div>
         </div>
 
@@ -64,59 +64,59 @@
 
         <div class="row mb-3">
           <div class="col-md-4">
-            <label for="discountValue" class="form-label">Discount Amount <span class="text-danger">*</span></label>
+            <label for="discountValue" class="form-label">Discount Value <span class="text-danger">*</span></label>
             <input type="number" class="form-control" id="discountValue" name="discountValue"
                    min="0.01" max="100" step="0.01" required>
             <div class="invalid-feedback" id="discountValueFeedback">
               Discount value must be a positive number
             </div>
-            <small class="form-text text-muted" id="discountValueHelp">For percentage: enter 10 for 10% off | For fixed: enter 100 for ₹100 off</small>
+            <small class="form-text text-muted" id="discountValueHelp">Enter 10 for 10% discount or 100 for ₹100 discount</small>
           </div>
           <div class="col-md-4">
-            <label for="maxDiscountAmount" class="form-label">Maximum Discount Cap (Optional)</label>
+            <label for="maxDiscountAmount" class="form-label">Maximum Discount Limit (Optional)</label>
             <input type="number" class="form-control" id="maxDiscountAmount" name="maxDiscountAmount"
                    min="0.01" step="0.01">
             <div class="invalid-feedback">
               Maximum discount amount must be a positive number
             </div>
-            <small class="form-text text-muted">For percentage discounts: Limit the maximum amount (e.g., 10% off up to ₹500)</small>
+            <small class="form-text text-muted">Cap the maximum discount amount (e.g., 10% off but max ₹500 discount)</small>
           </div>
           <div class="col-md-4">
-            <label for="minPurchaseAmount" class="form-label">Minimum Order Value (Optional)</label>
+            <label for="minPurchaseAmount" class="form-label">Minimum Purchase Amount (Optional)</label>
             <input type="number" class="form-control" id="minPurchaseAmount" name="minPurchaseAmount"
                    min="0" step="0.01">
             <div class="invalid-feedback">
               Minimum purchase amount must be a non-negative number
             </div>
-            <small class="form-text text-muted">Offer applies only if order value is at least this amount</small>
+            <small class="form-text text-muted">Customer must spend at least this amount to use this offer</small>
           </div>
         </div>
 
         <div class="row mb-3">
           <div class="col-md-6">
-            <label for="startDate" class="form-label">Offer Start Date & Time <span class="text-danger">*</span></label>
+            <label for="startDate" class="form-label">Start Date & Time <span class="text-danger">*</span></label>
             <input type="text" class="form-control" id="startDate" name="startDate"
-                   placeholder="Select date and time" required>
+                   placeholder="Select when offer starts" required>
             <div class="invalid-feedback">
               Start date is required and must be in the future
             </div>
-            <small class="form-text text-muted">When this offer becomes active</small>
+            <small class="form-text text-muted">When customers can start using this offer</small>
           </div>
           <div class="col-md-6">
-            <label for="endDate" class="form-label">Offer End Date & Time <span class="text-danger">*</span></label>
+            <label for="endDate" class="form-label">End Date & Time <span class="text-danger">*</span></label>
             <input type="text" class="form-control" id="endDate" name="endDate"
-                   placeholder="Select date and time" required>
+                   placeholder="Select when offer ends" required>
             <div class="invalid-feedback">
               End date is required and must be after start date
             </div>
-            <small class="form-text text-muted">When this offer expires (maximum duration: 90 days)</small>
+            <small class="form-text text-muted">When this offer stops working (max 90 days from start)</small>
           </div>
         </div>
 
         <!-- Product Selection -->
         <div class="mb-4">
-          <label class="form-label fw-bold">Choose Products for This Offer <span class="text-danger">*</span></label>
-          <p class="text-muted">Select which products will receive this discount</p>
+          <label class="form-label fw-bold">Select Products <span class="text-danger">*</span></label>
+          <p class="text-muted">Choose which products will get this discount offer</p>
 
           <div class="mb-3">
             <input type="text" class="form-control" id="productSearch" placeholder="Search products by name...">
