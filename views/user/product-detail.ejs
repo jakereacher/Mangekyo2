@@ -68,7 +68,7 @@
           <% if (product.hasOffer && product.discount > 0) { %>
           <div class="absolute top-4 left-4 bg-red-500 text-white text-sm font-bold px-3 py-1 rounded-full">
             <% if (product.discountType === 'fixed') { %>
-              $<%= Math.round(product.discountAmount) %> OFF
+              ₹<%= Math.round(product.discountAmount) %> OFF
             <% } else { %>
               <%= Math.round(product.discount) %>% OFF
             <% } %>
@@ -363,7 +363,7 @@
             </svg>
             <div>
               <h4 class="font-bold">Free Shipping</h4>
-              <p class="text-sm text-gray-400">On orders over $50. Delivery in
+              <p class="text-sm text-gray-400">On orders over ₹500. Delivery in
                 3-5 business days.</p>
             </div>
           </div>
@@ -610,7 +610,7 @@
             <% if (relatedProduct.hasOffer && relatedProduct.discount > 0) { %>
             <div class="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full">
               <% if (relatedProduct.discountType === 'fixed') { %>
-                $<%= Math.round(relatedProduct.discountAmount) %> OFF
+                ₹<%= Math.round(relatedProduct.discountAmount) %> OFF
               <% } else { %>
                 <%= Math.round(relatedProduct.discount) %>% OFF
               <% } %>
